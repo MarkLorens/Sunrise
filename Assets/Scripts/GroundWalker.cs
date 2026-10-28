@@ -12,7 +12,16 @@ public class GroundWalker : MonoBehaviour
 
     Rigidbody rb;
 
-    void Awake() => rb = GetComponent<Rigidbody>();
+    void Awake()
+    {
+        rb = GetComponent<Rigidbody>();
+
+        ground.CompressBounds();
+        var b = ground.localBounds;
+        var floor = ground.GetComponent<BoxCollider>();
+        floor.center = new Vector3(b.center.x, b.center.y, 0.5f);
+        floor.size = new Vector3(b.size.x, b.size.y, 1f);
+    }
 
     void FixedUpdate()
     {
