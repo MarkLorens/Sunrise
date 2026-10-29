@@ -3,11 +3,15 @@ using UnityEngine;
 using UnityEngine.Tilemaps;
 
 // A flat Ferris wheel: the wheel sprite spins in its own plane and the cabins hang upright around it.
-// Sabotage pushes it into overdrive; a short circuit while in overdrive breaks the wheel loose,
-// it rolls across the park flattening whoever's in the way, then topples flat onto the ground.
+// Two ways to wreck it:
+//   1. Sabotage pushes it into overdrive; a short circuit while in overdrive breaks the wheel loose,
+//      it rolls across the park flattening whoever's in the way, then topples flat onto the ground.
+//   2. Something thrown into the gears at its base jams it to a sudden stop and flings the riders out.
 public class FerrisWheel : MonoBehaviour
 {
-    public enum State { Running, Overdrive, Breaking, Rolling, Wrecked }
+    public static readonly List<FerrisWheel> All = new();
+
+    public enum State { Running, Overdrive, Breaking, Rolling, Wrecked, Jammed }
 
     public Transform wheel;
     public Tilemap ground;
@@ -22,7 +26,10 @@ public class FerrisWheel : MonoBehaviour
     public float rollSpeed = 6f;
     public float rollDistance = 30f;
     public float chaosRadius = 10f;
+    public float chaosDuration = 300f; // people keep screaming and running near the wreck for 5 minutes
     public float panicTime = 8f;
+    public float gearRadius = 1.6f;   // around the base: where a thrown item jams the gears
+    [Range(0, 1)] public float riderDeathChance = 0.6f;
     public RideQueue queue;
 
     public State Current { get; private set; }
@@ -38,6 +45,34 @@ public class FerrisWheel : MonoBehaviour
     float stateTime;
     float rolled;
     float nextPanic;
+    float nextPuff;
+
+    void OnEnable() => All.Add(this);
+    void OnDisable() => All.Remove(this);
+
+    public bool InGears(Vector3 p)
+    {
+        Vector3 d = p - transform.position;
+        return !IsBroken && new Vector2(d.x, d.z).magnitude < gearRadius && p.y < 1.5f;
+    }
+
+    // Method 2: something lands in the gears. The wheel stops dead and the riders are flung out of their cabins.
+    public void Jam(Item item)
+    {
+        if (IsBroken) return;
+        item.Consume();
+        Current = State.Jammed;
+        stateTime = 0f;
+        speed = 0f;
+        if (queue != null) queue.ThrowOutRiders(transform.position + new Vector3(0, 0, -1.5f), 3.5f, riderDeathChance);
+        Chaos(transform.position);
+        ParkChaos.Add(transform.position, chaosRadius, chaosDuration);
+        Sfx.Play(Sfx.Crash, 1f, 0.6f);
+        Fx.Burst("Fx/puff", transform.position + Vector3.up, 20, new Color(0.9f, 0.85f, 0.8f), 3f, 0.9f, 0.8f);
+        Fx.Shake(0.4f);
+        GameHud.Say($"CRUNCH! The {item.DisplayName} jams the gears. The wheel stops dead and the riders are flung out!", "Bubbles/exclaim");
+        Mischief.Complete(Mischief.Task.WreckWheel);
+    }
 
     void Start()
     {
@@ -101,6 +136,16 @@ public class FerrisWheel : MonoBehaviour
             case State.Rolling:
                 Roll();
                 break;
+
+            case State.Jammed:
+                // Shudders, grinds and smokes for a while after the sudden stop.
+                Shake(Mathf.Max(0f, 0.3f - stateTime * 0.1f));
+                if (stateTime < 8f && Time.time >= nextPuff)
+                {
+                    nextPuff = Time.time + 0.3f;
+                    Fx.Burst("Fx/puff", transform.position + Vector3.up * 0.6f, 2, new Color(0.5f, 0.5f, 0.5f, 0.7f), 1f, 0.6f, 1f);
+                }
+                break;
         }
         UpdateCabins();
     }
@@ -128,8 +173,11 @@ public class FerrisWheel : MonoBehaviour
             cabins[i].SetParent(null, true);
             cabinVelocity.Add(new Vector3(Random.Range(-4f, 4f), Random.Range(3f, 7f), Random.Range(-1.5f, 0.5f)));
         }
-        if (queue != null) queue.ThrowOutRiders(transform.position + new Vector3(0, 0, -1.5f), 3f);
+        if (queue != null) queue.ThrowOutRiders(transform.position + new Vector3(0, 0, -1.5f), 3f, riderDeathChance);
+        Fx.Shake(0.4f);
         Chaos(transform.position);
+        ParkChaos.Add(transform.position, chaosRadius, chaosDuration);
+        Sfx.Play(Sfx.Crash);
         GameHud.Say("THE FERRIS WHEEL BROKE LOOSE!");
     }
 
@@ -162,7 +210,10 @@ public class FerrisWheel : MonoBehaviour
             if (Quaternion.Angle(wheel.rotation, Quaternion.Euler(90f, 0f, angle)) < 0.5f)
             {
                 Current = State.Wrecked;
+                ParkChaos.Add(p, chaosRadius, chaosDuration);
+                Sfx.Play(Sfx.Crash, 0.8f, 0.7f);
                 GameHud.Say("The Ferris wheel is wrecked. Closed for repairs!");
+                Mischief.Complete(Mischief.Task.WreckWheel);
             }
         }
         wheel.position = p;
@@ -184,7 +235,7 @@ public class FerrisWheel : MonoBehaviour
             if (Mathf.Abs(d.x) < wheelRadius * 0.8f && Mathf.Abs(d.z) < 0.8f)
             {
                 v.KnockDown();
-                GameHud.Casualties++;
+                Sfx.Play(Sfx.Crash, 0.6f, Random.Range(0.9f, 1.2f));
             }
         }
     }
@@ -201,7 +252,7 @@ public class FerrisWheel : MonoBehaviour
 
     void UpdateCabins()
     {
-        if (Current < State.Rolling)
+        if (Current is < State.Rolling or State.Jammed)
         {
             // Hang upright from evenly spaced points on the spinning rim.
             for (int i = 0; i < cabins.Count; i++)

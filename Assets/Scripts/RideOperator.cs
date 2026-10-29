@@ -28,6 +28,9 @@ public class RideOperator : MonoBehaviour, IInteraction
     float stateEndsAt;
     bool complained;
 
+    void OnEnable() => Possession.Masked.Add(transform);
+    void OnDisable() => Possession.Masked.Remove(transform);
+
     void Awake()
     {
         walker = GetComponent<GroundWalker>();
@@ -124,13 +127,13 @@ public class RideOperator : MonoBehaviour, IInteraction
     }
 
     public string Prompt(Visitor host) =>
-        host != null && host.item == VisitorItem.SpicyHotdog ? "Offer the operator a spicy hotdog" : "Talk to the operator";
+        host != null && host.HeldKind == VisitorItem.SpicyHotdog ? "Offer the operator a spicy hotdog" : "Talk to the operator";
 
     public string Blocked(Visitor host)
     {
         if (Current == State.Shocked) return "He's frozen in shock";
         if (Current != State.AtPost) return "He's busy";
-        if (host.item != VisitorItem.SpicyHotdog) return "\"Staff only. Keep moving.\" (He looks hungry...)";
+        if (host.HeldKind != VisitorItem.SpicyHotdog) return "\"Staff only. Keep moving.\" (He looks hungry...)";
         return null;
     }
 
@@ -142,5 +145,6 @@ public class RideOperator : MonoBehaviour, IInteraction
         look.SetIcon("SpicyHotdog");
         look.Gesture(look.interact, eatTime);
         GameHud.Say("Operator: Ooh, a free hotdog? Don't mind if I do! *munch*");
+        Mischief.Complete(Mischief.Task.FeedOperator);
     }
 }

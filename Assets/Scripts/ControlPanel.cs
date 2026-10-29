@@ -19,7 +19,7 @@ public class ControlPanel : MonoBehaviour, IInteraction
 
     public string Prompt(Visitor host)
     {
-        if (wheel.IsOverdrive && host != null && host.item == VisitorItem.Drink) return "Pour the drink over the panel";
+        if (wheel.IsOverdrive && host != null && host.HeldKind == VisitorItem.Drink) return "Pour the drink over the panel";
         return "Mash random buttons";
     }
 
@@ -27,7 +27,7 @@ public class ControlPanel : MonoBehaviour, IInteraction
     {
         if (wheel.IsBroken) return "Nothing left to break";
         if (rideOperator.WatchingPanel) return "The operator is watching the panel";
-        if (wheel.IsOverdrive && host.item != VisitorItem.Drink) return "It's already going haywire... something wet might finish it off";
+        if (wheel.IsOverdrive && host.HeldKind != VisitorItem.Drink) return "It's already going haywire... something wet might finish it off";
         return null;
     }
 
@@ -43,6 +43,7 @@ public class ControlPanel : MonoBehaviour, IInteraction
         {
             wheel.Overdrive();
             GameHud.Say("The wheel starts spinning faster... and faster...");
+            Mischief.Complete(Mischief.Task.Overdrive);
         }
     }
 }

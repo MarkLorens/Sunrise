@@ -33,11 +33,11 @@ public class Toilet : MonoBehaviour, IInteraction
     public void Exit() => Occupant = null;
 
     public string Prompt(Visitor host) =>
-        host != null && host.item == VisitorItem.ToiletKey ? "Lock the toilet door" : Occupant != null ? "Toilet (occupied)" : "Toilet";
+        host != null && host.HeldKind == VisitorItem.ToiletKey ? "Lock the toilet door" : Occupant != null ? "Toilet (occupied)" : "Toilet";
 
     public string Blocked(Visitor host)
     {
-        if (host.item != VisitorItem.ToiletKey) return Occupant != null ? "It locks from the outside... with a key" : "Nothing to do here";
+        if (host.HeldKind != VisitorItem.ToiletKey) return Occupant != null ? "It locks from the outside... with a key" : "Nothing to do here";
         if (Occupant == null) return "Nobody's inside to lock in";
         if (Locked) return "Already locked";
         return null;
@@ -48,5 +48,6 @@ public class Toilet : MonoBehaviour, IInteraction
         host.TakeItem(); // key stays in the lock
         lockedUntil = Time.time + lockTime;
         GameHud.Say("*click*  Operator (inside): ...Hello? Is someone out there?");
+        Mischief.Complete(Mischief.Task.LockToilet);
     }
 }

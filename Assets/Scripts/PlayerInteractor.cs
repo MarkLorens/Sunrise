@@ -1,8 +1,8 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-// Pressing E interacts with the nearest Interactable whose range reaches the player,
-// on behalf of whoever the spirit is currently possessing.
+// Pressing E as a spirit possesses whoever you're touching. Inside someone, E interacts with the nearest
+// Interactable whose range reaches the player, on behalf of whoever the spirit is possessing.
 public class PlayerInteractor : MonoBehaviour
 {
     Possession possession;
@@ -14,7 +14,9 @@ public class PlayerInteractor : MonoBehaviour
     void Update()
     {
         var kb = Keyboard.current;
-        if (kb == null || !kb.eKey.wasPressedThisFrame) return;
+        if (Possession.InputBlocked || kb == null || !kb.eKey.wasPressedThisFrame) return;
+        if (possession.State == Possession.Mode.Diving || possession.Banished) return;
+        if (Host == null && possession.TryPossess()) return;
 
         var target = Nearest();
         if (target == null) return;
@@ -27,6 +29,7 @@ public class PlayerInteractor : MonoBehaviour
         }
         if (Host != null) Host.Look.Gesture(Host.Look.interact);
         target.Interact(Host);
+        possession.MarkLoud(); // fiddling with things is what guards notice
     }
 
     // ponytail: linear scan over every interactable; fine for hundreds, swap to a spatial lookup if it ever shows up in the profiler.

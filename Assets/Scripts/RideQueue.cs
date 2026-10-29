@@ -69,13 +69,14 @@ public class RideQueue : MonoBehaviour
         nextBoard = Time.time + boardInterval;
     }
 
-    // Everyone in a cabin tumbles out at once (the wheel just broke loose).
-    public void ThrowOutRiders(Vector3 around, float spread)
+    // Everyone in a cabin tumbles out at once (the wheel broke loose or jammed). Some don't survive the fall.
+    public void ThrowOutRiders(Vector3 around, float spread, float deathChance)
     {
         foreach (var (who, _) in riders)
         {
             Vector2 r = Random.insideUnitCircle * spread;
             who.EndRide(around + new Vector3(r.x, 0, r.y));
+            if (Random.value < deathChance) who.Die();
         }
         riders.Clear();
     }
