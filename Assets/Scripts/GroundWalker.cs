@@ -2,13 +2,16 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Tilemaps;
 
-// Walks on the X/Z floor with WASD/arrows, but only onto cells that have a tile on the ground tilemap.
+// Walks on the X/Z floor, but only onto cells that have a tile on the ground tilemap.
+// Driven by WASD/arrows when readKeyboard is on, otherwise by whatever sets `move` (e.g. visitor AI).
 // Gravity + the ground's collider keep it standing on the floor.
 [RequireComponent(typeof(Rigidbody))]
 public class GroundWalker : MonoBehaviour
 {
     public Tilemap ground;
     public float speed = 5f;
+    public bool readKeyboard = true;
+    [HideInInspector] public Vector2 move; // x = world X, y = world Z; used when readKeyboard is off
 
     Rigidbody rb;
 
@@ -25,13 +28,8 @@ public class GroundWalker : MonoBehaviour
 
     void FixedUpdate()
     {
-        var kb = Keyboard.current;
-        if (kb == null) return;
-
-        Vector2 input = new Vector2(
-            (kb.dKey.isPressed || kb.rightArrowKey.isPressed ? 1 : 0) - (kb.aKey.isPressed || kb.leftArrowKey.isPressed ? 1 : 0),
-            (kb.wKey.isPressed || kb.upArrowKey.isPressed ? 1 : 0) - (kb.sKey.isPressed || kb.downArrowKey.isPressed ? 1 : 0));
-        Vector2 v = input.normalized * speed;
+        Vector2 input = readKeyboard ? KeyboardInput() : move;
+        Vector2 v = Vector2.ClampMagnitude(input, 1f) * speed;
 
         // Check each axis separately so you can slide along edges instead of sticking.
         if (!OnTile(new Vector3(v.x, 0, 0))) v.x = 0;
@@ -40,10 +38,21 @@ public class GroundWalker : MonoBehaviour
         rb.linearVelocity = new Vector3(v.x, rb.linearVelocity.y, v.y);
     }
 
-    bool OnTile(Vector3 velocity)
+    static Vector2 KeyboardInput()
     {
-        Vector3Int cell = ground.WorldToCell(rb.position + velocity * Time.fixedDeltaTime);
+        var kb = Keyboard.current;
+        if (kb == null) return Vector2.zero;
+        return new Vector2(
+            (kb.dKey.isPressed || kb.rightArrowKey.isPressed ? 1 : 0) - (kb.aKey.isPressed || kb.leftArrowKey.isPressed ? 1 : 0),
+            (kb.wKey.isPressed || kb.upArrowKey.isPressed ? 1 : 0) - (kb.sKey.isPressed || kb.downArrowKey.isPressed ? 1 : 0)).normalized;
+    }
+
+    public bool IsWalkable(Vector3 worldPos)
+    {
+        Vector3Int cell = ground.WorldToCell(worldPos);
         cell.z = 0; // height above the floor doesn't matter
         return ground.HasTile(cell);
     }
+
+    bool OnTile(Vector3 velocity) => IsWalkable(rb.position + velocity * Time.fixedDeltaTime);
 }
