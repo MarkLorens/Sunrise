@@ -21,6 +21,7 @@ public class Item : MonoBehaviour
         VisitorItem.SpicyHotdog => "spicy hotdog",
         VisitorItem.ToiletKey => "toilet key",
         VisitorItem.Drink => "drink",
+        VisitorItem.Screwdriver => "screwdriver",
         _ => "thing",
     };
     public float HitPower => kind == VisitorItem.Drink ? 1f : 0.75f; // a full cup to the face is the worst
@@ -37,6 +38,13 @@ public class Item : MonoBehaviour
         item.kind = kind;
         item.Owner = owner;
         item.sprite = ParkArt.Make("Sprite", go.transform, "Items/" + kind, Size, Color.white, 1);
+        if (item.sprite.sprite == null)
+        {
+            // ponytail: grey block until there's art in Resources/Park/Items/<kind>.png (the screwdriver has none yet).
+            item.sprite.sprite = ParkArt.Get("Markers/white");
+            item.sprite.color = new Color(0.55f, 0.6f, 0.68f);
+            ParkArt.Fit(item.sprite, Size * 0.6f);
+        }
         item.shadow = ParkArt.Make("Shadow", null, "Markers/shadow", 0.3f, Color.white, ParkArt.DecalOrder, true);
         item.shadow.transform.parent.SetParent(go.transform, true);
         return item;
@@ -109,13 +117,6 @@ public class Item : MonoBehaviour
             v.GetHit(LastHolder, HitPower, velocity);
             Bounce(p);
             if (LastHolder != null && LastHolder.Current == Visitor.State.Possessed) Mischief.Complete(Mischief.Task.ThrowHit);
-            return true;
-        }
-        foreach (var g in Guard.All)
-        {
-            if (!Touches(g.transform.position, 1.6f, p)) continue;
-            g.HitBy(LastHolder);
-            Bounce(p);
             return true;
         }
         return false;

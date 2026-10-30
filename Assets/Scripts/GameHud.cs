@@ -3,10 +3,10 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-// The HUD, built at runtime in the style of My project's: a counters panel (souls, mischief, time left in the body,
-// exorcisms), a context-sensitive controls bar whose keycaps light up while held, a prompt floating over whatever
+// The HUD, built at runtime in the style of My project's: a counters panel (souls, mischief, time left in the body),
+// a context-sensitive controls bar whose keycaps light up while held, a prompt floating over whatever
 // you can possess / grab / use, the intro banner, a feed of what's happening, the win banner, the to-do list of
-// mischief on Tab (the game pauses while it's open) and the BANISHED card.
+// mischief on Tab (the game pauses while it's open).
 // It also gives the main camera its rig and the spirit its markers.
 public class GameHud : MonoBehaviour
 {
@@ -34,7 +34,7 @@ public class GameHud : MonoBehaviour
     Possession spirit;
     PlayerInteractor interactor;
     RectTransform canvas;
-    Text soulsLabel, mischiefLabel, gripLabel, exorcisedLabel;
+    Text soulsLabel, mischiefLabel, gripLabel;
     GameObject gripRow;
     GameObject controlsBar, floatHint, possessHint, walkHint, grabHint, whackHint, throwHint, dropHint, shoutHint, useHint, leaveHint;
     RectTransform prompt;
@@ -51,8 +51,6 @@ public class GameHud : MonoBehaviour
     readonly List<(Mischief.Task task, Image box, Text label)> rows = new();
     bool listOpen;
     float listFade;
-    CanvasGroup flash, banishCard;
-    GameObject banishRetry;
 
     void Awake()
     {
@@ -93,28 +91,12 @@ public class GameHud : MonoBehaviour
         if (Instance != null) Instance.winAge = 0f;
     }
 
-    // Driven by the banish cutscene: white-out, then the card.
-    public void SetBanish(float flashAlpha, float cardAlpha, float cardScale, bool retry)
-    {
-        flash.alpha = flashAlpha;
-        banishCard.alpha = cardAlpha;
-        banishCard.transform.localScale = Vector3.one * cardScale;
-        banishRetry.SetActive(retry);
-    }
-
     // ---------------------------------------------------------------- every frame
 
     void Update()
     {
         var kb = Keyboard.current;
         bool toggle = kb != null && (kb.tabKey.wasPressedThisFrame || (listOpen && kb.escapeKey.wasPressedThisFrame));
-        if (toggle && !spirit.Banished)
-        {
-            listOpen = !listOpen;
-            Time.timeScale = listOpen ? 0f : 1f;
-            Possession.InputBlocked = listOpen;
-            if (listOpen) RefreshList();
-        }
 
         int panicking = 0;
         foreach (var v in Visitor.All)
@@ -136,7 +118,6 @@ public class GameHud : MonoBehaviour
     {
         soulsLabel.text = $"Souls  <b>{Souls}</b> / {SoulsToWin}";
         mischiefLabel.text = $"Mischief  <b>{Mischief.DoneCount}</b> / {Mischief.List.Length}";
-        exorcisedLabel.text = $"Exorcised  <b>{spirit.Ejections}</b> / {spirit.maxEjections}";
 
         string grip = "";
         if (spirit.Host != null)
@@ -154,9 +135,6 @@ public class GameHud : MonoBehaviour
     {
         bool isSpirit = spirit.Host == null;
         bool holding = !isSpirit && spirit.Host.Held != null;
-        Set(controlsBar, !spirit.Banished);
-        Set(floatHint, isSpirit && !spirit.Banished);
-        Set(possessHint, isSpirit && !spirit.Banished);
         Set(walkHint, !isSpirit);
         Set(grabHint, !isSpirit && !holding);
         Set(whackHint, holding);
@@ -305,7 +283,6 @@ public class GameHud : MonoBehaviour
         BuildFeed();
         BuildWinBanner();
         BuildList();
-        BuildBanish();
     }
 
     void BuildCounters()
@@ -334,11 +311,6 @@ public class GameHud : MonoBehaviour
         Row(grip, 10f).childAlignment = TextAnchor.MiddleLeft;
         gripLabel = Txt(Ui("Label", grip), "", 24, Soft);
         gripRow = grip.gameObject;
-
-        var exorcised = Ui("Exorcised", panel);
-        Row(exorcised, 10f).childAlignment = TextAnchor.MiddleLeft;
-        Icon(exorcised, "UI/cross", 32f);
-        exorcisedLabel = Txt(Ui("Label", exorcised), "Exorcised", 24, Soft);
     }
 
     void BuildControls()
@@ -402,7 +374,7 @@ public class GameHud : MonoBehaviour
         intro = banner.gameObject.AddComponent<CanvasGroup>();
         intro.alpha = 0f;
         Icon(banner, "UI/spirit", 46f);
-        Txt(Ui("Text", banner), $"You are an evil spirit loose in a theme park. <b>{objective}</b> and spread chaos, but beware the masked guards!", 26, new Color(0.98f, 0.9f, 1f));
+        Txt(Ui("Text", banner), $"You are an evil spirit loose in a theme park. <b>{objective}</b> and spread chaos.", 26, new Color(0.98f, 0.9f, 1f));
     }
 
     void BuildFeed()
@@ -488,34 +460,6 @@ public class GameHud : MonoBehaviour
         var footer = Ui("Footer", listPage);
         Place(footer, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 30f), new Vector2(600f, 36f));
         Txt(footer, "Tab to close", 22, new Color(0.45f, 0.38f, 0.36f), TextAnchor.MiddleRight);
-    }
-
-    void BuildBanish()
-    {
-        var white = Ui("Flash", canvas);
-        Stretch(white);
-        Img(white, null, Color.white);
-        flash = white.gameObject.AddComponent<CanvasGroup>();
-        flash.alpha = 0f;
-
-        var card = Ui("Banished", canvas);
-        Place(card, new Vector2(0.5f, 0.55f), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
-        Img(card, "UI/pill", new Color(0.12f, 0.06f, 0.14f, 0.92f));
-        var column = card.gameObject.AddComponent<VerticalLayoutGroup>();
-        column.padding = new RectOffset(70, 70, 30, 34);
-        column.spacing = 10f;
-        column.childAlignment = TextAnchor.MiddleCenter;
-        column.childControlWidth = column.childControlHeight = true;
-        column.childForceExpandWidth = column.childForceExpandHeight = false;
-        Fit(card);
-        banishCard = card.gameObject.AddComponent<CanvasGroup>();
-        banishCard.alpha = 0f;
-        Icon(card, "UI/cross", 90f);
-        Txt(Ui("Title", card), "BANISHED", 80, new Color(1f, 0.85f, 0.45f), TextAnchor.MiddleCenter, true);
-        Txt(Ui("Text", card), $"Exorcised {spirit.maxEjections} times. The guards' prayers cast you out of the park.", 30, Soft, TextAnchor.MiddleCenter);
-        var retry = Txt(Ui("Retry", card), "Press  <b>R</b>  to try again", 26, new Color(0.8f, 0.75f, 0.85f), TextAnchor.MiddleCenter);
-        banishRetry = retry.gameObject;
-        banishRetry.SetActive(false);
     }
 
     // ---------------------------------------------------------------- UI helpers

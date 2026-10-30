@@ -9,7 +9,6 @@ public static class Sfx
     public const string Huh = "question_001";
     public const string Spotted = "error_004";
     public const string Refuse = "error_004";
-    public const string Exorcised = "bong_001";
     public const string Soul = "bong_001";
     public const string TaskDone = "confirmation_001";
     public const string Crash = "impactPunch_heavy_000";

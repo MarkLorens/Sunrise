@@ -3,20 +3,23 @@ using System.Collections.Generic;
 // The spirit's to-do list of mischief (a nod to Untitled Goose Game). GameHud shows it on Tab.
 public static class Mischief
 {
-    public enum Task { Possess, Swipe, ThrowHit, CrowdPanic, SlipGuard, Brawl, FeedOperator, LockToilet, Overdrive, WreckWheel, HarvestSouls }
+    public enum Task { Possess, LureMechanic, LoosenHinge, Overdrive, FryPanel, Swipe, ThrowHit, CrowdPanic, Brawl, FeedOperator, LockToilet, WreckWheel, HarvestSouls }
 
+    // The Ferris wheel puzzle first, in the order it's solved; then the side mischief.
     public static readonly (Task task, string label)[] List =
     {
         (Task.Possess, "Possess a visitor"),
+        (Task.LureMechanic, "Bang on the electrical box until the mechanic comes"),
+        (Task.LoosenHinge, "Loosen the Ferris wheel's support with a screwdriver"),
+        (Task.Overdrive, "Run the ride at full speed as the operator"),
+        (Task.FryPanel, "Fry the control panel so nobody can slow it down"),
+        (Task.WreckWheel, "Wreck the Ferris wheel"),
         (Task.Swipe, "Swipe what a visitor is carrying"),
         (Task.ThrowHit, "Hit someone with a thrown object"),
         (Task.CrowdPanic, "Make 3 visitors panic at once"),
-        (Task.SlipGuard, "Slip away from a guard who spotted you"),
         (Task.Brawl, "Start a brawl"),
         (Task.FeedOperator, "Give the operator something spicy"),
         (Task.LockToilet, "Lock someone in the toilet"),
-        (Task.Overdrive, "Make the Ferris wheel spin too fast"),
-        (Task.WreckWheel, "Wreck the Ferris wheel"),
         (Task.HarvestSouls, "Harvest 3 souls"),
     };
 

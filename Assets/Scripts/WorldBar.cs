@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// A small bar floating in the world (anger, a guard's suspicion, throw power, possession grip),
+// A small bar floating in the world (anger, throw power, possession grip),
 // like the stamina/power bars over players in football games.
 public class WorldBar : MonoBehaviour
 {

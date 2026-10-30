@@ -15,7 +15,7 @@ public class PlayerInteractor : MonoBehaviour
     {
         var kb = Keyboard.current;
         if (Possession.InputBlocked || kb == null || !kb.eKey.wasPressedThisFrame) return;
-        if (possession.State == Possession.Mode.Diving || possession.Banished) return;
+        if (possession.State == Possession.Mode.Diving) return;
         if (Host == null && possession.TryPossess()) return;
 
         var target = Nearest();
@@ -29,7 +29,6 @@ public class PlayerInteractor : MonoBehaviour
         }
         if (Host != null) Host.Look.Gesture(Host.Look.interact);
         target.Interact(Host);
-        possession.MarkLoud(); // fiddling with things is what guards notice
     }
 
     // ponytail: linear scan over every interactable; fine for hundreds, swap to a spatial lookup if it ever shows up in the profiler.

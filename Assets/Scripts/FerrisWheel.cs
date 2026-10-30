@@ -4,9 +4,13 @@ using UnityEngine.Tilemaps;
 
 // A flat Ferris wheel: the wheel sprite spins in its own plane and the cabins hang upright around it.
 // Two ways to wreck it:
-//   1. Sabotage pushes it into overdrive; a short circuit while in overdrive breaks the wheel loose,
-//      it rolls across the park flattening whoever's in the way, then topples flat onto the ground.
+//   1. The puzzle: loosen the support (WheelHinge), then run the ride at full speed (ControlPanel). After `loadTime`
+//      at full speed the support gives way, the wheel rolls across the park flattening whoever's in the way, then
+//      topples flat onto the ground.
 //   2. Something thrown into the gears at its base jams it to a sudden stop and flings the riders out.
+// Either way: panic within `chaosRadius` for `chaosDuration`, police tape around the wreck after `policeDelay`,
+// then once the chaos is over it's closed for `rebuildTime` and comes back good as new.
+// It also puts its electrical box and support hinge next to itself when the scene starts.
 public class FerrisWheel : MonoBehaviour
 {
     public static readonly List<FerrisWheel> All = new();
@@ -30,12 +34,23 @@ public class FerrisWheel : MonoBehaviour
     public float panicTime = 8f;
     public float gearRadius = 1.6f;   // around the base: where a thrown item jams the gears
     [Range(0, 1)] public float riderDeathChance = 0.6f;
+    public float loadTime = 6f;       // seconds a loosened support holds at full speed
+    public float policeDelay = 10f;
+    public float policeLineRadius = 5f;
+    public float rebuildTime = 600f;
+    public Vector3 electricalBoxOffset = new(2.2f, 0f, -1.4f);
+    public Vector3 hingeOffset = new(-1.4f, 0f, -1f);
     public RideQueue queue;
 
     public State Current { get; private set; }
     public bool IsRunningNormally => Current == State.Running;
     public bool IsOverdrive => Current == State.Overdrive;
-    public bool IsBroken => Current >= State.Breaking;
+    public bool IsBroken => Current is State.Breaking or State.Rolling or State.Wrecked or State.Jammed;
+    public bool Loosened { get; private set; }
+    public bool PanelFried { get; private set; }
+    // Broken and still frightening: people scream, staff keep them back.
+    public bool InChaos => IsBroken && Time.time - brokeAt < chaosDuration;
+    public Vector3 WreckPoint => new(wheel.position.x, 0f, wheel.position.z);
 
     readonly List<Transform> cabins = new();
     readonly List<Vector3> cabinVelocity = new();
@@ -46,6 +61,12 @@ public class FerrisWheel : MonoBehaviour
     float rolled;
     float nextPanic;
     float nextPuff;
+    float strain;    // seconds at full speed on a loosened support
+    float brokeAt;
+    bool rebuilding;
+    Transform wheelParent;
+    GameObject policeLine;
+    WorldBar rebuildBar;
 
     void OnEnable() => All.Add(this);
     void OnDisable() => All.Remove(this);
@@ -63,6 +84,7 @@ public class FerrisWheel : MonoBehaviour
         item.Consume();
         Current = State.Jammed;
         stateTime = 0f;
+        brokeAt = Time.time;
         speed = 0f;
         if (queue != null) queue.ThrowOutRiders(transform.position + new Vector3(0, 0, -1.5f), 3.5f, riderDeathChance);
         Chaos(transform.position);
@@ -77,7 +99,11 @@ public class FerrisWheel : MonoBehaviour
     void Start()
     {
         wheelHome = wheel.localPosition;
+        wheelParent = wheel.parent;
         speed = normalSpeed;
+        rebuildBar = WorldBar.Create(transform, new Vector3(0f, 1.6f, -0.3f), 2.5f);
+        Part<ElectricalBox>("Electrical Box", electricalBoxOffset, 1.1f, new Color(0.35f, 0.45f, 0.6f)).wheel = this;
+        Part<WheelHinge>("Support Hinge", hingeOffset, 0.5f, new Color(0.5f, 0.5f, 0.55f)).wheel = this;
         var mat = wheel.GetComponent<SpriteRenderer>().sharedMaterial;
         for (int i = 0; i < cabinCount; i++)
         {
@@ -97,17 +123,37 @@ public class FerrisWheel : MonoBehaviour
         stateTime = 0f;
     }
 
+    // The operator turning it back down. Not possible once the panel's fried.
     public void ResetToNormal()
     {
-        if (Current != State.Overdrive) return;
+        if (Current != State.Overdrive || PanelFried) return;
         Current = State.Running;
     }
 
-    public void BreakLoose()
+    public void Loosen() => Loosened = true;
+
+    public void FryPanel() => PanelFried = true;
+
+    void BreakLoose()
     {
-        if (Current != State.Overdrive) return;
         Current = State.Breaking;
         stateTime = 0f;
+        brokeAt = Time.time;
+        GameHud.Say("*CREAK* The loosened support is buckling!");
+    }
+
+    // ponytail: placeholder blocks from Markers/white until there's art; offsets are relative to the wheel's base.
+    T Part<T>(string name, Vector3 offset, float height, Color color) where T : Component
+    {
+        var go = new GameObject(name);
+        go.SetActive(false); // so Interactable's Awake finds the rules component
+        go.transform.position = transform.position + offset;
+        var sprite = ParkArt.Make("Sprite", go.transform, "Markers/white", height, color);
+        sprite.transform.localPosition = new Vector3(0f, height * 0.5f, 0f);
+        var part = go.AddComponent<T>();
+        go.AddComponent<Interactable>();
+        go.SetActive(true);
+        return part;
     }
 
     void Update()
@@ -123,8 +169,10 @@ public class FerrisWheel : MonoBehaviour
 
             case State.Overdrive:
                 speed = Mathf.MoveTowards(speed, overdriveSpeed, overdriveSpeed / spinUpTime * Time.deltaTime);
-                Shake(0.05f * speed / overdriveSpeed);
+                Shake((Loosened ? 0.15f : 0.05f) * speed / overdriveSpeed);
                 Spin();
+                if (Loosened && speed >= overdriveSpeed * 0.95f) strain += Time.deltaTime;
+                if (strain >= loadTime) BreakLoose();
                 break;
 
             case State.Breaking:
@@ -145,9 +193,74 @@ public class FerrisWheel : MonoBehaviour
                     nextPuff = Time.time + 0.3f;
                     Fx.Burst("Fx/puff", transform.position + Vector3.up * 0.6f, 2, new Color(0.5f, 0.5f, 0.5f, 0.7f), 1f, 0.6f, 1f);
                 }
+                Aftermath();
+                break;
+
+            case State.Wrecked:
+                Aftermath();
                 break;
         }
         UpdateCabins();
+    }
+
+    // Police tape while the chaos lasts, then closed for rebuilding with a progress bar, then open again.
+    void Aftermath()
+    {
+        float t = Time.time - brokeAt;
+        if (t < chaosDuration)
+        {
+            if (policeLine == null && t >= policeDelay)
+            {
+                policeLine = PoliceLine(WreckPoint, policeLineRadius);
+                GameHud.Say("The police tape off the area around the wreck.");
+            }
+            return;
+        }
+        if (!rebuilding)
+        {
+            rebuilding = true;
+            if (policeLine != null) Destroy(policeLine);
+            GameHud.Say($"The police tape comes down. The Ferris wheel is closed for rebuilding ({rebuildTime / 60f:0} min).");
+        }
+        rebuildBar.Set(Mathf.InverseLerp(chaosDuration, chaosDuration + rebuildTime, t), new Color(0.6f, 1f, 0.92f), true);
+        if (t >= chaosDuration + rebuildTime) Rebuild();
+    }
+
+    static GameObject PoliceLine(Vector3 center, float radius)
+    {
+        const int points = 40;
+        var go = new GameObject("Police Line");
+        var line = go.AddComponent<LineRenderer>();
+        line.sharedMaterial = ParkArt.Material;
+        line.loop = true;
+        line.widthMultiplier = 0.12f;
+        line.startColor = line.endColor = new Color(1f, 0.85f, 0.1f);
+        line.positionCount = points;
+        for (int i = 0; i < points; i++)
+        {
+            float a = i * Mathf.PI * 2f / points;
+            line.SetPosition(i, center + new Vector3(Mathf.Cos(a) * radius, 0.7f, Mathf.Sin(a) * radius));
+        }
+        return go;
+    }
+
+    void Rebuild()
+    {
+        wheel.SetParent(wheelParent, true);
+        wheel.localPosition = wheelHome;
+        wheel.localRotation = Quaternion.identity;
+        foreach (var c in cabins)
+        {
+            c.SetParent(transform, true);
+            c.rotation = Quaternion.identity;
+        }
+        cabinVelocity.Clear();
+        Current = State.Running;
+        stateTime = angle = speed = rolled = strain = 0f;
+        Loosened = PanelFried = rebuilding = false;
+        policeLine = null;
+        rebuildBar.Set(0f, Color.white, false);
+        GameHud.Say("The Ferris wheel is rebuilt and open again!");
     }
 
     void Spin()

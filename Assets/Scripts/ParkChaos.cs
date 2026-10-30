@@ -2,8 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Places where something frightening is happening: a brawl, a body, the Ferris wheel breaking loose, or just a
-// possessed visitor shouting. For a while visitors who come near scream and run (kids scare more easily),
-// and guards go over to keep people back from the serious ones.
+// possessed visitor shouting. For a while visitors who come near scream and run (kids scare more easily).
 public static class ParkChaos
 {
     public const float Scary = 0.3f;      // frightens kids

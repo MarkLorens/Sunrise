@@ -3,8 +3,7 @@ using UnityEngine.Tilemaps;
 
 // Fills the park with people on random ground tiles around this object when the scene starts.
 // Some visitors start out lined up for the ride; the rest roam (and may wander over to the line later),
-// some with a kid in tow and most carrying a snack, drink or key. Masked guards patrol between `guardPatrol`
-// points, or random spots if none are set.
+// some with a kid in tow and most carrying a snack, drink or key. Plus the mechanic, screwdriver in hand.
 // Looks come from Resources/Visitors/<character>/ (Kenney Toon Characters 1, CC0, plus recoloured variants).
 public class VisitorSpawner : MonoBehaviour
 {
@@ -28,12 +27,9 @@ public class VisitorSpawner : MonoBehaviour
     public string[] names = { "Budi", "Sari", "Rina", "Dodi", "Wati", "Andi", "Maya", "Joni", "Tika", "Bayu", "Lina", "Eko", "Nina", "Rudi", "Dewi", "Agus", "Fitri", "Hendra", "Intan", "Yusuf" };
     public string[] childNames = { "Kiki", "Bobi", "Lala", "Dika", "Nana", "Tono" };
     public Transform[] pointsOfInterest = new Transform[0];
-
-    public int guardCount = 2;
-    public string guardCharacter = "guard";
-    public string[] guardNames = { "Guard Joko", "Guard Slamet", "Guard Bambang" };
-    public Transform[] guardPatrol = new Transform[0]; // shared loop; empty = each guard gets random spots
-    public int randomPatrolPoints = 4;
+    public string mechanicCharacter = "guard";
+    public string mechanicName = "Mechanic Joko";
+    public Transform mechanicPost; // where the mechanic hangs around; empty = a random spot
 
     int nameIndex, childIndex;
 
@@ -68,8 +64,19 @@ public class VisitorSpawner : MonoBehaviour
                 kid.parent = grownUp;
             }
         }
+        SpawnMechanic();
+    }
 
-        for (int i = 0; i < guardCount; i++) SpawnGuard(i);
+    void SpawnMechanic()
+    {
+        Vector3 pos;
+        if (mechanicPost != null) pos = mechanicPost.position;
+        else if (!RandomTile(out pos)) return;
+        var go = Body(mechanicName, pos, mechanicCharacter, personScale);
+        go.AddComponent<Mechanic>().wheel = queue != null ? queue.ride : null;
+        go.SetActive(true);
+        var body = go.GetComponent<Visitor>();
+        body.GrabItem(Item.Create(VisitorItem.Screwdriver, body.CarryPoint, body), true);
     }
 
     string NextName() => names[nameIndex++ % names.Length];
@@ -134,27 +141,5 @@ public class VisitorSpawner : MonoBehaviour
 
         go.SetActive(true);
         return v;
-    }
-
-    void SpawnGuard(int index)
-    {
-        Vector3[] route;
-        if (guardPatrol.Length > 0)
-        {
-            // Everyone walks the same loop, starting from different points along it.
-            route = new Vector3[guardPatrol.Length];
-            for (int i = 0; i < route.Length; i++) route[i] = guardPatrol[(i + index * route.Length / Mathf.Max(1, guardCount)) % route.Length].position;
-        }
-        else
-        {
-            route = new Vector3[randomPatrolPoints];
-            for (int i = 0; i < route.Length; i++)
-                if (!RandomTile(out route[i])) route[i] = transform.position;
-        }
-        if (route.Length == 0) return;
-
-        var go = Body(guardNames[index % guardNames.Length], new Vector3(route[0].x, 0f, route[0].z), guardCharacter, personScale);
-        go.AddComponent<Guard>().route = route;
-        go.SetActive(true);
     }
 }

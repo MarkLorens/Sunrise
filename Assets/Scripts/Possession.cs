@@ -6,39 +6,29 @@ using UnityEngine.InputSystem;
 //   Spirit:     WASD float - a weak spirit can't drift far from where it last left a body - E possess whoever you touch.
 //   Possessed:  WASD walk, J grab (even out of someone's hands) - tap to whack, hold to charge a throw - K drop,
 //               Space shout, E use things, Q leave the body.
-// You get 20 s in a body and can't jump straight back into the same person. Guards in holy masks can't be possessed;
-// a guard's prayer drives you out, and driven out three times you're banished.
+// You get 20 s in a body and can't jump straight back into the same person. Anyone in range can be possessed.
 [RequireComponent(typeof(GroundWalker))]
 public class Possession : MonoBehaviour
 {
-    public enum Mode { Spirit, Diving, Possessing, Banished }
+    public enum Mode { Spirit, Diving, Possessing }
 
     public static Possession Instance { get; private set; }
 
     // Set while a menu or cutscene owns the keyboard.
     public static bool InputBlocked;
 
-    // Masked staff (guards, the ride operator): touchable, never possessable.
-    public static readonly List<Transform> Masked = new();
-
     public float touchRange = 1.2f;        // weak spirit: has to actually touch someone
     public float leashRadius = 9f;         // and can't drift far from the body it last left
     public float duration = 20f;           // max seconds inside one person
     public float sameTargetCooldown = 10f; // before the same person can be possessed again
     public float abilityCooldown = 2f;     // after leaving anyone
-    public float ejectCooldown = 10f;      // after a guard's prayer drives you out
-    public int maxEjections = 3;           // ejected this many times = banished
     public float grabRange = 1.8f;
     public float shoutRadius = 5f;
 
     public Mode State { get; private set; }
     public Visitor Host { get; private set; }
-    public bool Banished => State == Mode.Banished;
     public float TimeLeft { get; private set; }
     public float CooldownLeft => Mathf.Max(0f, readyAt - Time.time);
-    public int Ejections { get; private set; }
-    public float LastEjectedAt { get; private set; } = float.NegativeInfinity;
-    public float LastLoudTime { get; private set; } = float.NegativeInfinity; // shouting, whacking, throwing, fiddling
     public Vector3 LeashCenter { get; private set; }
 
     // Who you'd possess with E right now (may be someone you can't), and why not.
@@ -52,8 +42,8 @@ public class Possession : MonoBehaviour
     public Visitor AimTarget { get; private set; }
     public float ShoutedAt { get; private set; } = float.NegativeInfinity;
 
-    // What the camera follows; null once banished.
-    public Transform Focus => State == Mode.Banished ? null : Host != null ? Host.transform : transform;
+    // What the camera follows.
+    public Transform Focus => Host != null ? Host.transform : transform;
     // Where souls fly to.
     public Vector3 SpiritPoint => Host != null ? Host.HeadPoint : transform.position + Vector3.up * 0.5f;
 
@@ -137,7 +127,7 @@ public class Possession : MonoBehaviour
         float best = touchRange;
         foreach (var v in Visitor.All)
         {
-            if (v.Current is Visitor.State.Down or Visitor.State.Riding or Visitor.State.Fighting) continue;
+            if (v.Current is Visitor.State.Down or Visitor.State.Riding or Visitor.State.Fighting || !v.Look.Visible) continue;
             float d = Flat(v.transform.position - transform.position).magnitude;
             if (d > best) continue;
             best = d;
@@ -147,15 +137,6 @@ public class Possession : MonoBehaviour
                 : IsLocked(v, out float left) ? $"{v.name} is still shaken ({Mathf.CeilToInt(left)}s)"
                 : CooldownLeft > 0f ? $"Too weak to possess anyone ({Mathf.CeilToInt(CooldownLeft)}s)"
                 : null;
-        }
-        foreach (var m in Masked)
-        {
-            float d = Flat(m.position - transform.position).magnitude;
-            if (d > best) continue;
-            best = d;
-            Candidate = m;
-            CandidateName = m.name;
-            CandidateBlocked = $"{m.name} wears a holy mask";
         }
     }
 
@@ -303,15 +284,11 @@ public class Possession : MonoBehaviour
         Host.GrabItem(it);
         if (from != null)
         {
-            // Snatching things out of people's hands is the sort of thing guards notice.
-            MarkLoud();
             GameHud.Say($"You swiped {from.name}'s {it.DisplayName}!", "Bubbles/snack");
             Mischief.Complete(Mischief.Task.Swipe);
         }
         else if (it.Owner != null && it.Owner != Host) Mischief.Complete(Mischief.Task.Swipe);
     }
-
-    public void MarkLoud() => LastLoudTime = Time.time;
 
     void Aim()
     {
@@ -373,14 +350,12 @@ public class Possession : MonoBehaviour
 
     void Throw()
     {
-        MarkLoud();
         Host.ThrowHeld(ThrowVelocity(Charge));
         AimTarget = null;
     }
 
     void Whack()
     {
-        MarkLoud();
         Host.Look.Gesture(Host.Look.interact, 0.25f);
         Sfx.Play(Sfx.HitSoft, 0.5f, 1.4f);
         foreach (var v in Visitor.All.ToArray())
@@ -393,17 +368,11 @@ public class Possession : MonoBehaviour
                 Sfx.Play(Sfx.HitWood, 0.8f, 1.1f);
             }
         }
-        foreach (var g in Guard.All)
-        {
-            Vector3 to = Flat(g.transform.position - Host.transform.position);
-            if (to.magnitude < 1.6f && Vector3.Angle(Host.Facing, to) < 70f) g.HitBy(Host);
-        }
     }
 
     // Everyone nearby is startled: grown-ups get annoyed, kids get scared.
     void Shout()
     {
-        MarkLoud();
         ShoutedAt = Time.time;
         Host.Look.Cheer(0.7f);
         Host.Look.Show("Scream", 0.8f);
@@ -422,27 +391,6 @@ public class Possession : MonoBehaviour
     public void Release()
     {
         if (State == Mode.Possessing) Leave(abilityCooldown);
-    }
-
-    // A guard's prayer drives the spirit out. Too many times and it's banished from the park.
-    public void Eject()
-    {
-        if (State != Mode.Possessing) return;
-        Leave(ejectCooldown);
-        Ejections++;
-        LastEjectedAt = Time.time;
-        Sfx.Play(Sfx.Exorcised);
-
-        if (Ejections < maxEjections)
-        {
-            int left = maxEjections - Ejections;
-            GameHud.Say($"Exorcised! Too weak to possess anyone for {ejectCooldown:0}s. {left} more time{(left == 1 ? "" : "s")} and you're banished.", "UI/cross");
-            return;
-        }
-        State = Mode.Banished;
-        walker.enabled = false;
-        rb.isKinematic = true;
-        gameObject.AddComponent<BanishCutscene>();
     }
 
     void Leave(float cooldown)

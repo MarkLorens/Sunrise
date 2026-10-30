@@ -1,7 +1,7 @@
 using UnityEngine;
 
-// The masked ride operator. The mask means the spirit can't possess him, so he has to be lured away:
-// hand him the spicy hotdog and a few seconds later he sprints to the toilet.
+// The ride operator. His Visitor body can be possessed like anyone's (this script is switched off while it is).
+// Or he can be lured away: hand him the spicy hotdog and a few seconds later he sprints to the toilet.
 // Back at his post he puts an overdriven wheel back to normal.
 [RequireComponent(typeof(GroundWalker), typeof(CharacterSprite), typeof(Interactable))]
 public class RideOperator : MonoBehaviour, IInteraction
@@ -18,9 +18,9 @@ public class RideOperator : MonoBehaviour, IInteraction
     public float watchRadius = 3f; // how close he has to be to notice someone at the panel
 
     public State Current { get; private set; }
-    public bool AtPost => Current == State.AtPost;
-    public bool WatchingPanel => Current is State.AtPost or State.Eating ||
-                                 (Current == State.Returning && Vector3.Distance(transform.position, post.position) < watchRadius);
+    public bool AtPost => enabled && Current == State.AtPost;
+    public bool WatchingPanel => enabled && (Current is State.AtPost or State.Eating ||
+                                 (Current == State.Returning && Vector3.Distance(transform.position, post.position) < watchRadius));
 
     GroundWalker walker;
     CharacterSprite look;
@@ -28,21 +28,44 @@ public class RideOperator : MonoBehaviour, IInteraction
     float stateEndsAt;
     bool complained;
 
-    void OnEnable() => Possession.Masked.Add(transform);
-    void OnDisable() => Possession.Masked.Remove(transform);
+    // Switched off while possessed; on release he picks up again from wherever the spirit left him.
+    void OnEnable()
+    {
+        if (walker == null) return; // first enable, before Awake has run
+        if (Current == State.InToilet) return;
+        interactable.enabled = true;
+        if (Current != State.Shocked) Set(State.Returning);
+        else
+        {
+            look.pose = look.think;
+            look.SetIcon("Panic");
+        }
+    }
+
+    void OnDisable()
+    {
+        if (interactable != null) interactable.enabled = false; // the spirit inside him shouldn't "talk to" himself
+    }
 
     void Awake()
     {
         walker = GetComponent<GroundWalker>();
         look = GetComponent<CharacterSprite>();
         interactable = GetComponent<Interactable>();
-        look.Load();
-        walker.readKeyboard = false;
+        if (!TryGetComponent(out Visitor body)) body = gameObject.AddComponent<Visitor>(); // loads the sprite
+        body.brain = this;
         walker.speed = walkSpeed;
     }
 
     void Update()
     {
+        if (Current == State.Shocked && !wheel.IsBroken)
+        {
+            // The wheel's been rebuilt: back to work.
+            look.pose = null;
+            look.SetIcon(null);
+            Set(State.Returning);
+        }
         if (wheel.IsBroken && Current is State.AtPost or State.Returning or State.Eating)
         {
             Set(State.Shocked);

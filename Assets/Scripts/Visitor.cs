@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum VisitorItem { None, SpicyHotdog, ToiletKey, Drink }
+public enum VisitorItem { None, SpicyHotdog, ToiletKey, Drink, Screwdriver }
 
 // A park visitor going about their day: wandering, buying snacks and drinks at the stalls, lining up for the Ferris
 // wheel, carrying their things over their head. Kids stick close to their grown-up (even a possessed one).
@@ -19,6 +19,9 @@ public class Visitor : MonoBehaviour
 
     public bool possessable = true;
     public bool child;
+    // Staff (the ride operator) have their own AI. It's switched off while the spirit is inside, and the usual
+    // wandering, anger and panic below are skipped for them.
+    public MonoBehaviour brain;
     public float wanderSpeed = 2f;
     public float possessedSpeed = 3.5f;
     public float panicSpeed = 4.5f;
@@ -41,7 +44,7 @@ public class Visitor : MonoBehaviour
     public float stareTime = 1.5f;
 
     public State Current { get; private set; }
-    public bool CanBePossessed => possessable && Current is not (State.Possessed or State.Riding or State.Down or State.Fighting);
+    public bool CanBePossessed => possessable && Look.Visible && Current is not (State.Possessed or State.Riding or State.Down or State.Fighting);
     public bool CanBeHit => isActiveAndEnabled && Current is not (State.Riding or State.Down or State.Fighting);
     public CharacterSprite Look { get; private set; }
     public Item Held { get; private set; }
@@ -98,6 +101,7 @@ public class Visitor : MonoBehaviour
     {
         Vector3 v = rb.linearVelocity;
         if (new Vector2(v.x, v.z).sqrMagnitude > 0.04f) Facing = new Vector3(v.x, 0f, v.z).normalized;
+        if (brain != null && Current != State.Possessed) return;
 
         if (Current is not State.Angry) Anger = Mathf.Max(0f, Anger - 7f * Time.deltaTime);
         angerBar.Set(Anger / 100f, WorldBar.Heat(Anger / 100f), Anger > 1f && Look.Visible && Current is not (State.Possessed or State.Down or State.Fighting));
@@ -356,7 +360,7 @@ public class Visitor : MonoBehaviour
     // Someone took our things: go and get them back.
     void NoticeTheft(Item it, Visitor by)
     {
-        if (Current is State.Possessed or State.Down or State.Fighting or State.Riding or State.Panic or State.Angry) return;
+        if (brain != null || Current is State.Possessed or State.Down or State.Fighting or State.Riding or State.Panic or State.Angry) return;
         if (Distance(by) > 10f) return;
         LeaveQueue();
         wanted = it;
@@ -430,7 +434,7 @@ public class Visitor : MonoBehaviour
 
     public void AddAnger(float amount, Visitor culprit)
     {
-        if (Current is State.Possessed or State.Down or State.Fighting or State.Riding or State.Angry) return;
+        if (brain != null || Current is State.Possessed or State.Down or State.Fighting or State.Riding or State.Angry) return;
         if (culprit != null && culprit != this) Look.Face(culprit.transform.position);
         if (child)
         {
@@ -507,6 +511,7 @@ public class Visitor : MonoBehaviour
     public void Die()
     {
         if (Current == State.Down) return;
+        if (brain != null) brain.enabled = false;
         LeaveQueue();
         DropHeld();
         walker.readKeyboard = false;
@@ -527,7 +532,7 @@ public class Visitor : MonoBehaviour
 
     public void Panic(Vector3 from, float duration)
     {
-        if (Current is State.Possessed or State.Down or State.Fighting) return;
+        if (brain != null || Current is State.Possessed or State.Down or State.Fighting) return;
         if (Current == State.Riding) Look.SetVisible(true);
         LeaveQueue();
         DropHeld();
@@ -560,6 +565,7 @@ public class Visitor : MonoBehaviour
         Anger = 0f;
         wanted = null;
         SetState(State.Possessed);
+        if (brain != null) brain.enabled = false;
         walker.readKeyboard = true;
         Look.HideBubble();
         Look.Cheer(0.4f);
@@ -573,6 +579,12 @@ public class Visitor : MonoBehaviour
         if (Current == State.Down) return;
         Look.SetTint(Color.white);
         if (Current == State.Fighting) return;
+        if (brain != null)
+        {
+            SetState(State.Idle);
+            brain.enabled = true; // last, so the brain's own pose and icon survive SetState
+            return;
+        }
 
         SetState(State.Confused);
         Look.Show("question", confusedTime);
