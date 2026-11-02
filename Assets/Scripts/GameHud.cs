@@ -3,20 +3,16 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-// The HUD, built at runtime in the style of My project's: a counters panel (souls, mischief, time left in the body),
-// a context-sensitive controls bar whose keycaps light up while held, a prompt floating over whatever
-// you can possess / grab / use, the intro banner, a feed of what's happening, the win banner, the to-do list of
-// mischief on Tab (the game pauses while it's open).
+// The HUD, built at runtime in the style of My project's: the objective panel (break the Ferris wheel, ways found so
+// far, time left in the body), a context-sensitive controls bar whose keycaps light up while held, a prompt floating
+// over whatever you can possess / pick up / use, the intro banner, a feed of what's happening, the objective-complete
+// banner, and the steps of each way to break the wheel on Tab (the game pauses while it's open).
 // It also gives the main camera its rig and the spirit its markers.
 public class GameHud : MonoBehaviour
 {
     public static GameHud Instance { get; private set; }
-    public static int Casualties;
-    public static int Souls { get; private set; }
-    public const int SoulsToWin = 3;
 
     public string objective = "Break the Ferris wheel";
-    public int panicCrowdSize = 3; // this many visitors panicking at once ticks off the panic mischief
 
     static readonly Color PanelDark = new(0.12f, 0.08f, 0.12f, 0.8f);
     static readonly Color Ink = new(0.17f, 0.1f, 0.13f);
@@ -34,9 +30,9 @@ public class GameHud : MonoBehaviour
     Possession spirit;
     PlayerInteractor interactor;
     RectTransform canvas;
-    Text soulsLabel, mischiefLabel, gripLabel;
+    Text waysLabel, gripLabel, winText;
     GameObject gripRow;
-    GameObject controlsBar, floatHint, possessHint, walkHint, grabHint, whackHint, throwHint, dropHint, shoutHint, useHint, leaveHint;
+    GameObject controlsBar, floatHint, possessHint, walkHint, grabHint, throwHint, dropHint, useHint, leaveHint;
     RectTransform prompt;
     GameObject promptCap;
     Text promptKey, promptText;
@@ -57,8 +53,6 @@ public class GameHud : MonoBehaviour
         Instance = this;
         spirit = GetComponent<Possession>();
         interactor = GetComponent<PlayerInteractor>();
-        Casualties = 0;
-        Souls = 0;
         Mischief.Reset();
         ParkChaos.Reset();
 
@@ -82,13 +76,12 @@ public class GameHud : MonoBehaviour
         else pending.Add((text, icon));
     }
 
-    public static void AddSoul()
+    // The Ferris wheel is broken: the level's objective is done (and one more way to do it found).
+    public static void ObjectiveComplete(string how)
     {
-        Souls++;
-        Say($"Soul harvested! ({Souls}/{SoulsToWin})", "Fx/soul");
-        if (Souls != SoulsToWin) return;
-        Mischief.Complete(Mischief.Task.HarvestSouls);
-        if (Instance != null) Instance.winAge = 0f;
+        if (Instance == null) return;
+        Instance.winText.text = $"{how}\nWays found: {Mischief.MethodsFound} / {Mischief.Methods.Length}";
+        Instance.winAge = 0f;
     }
 
     // ---------------------------------------------------------------- every frame
@@ -105,15 +98,6 @@ public class GameHud : MonoBehaviour
             if (listOpen) RefreshList();
         }
 
-        int panicking = 0;
-        foreach (var v in Visitor.All)
-            if (v.Current == Visitor.State.Panic) panicking++;
-        if (panicking >= panicCrowdSize && !Mischief.IsDone(Mischief.Task.CrowdPanic))
-        {
-            Say("The crowd is in a panic!", "Icons/Scream");
-            Mischief.Complete(Mischief.Task.CrowdPanic);
-        }
-
         UpdateCounters();
         UpdateControls();
         UpdatePrompt();
@@ -123,8 +107,7 @@ public class GameHud : MonoBehaviour
 
     void UpdateCounters()
     {
-        soulsLabel.text = $"Souls  <b>{Souls}</b> / {SoulsToWin}";
-        mischiefLabel.text = $"Mischief  <b>{Mischief.DoneCount}</b> / {Mischief.List.Length}";
+        waysLabel.text = $"Ways found  <b>{Mischief.MethodsFound}</b> / {Mischief.Methods.Length}";
 
         string grip = "";
         if (spirit.Host != null)
@@ -143,11 +126,9 @@ public class GameHud : MonoBehaviour
         bool isSpirit = spirit.Host == null;
         bool holding = !isSpirit && spirit.Host.Held != null;
         Set(walkHint, !isSpirit);
-        Set(grabHint, !isSpirit && !holding);
-        Set(whackHint, holding);
+        Set(grabHint, !isSpirit && !holding && spirit.GrabCandidate != null);
         Set(throwHint, holding);
         Set(dropHint, holding);
-        Set(shoutHint, !isSpirit);
         Set(useHint, !isSpirit && interactor.Nearest() != null);
         Set(leaveHint, !isSpirit);
     }
@@ -187,10 +168,9 @@ public class GameHud : MonoBehaviour
             else if (spirit.GrabCandidate != null)
             {
                 var g = spirit.GrabCandidate;
-                anchor = (g.Holder != null ? g.Holder.HeadPoint + Vector3.up * 0.9f : g.transform.position + Vector3.up * 0.8f);
+                anchor = g.transform.position + Vector3.up * 0.8f;
                 key = "J";
-                text = g.Holder != null ? $"Swipe {g.Holder.name}'s {g.DisplayName}"
-                    : g.Owner != null && g.Owner != host ? $"Grab {g.Owner.name}'s {g.DisplayName}" : "Grab the " + g.DisplayName;
+                text = $"Pick up the {g.DisplayName}";
             }
         }
 
@@ -304,15 +284,16 @@ public class GameHud : MonoBehaviour
         column.childForceExpandWidth = column.childForceExpandHeight = false;
         Fit(panel);
 
-        var souls = Ui("Souls", panel);
-        Row(souls, 10f).childAlignment = TextAnchor.MiddleLeft;
-        Icon(souls, "UI/soul", 40f);
-        soulsLabel = Txt(Ui("Label", souls), "Souls", 30, Mint);
+        var goal = Ui("Objective", panel);
+        Row(goal, 10f).childAlignment = TextAnchor.MiddleLeft;
+        Icon(goal, "UI/spirit", 40f);
+        Txt(Ui("Label", goal), objective, 30, Mint);
 
-        var mischief = Ui("Mischief", panel);
-        Row(mischief, 10f).childAlignment = TextAnchor.MiddleLeft;
-        mischiefLabel = Txt(Ui("Label", mischief), "Mischief", 24, Soft);
-        KeyCap(mischief, "Tab", new[] { Key.Tab }, false, 36f);
+        var ways = Ui("Ways Found", panel);
+        Row(ways, 10f).childAlignment = TextAnchor.MiddleLeft;
+        waysLabel = Txt(Ui("Label", ways), "Ways found", 24, Soft);
+        KeyCap(ways, "Tab", new[] { Key.Tab }, false, 36f);
+        Txt(Ui("Hint", ways), "steps", 22, new Color(0.8f, 0.75f, 0.85f));
 
         var grip = Ui("Grip", panel);
         Row(grip, 10f).childAlignment = TextAnchor.MiddleLeft;
@@ -346,11 +327,9 @@ public class GameHud : MonoBehaviour
         floatHint = Group("Float", "Float", wasd);
         possessHint = Group("Possess", "Possess", ("E", new[] { Key.E }, false));
         walkHint = Group("Walk", "Walk", wasd);
-        grabHint = Group("Grab", "Grab", ("J", new[] { Key.J }, true));
-        whackHint = Group("Whack", "Tap: Whack", ("J", new[] { Key.J }, true));
+        grabHint = Group("Pick Up", "Pick up", ("J", new[] { Key.J }, true));
         throwHint = Group("Throw", "Hold: Throw", ("J", new[] { Key.J }, true));
         dropHint = Group("Drop", "Drop", ("K", new[] { Key.K }, false));
-        shoutHint = Group("Shout", "Shout", ("Space", new[] { Key.Space }, false));
         useHint = Group("Use", "Use", ("E", new[] { Key.E }, false));
         leaveHint = Group("Leave", "Leave body", ("Q", new[] { Key.Q }, false));
     }
@@ -381,7 +360,7 @@ public class GameHud : MonoBehaviour
         intro = banner.gameObject.AddComponent<CanvasGroup>();
         intro.alpha = 0f;
         Icon(banner, "UI/spirit", 46f);
-        Txt(Ui("Text", banner), $"You are an evil spirit loose in a theme park. <b>{objective}</b> and spread chaos.", 26, new Color(0.98f, 0.9f, 1f));
+        Txt(Ui("Text", banner), $"You are an evil spirit loose in a theme park. <b>{objective}</b>, and find every way to do it (Tab).", 26, new Color(0.98f, 0.9f, 1f));
     }
 
     void BuildFeed()
@@ -425,13 +404,13 @@ public class GameHud : MonoBehaviour
         Fit(banner);
         winBanner = banner.gameObject.AddComponent<CanvasGroup>();
         winBanner.alpha = 0f;
-        Txt(Ui("Title", banner), "The park trembles...", 64, Mint, TextAnchor.MiddleCenter, true);
-        Txt(Ui("Subtitle", banner), $"{SoulsToWin} souls harvested. Keep causing mischief!", 30, Soft, TextAnchor.MiddleCenter);
+        Txt(Ui("Title", banner), "Objective complete!", 64, Mint, TextAnchor.MiddleCenter, true);
+        winText = Txt(Ui("Subtitle", banner), "", 30, Soft, TextAnchor.MiddleCenter);
     }
 
     void BuildList()
     {
-        var screen = Ui("Mischief List", canvas);
+        var screen = Ui("Steps List", canvas);
         Stretch(screen);
         listScreen = screen.gameObject.AddComponent<CanvasGroup>();
         listScreen.alpha = 0f;
@@ -439,33 +418,39 @@ public class GameHud : MonoBehaviour
         Stretch(dim);
         Img(dim, null, new Color(0.05f, 0.03f, 0.06f, 0.45f));
 
+        int lines = 0;
+        foreach (var (_, steps) in Mischief.Methods) lines += steps.Length + 1;
         listPage = Ui("Page", screen);
-        float height = 190f + Mischief.List.Length * 50f;
-        Place(listPage, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(680f, height));
+        float height = 190f + lines * 44f;
+        Place(listPage, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(860f, height));
         Img(listPage, "UI/paper", Color.white).pixelsPerUnitMultiplier = 0.5f;
 
         var title = Ui("Title", listPage);
-        Place(title, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -40f), new Vector2(600f, 64f));
-        Txt(title, "Mischief List", 50, Ink, TextAnchor.MiddleLeft, true);
+        Place(title, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -40f), new Vector2(780f, 64f));
+        Txt(title, objective, 50, Ink, TextAnchor.MiddleLeft, true);
 
         var list = Ui("Rows", listPage);
-        Place(list, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -120f), new Vector2(590f, Mischief.List.Length * 50f));
+        Place(list, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -120f), new Vector2(770f, lines * 44f));
         var column = list.gameObject.AddComponent<VerticalLayoutGroup>();
-        column.spacing = 10f;
+        column.spacing = 6f;
         column.childAlignment = TextAnchor.UpperLeft;
         column.childControlWidth = column.childControlHeight = true;
         column.childForceExpandWidth = true;
         column.childForceExpandHeight = false;
-        foreach (var (task, label) in Mischief.List)
+        foreach (var (method, steps) in Mischief.Methods)
         {
-            var row = Ui(task.ToString(), list);
-            Row(row, 16f).childAlignment = TextAnchor.MiddleLeft;
-            var box = Icon(row, "UI/check_off", 40f);
-            rows.Add((task, box, Txt(Ui("Label", row), label, 28, Ink)));
+            Txt(Ui(method, list), method, 30, new Color(0.5f, 0.22f, 0.45f), TextAnchor.MiddleLeft, true);
+            foreach (var (task, label) in steps)
+            {
+                var row = Ui(task.ToString(), list);
+                Row(row, 14f, new RectOffset(18, 0, 0, 0)).childAlignment = TextAnchor.MiddleLeft;
+                var box = Icon(row, "UI/check_off", 34f);
+                rows.Add((task, box, Txt(Ui("Label", row), label, 25, Ink)));
+            }
         }
 
         var footer = Ui("Footer", listPage);
-        Place(footer, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 30f), new Vector2(600f, 36f));
+        Place(footer, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 30f), new Vector2(780f, 36f));
         Txt(footer, "Tab to close", 22, new Color(0.45f, 0.38f, 0.36f), TextAnchor.MiddleRight);
     }
 

@@ -2,7 +2,8 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 // Pressing E as a spirit possesses whoever you're touching. Inside someone, E interacts with the nearest
-// Interactable whose range reaches the player, on behalf of whoever the spirit is possessing.
+// Interactable whose range reaches the player (a ride part, the stall, another person), on behalf of whoever the
+// spirit is possessing.
 public class PlayerInteractor : MonoBehaviour
 {
     Possession possession;
@@ -38,6 +39,7 @@ public class PlayerInteractor : MonoBehaviour
         float bestDist = float.MaxValue;
         foreach (var i in Interactable.All)
         {
+            if (Host != null && i.gameObject == Host.gameObject) continue; // yourself
             Vector3 d = i.transform.position - transform.position;
             d.y = 0; // distance along the floor only, so sprite height/pivot doesn't count
             float dist = d.magnitude;

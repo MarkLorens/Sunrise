@@ -1,27 +1,26 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum VisitorItem { None, SpicyHotdog, ToiletKey, Drink, Screwdriver, WaterBottle }
+// Values are fixed because they're saved in the scene (the stall's goods, the spawner's items).
+public enum VisitorItem { None = 0, Drink = 3, Screwdriver = 4, WaterBottle = 5 }
 
-// A park visitor going about their day: wandering, buying snacks and drinks at the stalls, lining up for the Ferris
-// wheel, carrying their things over their head. Kids stick close to their grown-up (even a possessed one).
-// Like the townsfolk in Untitled Goose Game they react to you: they stare at someone acting possessed, chase down
-// whoever swipes their things, and get angrier each time they're hit or shouted at. Once furious they charge at
-// whoever did it and start a brawl that one of them won't walk away from, while the grown-ups nearby gather round to
-// watch. When something terrible happens nearby they scream and run (ParkChaos). When the spirit leaves they stand
+// A park visitor going about their day: wandering, buying drinks at the stall, lining up for the Ferris wheel,
+// carrying their things over their head. They stop and stare at someone acting possessed, gather round to watch a
+// fight, and scream and run when something terrible happens nearby (ParkChaos). When the spirit leaves they stand
 // around confused for a few seconds.
+// While possessing someone else, E on a visitor picks a fight with them (a brawl one of them won't walk away from);
+// staff send them on their way instead.
 [RequireComponent(typeof(GroundWalker), typeof(CharacterSprite))]
-public class Visitor : MonoBehaviour
+public class Visitor : MonoBehaviour, IInteraction
 {
     // Every active visitor, so the spirit can find who it's touching without physics queries.
     public static readonly List<Visitor> All = new();
 
-    public enum State { Idle, Wander, Queueing, Riding, Possessed, Confused, Panic, Down, Follow, Stare, Angry, Retrieving, Fighting, Watching }
+    public enum State { Idle, Wander, Queueing, Riding, Possessed, Confused, Panic, Down, Stare, Fighting, Watching }
 
     public bool possessable = true;
-    public bool child;
-    // Staff (the ride operator) have their own AI. It's switched off while the spirit is inside, and the usual
-    // wandering, anger and panic below are skipped for them.
+    // Staff (the ride operator, the mechanic) have their own AI. It's switched off while the spirit is inside, and
+    // the usual wandering and panic below are skipped for them.
     public MonoBehaviour brain;
     public float wanderSpeed = 2f;
     public float possessedSpeed = 3.5f;
@@ -38,12 +37,10 @@ public class Visitor : MonoBehaviour
     public Transform[] pointsOfInterest = new Transform[0];
     [Range(0, 1)] public float pointOfInterestChance = 0.3f;
 
-    // Kids: the grown-up they came with. Null = a grown-up (or a kid who lost theirs).
-    public Visitor parent;
-    public float followDistance = 1.2f;
     public float stareRadius = 3f;
     public float stareTime = 1.5f;
-    public float crowdRadius = 10f; // how far away a brawl draws them over to watch
+    public float crowdRadius = 10f;  // how far away a brawl draws them over to watch
+    public float sendAwayDistance = 7f;
 
     public State Current { get; private set; }
     public bool CanBePossessed => possessable && Look.Visible && Current is not (State.Possessed or State.Riding or State.Down or State.Fighting);
@@ -51,8 +48,6 @@ public class Visitor : MonoBehaviour
     public CharacterSprite Look { get; private set; }
     public Item Held { get; private set; }
     public VisitorItem HeldKind => Held != null ? Held.kind : VisitorItem.None;
-    public float Anger { get; private set; }
-    public Visitor AngryAt { get; private set; }
     public Vector3 Facing { get; private set; } = Vector3.right;
     public float HeadHeight => Look.HeadHeight;
     public Vector3 HeadPoint => transform.position + Vector3.up * HeadHeight;
@@ -61,13 +56,9 @@ public class Visitor : MonoBehaviour
     GroundWalker walker;
     Rigidbody rb;
     RideQueue queue;
-    WorldBar angerBar;
-    Item wanted;          // our things someone took
-    Visitor thief;
     Vector3 target;
     Vector3 panicFrom;
     Vector3 spectacle;    // the brawl they're watching
-    Vector3 followOffset;
     Vector3 knock;
     float knockUntil;
     float stateEndsAt;
@@ -81,9 +72,16 @@ public class Visitor : MonoBehaviour
         Look = GetComponent<CharacterSprite>();
         Look.Load();
         walker.readKeyboard = false;
-        followOffset = new Vector3(Random.Range(0.5f, 0.9f) * (Random.value < 0.5f ? -1 : 1), 0f, Random.Range(-0.4f, 0.2f));
-        angerBar = WorldBar.Create(transform, new Vector3(0f, Look.idle.bounds.size.y + 0.2f, -0.02f), 0.7f);
         Idle();
+    }
+
+    // Staff set `brain` in their own Awake, so by now we know whether this is someone you can pick a fight with.
+    void Start()
+    {
+        if (brain != null) return;
+        var i = gameObject.AddComponent<Interactable>();
+        i.range = 1.3f;
+        i.prompt = name;
     }
 
     void OnEnable() => All.Add(this);
@@ -106,12 +104,9 @@ public class Visitor : MonoBehaviour
         if (new Vector2(v.x, v.z).sqrMagnitude > 0.04f) Facing = new Vector3(v.x, 0f, v.z).normalized;
         if (brain != null && Current != State.Possessed) return;
 
-        if (Current is not State.Angry) Anger = Mathf.Max(0f, Anger - 7f * Time.deltaTime);
-        angerBar.Set(Anger / 100f, WorldBar.Heat(Anger / 100f), Anger > 1f && Look.Visible && Current is not (State.Possessed or State.Down or State.Fighting));
-
-        if (Current is State.Idle or State.Wander or State.Follow or State.Stare or State.Confused or State.Watching)
+        if (Current is State.Idle or State.Wander or State.Stare or State.Confused or State.Watching)
         {
-            if (ParkChaos.Threat(transform.position, child, out Vector3 horror))
+            if (ParkChaos.Threat(transform.position, false, out Vector3 horror))
             {
                 Panic(horror, Random.Range(3f, 5f));
                 return;
@@ -139,10 +134,6 @@ public class Visitor : MonoBehaviour
                 WalkTo(queue.SlotPosition(this));
                 break;
 
-            case State.Follow:
-                FollowParent();
-                break;
-
             case State.Stare:
             case State.Confused:
                 if (Time.time >= stateEndsAt) Idle();
@@ -151,14 +142,6 @@ public class Visitor : MonoBehaviour
             case State.Panic:
                 if (Time.time >= stateEndsAt) Idle();
                 else if (Time.time >= nextTurn) RunAway();
-                break;
-
-            case State.Angry:
-                ChargeAtCulprit();
-                break;
-
-            case State.Retrieving:
-                Retrieve();
                 break;
 
             case State.Watching:
@@ -193,11 +176,6 @@ public class Visitor : MonoBehaviour
 
     void Decide()
     {
-        if (parent != null)
-        {
-            SetState(State.Follow);
-            return;
-        }
         var q = RideQueue.All.Count > 0 ? RideQueue.All[Random.Range(0, RideQueue.All.Count)] : null;
         if (q != null && Random.value < queueChance && q.Join(this))
         {
@@ -236,7 +214,7 @@ public class Visitor : MonoBehaviour
     // Set off for a spot, if it's somewhere you can walk and nothing terrible is happening there.
     bool Head(Vector3 spot)
     {
-        if (!walker.IsWalkable(spot) || ParkChaos.Threat(spot, child, out _)) return false;
+        if (!walker.IsWalkable(spot) || ParkChaos.Threat(spot, false, out _)) return false;
         target = spot;
         SetState(State.Wander);
         // Generous time budget; if they still aren't there they're probably stuck.
@@ -288,23 +266,6 @@ public class Visitor : MonoBehaviour
         Idle();
     }
 
-    // Keep close to the grown-up, hurrying to catch up when they get ahead.
-    void FollowParent()
-    {
-        if (parent == null || !parent.isActiveAndEnabled || parent.Current == State.Down)
-        {
-            parent = null; // on their own now
-            Idle();
-            return;
-        }
-        float d = Distance(parent);
-        bool far = d > followDistance * 2.5f;
-        walker.speed = far ? parent.possessedSpeed : wanderSpeed;
-        Look.running = far;
-        if (d > followDistance) WalkTo(parent.transform.position + followOffset);
-        else walker.move = Vector2.zero;
-    }
-
     // Someone nearby is acting strange (possessed): stop and stare for a moment.
     bool LookForPossessed()
     {
@@ -312,7 +273,7 @@ public class Visitor : MonoBehaviour
         nextStare = Time.time + Random.Range(0.4f, 0.8f);
 
         var host = Possession.Instance != null ? Possession.Instance.Host : null;
-        if (host == null || host == this || host == parent || Distance(host) > stareRadius) return false;
+        if (host == null || host == this || Distance(host) > stareRadius) return false;
 
         SetState(State.Stare);
         walker.move = Vector2.zero;
@@ -323,10 +284,10 @@ public class Visitor : MonoBehaviour
         return true;
     }
 
-    // A brawl nearby: grown-ups going about their day wander over and stand round it until it's over.
+    // A brawl nearby: people going about their day wander over and stand round it until it's over.
     public void Watch(Vector3 brawl, float until)
     {
-        if (brain != null || child || Current is not (State.Idle or State.Wander or State.Stare or State.Confused)) return;
+        if (brain != null || Current is not (State.Idle or State.Wander or State.Stare or State.Confused)) return;
         Vector3 away = transform.position - brawl;
         away.y = 0;
         if (away.magnitude > crowdRadius) return;
@@ -338,17 +299,56 @@ public class Visitor : MonoBehaviour
         Look.Show("exclaim", 1.2f);
     }
 
+    // Told to move along by staff: walk off away from them.
+    void SendAway(Visitor by)
+    {
+        LeaveQueue();
+        Vector3 away = transform.position - by.transform.position;
+        away.y = 0;
+        if (away.sqrMagnitude < 0.01f) away = Vector3.back;
+        Look.Show("question", 1.5f);
+        GameHud.Say($"{by.name}: Staff only around here. Move along, please.");
+        Mischief.Complete(Mischief.Task.SendAway);
+        for (int i = 0; i < 12; i++)
+        {
+            Vector3 spot = transform.position + Quaternion.Euler(0f, Random.Range(-50f, 50f), 0f) * away.normalized * sendAwayDistance;
+            if (Head(spot)) return;
+        }
+        Idle();
+    }
+
+    // ---------------------------------------------------------------- E on this person (while possessing someone else)
+
+    public string Prompt(Visitor host) =>
+        host != null && host.brain != null ? $"Tell {name} to move along" : $"Pick a fight with {name}";
+
+    public string Blocked(Visitor host)
+    {
+        if (!CanBeHit || Current == State.Possessed) return $"{name} is busy";
+        if (host.brain == null && !host.CanBeHit) return "You're in no state to fight";
+        return null;
+    }
+
+    public void Interact(Visitor host)
+    {
+        if (host.brain != null)
+        {
+            SendAway(host);
+            return;
+        }
+        Look.Face(host.transform.position);
+        GameHud.Say($"{host.name}: Hey! What are YOU looking at?!");
+        Brawl.Begin(host, this);
+    }
+
     // ---------------------------------------------------------------- things they carry
 
-    // Take hold of an item (lifting it out of someone else's hands if need be).
     public bool GrabItem(Item it, bool silent = false)
     {
         if (Held != null || it == null) return false;
         if (it.Holder != null) it.Holder.LoseHeld();
         Held = it;
         it.PickedUp(this, silent);
-        if (it.Owner != null && it.Owner != this) it.Owner.NoticeTheft(it, this);
-        if (it.Owner == this && wanted == it) wanted = null;
         return true;
     }
 
@@ -371,7 +371,7 @@ public class Visitor : MonoBehaviour
         it.Thrown(this, CarryPoint, velocity);
     }
 
-    // Handed over and used up (eaten, poured out, left in a lock).
+    // Used up (poured out, jammed in the gears).
     public void TakeItem()
     {
         if (Held == null) return;
@@ -380,68 +380,8 @@ public class Visitor : MonoBehaviour
         it.Consume();
     }
 
-    // Someone took our things: go and get them back.
-    void NoticeTheft(Item it, Visitor by)
-    {
-        if (brain != null || Current is State.Possessed or State.Down or State.Fighting or State.Riding or State.Panic or State.Angry) return;
-        if (Distance(by) > 10f) return;
-        LeaveQueue();
-        wanted = it;
-        thief = by;
-        SetState(State.Retrieving);
-        stateEndsAt = Time.time + 12f;
-        Look.Show("snack", 2.5f);
-        Look.Cheer(0.5f);
-        GameHud.Say($"{name}: Hey! That's my {it.DisplayName}!", "Bubbles/snack");
-    }
-
-    void Retrieve()
-    {
-        if (wanted == null)
-        {
-            // Used up by someone else. Unforgivable.
-            Idle();
-            if (thief != null) AddAnger(70f, thief);
-            return;
-        }
-        if (Time.time > stateEndsAt)
-        {
-            // Gave up the chase, fuming.
-            wanted = null;
-            Idle();
-            if (thief != null) AddAnger(40f, thief);
-            return;
-        }
-
-        var holder = wanted.Holder;
-        if (holder == this)
-        {
-            wanted = null;
-            Idle();
-            return;
-        }
-        walker.speed = panicSpeed * 0.85f;
-        Look.running = true;
-        if (holder == null)
-        {
-            // Lying around (or still in the air): go pick it up.
-            if (!wanted.InFlight && !WalkTo(wanted.transform.position)) GrabItem(wanted);
-            return;
-        }
-        if (Distance(holder) < 0.9f)
-        {
-            GrabItem(wanted);
-            Idle();
-            GameHud.Say($"{name} snatches back their {Held.DisplayName}!");
-            AddAnger(35f, holder);
-            return;
-        }
-        WalkTo(holder.transform.position);
-    }
-
-    // ---------------------------------------------------------------- anger and brawls
-
-    public void GetHit(Visitor attacker, float power, Vector3 direction)
+    // Hit by something thrown: knocked back a little.
+    public void GetHit(float power, Vector3 direction)
     {
         if (!CanBeHit) return;
         direction.y = 0;
@@ -451,66 +391,15 @@ public class Visitor : MonoBehaviour
         Sfx.Punch();
         Fx.Burst("Fx/sparkle", HeadPoint, 10, new Color(1f, 0.9f, 0.4f), 3f, 0.3f, 0.4f);
         Fx.Shake(0.12f);
-        if (Current == State.Possessed) return;
-        AddAnger(100f * power, attacker);
+        if (Current != State.Possessed && brain == null) Look.Show("exclaim", 1.5f);
     }
 
-    public void AddAnger(float amount, Visitor culprit)
-    {
-        if (brain != null || Current is State.Possessed or State.Down or State.Fighting or State.Riding or State.Angry) return;
-        if (culprit != null && culprit != this) Look.Face(culprit.transform.position);
-        if (child)
-        {
-            // Kids don't fight back: they cry and run.
-            if (amount >= 20f && culprit != null) Panic(culprit.transform.position, 3f);
-            return;
-        }
-        Anger = Mathf.Clamp(Anger + amount, 0f, 100f);
-        if (Anger >= 100f && culprit != null && culprit != this && culprit.CanBeHit) BecomeAngry(culprit);
-        else Look.Show(amount >= 20f ? "exclaim" : "question", 1.5f);
-    }
-
-    void BecomeAngry(Visitor culprit)
-    {
-        LeaveQueue();
-        AngryAt = culprit;
-        Anger = 100f;
-        SetState(State.Angry);
-        stateEndsAt = Time.time + 15f;
-        Look.Show("anger", 999f, true);
-        Look.Cheer(0.6f);
-        Sfx.Play(Sfx.Thud, 0.6f, 0.8f);
-        GameHud.Say($"{name} is furious at {culprit.name}!", "Bubbles/anger");
-    }
-
-    void ChargeAtCulprit()
-    {
-        if (AngryAt == null || !AngryAt.CanBeHit || Time.time > stateEndsAt)
-        {
-            CalmDown();
-            return;
-        }
-        walker.speed = panicSpeed;
-        Look.running = true;
-        if (Distance(AngryAt) < 0.9f) Brawl.Begin(this, AngryAt);
-        else WalkTo(AngryAt.transform.position);
-    }
-
-    public void CalmDown()
-    {
-        AngryAt = null;
-        Anger = 0f;
-        Look.HideBubble();
-        Idle();
-    }
+    // ---------------------------------------------------------------- brawls
 
     public void EnterFight()
     {
         LeaveQueue();
         DropHeld();
-        wanted = null;
-        AngryAt = null;
-        Anger = 0f;
         SetState(State.Fighting);
         walker.move = Vector2.zero;
         Look.HideBubble();
@@ -530,7 +419,7 @@ public class Visitor : MonoBehaviour
         stateEndsAt = Time.time + 2f;
     }
 
-    // Gone for good: a by-product of the chaos, never the spirit's own doing. The soul drifts to the spirit.
+    // Gone for good: a by-product of the chaos (a brawl, the wheel), never the spirit's own doing.
     public void Die()
     {
         if (Current == State.Down) return;
@@ -543,9 +432,7 @@ public class Visitor : MonoBehaviour
         Look.SetTint(new Color(0.6f, 0.6f, 0.65f));
         SetState(State.Down);
         Look.Show("skull", 3f);
-        GameHud.Casualties++;
         ParkChaos.Add(transform.position, 9f, 30f, ParkChaos.Terrifying);
-        SoulWisp.Spawn(HeadPoint);
     }
 
     // Flattened by something big.
@@ -559,7 +446,6 @@ public class Visitor : MonoBehaviour
         if (Current == State.Riding) Look.SetVisible(true);
         LeaveQueue();
         DropHeld();
-        AngryAt = null;
         panicFrom = from;
         SetState(State.Panic);
         stateEndsAt = Time.time + duration;
@@ -584,9 +470,6 @@ public class Visitor : MonoBehaviour
     public void BeginPossession()
     {
         LeaveQueue();
-        AngryAt = null;
-        Anger = 0f;
-        wanted = null;
         SetState(State.Possessed);
         if (brain != null) brain.enabled = false;
         walker.readKeyboard = true;
@@ -631,6 +514,6 @@ public class Visitor : MonoBehaviour
             _ => null,
         };
         if (s == State.Panic) Look.Show("Scream", 999f, true);
-        else if (s is State.Idle or State.Wander or State.Queueing or State.Follow) Look.HideBubble();
+        else if (s is State.Idle or State.Wander or State.Queueing) Look.HideBubble();
     }
 }

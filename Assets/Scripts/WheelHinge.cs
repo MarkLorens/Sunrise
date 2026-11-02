@@ -1,11 +1,13 @@
 using UnityEngine;
 
-// Where the Ferris wheel's support bolts to the frame. With a screwdriver (the mechanic's) the screws can be backed
-// out: the wheel keeps turning for now, but run it at full speed and the support gives way.
+// Where the Ferris wheel's support bolts to the frame, inside the ride's closed area. With a screwdriver (the
+// mechanic's) the screws can be backed out: the wheel keeps turning for now, but run it at full speed and the support
+// gives way. Not with a visitor standing there watching, though: send them away first.
 [RequireComponent(typeof(Interactable))]
 public class WheelHinge : MonoBehaviour, IInteraction
 {
     public FerrisWheel wheel;
+    public float witnessRadius = 2.5f; // covers the electrical box, not the ride exit
 
     SpriteRenderer sprite;
     Color tight;
@@ -26,6 +28,21 @@ public class WheelHinge : MonoBehaviour, IInteraction
         if (wheel.IsBroken) return "Nothing left to loosen";
         if (wheel.Loosened) return "The screws are already loose";
         if (host.HeldKind != VisitorItem.Screwdriver) return "Bolted tight. You'd need a screwdriver";
+        var witness = Witness(host);
+        if (witness != null) return $"{witness.name} is watching. Send them away first";
+        return null;
+    }
+
+    // A visitor standing about close enough to see what you're doing.
+    Visitor Witness(Visitor host)
+    {
+        foreach (var v in Visitor.All)
+        {
+            if (v == host || v.brain != null || !v.Look.Visible || v.Current is Visitor.State.Down or Visitor.State.Panic) continue;
+            Vector3 d = v.transform.position - transform.position;
+            d.y = 0;
+            if (d.magnitude < witnessRadius) return v;
+        }
         return null;
     }
 

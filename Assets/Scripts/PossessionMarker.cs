@@ -3,10 +3,10 @@ using UnityEngine;
 // Football-game style indicators for whoever you control:
 //   1. a triangle bobbing over their head (with the grip bar: time left in this body),
 //   2. a power bar while you charge a throw,
-//   3. a target ring where the throw will land (red when it will connect),
+//   3. a target ring where the throw will land (red when it's locked onto the gear box),
 //   4. a ring under their feet and a direction arrow on the ground.
-// Plus a ring under whoever you could possess (grey if they resist), a small ring under what you'd grab,
-// a pulse when you shout, and a ring showing how far the weak spirit can drift. GameHud adds this to the spirit.
+// Plus a ring under whoever you could possess (grey if they resist), a small ring under what you'd pick up,
+// and a ring showing how far the weak spirit can drift. GameHud adds this to the spirit.
 [RequireComponent(typeof(Possession))]
 public class PossessionMarker : MonoBehaviour
 {
@@ -16,7 +16,7 @@ public class PossessionMarker : MonoBehaviour
 
     Possession spirit;
     Transform triangleHolder;
-    SpriteRenderer triangle, feetRing, arrow, targetRing, candidateRing, grabRing, pulseRing, leashRing;
+    SpriteRenderer triangle, feetRing, arrow, targetRing, candidateRing, grabRing, leashRing;
     WorldBar powerBar, gripBar;
 
     void Start()
@@ -35,7 +35,6 @@ public class PossessionMarker : MonoBehaviour
         targetRing = Flat("Target Ring", root, "Markers/ring", Color.white);
         candidateRing = Flat("Candidate Ring", root, "Markers/ring", Purple);
         grabRing = Flat("Grab Ring", root, "Markers/ring", Color.white);
-        pulseRing = Flat("Shout Pulse", root, "Markers/ring", Color.white);
         leashRing = Flat("Leash Ring", root, "Markers/ring", Purple);
     }
 
@@ -107,16 +106,7 @@ public class PossessionMarker : MonoBehaviour
         // small ring under the thing you'd grab
         var grab = possessing ? spirit.GrabCandidate : null;
         grabRing.enabled = grab != null;
-        if (grab != null) Place(grabRing, grab.Holder != null ? grab.Holder.transform.position : grab.transform.position, t * 80f, 0.8f);
-
-        // expanding pulse when shouting
-        float k = (t - spirit.ShoutedAt) / 0.45f;
-        pulseRing.enabled = possessing && k < 1f;
-        if (pulseRing.enabled)
-        {
-            Place(pulseRing, host.transform.position, 0f, Mathf.Lerp(0.5f, spirit.shoutRadius * 2f, k));
-            pulseRing.color = new Color(1f, 1f, 1f, 1f - k);
-        }
+        if (grab != null) Place(grabRing, grab.transform.position, t * 80f, 0.8f);
     }
 
     static Vector3 Flat(Vector3 v) => new(v.x, 0f, v.z);

@@ -1519,11 +1519,8 @@ MonoBehaviour:
   leashRadius: 9
   duration: 20
   sameTargetCooldown: 10
-  abilityCooldown: 2
-  ejectCooldown: 10
-  maxEjections: 3
+  abilityCooldown: 0
   grabRange: 1.6
-  shoutRadius: 5
 --- !u!1 &554712938
 GameObject:
   m_ObjectHideFlags: 0
@@ -1725,6 +1722,15 @@ MonoBehaviour:
   panicTime: 8
   gearRadius: 1.6
   riderDeathChance: 0.6
+  loadTime: 6
+  policeDelay: 10
+  policeLineRadius: 5
+  rebuildTime: 600
+  electricalBoxOffset: {x: -3.3, y: 0, z: -0.6}
+  hingeOffset: {x: -1.4, y: 0, z: -1}
+  gearBoxOffset: {x: 0.5, y: 0, z: -0.8}
+  closedAreaOffset: {x: 0, y: 0, z: 0.3}
+  closedAreaSize: {x: 5.4, y: 3.4}
   queue: {fileID: 700000134}
 --- !u!1 &700000103
 GameObject:
@@ -2174,7 +2180,6 @@ GameObject:
   - component: {fileID: 700000122}
   - component: {fileID: 700000123}
   - component: {fileID: 700000124}
-  - component: {fileID: 700000125}
   - component: {fileID: 700000126}
   m_Layer: 0
   m_Name: Ride Operator
@@ -2324,24 +2329,6 @@ MonoBehaviour:
   cheer: []
   pose: {fileID: 0}
   running: 0
---- !u!114 &700000125
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 700000119}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f5ff4daa78d69425e8fdd1d8f034d8e8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Interactable
-  range: 1.5
-  prompt: Ride operator
-  needsBody: 1
-  onInteract:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!114 &700000126
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2355,13 +2342,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RideOperator
   post: {fileID: 700000118}
-  toilet: {fileID: 700000131}
   wheel: {fileID: 700000102}
-  eatTime: 3
-  toiletTime: 15
   walkSpeed: 2
   runSpeed: 4
   watchRadius: 3
+  attendRadius: 15
+  attendTime: 15
 --- !u!1 &700000127
 GameObject:
   m_ObjectHideFlags: 0
@@ -2372,8 +2358,6 @@ GameObject:
   m_Component:
   - component: {fileID: 700000128}
   - component: {fileID: 700000129}
-  - component: {fileID: 700000130}
-  - component: {fileID: 700000131}
   m_Layer: 0
   m_Name: Toilet
   m_TagString: Untagged
@@ -2456,39 +2440,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
   m_BlendShapeWeights: []
---- !u!114 &700000130
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 700000127}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f5ff4daa78d69425e8fdd1d8f034d8e8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Interactable
-  range: 1.8
-  prompt: Toilet
-  needsBody: 1
-  onInteract:
-    m_PersistentCalls:
-      m_Calls: []
---- !u!114 &700000131
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 700000127}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 041f9036f6d14f28ae400fe03dbe66a7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Toilet
-  lockTime: 30
-  doorOffset: {x: 0, y: 0, z: -0.6}
-  lockedIcon: {fileID: 21300000, guid: 42079106e60a4f34913f4f9d473e5572, type: 3}
 --- !u!1 &700000132
 GameObject:
   m_ObjectHideFlags: 0
@@ -2585,7 +2536,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameHud
   objective: Break the Ferris wheel
-  panicCrowdSize: 3
 --- !u!1 &766923864
 GameObject:
   m_ObjectHideFlags: 0
@@ -3574,6 +3524,37 @@ MonoBehaviour:
   onInteract:
     m_PersistentCalls:
       m_Calls: []
+--- !u!1 &1625246198
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1625246199}
+  m_Layer: 0
+  m_Name: Mechanic Post
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1625246199
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1625246198}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -11, y: 0, z: 20}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1691354355
 GameObject:
   m_ObjectHideFlags: 0
@@ -5484,10 +5465,9 @@ MonoBehaviour:
   count: 16
   spawnRadius: 12
   personScale: 1.35
-  childChance: 0.3
-  childScale: 0.7
-  guaranteedItems: 010000000200000003000000030000000500000005000000
+  guaranteedItems: 03000000030000000500000005000000i
   carryChance: 0.4
+  carryItems: 0300000005000000i
   queue: {fileID: 700000134}
   startInQueue: 5
   characters:
@@ -5499,11 +5479,6 @@ MonoBehaviour:
   - malePersonRed
   - femalePersonPink
   - femalePersonYellow
-  childCharacters:
-  - maleAdventurer
-  - maleAdventurerRed
-  - femaleAdventurer
-  - femaleAdventurerPurple
   names:
   - Budi
   - Sari
@@ -5525,22 +5500,10 @@ MonoBehaviour:
   - Hendra
   - Intan
   - Yusuf
-  childNames:
-  - Kiki
-  - Bobi
-  - Lala
-  - Dika
-  - Nana
-  - Tono
   pointsOfInterest: []
-  guardCount: 2
-  guardCharacter: guard
-  guardNames:
-  - Guard Joko
-  - Guard Slamet
-  - Guard Bambang
-  guardPatrol: []
-  randomPatrolPoints: 4
+  mechanicCharacter: mechanic
+  mechanicName: Mechanic Joko
+  mechanicPost: {fileID: 1625246199}
 --- !u!1 &1948910322
 GameObject:
   m_ObjectHideFlags: 0
@@ -5643,8 +5606,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1978601339}
   - component: {fileID: 1978601338}
-  - component: {fileID: 1978601337}
-  - component: {fileID: 1978601336}
   m_Layer: 0
   m_Name: Hotdog Stall
   m_TagString: Untagged
@@ -5652,38 +5613,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1978601336
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1978601335}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1a5d0efd5b7e14b85b275bfe9c5cffa3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Stall
-  sells: 1
-  servePoint: {x: 0, y: 0, z: -0.9}
---- !u!114 &1978601337
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1978601335}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f5ff4daa78d69425e8fdd1d8f034d8e8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Interactable
-  range: 2.4
-  prompt: Interact
-  needsBody: 1
-  onInteract:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!212 &1978601338
 SpriteRenderer:
   serializedVersion: 3
@@ -19244,3 +19173,4 @@ SceneRoots:
   - {fileID: 373889736}
   - {fileID: 62869171}
   - {fileID: 554712940}
+  - {fileID: 1625246199}

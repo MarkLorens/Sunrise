@@ -3,15 +3,15 @@ using UnityEngine;
 
 // The cover over the Ferris wheel's drive gears, at the foot of the wheel. On its own it just keeps the wheel turning.
 // Get something long and sturdy (a water bottle) into it while the wheel is at full speed and the gears jam: the
-// wheel stops dead and the cabins fly off. Throw it in (hold J) or shove it in up close (E). Ride staff keep visitors
-// away from it, so they have to be busy elsewhere first (a brawl draws them off).
+// wheel stops dead and the cabins fly off. Throw it in (hold J) or shove it in up close (E). It sits in the ride's
+// closed area, so with staff watching nobody gets close enough: they have to be busy elsewhere first (a fight draws
+// them off).
 [RequireComponent(typeof(Interactable))]
 public class GearBox : MonoBehaviour, IInteraction
 {
     public static readonly List<GearBox> All = new();
 
     public FerrisWheel wheel;
-    public float watchRadius = 5f; // staff on duty this close keep visitors off it
 
     void OnEnable() => All.Add(this);
     void OnDisable() => All.Remove(this);
@@ -27,30 +27,12 @@ public class GearBox : MonoBehaviour, IInteraction
     public string Refusal(Item item, Visitor by)
     {
         if (wheel.IsBroken) return "The gears have already stopped for good";
-        string watcher = Watcher(by);
-        if (watcher != null) return $"{watcher} is keeping an eye on the gears";
+        var watcher = by != null && by.brain != null ? null : wheel.Area.Watcher(); // staff don't stop other staff
+        if (watcher != null) return $"{watcher.name} is keeping an eye on the gears";
         if (item == null) return "The gears grind away under the cover. Something long and sturdy could jam them";
         if (!item.Sturdy) return $"The {item.DisplayName} would just get chewed up. It needs something long and sturdy";
         if (!wheel.IsOverdrive) return "At this speed it'd just get spat back out. The wheel needs to be spinning much faster";
         return null;
-    }
-
-    // Staff on duty nearby (not possessed, not off somewhere else). They don't stop other staff.
-    string Watcher(Visitor by)
-    {
-        if (by != null && by.brain != null) return null;
-        foreach (var o in RideOperator.All)
-            if (Near(o)) return o.name;
-        foreach (var m in Mechanic.All)
-            if (Near(m)) return m.name;
-        return null;
-    }
-
-    bool Near(Component c)
-    {
-        Vector3 d = c.transform.position - transform.position;
-        d.y = 0;
-        return d.magnitude < watchRadius;
     }
 
     public void Jam(Item item)

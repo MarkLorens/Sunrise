@@ -2,8 +2,9 @@ using UnityEngine;
 
 // A cartoon brawl: both visitors vanish into a tumbling dust cloud with POW! bursts and flailing figures popping
 // out of it. When it settles one of them doesn't get up again, and their soul floats to the spirit.
-// Stronger visitors are more likely to win. It draws a crowd: grown-ups nearby gather round to watch (kids run off)
-// and the staff leave their posts to break it up, which leaves the Ferris wheel's gears unwatched for a while.
+// Stronger visitors are more likely to win. It draws a crowd: people nearby gather round to watch and the staff
+// leave their posts to break it up, which leaves the Ferris wheel's closed area unwatched for a while.
+// A possessed visitor starts one by picking a fight with someone (E on them).
 public class Brawl : MonoBehaviour
 {
     const float Duration = 3.6f;
@@ -48,9 +49,8 @@ public class Brawl : MonoBehaviour
 
         Sfx.Punch(1f);
         Fx.Shake(0.3f);
-        ParkChaos.Add(transform.position, 7f, Duration + 1f, ParkChaos.Scary);
         GameHud.Say($"BRAWL! {a.name} vs {b.name}", "Bubbles/swords");
-        Mischief.Complete(Mischief.Task.Brawl);
+        Mischief.Complete(Mischief.Task.PickFight);
 
         float over = Time.time + Duration;
         foreach (var v in Visitor.All) v.Watch(transform.position, over);

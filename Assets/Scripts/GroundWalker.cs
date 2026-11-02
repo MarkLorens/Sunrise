@@ -2,7 +2,8 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Tilemaps;
 
-// Walks on the X/Z floor, but only onto cells that have a tile on the ground tilemap.
+// Walks on the X/Z floor, but only onto cells that have a tile on the ground tilemap (and, for visitors, not into a
+// staff-only area: StaffArea).
 // Driven by WASD/arrows when readKeyboard is on, otherwise by whatever sets `move` (e.g. visitor AI).
 // Gravity + the ground's collider keep it standing on the floor.
 [RequireComponent(typeof(Rigidbody))]
@@ -14,10 +15,12 @@ public class GroundWalker : MonoBehaviour
     [HideInInspector] public Vector2 move; // x = world X, y = world Z; used when readKeyboard is off
 
     Rigidbody rb;
+    Visitor visitor; // people are kept out of staff-only areas (StaffArea); the spirit isn't
 
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
+        TryGetComponent(out visitor);
 
         ground.CompressBounds();
         var b = ground.localBounds;
@@ -51,7 +54,7 @@ public class GroundWalker : MonoBehaviour
     {
         Vector3Int cell = ground.WorldToCell(worldPos);
         cell.z = 0; // height above the floor doesn't matter
-        return ground.HasTile(cell);
+        return ground.HasTile(cell) && StaffArea.Allows(visitor, transform.position, worldPos);
     }
 
     bool OnTile(Vector3 velocity) => IsWalkable(rb.position + velocity * Time.fixedDeltaTime);

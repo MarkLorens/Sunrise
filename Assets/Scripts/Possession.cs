@@ -4,9 +4,10 @@ using UnityEngine.InputSystem;
 
 // The player: an evil spirit floating around the park, possessing visitors.
 //   Spirit:     WASD float - a weak spirit can't drift far from where it last left a body - E possess whoever you touch.
-//   Possessed:  WASD walk, J grab (even out of someone's hands) - tap to whack, hold to charge a throw - K drop,
-//               Space shout, E use things, Q leave the body.
-// You get 20 s in a body and can't jump straight back into the same person. Anyone in range can be possessed.
+//   Possessed:  WASD walk, E use things (or pick a fight with someone), J pick up your own things - hold J to charge
+//               a throw, release to throw - K drop, Q leave the body.
+// Anyone can be possessed, by touching them. You get 20 s in a body and have to wait 10 s before possessing the same
+// person again; anyone else straight away. Whatever they hold or own is yours to use.
 [RequireComponent(typeof(GroundWalker))]
 public class Possession : MonoBehaviour
 {
@@ -21,9 +22,8 @@ public class Possession : MonoBehaviour
     public float leashRadius = 9f;         // and can't drift far from the body it last left
     public float duration = 20f;           // max seconds inside one person
     public float sameTargetCooldown = 10f; // before the same person can be possessed again
-    public float abilityCooldown = 2f;     // after leaving anyone
+    public float abilityCooldown = 0f;     // after leaving anyone (none: you can jump straight into someone else)
     public float grabRange = 1.8f;
-    public float shoutRadius = 5f;
 
     public Mode State { get; private set; }
     public Visitor Host { get; private set; }
@@ -39,15 +39,12 @@ public class Possession : MonoBehaviour
     public bool Charging { get; private set; }
     public float Charge { get; private set; }
     public Vector3 AimDirection { get; private set; } = Vector3.right;
-    public Visitor AimTarget { get; private set; }
-    public float ShoutedAt { get; private set; } = float.NegativeInfinity;
+    public GearBox AimTarget { get; private set; }
 
     // What the camera follows.
     public Transform Focus => Host != null ? Host.transform : transform;
     // Where souls fly to.
     public Vector3 SpiritPoint => Host != null ? Host.HeadPoint : transform.position + Vector3.up * 0.5f;
-
-    const float TapTime = 0.18f;
 
     readonly Dictionary<Visitor, float> lockedUntil = new();
     float readyAt;
@@ -83,7 +80,6 @@ public class Possession : MonoBehaviour
         bool j = live && (kb.jKey.isPressed || (Mouse.current != null && Mouse.current.leftButton.isPressed));
         bool jDown = live && (kb.jKey.wasPressedThisFrame || (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame));
         bool k = live && (kb.kKey.wasPressedThisFrame || (Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame));
-        bool space = live && kb.spaceKey.wasPressedThisFrame;
 
         switch (State)
         {
@@ -95,7 +91,7 @@ public class Possession : MonoBehaviour
                 Dive();
                 break;
             case Mode.Possessing:
-                Possessing(q, j, jDown, k, space);
+                Possessing(q, j, jDown, k);
                 break;
         }
     }
@@ -201,12 +197,17 @@ public class Possession : MonoBehaviour
         Fx.Burst("Fx/sparkle", Host.HeadPoint, 18, Fx.Spirit, 3.5f, 0.45f, 0.6f);
         Fx.Shake(0.15f);
         GameHud.Say($"You possessed {Host.name}.", "UI/spirit");
-        Mischief.Complete(Mischief.Task.Possess);
+        Mischief.Complete(Host.brain switch
+        {
+            Mechanic => Mischief.Task.PossessMechanic,
+            RideOperator => Mischief.Task.PossessOperator,
+            _ => Mischief.Task.Possess,
+        });
     }
 
     // ---------------------------------------------------------------- possessed
 
-    void Possessing(bool q, bool j, bool jDown, bool k, bool space)
+    void Possessing(bool q, bool j, bool jDown, bool k)
     {
         if (Host == null || Host.Current != Visitor.State.Possessed)
         {
@@ -225,8 +226,6 @@ public class Possession : MonoBehaviour
             Release();
             return;
         }
-        if (space) Shout();
-
         if (Host.Held == null)
         {
             Charging = false;
@@ -249,12 +248,11 @@ public class Possession : MonoBehaviour
         }
         if (!Charging) return;
         chargeTime += Time.deltaTime;
-        Charge = Mathf.Clamp01((chargeTime - TapTime) / 0.9f);
+        Charge = Mathf.Clamp01(chargeTime / 0.9f);
         Aim();
         if (j) return;
         Charging = false;
-        if (chargeTime < TapTime) Whack();
-        else Throw();
+        Throw();
         Charge = 0f;
     }
 
@@ -264,7 +262,8 @@ public class Possession : MonoBehaviour
         float bestScore = float.MaxValue;
         foreach (var it in Item.All)
         {
-            if (it.InFlight || it.Holder == Host || (it.Holder != null && !it.Holder.CanBeHit)) continue;
+            // Only your own things, lying around: whatever someone else holds or owns isn't yours to use.
+            if (it.InFlight || it.Holder != null || (it.Owner != null && it.Owner != Host)) continue;
             Vector3 to = Flat(it.transform.position - Host.transform.position);
             float dist = to.magnitude;
             if (dist > grabRange) continue;
@@ -278,34 +277,23 @@ public class Possession : MonoBehaviour
         return best;
     }
 
-    void Grab(Item it)
-    {
-        var from = it.Holder;
-        Host.GrabItem(it);
-        if (from != null)
-        {
-            GameHud.Say($"You swiped {from.name}'s {it.DisplayName}!", "Bubbles/snack");
-            Mischief.Complete(Mischief.Task.Swipe);
-        }
-        else if (it.Owner != null && it.Owner != Host) Mischief.Complete(Mischief.Task.Swipe);
-    }
+    void Grab(Item it) => Host.GrabItem(it);
 
     void Aim()
     {
         AimDirection = Host.Facing;
         AimTarget = null;
-        float best = 30f; // gentle aim assist toward someone roughly in front
-        foreach (var v in Visitor.All)
+        float best = 40f; // gentle aim assist toward the gear box when it's roughly in front
+        foreach (var g in GearBox.All)
         {
-            if (v == Host || !v.CanBeHit) continue;
-            Vector3 to = Flat(v.transform.position - Host.transform.position);
+            Vector3 to = Flat(g.transform.position - Host.transform.position);
             float dist = to.magnitude;
             if (dist > 12f || dist < 0.5f) continue;
             float angle = Vector3.Angle(Host.Facing, to);
             if (angle < best)
             {
                 best = angle;
-                AimTarget = v;
+                AimTarget = g;
                 AimDirection = to / dist;
             }
         }
@@ -322,9 +310,9 @@ public class Possession : MonoBehaviour
         float g = Item.Gravity;
         if (AimLocked)
         {
-            // A lob that arrives at the target's chest: faster throws with more charge.
+            // A lob that drops into the target: faster throws with more charge.
             Vector3 start = Host.CarryPoint;
-            Vector3 goal = AimTarget.transform.position + Vector3.up * AimTarget.HeadHeight * 0.5f;
+            Vector3 goal = AimTarget.transform.position + Vector3.up * 0.5f;
             Vector3 flat = Flat(goal - start);
             float dist = Mathf.Max(0.1f, flat.magnitude);
             float speed = 6f + 8f * power;
@@ -352,38 +340,6 @@ public class Possession : MonoBehaviour
     {
         Host.ThrowHeld(ThrowVelocity(Charge));
         AimTarget = null;
-    }
-
-    void Whack()
-    {
-        Host.Look.Gesture(Host.Look.interact, 0.25f);
-        Sfx.Play(Sfx.HitSoft, 0.5f, 1.4f);
-        foreach (var v in Visitor.All.ToArray())
-        {
-            if (v == Host || !v.CanBeHit) continue;
-            Vector3 to = Flat(v.transform.position - Host.transform.position);
-            if (to.magnitude < 1.6f && Vector3.Angle(Host.Facing, to) < 70f)
-            {
-                v.GetHit(Host, Host.Held.HitPower * 0.45f, to);
-                Sfx.Play(Sfx.HitWood, 0.8f, 1.1f);
-            }
-        }
-    }
-
-    // Everyone nearby is startled: grown-ups get annoyed, kids get scared.
-    void Shout()
-    {
-        ShoutedAt = Time.time;
-        Host.Look.Cheer(0.7f);
-        Host.Look.Show("Scream", 0.8f);
-        Sfx.Play(Sfx.Huh, 0.9f, 0.6f);
-        Fx.Burst("Fx/sparkle", Host.HeadPoint, 8, new Color(1f, 1f, 1f, 0.8f), 2.5f, 0.3f, 0.4f);
-        ParkChaos.Add(Host.transform.position, shoutRadius, 0.5f, ParkChaos.Scary);
-        foreach (var v in Visitor.All.ToArray())
-        {
-            if (v == Host || v.child) continue;
-            if (Flat(v.transform.position - Host.transform.position).magnitude < shoutRadius) v.AddAnger(22f, Host);
-        }
     }
 
     // ---------------------------------------------------------------- leaving

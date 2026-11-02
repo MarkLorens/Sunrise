@@ -1,10 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Something a visitor carries over their head: a spicy hotdog, a drink, the toilet key. A possessed visitor can
-// grab it (even right out of someone's hands), drop it or throw it. A thrown item hits people (and they get furious
-// at the thrower); a long, sturdy one that lands in the Ferris wheel's gear box jams it. Whoever owned it chases down
-// whoever took it.
+// Something a visitor carries over their head: a drink, a water bottle, the mechanic's screwdriver. Possessing
+// someone, you can use what they hold or own: drop it, pick it back up, throw it. A thrown item knocks people back;
+// a long, sturdy one that lands in the Ferris wheel's gear box jams it.
 public class Item : MonoBehaviour
 {
     public static readonly List<Item> All = new();
@@ -19,8 +18,6 @@ public class Item : MonoBehaviour
     public bool InFlight { get; private set; }
     public string DisplayName => kind switch
     {
-        VisitorItem.SpicyHotdog => "spicy hotdog",
-        VisitorItem.ToiletKey => "toilet key",
         VisitorItem.Drink => "drink",
         VisitorItem.Screwdriver => "screwdriver",
         VisitorItem.WaterBottle => "water bottle",
@@ -46,7 +43,7 @@ public class Item : MonoBehaviour
         item.sprite = ParkArt.Make("Sprite", go.transform, "Items/" + kind, Size, Color.white, 1);
         if (item.sprite.sprite == null)
         {
-            // ponytail: grey block until there's art in Resources/Park/Items/<kind>.png (the screwdriver has none yet).
+            // ponytail: grey block until there's art in Resources/Park/Items/<kind>.png.
             item.sprite.sprite = ParkArt.Get("Markers/white");
             item.sprite.color = new Color(0.55f, 0.6f, 0.68f);
             ParkArt.Fit(item.sprite, Size * 0.6f);
@@ -120,9 +117,8 @@ public class Item : MonoBehaviour
         foreach (var v in Visitor.All)
         {
             if (v == LastHolder || !v.CanBeHit || !Touches(v.transform.position, v.HeadHeight, p)) continue;
-            v.GetHit(LastHolder, HitPower, velocity);
+            v.GetHit(HitPower, velocity);
             Bounce(p);
-            if (LastHolder != null && LastHolder.Current == Visitor.State.Possessed) Mischief.Complete(Mischief.Task.ThrowHit);
             return true;
         }
         return false;

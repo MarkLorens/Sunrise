@@ -9,9 +9,11 @@ using UnityEngine.Tilemaps;
 //      topples flat onto the ground.
 //   2. Run it at full speed, then get something long and sturdy into the gear box at its base (GearBox): it jams to a
 //      sudden stop and flings the cabins and riders out.
-// Either way: panic within `chaosRadius` for `chaosDuration`, police tape around the wreck after `policeDelay`,
-// then once the chaos is over it's closed for `rebuildTime` and comes back good as new.
-// It also puts its electrical box, support hinge and gear box next to itself when the scene starts.
+// Either way the level's objective is done (GameHud's banner): panic within `chaosRadius` for `chaosDuration`, police
+// tape around the wreck after `policeDelay`, then once the chaos is over it's closed for `rebuildTime` and comes back
+// good as new, ready to be broken the other way.
+// When the scene starts it marks out its staff-only closed area (StaffArea) with the support hinge and gear box
+// inside, and puts the electrical box just outside it.
 public class FerrisWheel : MonoBehaviour
 {
     public static readonly List<FerrisWheel> All = new();
@@ -39,9 +41,11 @@ public class FerrisWheel : MonoBehaviour
     public float policeDelay = 10f;
     public float policeLineRadius = 5f;
     public float rebuildTime = 600f;
-    public Vector3 electricalBoxOffset = new(2.2f, 0f, -1.4f);
+    public Vector3 electricalBoxOffset = new(-3.3f, 0f, -0.6f);
     public Vector3 hingeOffset = new(-1.4f, 0f, -1f);
     public Vector3 gearBoxOffset = new(0.5f, 0f, -0.8f);
+    public Vector3 closedAreaOffset = new(0f, 0f, 0.3f);
+    public Vector2 closedAreaSize = new(5.4f, 3.4f);
     public RideQueue queue;
 
     public State Current { get; private set; }
@@ -53,6 +57,7 @@ public class FerrisWheel : MonoBehaviour
     // Broken and still frightening: people scream, staff keep them back.
     public bool InChaos => IsBroken && Time.time - brokeAt < chaosDuration;
     public Vector3 WreckPoint => new(wheel.position.x, 0f, wheel.position.z);
+    public StaffArea Area { get; private set; }
 
     readonly List<Transform> cabins = new();
     readonly List<Vector3> cabinVelocity = new();
@@ -96,8 +101,12 @@ public class FerrisWheel : MonoBehaviour
         Fx.Burst("Fx/puff", transform.position + Vector3.up, 20, new Color(0.9f, 0.85f, 0.8f), 3f, 0.9f, 0.8f);
         Fx.Shake(0.4f);
         GameHud.Say($"CRUNCH! The {item.DisplayName} jams the gears. The wheel stops dead and the cabins fly off!", "Bubbles/exclaim");
-        Mischief.Complete(Mischief.Task.WreckWheel);
+        Mischief.Complete(Mischief.Task.WheelJammed);
+        GameHud.ObjectiveComplete("The gears jammed and the cabins flew off!");
     }
+
+    // Before anyone's Start, so the spawner can keep visitors out of it.
+    void Awake() => Area = ClosedArea();
 
     void Start()
     {
@@ -105,9 +114,9 @@ public class FerrisWheel : MonoBehaviour
         wheelParent = wheel.parent;
         speed = normalSpeed;
         rebuildBar = WorldBar.Create(transform, new Vector3(0f, 1.6f, -0.3f), 2.5f);
-        Part<ElectricalBox>("Electrical Box", electricalBoxOffset, 1.1f, new Color(0.35f, 0.45f, 0.6f)).wheel = this;
-        Part<WheelHinge>("Support Hinge", hingeOffset, 0.5f, new Color(0.5f, 0.5f, 0.55f)).wheel = this;
-        Part<GearBox>("Gear Box", gearBoxOffset, 0.8f, new Color(0.55f, 0.4f, 0.25f)).wheel = this;
+        Part<ElectricalBox>("Electrical Box", electricalBoxOffset, "Props/electrical_box", 1.3f).wheel = this;
+        Part<WheelHinge>("Support Hinge", hingeOffset, "Props/support_hinge", 0.9f).wheel = this;
+        Part<GearBox>("Gear Box", gearBoxOffset, "Props/gear_box", 1f).wheel = this;
         var mat = wheel.GetComponent<SpriteRenderer>().sharedMaterial;
         for (int i = 0; i < cabinCount; i++)
         {
@@ -146,18 +155,51 @@ public class FerrisWheel : MonoBehaviour
         GameHud.Say("*CREAK* The loosened support is buckling!");
     }
 
-    // ponytail: placeholder blocks from Markers/white until there's art; offsets are relative to the wheel's base.
-    T Part<T>(string name, Vector3 offset, float height, Color color) where T : Component
+    // Offsets are relative to the wheel's base.
+    T Part<T>(string name, Vector3 offset, string sprite, float height) where T : Component
     {
         var go = new GameObject(name);
         go.SetActive(false); // so Interactable's Awake finds the rules component
         go.transform.position = transform.position + offset;
-        var sprite = ParkArt.Make("Sprite", go.transform, "Markers/white", height, color);
-        sprite.transform.localPosition = new Vector3(0f, height * 0.5f, 0f);
+        Prop(go.transform, sprite, height, Vector3.zero);
         var part = go.AddComponent<T>();
         go.AddComponent<Interactable>();
         go.SetActive(true);
         return part;
+    }
+
+    static SpriteRenderer Prop(Transform parent, string sprite, float height, Vector3 localFeet)
+    {
+        var r = ParkArt.Make("Sprite", parent, sprite, height, Color.white);
+        r.transform.localPosition = localFeet + new Vector3(0f, height * 0.5f, 0f);
+        return r;
+    }
+
+    // The staff-only ground at the wheel's foot: a painted line round it, barriers at the sides, a sign at the front.
+    StaffArea ClosedArea()
+    {
+        var area = new GameObject("Closed Area").AddComponent<StaffArea>();
+        area.transform.position = transform.position + closedAreaOffset;
+        area.size = closedAreaSize;
+        Vector2 h = closedAreaSize * 0.5f;
+
+        var line = area.gameObject.AddComponent<LineRenderer>();
+        line.sharedMaterial = ParkArt.Material;
+        line.sortingOrder = ParkArt.DecalOrder;
+        line.loop = true;
+        line.widthMultiplier = 0.08f;
+        line.startColor = line.endColor = new Color(1f, 0.82f, 0.15f);
+        line.positionCount = 4;
+        line.SetPositions(new[]
+        {
+            area.transform.position + new Vector3(-h.x, 0.03f, -h.y), area.transform.position + new Vector3(h.x, 0.03f, -h.y),
+            area.transform.position + new Vector3(h.x, 0.03f, h.y), area.transform.position + new Vector3(-h.x, 0.03f, h.y),
+        });
+
+        Prop(area.transform, "Props/barrier", 0.6f, new Vector3(-h.x, 0f, 0f));
+        Prop(area.transform, "Props/barrier", 0.6f, new Vector3(h.x, 0f, 0f));
+        Prop(area.transform, "Props/staff_sign", 1.1f, new Vector3(h.x + 0.2f, 0f, -h.y - 0.1f));
+        return area;
     }
 
     void Update()
@@ -329,8 +371,8 @@ public class FerrisWheel : MonoBehaviour
                 Current = State.Wrecked;
                 ParkChaos.Add(p, chaosRadius, chaosDuration);
                 Sfx.Play(Sfx.Crash, 0.8f, 0.7f);
-                GameHud.Say("The Ferris wheel is wrecked. Closed for repairs!");
-                Mischief.Complete(Mischief.Task.WreckWheel);
+                Mischief.Complete(Mischief.Task.WheelRolled);
+                GameHud.ObjectiveComplete("The wheel broke loose and rolled over the park!");
             }
         }
         wheel.position = p;

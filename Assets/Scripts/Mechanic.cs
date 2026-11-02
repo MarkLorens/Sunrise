@@ -2,7 +2,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // The park mechanic, screwdriver in hand. Waits at his spot until someone makes a racket at the Ferris wheel's
-// electrical box, then walks over and pokes at it for a while (a good moment to possess him). A brawl nearby pulls
+// electrical box, then walks over and pokes at it for a while (a good moment to possess him: as staff he can walk
+// into the ride's closed area and loosen the support). A brawl nearby pulls
 // him away to break it up. When the wheel is wrecked he goes over to keep people back until the chaos dies down.
 // His Visitor body can be possessed like anyone's (this script is switched off while it is).
 [RequireComponent(typeof(GroundWalker), typeof(CharacterSprite))]
@@ -22,6 +23,7 @@ public class Mechanic : MonoBehaviour
     public float attendTime = 15f;    // how long he stays after it's over, seeing to whoever got hurt
 
     public State Current { get; private set; }
+    public bool BreakingUpFight => Current == State.Attending;
 
     // Someone's already on the way to (or looking at) the electrical box.
     public static bool Busy => All.Exists(m => m.Current is State.GoingToBox or State.Inspecting);
@@ -130,7 +132,6 @@ public class Mechanic : MonoBehaviour
         stateEndsAt = over + attendTime;
         look.Show("exclaim", 1.5f);
         GameHud.Say($"{name}: Whoa, whoa! Break it up!");
-        Mischief.Complete(Mischief.Task.DistractStaff);
     }
 
     void Set(State s)

@@ -21,7 +21,7 @@ public class Interactable : MonoBehaviour
     public float range = 2f;
     public string prompt = "Interact";
     public bool needsBody = true; // the spirit can't touch the world; it has to be inside someone
-    public UnityEvent onInteract;
+    public UnityEvent onInteract = new(); // AddComponent doesn't create it, only the Inspector does
 
     IInteraction rules;
 

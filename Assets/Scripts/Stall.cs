@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// A food stall. Visitors with empty hands wander over and buy whatever it sells;
-// a possessed visitor can buy one too (E) - handy when the puzzle needs another drink or a spicy hotdog.
+// A drinks stall. Visitors with empty hands wander over and buy whatever it sells;
+// a possessed visitor can buy one too (E) - handy when the puzzle needs another drink.
 [RequireComponent(typeof(Interactable))]
 public class Stall : MonoBehaviour, IInteraction
 {
@@ -26,7 +26,6 @@ public class Stall : MonoBehaviour, IInteraction
 
     string Goods => sells switch
     {
-        VisitorItem.SpicyHotdog => "a spicy hotdog",
         VisitorItem.Drink => "a drink",
         _ => sells.ToString(),
     };
