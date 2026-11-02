@@ -3,7 +3,7 @@ using UnityEngine.Tilemaps;
 
 // Fills the park with people on random ground tiles around this object when the scene starts.
 // Some visitors start out lined up for the ride; the rest roam (and may wander over to the line later),
-// some with a kid in tow and most carrying a snack, drink or key. Plus the mechanic, screwdriver in hand.
+// some with a kid in tow and most carrying a snack, drink, water bottle or key. Plus the mechanic, screwdriver in hand.
 // Looks come from Resources/Visitors/<character>/ (Kenney Toon Characters 1, CC0, plus recoloured variants).
 public class VisitorSpawner : MonoBehaviour
 {
@@ -16,8 +16,9 @@ public class VisitorSpawner : MonoBehaviour
     public float childScale = 0.7f;
 
     // Each entry goes to a different roaming visitor, so the puzzle items are always somewhere in the park.
-    public VisitorItem[] guaranteedItems = { VisitorItem.SpicyHotdog, VisitorItem.ToiletKey, VisitorItem.Drink, VisitorItem.Drink };
-    [Range(0, 1)] public float carryChance = 0.4f; // everyone else: chance of a drink or a hotdog in hand
+    public VisitorItem[] guaranteedItems = { VisitorItem.SpicyHotdog, VisitorItem.ToiletKey, VisitorItem.Drink, VisitorItem.Drink, VisitorItem.WaterBottle, VisitorItem.WaterBottle };
+    [Range(0, 1)] public float carryChance = 0.4f; // everyone else: chance of one of `carryItems` in hand
+    public VisitorItem[] carryItems = { VisitorItem.Drink, VisitorItem.SpicyHotdog, VisitorItem.WaterBottle };
 
     public RideQueue queue;
     public int startInQueue = 5;
@@ -53,7 +54,7 @@ public class VisitorSpawner : MonoBehaviour
             if (!RandomTile(out Vector3 pos)) break;
             var grownUp = Spawn(NextName(), pos, characters, personScale, false);
             var item = i < guaranteedItems.Length ? guaranteedItems[i]
-                : Random.value < carryChance ? (Random.value < 0.5f ? VisitorItem.Drink : VisitorItem.SpicyHotdog)
+                : Random.value < carryChance ? carryItems[Random.Range(0, carryItems.Length)]
                 : VisitorItem.None;
             if (item != VisitorItem.None) grownUp.GrabItem(Item.Create(item, grownUp.CarryPoint, grownUp), true);
 

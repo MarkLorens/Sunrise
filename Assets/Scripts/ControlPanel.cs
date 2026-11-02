@@ -1,8 +1,9 @@
 using UnityEngine;
 
 // The Ferris wheel's control panel. Only the operator knows how to work it: possess him and push the ride to full
-// speed. Back at his post he'd turn it down again, unless someone fries the panel with a drink while it's maxed out.
-// A loosened support (WheelHinge) won't hold the wheel at full speed for long.
+// speed. Back at his post he'd turn it down again, unless someone fries the panel with a drink (or any water) while
+// it's maxed out. A loosened support (WheelHinge) won't hold the wheel at full speed for long, and at full speed the
+// gears (GearBox) can be jammed.
 [RequireComponent(typeof(Interactable))]
 public class ControlPanel : MonoBehaviour, IInteraction
 {
@@ -23,7 +24,7 @@ public class ControlPanel : MonoBehaviour, IInteraction
     public string Prompt(Visitor host)
     {
         if (IsOperator(host)) return "Start the ride at full speed";
-        if (wheel.IsOverdrive && host != null && host.HeldKind == VisitorItem.Drink) return "Pour the drink over the panel";
+        if (wheel.IsOverdrive && host != null && host.Held != null && host.Held.Wet) return $"Pour the {host.Held.DisplayName} over the panel";
         return "Control panel";
     }
 
@@ -34,7 +35,7 @@ public class ControlPanel : MonoBehaviour, IInteraction
         if (IsOperator(host)) return wheel.IsOverdrive ? "It's already at full speed" : null;
         if (rideOperator.WatchingPanel) return "The operator is watching the panel";
         if (!wheel.IsOverdrive) return "Only the operator knows how to work this";
-        if (host.HeldKind != VisitorItem.Drink) return "It's going haywire... something wet might fry it for good";
+        if (host.Held == null || !host.Held.Wet) return "It's going haywire... something wet might fry it for good";
         return null;
     }
 

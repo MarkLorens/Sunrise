@@ -2692,7 +2692,7 @@ MonoBehaviour:
   personScale: 1.35
   childChance: 0.3
   childScale: 0.7
-  guaranteedItems: 01000000020000000300000003000000i
+  guaranteedItems: 010000000200000003000000030000000500000005000000
   carryChance: 0.4
   queue: {fileID: 700000134}
   startInQueue: 5

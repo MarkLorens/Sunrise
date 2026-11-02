@@ -3,7 +3,8 @@ using UnityEngine;
 
 // Something a visitor carries over their head: a spicy hotdog, a drink, the toilet key. A possessed visitor can
 // grab it (even right out of someone's hands), drop it or throw it. A thrown item hits people (and they get furious
-// at the thrower); one that lands in the Ferris wheel's gears jams it. Whoever owned it chases down whoever took it.
+// at the thrower); a long, sturdy one that lands in the Ferris wheel's gear box jams it. Whoever owned it chases down
+// whoever took it.
 public class Item : MonoBehaviour
 {
     public static readonly List<Item> All = new();
@@ -22,8 +23,13 @@ public class Item : MonoBehaviour
         VisitorItem.ToiletKey => "toilet key",
         VisitorItem.Drink => "drink",
         VisitorItem.Screwdriver => "screwdriver",
+        VisitorItem.WaterBottle => "water bottle",
         _ => "thing",
     };
+    // Long and sturdy enough to jam the Ferris wheel's gears.
+    public bool Sturdy => kind is VisitorItem.WaterBottle or VisitorItem.Screwdriver;
+    // Wet enough to fry the control panel.
+    public bool Wet => kind is VisitorItem.Drink or VisitorItem.WaterBottle;
     public float HitPower => kind == VisitorItem.Drink ? 1f : 0.75f; // a full cup to the face is the worst
 
     SpriteRenderer sprite, shadow;
@@ -104,7 +110,7 @@ public class Item : MonoBehaviour
         transform.position += velocity * Time.deltaTime;
         transform.Rotate(0f, 0f, -velocity.x * 60f * Time.deltaTime);
 
-        if (thrown && (HitSomeone() || JamWheel())) return;
+        if (thrown && (HitSomeone() || HitGears())) return;
         if (transform.position.y <= Size * 0.5f && velocity.y < 0f) Land();
     }
 
@@ -136,12 +142,20 @@ public class Item : MonoBehaviour
         velocity = new Vector3(-velocity.x * 0.25f, 3f, -velocity.z * 0.25f);
     }
 
-    bool JamWheel()
+    // Landed in the Ferris wheel's gear box: jams it if it can, otherwise bounces off the cover.
+    bool HitGears()
     {
-        foreach (var w in FerrisWheel.All)
+        foreach (var g in GearBox.All)
         {
-            if (!w.InGears(transform.position)) continue;
-            w.Jam(this);
+            if (!g.Catches(transform.position)) continue;
+            string refused = g.Refusal(this, LastHolder);
+            if (refused == null)
+            {
+                g.Jam(this);
+                return true;
+            }
+            GameHud.Say(refused + ".");
+            Bounce(transform.position);
             return true;
         }
         return false;

@@ -1,21 +1,22 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum VisitorItem { None, SpicyHotdog, ToiletKey, Drink, Screwdriver }
+public enum VisitorItem { None, SpicyHotdog, ToiletKey, Drink, Screwdriver, WaterBottle }
 
 // A park visitor going about their day: wandering, buying snacks and drinks at the stalls, lining up for the Ferris
 // wheel, carrying their things over their head. Kids stick close to their grown-up (even a possessed one).
 // Like the townsfolk in Untitled Goose Game they react to you: they stare at someone acting possessed, chase down
 // whoever swipes their things, and get angrier each time they're hit or shouted at. Once furious they charge at
-// whoever did it and start a brawl that one of them won't walk away from. When something terrible happens nearby
-// they scream and run (ParkChaos). When the spirit leaves they stand around confused for a few seconds.
+// whoever did it and start a brawl that one of them won't walk away from, while the grown-ups nearby gather round to
+// watch. When something terrible happens nearby they scream and run (ParkChaos). When the spirit leaves they stand
+// around confused for a few seconds.
 [RequireComponent(typeof(GroundWalker), typeof(CharacterSprite))]
 public class Visitor : MonoBehaviour
 {
     // Every active visitor, so the spirit can find who it's touching without physics queries.
     public static readonly List<Visitor> All = new();
 
-    public enum State { Idle, Wander, Queueing, Riding, Possessed, Confused, Panic, Down, Follow, Stare, Angry, Retrieving, Fighting }
+    public enum State { Idle, Wander, Queueing, Riding, Possessed, Confused, Panic, Down, Follow, Stare, Angry, Retrieving, Fighting, Watching }
 
     public bool possessable = true;
     public bool child;
@@ -42,6 +43,7 @@ public class Visitor : MonoBehaviour
     public float followDistance = 1.2f;
     public float stareRadius = 3f;
     public float stareTime = 1.5f;
+    public float crowdRadius = 10f; // how far away a brawl draws them over to watch
 
     public State Current { get; private set; }
     public bool CanBePossessed => possessable && Look.Visible && Current is not (State.Possessed or State.Riding or State.Down or State.Fighting);
@@ -64,6 +66,7 @@ public class Visitor : MonoBehaviour
     Visitor thief;
     Vector3 target;
     Vector3 panicFrom;
+    Vector3 spectacle;    // the brawl they're watching
     Vector3 followOffset;
     Vector3 knock;
     float knockUntil;
@@ -106,14 +109,14 @@ public class Visitor : MonoBehaviour
         if (Current is not State.Angry) Anger = Mathf.Max(0f, Anger - 7f * Time.deltaTime);
         angerBar.Set(Anger / 100f, WorldBar.Heat(Anger / 100f), Anger > 1f && Look.Visible && Current is not (State.Possessed or State.Down or State.Fighting));
 
-        if (Current is State.Idle or State.Wander or State.Follow or State.Stare or State.Confused)
+        if (Current is State.Idle or State.Wander or State.Follow or State.Stare or State.Confused or State.Watching)
         {
             if (ParkChaos.Threat(transform.position, child, out Vector3 horror))
             {
                 Panic(horror, Random.Range(3f, 5f));
                 return;
             }
-            if (Current != State.Confused && LookForPossessed()) return;
+            if (Current is not (State.Confused or State.Watching) && LookForPossessed()) return;
         }
 
         switch (Current)
@@ -156,6 +159,11 @@ public class Visitor : MonoBehaviour
 
             case State.Retrieving:
                 Retrieve();
+                break;
+
+            case State.Watching:
+                if (!WalkTo(target)) Look.Face(spectacle);
+                if (Time.time >= stateEndsAt) Idle();
                 break;
         }
     }
@@ -313,6 +321,21 @@ public class Visitor : MonoBehaviour
         stateEndsAt = Time.time + stareTime;
         nextStare = stateEndsAt + Random.Range(6f, 9f);
         return true;
+    }
+
+    // A brawl nearby: grown-ups going about their day wander over and stand round it until it's over.
+    public void Watch(Vector3 brawl, float until)
+    {
+        if (brain != null || child || Current is not (State.Idle or State.Wander or State.Stare or State.Confused)) return;
+        Vector3 away = transform.position - brawl;
+        away.y = 0;
+        if (away.magnitude > crowdRadius) return;
+        if (away.sqrMagnitude < 0.01f) away = Vector3.back;
+        spectacle = brawl;
+        target = brawl + Quaternion.Euler(0f, Random.Range(-40f, 40f), 0f) * away.normalized * Random.Range(1.8f, 2.6f);
+        SetState(State.Watching);
+        stateEndsAt = until + Random.Range(0.5f, 2f);
+        Look.Show("exclaim", 1.2f);
     }
 
     // ---------------------------------------------------------------- things they carry

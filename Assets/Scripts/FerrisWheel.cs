@@ -7,10 +7,11 @@ using UnityEngine.Tilemaps;
 //   1. The puzzle: loosen the support (WheelHinge), then run the ride at full speed (ControlPanel). After `loadTime`
 //      at full speed the support gives way, the wheel rolls across the park flattening whoever's in the way, then
 //      topples flat onto the ground.
-//   2. Something thrown into the gears at its base jams it to a sudden stop and flings the riders out.
+//   2. Run it at full speed, then get something long and sturdy into the gear box at its base (GearBox): it jams to a
+//      sudden stop and flings the cabins and riders out.
 // Either way: panic within `chaosRadius` for `chaosDuration`, police tape around the wreck after `policeDelay`,
 // then once the chaos is over it's closed for `rebuildTime` and comes back good as new.
-// It also puts its electrical box and support hinge next to itself when the scene starts.
+// It also puts its electrical box, support hinge and gear box next to itself when the scene starts.
 public class FerrisWheel : MonoBehaviour
 {
     public static readonly List<FerrisWheel> All = new();
@@ -32,7 +33,7 @@ public class FerrisWheel : MonoBehaviour
     public float chaosRadius = 10f;
     public float chaosDuration = 300f; // people keep screaming and running near the wreck for 5 minutes
     public float panicTime = 8f;
-    public float gearRadius = 1.6f;   // around the base: where a thrown item jams the gears
+    public float gearRadius = 1.6f;   // around the gear box: where a thrown item lands in the gears
     [Range(0, 1)] public float riderDeathChance = 0.6f;
     public float loadTime = 6f;       // seconds a loosened support holds at full speed
     public float policeDelay = 10f;
@@ -40,6 +41,7 @@ public class FerrisWheel : MonoBehaviour
     public float rebuildTime = 600f;
     public Vector3 electricalBoxOffset = new(2.2f, 0f, -1.4f);
     public Vector3 hingeOffset = new(-1.4f, 0f, -1f);
+    public Vector3 gearBoxOffset = new(0.5f, 0f, -0.8f);
     public RideQueue queue;
 
     public State Current { get; private set; }
@@ -71,13 +73,7 @@ public class FerrisWheel : MonoBehaviour
     void OnEnable() => All.Add(this);
     void OnDisable() => All.Remove(this);
 
-    public bool InGears(Vector3 p)
-    {
-        Vector3 d = p - transform.position;
-        return !IsBroken && new Vector2(d.x, d.z).magnitude < gearRadius && p.y < 1.5f;
-    }
-
-    // Method 2: something lands in the gears. The wheel stops dead and the riders are flung out of their cabins.
+    // Method 2: something lands in the gears. The wheel stops dead and the cabins, riders and all, fly off the rim.
     public void Jam(Item item)
     {
         if (IsBroken) return;
@@ -85,6 +81,13 @@ public class FerrisWheel : MonoBehaviour
         Current = State.Jammed;
         stateTime = 0f;
         brokeAt = Time.time;
+        float fling = speed * Mathf.Deg2Rad * cabinRadius; // how fast the rim was going
+        for (int i = 0; i < cabins.Count; i++)
+        {
+            float a = (angle + i * 360f / cabins.Count) * Mathf.Deg2Rad;
+            cabins[i].SetParent(null, true);
+            cabinVelocity.Add(new Vector3(-Mathf.Sin(a), Mathf.Cos(a), 0f) * fling + new Vector3(0f, 2f, Random.Range(-1.5f, 0.5f)));
+        }
         speed = 0f;
         if (queue != null) queue.ThrowOutRiders(transform.position + new Vector3(0, 0, -1.5f), 3.5f, riderDeathChance);
         Chaos(transform.position);
@@ -92,7 +95,7 @@ public class FerrisWheel : MonoBehaviour
         Sfx.Play(Sfx.Crash, 1f, 0.6f);
         Fx.Burst("Fx/puff", transform.position + Vector3.up, 20, new Color(0.9f, 0.85f, 0.8f), 3f, 0.9f, 0.8f);
         Fx.Shake(0.4f);
-        GameHud.Say($"CRUNCH! The {item.DisplayName} jams the gears. The wheel stops dead and the riders are flung out!", "Bubbles/exclaim");
+        GameHud.Say($"CRUNCH! The {item.DisplayName} jams the gears. The wheel stops dead and the cabins fly off!", "Bubbles/exclaim");
         Mischief.Complete(Mischief.Task.WreckWheel);
     }
 
@@ -104,6 +107,7 @@ public class FerrisWheel : MonoBehaviour
         rebuildBar = WorldBar.Create(transform, new Vector3(0f, 1.6f, -0.3f), 2.5f);
         Part<ElectricalBox>("Electrical Box", electricalBoxOffset, 1.1f, new Color(0.35f, 0.45f, 0.6f)).wheel = this;
         Part<WheelHinge>("Support Hinge", hingeOffset, 0.5f, new Color(0.5f, 0.5f, 0.55f)).wheel = this;
+        Part<GearBox>("Gear Box", gearBoxOffset, 0.8f, new Color(0.55f, 0.4f, 0.25f)).wheel = this;
         var mat = wheel.GetComponent<SpriteRenderer>().sharedMaterial;
         for (int i = 0; i < cabinCount; i++)
         {
@@ -365,7 +369,7 @@ public class FerrisWheel : MonoBehaviour
 
     void UpdateCabins()
     {
-        if (Current is < State.Rolling or State.Jammed)
+        if (Current < State.Rolling)
         {
             // Hang upright from evenly spaced points on the spinning rim.
             for (int i = 0; i < cabins.Count; i++)

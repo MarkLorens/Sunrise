@@ -97,6 +97,13 @@ public class GameHud : MonoBehaviour
     {
         var kb = Keyboard.current;
         bool toggle = kb != null && (kb.tabKey.wasPressedThisFrame || (listOpen && kb.escapeKey.wasPressedThisFrame));
+        if (toggle)
+        {
+            listOpen = !listOpen;
+            Time.timeScale = listOpen ? 0f : 1f;
+            Possession.InputBlocked = listOpen;
+            if (listOpen) RefreshList();
+        }
 
         int panicking = 0;
         foreach (var v in Visitor.All)
