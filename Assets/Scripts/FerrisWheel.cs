@@ -33,6 +33,7 @@ public class FerrisWheel : MonoBehaviour
     public float breakDelay = 1.5f;
     public float rollSpeed = 6f;
     public float rollDistance = 30f;
+    public float cameraFollowTime = 3f; // seconds the camera follows the wheel once it breaks loose
     public float chaosRadius = 10f;
     public float chaosDuration = 300f; // people keep screaming and running near the wreck for 5 minutes
     public float panicTime = 8f;
@@ -127,6 +128,7 @@ public class FerrisWheel : MonoBehaviour
             var sr = go.AddComponent<SpriteRenderer>();
             sr.sprite = cabinSprite;
             sr.sharedMaterial = mat;
+            ParkArt.CastShadows(sr);
             cabins.Add(go.transform);
         }
     }
@@ -182,7 +184,7 @@ public class FerrisWheel : MonoBehaviour
 
     static SpriteRenderer Prop(Transform parent, string sprite, float height, Vector3 localFeet)
     {
-        var r = ParkArt.Make("Sprite", parent, sprite, height, Color.white);
+        var r = ParkArt.Lit(ParkArt.Make("Sprite", parent, sprite, height, Color.white));
         r.transform.localPosition = localFeet + new Vector3(0f, height * 0.5f, 0f);
         return r;
     }
@@ -346,6 +348,7 @@ public class FerrisWheel : MonoBehaviour
         }
         if (queue != null) queue.ThrowOutRiders(transform.position + new Vector3(0, 0, -1.5f), 3f, riderDeathChance);
         Fx.Shake(0.4f);
+        CameraRig.Spotlight(wheel, cameraFollowTime, wheelRadius);
         Chaos(transform.position);
         ParkChaos.Add(transform.position, chaosRadius, chaosDuration);
         Sfx.Play(Sfx.Crash);

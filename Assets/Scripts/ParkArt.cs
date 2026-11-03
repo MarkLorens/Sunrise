@@ -2,16 +2,40 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Runtime art for bubbles, markers, effects, items and the HUD: Resources/Park (2D art from My project,
-// Kenney packs, CC0) plus the older Resources/Icons. The scene's lit sprite material ignores tint colours,
-// so everything made here (and any tinted character) uses the unlit sprite material instead.
+// Kenney packs, CC0) plus the older Resources/Icons. Things made here are unlit by default (bubbles, markers,
+// effects); props standing in the world call Lit() so they're shaded and cast shadows like the scene's sprites.
 public static class ParkArt
 {
     public const int DecalOrder = -40;  // lying on the ground: above the ground tiles (-50), under anything standing
     public const int OverheadOrder = 5; // bubbles, bars and markers drawn over people
 
     static readonly Dictionary<string, Sprite> sprites = new();
-    static Material material;
+    static Material material, litMaterial;
     static Font font;
+
+    // Same shader as Palletes/Shaders/SpriteLit2.5 (lit, alpha clip, casts shadows, tinted by SpriteRenderer.color).
+    public static Material LitMaterial
+    {
+        get
+        {
+            if (litMaterial == null) litMaterial = new Material(Shader.Find("Shader Graphs/SpriteLit3D")) { name = "Park Lit Sprite" };
+            return litMaterial;
+        }
+    }
+
+    // A standing sprite: lit, casts and receives shadows.
+    public static SpriteRenderer Lit(SpriteRenderer r)
+    {
+        r.sharedMaterial = LitMaterial;
+        CastShadows(r);
+        return r;
+    }
+
+    public static void CastShadows(Renderer r)
+    {
+        r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+        r.receiveShadows = true;
+    }
 
     // Unlit sprite material that honours SpriteRenderer.color (for markers, bubbles, tints).
     public static Material Material
