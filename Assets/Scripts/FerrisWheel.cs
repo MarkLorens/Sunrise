@@ -127,6 +127,7 @@ public class FerrisWheel : MonoBehaviour
             var sr = go.AddComponent<SpriteRenderer>();
             sr.sprite = cabinSprite;
             sr.sharedMaterial = mat;
+            ParkArt.CastShadows(sr);
             cabins.Add(go.transform);
         }
     }
@@ -182,7 +183,7 @@ public class FerrisWheel : MonoBehaviour
 
     static SpriteRenderer Prop(Transform parent, string sprite, float height, Vector3 localFeet)
     {
-        var r = ParkArt.Make("Sprite", parent, sprite, height, Color.white);
+        var r = ParkArt.Lit(ParkArt.Make("Sprite", parent, sprite, height, Color.white));
         r.transform.localPosition = localFeet + new Vector3(0f, height * 0.5f, 0f);
         return r;
     }

@@ -22,7 +22,6 @@ public class CharacterSprite : MonoBehaviour
     public float HeadHeight => idle.bounds.size.y * transform.lossyScale.y;
 
     SpriteRenderer body, bubble, shadow;
-    Material litMaterial;
     Rigidbody rb;
     Sprite gesture;
     float gestureUntil, cheerUntil;
@@ -42,8 +41,10 @@ public class CharacterSprite : MonoBehaviour
         if (loaded) return;
         loaded = true;
         body = GetComponent<SpriteRenderer>();
-        litMaterial = body.sharedMaterial;
-        rb = GetComponent<Rigidbody>();
+        // Characters whose renderer was auto-added (e.g. the Mechanic) start on Unity's default sprite material.
+        if (body.sharedMaterial == null || body.sharedMaterial.shader != ParkArt.LitMaterial.shader) body.sharedMaterial = ParkArt.LitMaterial;
+        ParkArt.CastShadows(body);
+        rb =GetComponent<Rigidbody>();
         animOffset = Random.value * 10f;
         baseScale = transform.localScale;
 
@@ -122,12 +123,11 @@ public class CharacterSprite : MonoBehaviour
         if (!visible) bubble.enabled = false;
     }
 
-    // The lit sprite material ignores colour, so tinted characters (possessed, dead) switch to the unlit one.
+    // Tinted characters (possessed, dead). The lit shader multiplies in the colour, so they keep their shadow.
     public void SetTint(Color c)
     {
         Load();
         body.color = c;
-        body.sharedMaterial = c == Color.white ? litMaterial : ParkArt.Material;
     }
 
     // Turn toward a point (holds until they next walk somewhere).

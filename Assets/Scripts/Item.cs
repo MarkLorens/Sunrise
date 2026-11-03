@@ -40,7 +40,7 @@ public class Item : MonoBehaviour
         var item = go.AddComponent<Item>();
         item.kind = kind;
         item.Owner = owner;
-        item.sprite = ParkArt.Make("Sprite", go.transform, "Items/" + kind, Size, Color.white, 1);
+        item.sprite = ParkArt.Lit(ParkArt.Make("Sprite", go.transform, "Items/" + kind, Size, Color.white, 1));
         if (item.sprite.sprite == null)
         {
             // ponytail: grey block until there's art in Resources/Park/Items/<kind>.png.
