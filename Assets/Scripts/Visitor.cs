@@ -52,6 +52,9 @@ public class Visitor : MonoBehaviour, IInteraction
     public float HeadHeight => Look.HeadHeight;
     public Vector3 HeadPoint => transform.position + Vector3.up * HeadHeight;
     public Vector3 CarryPoint => transform.position + Vector3.up * (HeadHeight + 0.3f);
+    // The cabin they're sitting in while riding.
+    public Transform Cabin { get; private set; }
+    bool IsHost => Possession.Instance != null && Possession.Instance.Host == this;
 
     GroundWalker walker;
     Rigidbody rb;
@@ -251,19 +254,29 @@ public class Visitor : MonoBehaviour, IInteraction
         queue = null;
     }
 
-    public void StartRide()
+    public void StartRide(Transform cabin)
     {
         queue = null; // the queue already took us off the line
+        Cabin = cabin;
         SetState(State.Riding);
+        walker.readKeyboard = false;
         walker.move = Vector2.zero;
         Look.SetVisible(false);
     }
 
+    // Back on the ground. The spirit, if it rode along, takes the wheel again.
     public void EndRide(Vector3 at)
     {
+        Cabin = null;
         rb.position = transform.position = new Vector3(at.x, transform.position.y, at.z);
         Look.SetVisible(true);
-        Idle();
+        if (!IsHost)
+        {
+            Idle();
+            return;
+        }
+        SetState(State.Possessed);
+        walker.readKeyboard = true;
     }
 
     // Someone nearby is acting strange (possessed): stop and stare for a moment.
@@ -442,7 +455,7 @@ public class Visitor : MonoBehaviour, IInteraction
 
     public void Panic(Vector3 from, float duration)
     {
-        if (brain != null || Current is State.Possessed or State.Down or State.Fighting) return;
+        if (brain != null || IsHost || Current is State.Possessed or State.Down or State.Fighting) return;
         if (Current == State.Riding) Look.SetVisible(true);
         LeaveQueue();
         DropHeld();
@@ -484,7 +497,7 @@ public class Visitor : MonoBehaviour, IInteraction
         walker.move = Vector2.zero;
         if (Current == State.Down) return;
         Look.SetTint(Color.white);
-        if (Current == State.Fighting) return;
+        if (Current is State.Fighting or State.Riding) return; // a rider left in a cabin just enjoys the view
         if (brain != null)
         {
             SetState(State.Idle);

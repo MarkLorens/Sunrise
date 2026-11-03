@@ -4,6 +4,7 @@ using UnityEngine;
 // A line of visitors waiting for a ride. The first slot is at this object's position and the line
 // runs along `direction`. While the ride runs normally and its operator is at the post,
 // the person at the front boards every `boardInterval` seconds and comes back out at `exit` later.
+// A possessed visitor can skip the line and board at the gate (RideGate) at its head.
 public class RideQueue : MonoBehaviour
 {
     public static readonly List<RideQueue> All = new();
@@ -16,6 +17,7 @@ public class RideQueue : MonoBehaviour
     public int capacity = 8;
     public float boardInterval = 5f;
     public float rideTime = 20f;
+    public float gateRange = 1.4f;
 
     readonly List<Visitor> line = new();
     readonly List<(Visitor who, float until)> riders = new();
@@ -25,6 +27,34 @@ public class RideQueue : MonoBehaviour
 
     void OnEnable() => All.Add(this);
     void OnDisable() => All.Remove(this);
+
+    void Start()
+    {
+        var go = new GameObject("Ride Gate");
+        go.SetActive(false); // so Interactable's Awake finds the rules component
+        go.transform.position = Slot(0) - direction.normalized * 0.5f;
+        go.AddComponent<RideGate>().queue = this;
+        go.AddComponent<Interactable>().range = gateRange;
+        go.SetActive(true);
+    }
+
+    public string BoardBlocked(Visitor v)
+    {
+        if (v.brain != null) return "Staff can't ride while they're on duty";
+        if (ride.IsBroken) return "The ride is broken";
+        if (!ride.IsRunningNormally) return "It's going way too fast to get on";
+        if (!rideOperator.AtPost) return "Nobody's running the ride";
+        return null;
+    }
+
+    // Straight into the cabin at the bottom, ahead of the line.
+    public void Board(Visitor v)
+    {
+        v.StartRide(ride.BoardingCabin());
+        riders.Add((v, Time.time + rideTime));
+        nextBoard = Time.time + boardInterval;
+        GameHud.Say($"{v.name} hops into a cabin.");
+    }
 
     public bool Join(Visitor v)
     {
@@ -64,7 +94,7 @@ public class RideQueue : MonoBehaviour
         if (d.magnitude > 0.5f) return; // still walking up
 
         line.RemoveAt(0);
-        front.StartRide();
+        front.StartRide(ride.BoardingCabin());
         riders.Add((front, Time.time + rideTime));
         nextBoard = Time.time + boardInterval;
     }

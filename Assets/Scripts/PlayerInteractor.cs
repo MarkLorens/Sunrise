@@ -16,7 +16,7 @@ public class PlayerInteractor : MonoBehaviour
     {
         var kb = Keyboard.current;
         if (Possession.InputBlocked || kb == null || !kb.eKey.wasPressedThisFrame) return;
-        if (possession.State == Possession.Mode.Diving) return;
+        if (possession.State == Possession.Mode.Diving || possession.Riding) return;
         if (Host == null && possession.TryPossess()) return;
 
         var target = Nearest();

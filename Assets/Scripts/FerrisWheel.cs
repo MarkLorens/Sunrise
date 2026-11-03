@@ -13,7 +13,8 @@ using UnityEngine.Tilemaps;
 // tape around the wreck after `policeDelay`, then once the chaos is over it's closed for `rebuildTime` and comes back
 // good as new, ready to be broken the other way.
 // When the scene starts it marks out its staff-only closed area (StaffArea) with the support hinge and gear box
-// inside, and puts the electrical box just outside it.
+// inside, and puts the electrical box just outside it. Scale the whole object to resize the ride: radii, part offsets
+// and the closed area are all in unscaled units and grow with it.
 public class FerrisWheel : MonoBehaviour
 {
     public static readonly List<FerrisWheel> All = new();
@@ -58,6 +59,7 @@ public class FerrisWheel : MonoBehaviour
     public bool InChaos => IsBroken && Time.time - brokeAt < chaosDuration;
     public Vector3 WreckPoint => new(wheel.position.x, 0f, wheel.position.z);
     public StaffArea Area { get; private set; }
+    float Scale => transform.lossyScale.x;
 
     readonly List<Transform> cabins = new();
     readonly List<Vector3> cabinVelocity = new();
@@ -86,7 +88,7 @@ public class FerrisWheel : MonoBehaviour
         Current = State.Jammed;
         stateTime = 0f;
         brokeAt = Time.time;
-        float fling = speed * Mathf.Deg2Rad * cabinRadius; // how fast the rim was going
+        float fling = speed * Mathf.Deg2Rad * cabinRadius * Scale; // how fast the rim was going
         for (int i = 0; i < cabins.Count; i++)
         {
             float a = (angle + i * 360f / cabins.Count) * Mathf.Deg2Rad;
@@ -143,6 +145,16 @@ public class FerrisWheel : MonoBehaviour
         Current = State.Running;
     }
 
+    // The cabin at the bottom of the wheel, where riders get on. Null once it's broken.
+    public Transform BoardingCabin()
+    {
+        if (IsBroken) return null;
+        Transform best = null;
+        foreach (var c in cabins)
+            if (best == null || c.position.y < best.position.y) best = c;
+        return best;
+    }
+
     public void Loosen() => Loosened = true;
 
     public void FryPanel() => PanelFried = true;
@@ -160,7 +172,7 @@ public class FerrisWheel : MonoBehaviour
     {
         var go = new GameObject(name);
         go.SetActive(false); // so Interactable's Awake finds the rules component
-        go.transform.position = transform.position + offset;
+        go.transform.position = transform.position + offset * Scale;
         Prop(go.transform, sprite, height, Vector3.zero);
         var part = go.AddComponent<T>();
         go.AddComponent<Interactable>();
@@ -179,9 +191,9 @@ public class FerrisWheel : MonoBehaviour
     StaffArea ClosedArea()
     {
         var area = new GameObject("Closed Area").AddComponent<StaffArea>();
-        area.transform.position = transform.position + closedAreaOffset;
-        area.size = closedAreaSize;
-        Vector2 h = closedAreaSize * 0.5f;
+        area.transform.position = transform.position + closedAreaOffset * Scale;
+        area.size = closedAreaSize * Scale;
+        Vector2 h = area.size * 0.5f;
 
         var line = area.gameObject.AddComponent<LineRenderer>();
         line.sharedMaterial = ParkArt.Material;
@@ -344,15 +356,16 @@ public class FerrisWheel : MonoBehaviour
     {
         // Drop to the ground first, then roll left across the park.
         Vector3 p = wheel.position;
-        p.y = Mathf.MoveTowards(p.y, wheelRadius, 9f * Time.deltaTime);
+        float radius = wheelRadius * Scale;
+        p.y = Mathf.MoveTowards(p.y, radius, 9f * Time.deltaTime);
         Vector3 next = p + Vector3.left * rollSpeed * Time.deltaTime;
-        bool onGround = OnGround(next + Vector3.left * wheelRadius);
+        bool onGround = OnGround(next + Vector3.left * radius);
 
         if (rolled < rollDistance && onGround)
         {
             p = next;
             rolled += rollSpeed * Time.deltaTime;
-            angle += rollSpeed / wheelRadius * Mathf.Rad2Deg * Time.deltaTime; // rolling without slipping
+            angle += rollSpeed / radius * Mathf.Rad2Deg * Time.deltaTime; // rolling without slipping
             wheel.localRotation = Quaternion.Euler(0, 0, angle);
             FlattenPeople(p);
             if (Time.time >= nextPanic)
@@ -391,7 +404,7 @@ public class FerrisWheel : MonoBehaviour
         {
             if (v.Current is Visitor.State.Down or Visitor.State.Riding) continue;
             Vector3 d = v.transform.position - center;
-            if (Mathf.Abs(d.x) < wheelRadius * 0.8f && Mathf.Abs(d.z) < 0.8f)
+            if (Mathf.Abs(d.x) < wheelRadius * Scale * 0.8f && Mathf.Abs(d.z) < 0.8f)
             {
                 v.KnockDown();
                 Sfx.Play(Sfx.Crash, 0.6f, Random.Range(0.9f, 1.2f));
@@ -417,7 +430,7 @@ public class FerrisWheel : MonoBehaviour
             for (int i = 0; i < cabins.Count; i++)
             {
                 float a = (angle + i * 360f / cabins.Count) * Mathf.Deg2Rad;
-                cabins[i].position = wheel.position + new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0) * cabinRadius + new Vector3(0, 0, -0.05f);
+                cabins[i].position = wheel.position + new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0) * cabinRadius * Scale + new Vector3(0, 0, -0.05f);
             }
             return;
         }
@@ -425,10 +438,10 @@ public class FerrisWheel : MonoBehaviour
         // Flung cabins fall until they hit the ground.
         for (int i = 0; i < cabins.Count; i++)
         {
-            if (cabins[i].position.y <= 0.9f && cabinVelocity[i].y <= 0) continue; // landed (cabin hangs from its top)
+            if (cabins[i].position.y <= 0.9f * Scale && cabinVelocity[i].y <= 0) continue; // landed (cabin hangs from its top)
             cabinVelocity[i] += Vector3.down * 15f * Time.deltaTime;
             Vector3 p = cabins[i].position + cabinVelocity[i] * Time.deltaTime;
-            p.y = Mathf.Max(p.y, 0.9f);
+            p.y = Mathf.Max(p.y, 0.9f * Scale);
             cabins[i].position = p;
             cabins[i].rotation = Quaternion.Euler(0, 0, cabinVelocity[i].x * -4f);
         }

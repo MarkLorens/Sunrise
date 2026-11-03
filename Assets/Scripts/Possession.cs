@@ -3,11 +3,12 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 // The player: an evil spirit floating around the park, possessing visitors.
-//   Spirit:     WASD float - a weak spirit can't drift far from where it last left a body - E possess whoever you touch.
+//   Spirit:     WASD float anywhere in the park - E possess whoever you touch.
 //   Possessed:  WASD walk, E use things (or pick a fight with someone), J pick up your own things - hold J to charge
 //               a throw, release to throw - K drop, Q leave the body.
-// Anyone can be possessed, by touching them. You get 20 s in a body and have to wait 10 s before possessing the same
-// person again; anyone else straight away. Whatever they hold or own is yours to use.
+//   Riding:     on the Ferris wheel the camera moves into the cabin (CameraRig) - WASD look around, Q leave the body.
+// Anyone can be possessed, by touching them, for as long as you like. After leaving someone you have to wait 10 s
+// before possessing the same person again; anyone else straight away. Whatever they hold or own is yours to use.
 [RequireComponent(typeof(GroundWalker))]
 public class Possession : MonoBehaviour
 {
@@ -19,17 +20,13 @@ public class Possession : MonoBehaviour
     public static bool InputBlocked;
 
     public float touchRange = 1.2f;        // weak spirit: has to actually touch someone
-    public float leashRadius = 9f;         // and can't drift far from the body it last left
-    public float duration = 20f;           // max seconds inside one person
     public float sameTargetCooldown = 10f; // before the same person can be possessed again
     public float abilityCooldown = 0f;     // after leaving anyone (none: you can jump straight into someone else)
     public float grabRange = 1.8f;
 
     public Mode State { get; private set; }
     public Visitor Host { get; private set; }
-    public float TimeLeft { get; private set; }
     public float CooldownLeft => Mathf.Max(0f, readyAt - Time.time);
-    public Vector3 LeashCenter { get; private set; }
 
     // Who you'd possess with E right now (may be someone you can't), and why not.
     public Transform Candidate { get; private set; }
@@ -40,6 +37,8 @@ public class Possession : MonoBehaviour
     public float Charge { get; private set; }
     public Vector3 AimDirection { get; private set; } = Vector3.right;
     public GearBox AimTarget { get; private set; }
+    // Sitting in a cabin on the Ferris wheel.
+    public bool Riding => Host != null && Host.Current == Visitor.State.Riding;
 
     // What the camera follows.
     public Transform Focus => Host != null ? Host.transform : transform;
@@ -69,7 +68,6 @@ public class Possession : MonoBehaviour
         body = GetComponent<Collider>();
         sprite = GetComponent<SpriteRenderer>();
         baseScale = transform.localScale;
-        LeashCenter = transform.position;
     }
 
     void Update()
@@ -96,22 +94,12 @@ public class Possession : MonoBehaviour
         }
     }
 
-    // A weak spirit can't drift far from the body it last left.
+    // Ride along inside the host.
     void LateUpdate()
     {
-        if (State == Mode.Possessing && Host != null)
-        {
-            // Ride along inside the host.
-            Vector3 p = Host.transform.position;
-            transform.position = new Vector3(p.x, transform.position.y, p.z);
-            return;
-        }
-        if (State != Mode.Spirit || leashRadius <= 0f) return;
-        Vector3 offset = rb.position - LeashCenter;
-        offset.y = 0f;
-        if (offset.magnitude <= leashRadius) return;
-        Vector3 clamped = LeashCenter + offset.normalized * leashRadius;
-        rb.position = transform.position = new Vector3(clamped.x, rb.position.y, clamped.z);
+        if (State != Mode.Possessing || Host == null) return;
+        Vector3 p = Host.transform.position;
+        transform.position = new Vector3(p.x, transform.position.y, p.z);
     }
 
     // ---------------------------------------------------------------- spirit
@@ -191,7 +179,6 @@ public class Possession : MonoBehaviour
         }
         Host = diveTarget;
         State = Mode.Possessing;
-        TimeLeft = duration;
         sprite.enabled = false;
         Host.BeginPossession();
         Fx.Burst("Fx/sparkle", Host.HeadPoint, 18, Fx.Spirit, 3.5f, 0.45f, 0.6f);
@@ -209,21 +196,20 @@ public class Possession : MonoBehaviour
 
     void Possessing(bool q, bool j, bool jDown, bool k)
     {
-        if (Host == null || Host.Current != Visitor.State.Possessed)
+        if (Host == null || Host.Current is not (Visitor.State.Possessed or Visitor.State.Riding))
         {
             Release(); // knocked down, thrown into a brawl...
-            return;
-        }
-        TimeLeft -= Time.deltaTime;
-        if (TimeLeft <= 0f)
-        {
-            GameHud.Say($"Your grip slips. {Host.name} shakes you off!");
-            Release();
             return;
         }
         if (q)
         {
             Release();
+            return;
+        }
+        if (Riding)
+        {
+            Charging = false;
+            GrabCandidate = null;
             return;
         }
         if (Host.Held == null)
@@ -372,7 +358,6 @@ public class Possession : MonoBehaviour
     {
         State = Mode.Spirit;
         readyAt = Time.time + cooldown;
-        LeashCenter = new Vector3(at.x, 0f, at.z);
         transform.position = new Vector3(at.x, transform.position.y, at.z);
         rb.isKinematic = false;
         rb.interpolation = interpolation;
