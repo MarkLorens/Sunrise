@@ -14,7 +14,7 @@ public class CameraRig : MonoBehaviour
 {
     public static CameraRig Instance { get; private set; }
 
-    public Vector3 offset = new(0f, 10f, -12f); // direction and base distance from the target
+    public Vector3 offset = new(0f, 6.5f, -13.5f); // direction and base distance from the target
     public float lookAhead = 0.4f;            // seconds of look-ahead in the direction of travel
 
     [Header("Framing")]
