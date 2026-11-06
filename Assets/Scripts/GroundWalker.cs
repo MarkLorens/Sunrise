@@ -7,7 +7,8 @@ using UnityEngine.Tilemaps;
 // Objects tilemap (trees, lamps, benches, fences: things you bump into; walk-over decor like flowers and bushes
 // lives on its own Decor tilemap) or into a prop with a Box Collider (the stalls), and, for visitors, not into a
 // staff-only area: StaffArea.
-// Driven by WASD/arrows when readKeyboard is on, otherwise by whatever sets `move` (e.g. visitor AI).
+// Driven by WASD/arrows when readKeyboard is on, otherwise by whatever sets `move`: the visitor and staff AI call
+// WalkTo, which finds a way around whatever's in the way (NavGrid).
 // Gravity + the ground's collider keep it standing on the floor.
 [RequireComponent(typeof(Rigidbody))]
 public class GroundWalker : MonoBehaviour
@@ -21,6 +22,7 @@ public class GroundWalker : MonoBehaviour
 
     Rigidbody rb;
     Visitor visitor; // people are kept out of staff-only areas (StaffArea); the spirit isn't
+    readonly Route route = new();
 
     // What's in the way, worked out once and shared by everyone, as boxes on the floor (x, z):
     // - each object on the Objects tilemap, as wide as the bottom of its sprite (a bench's legs, a tree's trunk rather
@@ -83,12 +85,49 @@ public class GroundWalker : MonoBehaviour
 
     bool OnTile(Vector3 velocity) => IsWalkable(rb.position + velocity * Time.fixedDeltaTime);
 
+    // AI walking (visitors, the mechanic, the operator): heads for `p` along a route around whatever's in the way, and
+    // returns false once there. Staff may cut through staff-only areas.
+    public bool WalkTo(Vector3 p)
+    {
+        Vector3 to = p - transform.position;
+        to.y = 0;
+        if (to.magnitude < 0.3f)
+        {
+            move = Vector2.zero;
+            return false;
+        }
+        bool staff = visitor == null || visitor.brain != null;
+        Vector3 d = route.Next(ground, transform.position, p, staff) - transform.position;
+        move = new Vector2(d.x, d.z).normalized;
+        return true;
+    }
+
+    void OnDrawGizmosSelected() => route.DrawGizmos(transform.position);
+
     // For a prop made from code after the scene has loaded (the Ferris wheel's electrical box, hinge and gear box):
     // the scene's own props were already collected when the first person woke up.
     public static void AddObstacle(Collider c)
     {
         if (!props.Contains(c)) props.Add(c);
+        NavGrid.Invalidate();
     }
+
+    // Is there an object or a prop where someone `radius` wide standing at `p` would touch it? (NavGrid maps with this.)
+    public static bool NearObstacle(Vector3 p, float radius)
+    {
+        foreach (Rect r in footprints)
+            if (Within(r, p, radius)) return true;
+        foreach (Collider c in props)
+        {
+            if (c == null || !c.enabled || !c.gameObject.activeInHierarchy) continue;
+            Bounds b = c.bounds;
+            if (Within(Rect.MinMaxRect(b.min.x, b.min.z, b.max.x, b.max.z), p, radius)) return true;
+        }
+        return false;
+    }
+
+    static bool Within(Rect r, Vector3 p, float radius) =>
+        p.x > r.xMin - radius && p.x < r.xMax + radius && p.z > r.yMin - radius && p.z < r.yMax + radius;
 
     // Would stepping from `from` to `to` walk into an object or a prop?
     bool BumpsIntoObject(Vector3 from, Vector3 to)
@@ -121,10 +160,11 @@ public class GroundWalker : MonoBehaviour
         obstaclesFor = floor;
         footprints.Clear();
         props.Clear();
+        NavGrid.Invalidate();
 
         // Solid scenery that stays put: colliders without a Rigidbody (the spirit and the operator have one), other
         // than the floor's own collider on the ground tilemap.
-        foreach (Collider c in FindObjectsByType<Collider>(FindObjectsSortMode.None))
+        foreach (Collider c in FindObjectsByType<Collider>())
             if (!c.isTrigger && c.attachedRigidbody == null && !c.TryGetComponent<Tilemap>(out _)) props.Add(c);
 
         if (map == null) return;

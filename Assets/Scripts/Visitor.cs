@@ -154,19 +154,8 @@ public class Visitor : MonoBehaviour, IInteraction
         }
     }
 
-    // Steers toward a point; returns false once there.
-    bool WalkTo(Vector3 p)
-    {
-        Vector3 to = p - transform.position;
-        to.y = 0;
-        if (to.magnitude < 0.3f)
-        {
-            walker.move = Vector2.zero;
-            return false;
-        }
-        walker.move = new Vector2(to.x, to.z).normalized;
-        return true;
-    }
+    // Walks toward a point, around whatever's in the way; returns false once there.
+    bool WalkTo(Vector3 p) => walker.WalkTo(p);
 
     float Distance(Component other)
     {
