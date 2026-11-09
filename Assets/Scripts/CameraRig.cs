@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 // A fixed-angle Cinemachine camera that stays centred on whoever you control (the spirit, or the visitor it's
 // possessing) and trails them by a hair: it eases into a move and glides to a stop when you do, with no dead zone
@@ -31,6 +33,13 @@ public class CameraRig : MonoBehaviour
     public float fadeTime = 0.8f;     // seconds for a point of interest to fully ease in/out
     public Vector2 dollyRange = new(-2f, 6f); // how much closer / further than `offset` the camera may go
 
+    [Header("Depth of field")]
+    // Tilt-shift look: the player stays sharp, the ground in front and behind blurs, so the park reads as a diorama.
+    // Focus follows whoever you control (and the dolly). Blur grows with focal length and shrinks with aperture.
+    public bool depthOfField = true;
+    [Range(1, 300)] public float focalLength = 120f; // mm
+    [Range(1, 32)] public float aperture = 4f;       // f-stop
+
     [Header("Riding")]
     public float rideFov = 85f;
     public float rideTilt = 25f;     // degrees looking down when you get in
@@ -50,6 +59,9 @@ public class CameraRig : MonoBehaviour
 
     Transform cabin;
     Vector2 look;    // yaw, pitch
+
+    VolumeProfile dofProfile;
+    DepthOfField dof;
 
     // Adds screen shake: amount = strength (0.1 = light hit, 0.3 = big impact), seconds = how long until it settles
     // (left out: stronger shakes last longer). Overlapping shakes add up and settle together.
@@ -114,6 +126,15 @@ public class CameraRig : MonoBehaviour
         rideCam.Lens = lens;
         rideShakeOffset = ride.AddComponent<CinemachineCameraOffset>();
         rideCam.enabled = false;
+
+        dofProfile = ScriptableObject.CreateInstance<VolumeProfile>();
+        dof = dofProfile.Add<DepthOfField>();
+        dof.mode.Override(DepthOfFieldMode.Bokeh);
+        var vol = new GameObject("Depth Of Field").AddComponent<Volume>();
+        vol.transform.SetParent(go.transform, false);
+        vol.isGlobal = true;
+        vol.priority = 20;
+        vol.sharedProfile = dofProfile;
     }
 
     void OnDestroy()
@@ -121,6 +142,7 @@ public class CameraRig : MonoBehaviour
         if (group != null) Destroy(group.gameObject);
         if (shakeOffset != null) Destroy(shakeOffset.gameObject);
         if (rideCam != null) Destroy(rideCam.gameObject);
+        if (dofProfile != null) Destroy(dofProfile);
     }
 
     void LateUpdate()
@@ -136,6 +158,7 @@ public class CameraRig : MonoBehaviour
         if (cabin != null) Ride();
         body.Damping = Vector3.one * followDamping; // same on every axis, so moving up/down the screen feels like left/right
         Follow(spirit != null ? spirit.Focus : null);
+        Focus();
 
         // Smooth noise, so the camera sways and settles instead of buzzing; wider than tall, like a hit's knock.
         shake = Mathf.MoveTowards(shake, 0f, Time.unscaledDeltaTime * shakeRate);
@@ -165,6 +188,17 @@ public class CameraRig : MonoBehaviour
             me.Weight = Mathf.MoveTowards(me.Weight, spot != null ? 0f : 1f, Time.unscaledDeltaTime / fadeTime);
             UpdateInterest();
         }
+    }
+
+    // Focus on the player along the view axis; off in the cabin, where you look out over the whole park.
+    void Focus()
+    {
+        dof.active = depthOfField && cabin == null && target != null;
+        if (!dof.active) return;
+        var cam = transform; // the brain places the main camera
+        dof.focusDistance.Override(Mathf.Max(0.5f, Vector3.Dot(target.position - cam.position, cam.forward)));
+        dof.focalLength.Override(focalLength);
+        dof.aperture.Override(aperture);
     }
 
     // In the cabin, facing out over the park (the wheel stands at the back of it).

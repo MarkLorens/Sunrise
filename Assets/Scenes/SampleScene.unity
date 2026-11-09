@@ -5871,6 +5871,7 @@ MonoBehaviour:
   startInQueue: 5
   characters:
   - body_kaos
+  - body_polo
   names:
   - Budi
   - Sari
