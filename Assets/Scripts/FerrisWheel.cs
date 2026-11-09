@@ -176,10 +176,18 @@ public class FerrisWheel : MonoBehaviour
         var go = new GameObject(name);
         go.SetActive(false); // so Interactable's Awake finds the rules component
         go.transform.position = transform.position + offset * Scale;
-        Prop(go.transform, sprite, height, Vector3.zero);
+        var art = Prop(go.transform, sprite, height, Vector3.zero);
         var part = go.AddComponent<T>();
         go.AddComponent<Interactable>();
         go.SetActive(true);
+
+        // Something people bump into: a box the size of its picture. Made after the scene loaded, so GroundWalker
+        // is told about it.
+        var box = art.gameObject.AddComponent<BoxCollider>();
+        Bounds b = art.sprite.bounds;
+        box.center = b.center;
+        box.size = new Vector3(b.size.x, b.size.y, 0.2f);
+        GroundWalker.AddObstacle(box);
         return part;
     }
 
