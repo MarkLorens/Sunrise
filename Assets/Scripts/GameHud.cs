@@ -59,6 +59,7 @@ public class GameHud : MonoBehaviour
         if (Camera.main != null && Camera.main.GetComponent<CameraRig>() == null) Camera.main.gameObject.AddComponent<CameraRig>();
         if (FindAnyObjectByType<NightLighting>() == null) new GameObject("Night Lighting").AddComponent<NightLighting>();
         if (GetComponent<PossessionMarker>() == null) gameObject.AddComponent<PossessionMarker>();
+        if (GetComponent<ActionOutline>() == null) gameObject.AddComponent<ActionOutline>();
         Build();
         foreach (var (text, icon) in pending) Push(text, icon);
         pending.Clear();
