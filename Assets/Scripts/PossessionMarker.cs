@@ -1,12 +1,12 @@
 using UnityEngine;
 
 // Football-game style indicators for whoever you control:
-//   1. a triangle bobbing over their head (with the grip bar: time left in this body),
+//   1. a triangle bobbing over their head,
 //   2. a power bar while you charge a throw,
 //   3. a target ring where the throw will land (red when it's locked onto the gear box),
 //   4. a ring under their feet and a direction arrow on the ground.
-// Plus a ring under whoever you could possess (grey if they resist), a small ring under what you'd pick up,
-// and a ring showing how far the weak spirit can drift. GameHud adds this to the spirit.
+// Plus a ring under whoever you could possess (grey if they resist) and a small ring under what you'd pick up.
+// GameHud adds this to the spirit.
 [RequireComponent(typeof(Possession))]
 public class PossessionMarker : MonoBehaviour
 {
@@ -16,8 +16,8 @@ public class PossessionMarker : MonoBehaviour
 
     Possession spirit;
     Transform triangleHolder;
-    SpriteRenderer triangle, feetRing, arrow, targetRing, candidateRing, grabRing, leashRing;
-    WorldBar powerBar, gripBar;
+    SpriteRenderer triangle, feetRing, arrow, targetRing, candidateRing, grabRing;
+    WorldBar powerBar;
 
     void Start()
     {
@@ -28,14 +28,12 @@ public class PossessionMarker : MonoBehaviour
         triangleHolder.SetParent(root, false);
         triangle = ParkArt.Make("Quad", triangleHolder, "Markers/triangle", 0.4f, Cyan, ParkArt.OverheadOrder);
         powerBar = WorldBar.Create(triangleHolder, new Vector3(0f, -0.4f, 0f), 0.9f);
-        gripBar = WorldBar.Create(triangleHolder, new Vector3(0f, 0.36f, 0f), 0.7f);
 
         feetRing = Flat("Feet Ring", root, "Markers/ring", Cyan);
         arrow = Flat("Arrow", root, "Markers/arrow", Cyan);
         targetRing = Flat("Target Ring", root, "Markers/ring", Color.white);
         candidateRing = Flat("Candidate Ring", root, "Markers/ring", Purple);
         grabRing = Flat("Grab Ring", root, "Markers/ring", Color.white);
-        leashRing = Flat("Leash Ring", root, "Markers/ring", Purple);
     }
 
     static SpriteRenderer Flat(string name, Transform parent, string sprite, Color color) =>
@@ -45,7 +43,7 @@ public class PossessionMarker : MonoBehaviour
     {
         float t = Time.time;
         var host = spirit.Host;
-        bool possessing = spirit.State == Possession.Mode.Possessing && host != null;
+        bool possessing = spirit.State == Possession.Mode.Possessing && host != null && !spirit.Riding; // nothing to mark from the cabin
         bool floating = spirit.State == Possession.Mode.Spirit;
 
         // 1. triangle over whoever you control
@@ -54,23 +52,8 @@ public class PossessionMarker : MonoBehaviour
         triangle.enabled = floating || possessing;
         triangle.color = possessing ? Cyan : Purple;
 
-        // grip: how long you can stay in this body (blinks when nearly out)
-        float grip = spirit.TimeLeft / spirit.duration;
-        bool blink = grip < 0.25f && Mathf.Repeat(t * 4f, 1f) < 0.5f;
-        gripBar.Set(grip, blink ? Color.white : Color.Lerp(new Color(1f, 0.3f, 0.3f), Purple, grip * 1.5f), possessing);
-
         // 2. power bar while charging a throw
         powerBar.Set(spirit.Charge, WorldBar.Heat(spirit.Charge), possessing && spirit.Charging);
-
-        // how far the spirit can drift from its last body
-        leashRing.enabled = floating && spirit.leashRadius > 0f;
-        if (leashRing.enabled)
-        {
-            // Faint until you drift close to the edge.
-            float reach = Flat(transform.position - spirit.LeashCenter).magnitude / spirit.leashRadius;
-            leashRing.color = new Color(Purple.r, Purple.g, Purple.b, Mathf.Lerp(0.05f, 0.55f, Mathf.InverseLerp(0.5f, 1f, reach)));
-            Place(leashRing, spirit.LeashCenter, -t * 10f, spirit.leashRadius * 2.1f);
-        }
 
         // 4. ring under your feet and the facing arrow
         feetRing.enabled = arrow.enabled = possessing;

@@ -32,7 +32,7 @@ public class GameHud : MonoBehaviour
     RectTransform canvas;
     Text waysLabel, gripLabel, winText;
     GameObject gripRow;
-    GameObject controlsBar, floatHint, possessHint, walkHint, grabHint, throwHint, dropHint, useHint, leaveHint;
+    GameObject controlsBar, floatHint, possessHint, walkHint, lookHint, grabHint, throwHint, dropHint, useHint, leaveHint;
     RectTransform prompt;
     GameObject promptCap;
     Text promptKey, promptText;
@@ -57,6 +57,7 @@ public class GameHud : MonoBehaviour
         ParkChaos.Reset();
 
         if (Camera.main != null && Camera.main.GetComponent<CameraRig>() == null) Camera.main.gameObject.AddComponent<CameraRig>();
+        if (FindAnyObjectByType<NightLighting>() == null) new GameObject("Night Lighting").AddComponent<NightLighting>();
         if (GetComponent<PossessionMarker>() == null) gameObject.AddComponent<PossessionMarker>();
         Build();
         foreach (var (text, icon) in pending) Push(text, icon);
@@ -110,12 +111,7 @@ public class GameHud : MonoBehaviour
         waysLabel.text = $"Ways found  <b>{Mischief.MethodsFound}</b> / {Mischief.Methods.Length}";
 
         string grip = "";
-        if (spirit.Host != null)
-        {
-            int left = Mathf.CeilToInt(spirit.TimeLeft);
-            grip = $"Possession  <color={(left <= 5 ? "#ff8a7a" : "#c9b6ff")}><b>{left}s</b></color>";
-        }
-        else if (spirit.State == Possession.Mode.Spirit && spirit.CooldownLeft > 0f)
+        if (spirit.State == Possession.Mode.Spirit && spirit.CooldownLeft > 0f)
             grip = $"<color=#ffb38a>Too weak to possess  <b>{Mathf.CeilToInt(spirit.CooldownLeft)}s</b></color>";
         if (gripRow.activeSelf != grip.Length > 0) gripRow.SetActive(grip.Length > 0);
         gripLabel.text = grip;
@@ -124,12 +120,14 @@ public class GameHud : MonoBehaviour
     void UpdateControls()
     {
         bool isSpirit = spirit.Host == null;
-        bool holding = !isSpirit && spirit.Host.Held != null;
-        Set(walkHint, !isSpirit);
-        Set(grabHint, !isSpirit && !holding && spirit.GrabCandidate != null);
+        bool riding = spirit.Riding;
+        bool holding = !isSpirit && !riding && spirit.Host.Held != null;
+        Set(walkHint, !isSpirit && !riding);
+        Set(lookHint, riding);
+        Set(grabHint, !isSpirit && !riding && !holding && spirit.GrabCandidate != null);
         Set(throwHint, holding);
         Set(dropHint, holding);
-        Set(useHint, !isSpirit && interactor.Nearest() != null);
+        Set(useHint, !isSpirit && !riding && interactor.Nearest() != null);
         Set(leaveHint, !isSpirit);
     }
 
@@ -154,7 +152,7 @@ public class GameHud : MonoBehaviour
             }
             else text = spirit.CandidateBlocked;
         }
-        else if (host != null)
+        else if (host != null && !spirit.Riding)
         {
             var target = interactor.Nearest();
             if (target != null)
@@ -327,6 +325,7 @@ public class GameHud : MonoBehaviour
         floatHint = Group("Float", "Float", wasd);
         possessHint = Group("Possess", "Possess", ("E", new[] { Key.E }, false));
         walkHint = Group("Walk", "Walk", wasd);
+        lookHint = Group("Look", "Look around", wasd);
         grabHint = Group("Pick Up", "Pick up", ("J", new[] { Key.J }, true));
         throwHint = Group("Throw", "Hold: Throw", ("J", new[] { Key.J }, true));
         dropHint = Group("Drop", "Drop", ("K", new[] { Key.K }, false));

@@ -4,7 +4,8 @@ using UnityEngine.Tilemaps;
 // Fills the park with people on random ground tiles around this object when the scene starts.
 // Some visitors start out lined up for the ride; the rest roam (and may wander over to the line later), many of them
 // carrying a drink or a water bottle. Plus the mechanic, screwdriver in hand.
-// Looks come from Resources/Visitors/<character>/ (Kenney Toon Characters 1, CC0, plus recoloured variants).
+// Visitors use the lineart bodies in Resources/ArtLineart; the mechanic still uses Resources/Visitors/<character>/
+// (Kenney Toon Characters 1, CC0).
 public class VisitorSpawner : MonoBehaviour
 {
     public Tilemap ground;
@@ -21,7 +22,7 @@ public class VisitorSpawner : MonoBehaviour
     public RideQueue queue;
     public int startInQueue = 5;
 
-    public string[] characters = { "femaleAdventurer", "femalePerson", "maleAdventurer", "malePerson", "malePersonTeal", "malePersonRed", "femalePersonPink", "femalePersonYellow" };
+    public string[] characters = { "body_kaos" };
     public string[] names = { "Budi", "Sari", "Rina", "Dodi", "Wati", "Andi", "Maya", "Joni", "Tika", "Bayu", "Lina", "Eko", "Nina", "Rudi", "Dewi", "Agus", "Fitri", "Hendra", "Intan", "Yusuf" };
     public Transform[] pointsOfInterest = new Transform[0];
     public string mechanicCharacter = "mechanic";

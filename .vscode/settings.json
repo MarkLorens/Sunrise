@@ -67,6 +67,6 @@
         "*.sln": "*.csproj",
         "*.slnx": "*.csproj"
     },
-    "dotnet.defaultSolution": "Sunrise.slnx",
+    "dotnet.defaultSolution": "Sunrise_Project.slnx",
     "dotnet.enableWorkspaceBasedDevelopment": false
 }

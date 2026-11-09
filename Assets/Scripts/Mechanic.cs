@@ -143,16 +143,5 @@ public class Mechanic : MonoBehaviour
         look.pose = null;
     }
 
-    bool WalkTo(Vector3 p)
-    {
-        Vector3 to = p - transform.position;
-        to.y = 0;
-        if (to.magnitude < 0.3f)
-        {
-            walker.move = Vector2.zero;
-            return false;
-        }
-        walker.move = new Vector2(to.x, to.z).normalized;
-        return true;
-    }
+    bool WalkTo(Vector3 p) => walker.WalkTo(p);
 }
