@@ -5870,14 +5870,7 @@ MonoBehaviour:
   queue: {fileID: 700000134}
   startInQueue: 5
   characters:
-  - femaleAdventurer
-  - femalePerson
-  - maleAdventurer
-  - malePerson
-  - malePersonTeal
-  - malePersonRed
-  - femalePersonPink
-  - femalePersonYellow
+  - body_kaos
   names:
   - Budi
   - Sari
