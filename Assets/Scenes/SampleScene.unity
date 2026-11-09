@@ -1492,7 +1492,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 9cf5b14d9320342cdb23f3dd9260c54f, type: 3}
+  m_Sprite: {fileID: 21300000, guid: a57d25cf154214526bec760a428bb75c, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -2411,6 +2411,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacterSprite
   character: operator
   walkFps: 10
+  stepBounce: 0.04
   idle: {fileID: 0}
   think: {fileID: 0}
   interact: {fileID: 0}

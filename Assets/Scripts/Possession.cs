@@ -182,7 +182,7 @@ public class Possession : MonoBehaviour
         sprite.enabled = false;
         Host.BeginPossession();
         Fx.Burst("Fx/sparkle", Host.HeadPoint, 18, Fx.Spirit, 3.5f, 0.45f, 0.6f);
-        Fx.Shake(0.15f);
+        Fx.Shake(0.2f, 0.3f); // a small knock that sways and settles, like a landed hit
         GameHud.Say($"You possessed {Host.name}.", "UI/spirit");
         Mischief.Complete(Host.brain switch
         {

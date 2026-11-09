@@ -20,5 +20,5 @@ public static class Fx
         }
     }
 
-    public static void Shake(float amount) => CameraRig.Shake(amount);
+    public static void Shake(float amount, float seconds = 0f) => CameraRig.Shake(amount, seconds);
 }

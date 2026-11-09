@@ -3,9 +3,11 @@ using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-// Untitled Goose Game style "dynamic framing" on Cinemachine: a fixed-angle camera frames whoever you control
-// (the spirit, or the visitor it's possessing) plus anything interesting nearby (interactables, mechanics, ride
-// operators), dollying out to fit them and easing them in and out of shot. Shakes on big hits.
+// A fixed-angle Cinemachine camera that stays centred on whoever you control (the spirit, or the visitor it's
+// possessing) and trails them by a hair: it eases into a move and glides to a stop when you do, with no dead zone
+// and no look-ahead, so the player never drifts off-centre. Optionally (framePointsOfInterest) it also eases
+// anything interesting nearby into shot, Untitled Goose Game style. Spotlight hands the shot to an event for a moment.
+// Shake is smooth noise (a short sway that settles), not a new random spot every frame.
 // While the host rides the Ferris wheel a second camera sits in their cabin and looks out over the park, rising
 // and falling with the wheel; WASD turns the rider's head. The brain blends between the two.
 // GameHud puts it on the main camera; it builds the Cinemachine pieces itself.
@@ -14,10 +16,15 @@ public class CameraRig : MonoBehaviour
 {
     public static CameraRig Instance { get; private set; }
 
-    public Vector3 offset = new(0f, 6.5f, -13.5f); // direction and base distance from the target
-    public float lookAhead = 0.4f;            // seconds of look-ahead in the direction of travel
+    public Vector3 offset = new(0f, 6.5f, -10.5f); // direction and base distance from the target
+    public float followDamping = 0.5f; // seconds to settle after the player stops: lower = snappier, higher = floatier
+
+    [Header("Shake")]
+    public float shakeDistance = 0.8f;  // metres of sway per unit of shake
+    public float shakeFrequency = 12f;  // sways per second: lower = rolling, higher = rattly
 
     [Header("Framing")]
+    public bool framePointsOfInterest = false; // ease nearby interactables / staff into shot (pulls the player off-centre)
     public float joinRadius = 6f;     // things closer than this ease into shot...
     public float leaveRadius = 8f;    // ...and ease out again past this (the gap stops flicker at the edge)
     public float interestWeight = 0.5f; // combined pull of everything nearby vs. the player's 1
@@ -34,19 +41,26 @@ public class CameraRig : MonoBehaviour
     public float rideBlend = 1.2f;   // seconds to swoop into / out of the cabin
 
     CinemachineTargetGroup group;
+    CinemachinePositionComposer body;
     CinemachineCameraOffset shakeOffset, rideShakeOffset;
     CinemachineCamera rideCam;
     Transform target, spot;
     float spotUntil;
-    float shake;
+    float shake, shakeRate = 1.5f; // current strength, and how much of it fades per second
 
     Transform cabin;
     Vector2 look;    // yaw, pitch
 
-    // Adds screen shake (0.1 = light hit, 0.3 = big impact). Decays on its own.
-    public static void Shake(float amount)
+    // Adds screen shake: amount = strength (0.1 = light hit, 0.3 = big impact), seconds = how long until it settles
+    // (left out: stronger shakes last longer). Overlapping shakes add up and settle together.
+    public static void Shake(float amount, float seconds = 0f)
     {
-        if (Instance != null) Instance.shake = Mathf.Min(Instance.shake + amount, 0.5f);
+        var rig = Instance;
+        if (rig == null || amount <= 0f) return;
+        if (seconds <= 0f) seconds = amount / 1.5f;
+        float left = rig.shake / rig.shakeRate; // seconds the shake already going still has
+        rig.shake = Mathf.Min(rig.shake + amount, 0.5f);
+        rig.shakeRate = rig.shake / Mathf.Max(left, seconds);
     }
 
     // Briefly hands the shot to something else (e.g. the ferris wheel rolling away), then eases back to the player.
@@ -81,11 +95,9 @@ public class CameraRig : MonoBehaviour
         cam.Lens = lens;
         cam.Follow = group.transform;
 
-        var body = go.AddComponent<CinemachinePositionComposer>();
+        // Centred, no dead zone or look-ahead: only the damping makes it trail (set every frame in LateUpdate).
+        body = go.AddComponent<CinemachinePositionComposer>();
         body.CameraDistance = offset.magnitude;
-        body.Damping = new Vector3(0.3f, 0.3f, 0.6f);
-        body.Lookahead = new LookaheadSettings { Enabled = true, Time = lookAhead, Smoothing = 8f, IgnoreY = true };
-        body.Composition.DeadZone = new ScreenComposerSettings.DeadZoneSettings { Enabled = true, Size = new Vector2(0.08f, 0.08f) };
 
         var framing = go.AddComponent<CinemachineGroupFraming>();
         framing.SizeAdjustment = CinemachineGroupFraming.SizeAdjustmentModes.DollyOnly;
@@ -122,11 +134,14 @@ public class CameraRig : MonoBehaviour
             rideCam.enabled = cabin != null; // the most recently enabled camera goes live; the brain blends
         }
         if (cabin != null) Ride();
+        body.Damping = Vector3.one * followDamping; // same on every axis, so moving up/down the screen feels like left/right
         Follow(spirit != null ? spirit.Focus : null);
 
-        shake = Mathf.MoveTowards(shake, 0f, Time.unscaledDeltaTime * 1.5f);
-        Vector3 jolt = shake > 0f ? (Vector3)Random.insideUnitCircle * shake * 0.5f : Vector3.zero;
-        shakeOffset.Offset = rideShakeOffset.Offset = jolt;
+        // Smooth noise, so the camera sways and settles instead of buzzing; wider than tall, like a hit's knock.
+        shake = Mathf.MoveTowards(shake, 0f, Time.unscaledDeltaTime * shakeRate);
+        float t = Time.unscaledTime * shakeFrequency;
+        var sway = new Vector3(Mathf.PerlinNoise(t, 0.3f) * 2f - 1f, (Mathf.PerlinNoise(t, 7.7f) * 2f - 1f) * 0.6f, 0f);
+        shakeOffset.Offset = rideShakeOffset.Offset = sway * (shake * shakeDistance);
     }
 
     // Keeps the framing camera's group up to date (also while riding, so stepping out lands on a sensible shot).
@@ -168,15 +183,17 @@ public class CameraRig : MonoBehaviour
         rideCam.transform.SetPositionAndRotation(cabin.position + seat * cabin.lossyScale.y, Quaternion.Euler(look.y, 180f + look.x, 0f));
     }
 
-    // Points of interest ease in (weight up) when they come within joinRadius and ease out past leaveRadius.
+    // Points of interest ease in (weight up) when they come within joinRadius and ease out past leaveRadius
+    // (or all of them, when framePointsOfInterest is switched off).
     void UpdateInterest()
     {
         Vector3 here = target.position;
-        foreach (var t in Interesting())
-        {
-            if (t == target || t == spot || t.IsChildOf(target)) continue;
-            if (group.FindMember(t) < 0 && Vector3.Distance(here, t.position) < joinRadius) group.AddMember(t, 0f, 0.8f);
-        }
+        if (framePointsOfInterest)
+            foreach (var t in Interesting())
+            {
+                if (t == target || t == spot || t.IsChildOf(target)) continue;
+                if (group.FindMember(t) < 0 && Vector3.Distance(here, t.position) < joinRadius) group.AddMember(t, 0f, 0.8f);
+            }
 
         int inRangeCount = 0;
         foreach (var m in group.Targets) if (m.Object != target && m.Object != spot && InRange(m.Object, here)) inRangeCount++;
@@ -189,7 +206,7 @@ public class CameraRig : MonoBehaviour
         {
             var m = group.Targets[i];
             if (m.Object == target || m.Object == spot) continue;
-            bool inRange = InRange(m.Object, here);
+            bool inRange = framePointsOfInterest && InRange(m.Object, here);
             m.Weight = Mathf.MoveTowards(m.Weight, inRange && spot == null ? each : 0f, step * each);
             if (m.Weight <= 0f && !inRange) group.Targets.RemoveAt(i);
         }

@@ -1,14 +1,15 @@
 using UnityEngine;
 
 // Animates a flat character sprite (walk / run / idle, cheering with arms up, or a held pose), gives it a soft
-// shadow, squashes it when it's hit, and pops thought bubbles over its head to telegraph what it's thinking,
-// like the townsfolk in Untitled Goose Game.
+// shadow, a tiny hop on every step while walking, squashes it when it's hit, and pops thought bubbles over its
+// head to telegraph what it's thinking, like the townsfolk in Untitled Goose Game.
 // Frames come from Resources/Visitors/<character>/character_<character>_<pose>.png.
 [RequireComponent(typeof(SpriteRenderer))]
 public class CharacterSprite : MonoBehaviour
 {
     public string character = "malePerson";
     public float walkFps = 10f;
+    public float stepBounce = 0.04f; // how much they stretch up between footfalls (0.04 = 4% taller); half again when running
 
     [HideInInspector] public Sprite idle, think, interact, fallDown;
     [HideInInspector] public Sprite[] walk, run, cheer;
@@ -27,6 +28,7 @@ public class CharacterSprite : MonoBehaviour
     float gestureUntil, cheerUntil;
     float animOffset;
     Vector3 baseScale;
+    float stride;    // 0..1: eases the step hop in when they set off and out when they stop
     float punchAge = 1f;
     bool loaded;
 
@@ -157,19 +159,34 @@ public class CharacterSprite : MonoBehaviour
         if (Mathf.Abs(v.x) > 0.05f) body.flipX = v.x < 0;
 
         Sprite[] cycle = running ? run : walk;
+        float frame = (Time.time + animOffset) * walkFps;
+        bool stepping = false;
         if (Time.time < gestureUntil) body.sprite = gesture;
         else if (Time.time < cheerUntil) body.sprite = cheer[(int)(Time.time * 6f) % 2];
         else if (pose != null) body.sprite = pose;
-        else if (moving) body.sprite = cycle[(int)((Time.time + animOffset) * walkFps) % cycle.Length];
+        else if (moving)
+        {
+            body.sprite = cycle[(int)frame % cycle.Length];
+            stepping = true;
+        }
         else body.sprite = idle;
 
+        // Squash and stretch (the feet stay put: the sprite's pivot is at its feet).
+        // Walking: two steps per cycle, footfalls on frames 0 and 4 - a slight squash as the foot lands, a slight
+        // stretch as the legs pass. A tiny hop that says "moving" without anyone noticing it as an effect.
+        stride = Mathf.MoveTowards(stride, stepping ? 1f : 0f, Time.deltaTime * 6f);
+        float hop = (Mathf.Abs(Mathf.Sin(frame / cycle.Length * 2f * Mathf.PI)) - 0.3f) * stepBounce * (running ? 1.5f : 1f) * stride;
+        float sx = 1f - hop * 0.5f, sy = 1f + hop;
+        // Hit: a big squash that wobbles back.
         if (punchAge < 0.35f)
         {
             punchAge += Time.deltaTime;
             float k = Mathf.Sin(punchAge / 0.35f * Mathf.PI) * (1f - punchAge / 0.35f);
-            transform.localScale = new Vector3(baseScale.x * (1f + k * 0.35f), baseScale.y * (1f - k * 0.3f), baseScale.z);
+            sx *= 1f + k * 0.35f;
+            sy *= 1f - k * 0.3f;
         }
-        else if (transform.localScale != baseScale) transform.localScale = baseScale;
+        var scale = new Vector3(baseScale.x * sx, baseScale.y * sy, baseScale.z);
+        if (transform.localScale != scale) transform.localScale = scale;
 
         AnimateBubble();
     }

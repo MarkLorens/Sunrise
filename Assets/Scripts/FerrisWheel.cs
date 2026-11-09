@@ -60,6 +60,7 @@ public class FerrisWheel : MonoBehaviour
     public bool InChaos => IsBroken && Time.time - brokeAt < chaosDuration;
     public Vector3 WreckPoint => new(wheel.position.x, 0f, wheel.position.z);
     public StaffArea Area { get; private set; }
+    public IReadOnlyList<Transform> Cabins => cabins;
     float Scale => transform.lossyScale.x;
 
     readonly List<Transform> cabins = new();
