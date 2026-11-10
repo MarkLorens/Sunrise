@@ -71,7 +71,6 @@ public class ActionOutline : MonoBehaviour
             case Possession.Mode.Possessing when !spirit.Riding:
                 AddUsable(spirit.Host);
                 if (spirit.GrabCandidate != null) targets.Add(spirit.GrabCandidate.transform);
-                if (spirit.Charging && spirit.AimLocked) targets.Add(spirit.AimTarget.transform);
                 break;
         }
     }

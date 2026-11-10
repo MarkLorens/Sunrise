@@ -3,8 +3,9 @@ using UnityEngine.Tilemaps;
 
 // Fills the park with people on random ground tiles around this object when the scene starts.
 // Some visitors start out lined up for the ride; the rest roam (and may wander over to the line later), many of them
-// carrying a drink or a water bottle. Plus the mechanic, screwdriver in hand.
-// Visitors use the lineart bodies in Resources/ArtLineartTorso; the mechanic still uses Resources/Visitors/<character>/
+// carrying a drink or a water bottle. Plus the staff: the mechanic (keys in hand) and the Reset Agents behind the
+// staff door, the cable man by the speaker and the ride technician asleep at his spot.
+// Visitors use the lineart bodies in Resources/ArtLineartTorso; staff still use Resources/Visitors/<character>/
 // (Kenney Toon Characters 1, CC0).
 public class VisitorSpawner : MonoBehaviour
 {
@@ -27,7 +28,15 @@ public class VisitorSpawner : MonoBehaviour
     public Transform[] pointsOfInterest = new Transform[0];
     public string mechanicCharacter = "mechanic";
     public string mechanicName = "Mechanic Joko";
-    public Transform mechanicPost; // where the mechanic hangs around; empty = a random spot
+    public Transform mechanicPost; // the staff door: the mechanic and Reset Agents wait behind it; empty = a random spot
+    public int resetAgents = 2;
+    public string resetAgentCharacter = "malePersonTeal";
+    public string cableManCharacter = "maleAdventurer";
+    public string cableManName = "Cable Man Ucok";
+    public Transform cableManPost;  // empty = no cable man
+    public string technicianCharacter = "malePersonRed";
+    public string technicianName = "Technician Bambang";
+    public Transform technicianPost; // empty = no technician
 
     int nameIndex;
 
@@ -54,19 +63,28 @@ public class VisitorSpawner : MonoBehaviour
                 : VisitorItem.None;
             if (item != VisitorItem.None) visitor.GrabItem(Item.Create(item, visitor.CarryPoint, visitor), true);
         }
-        SpawnMechanic();
+        SpawnStaff();
     }
 
-    void SpawnMechanic()
+    void SpawnStaff()
     {
-        Vector3 pos;
-        if (mechanicPost != null) pos = mechanicPost.position;
-        else if (!RandomTile(out pos)) return;
-        var go = Body(mechanicName, pos, mechanicCharacter, personScale);
-        go.AddComponent<Mechanic>().wheel = queue != null ? queue.ride : null;
+        Vector3 door;
+        if (mechanicPost != null) door = mechanicPost.position;
+        else if (!RandomTile(out door)) return;
+
+        var body = Staff<Mechanic>(mechanicName, door, mechanicCharacter);
+        body.GrabItem(Item.Create(VisitorItem.Keys, body.CarryPoint, body), true);
+        for (int i = 0; i < resetAgents; i++) Staff<ResetAgent>($"Reset Agent {i + 1}", door, resetAgentCharacter);
+        if (cableManPost != null) Staff<CableMan>(cableManName, cableManPost.position, cableManCharacter);
+        if (technicianPost != null) Staff<RideTechnician>(technicianName, technicianPost.position, technicianCharacter);
+    }
+
+    Visitor Staff<T>(string name, Vector3 pos, string character) where T : MonoBehaviour
+    {
+        var go = Body(name, pos, character, personScale);
+        go.AddComponent<T>();
         go.SetActive(true);
-        var body = go.GetComponent<Visitor>();
-        body.GrabItem(Item.Create(VisitorItem.Screwdriver, body.CarryPoint, body), true);
+        return go.GetComponent<Visitor>();
     }
 
     string NextName() => names[nameIndex++ % names.Length];

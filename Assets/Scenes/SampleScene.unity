@@ -342,7 +342,7 @@ Transform:
   m_GameObject: {fileID: 109683622}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: -1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -855,6 +855,37 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
   m_BlendShapeWeights: []
+--- !u!1 &407931830
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 407931831}
+  m_Layer: 0
+  m_Name: Technician Post
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &407931831
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 407931830}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 13, y: 0, z: 14.5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &408295987
 GameObject:
   m_ObjectHideFlags: 0
@@ -1774,6 +1805,37 @@ Transform:
   - {fileID: 1252492556}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
+--- !u!1 &641270997
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 641270998}
+  m_Layer: 0
+  m_Name: Cable Man Post
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &641270998
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 641270997}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -15, y: 0, z: 8}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &700000100
 GameObject:
   m_ObjectHideFlags: 0
@@ -1821,30 +1883,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FerrisWheel
   wheel: {fileID: 700000107}
-  ground: {fileID: 2077144830}
   cabinSprite: {fileID: 21300000, guid: 11ba348fb71046dfa1113427d0d65047, type: 3}
   cabinCount: 12
   cabinRadius: 3.4
   wheelRadius: 3.5
   normalSpeed: 12
-  overdriveSpeed: 140
-  spinUpTime: 4
-  breakDelay: 1.5
-  rollSpeed: 6
-  rollDistance: 30
-  cameraFollowTime: 3
-  chaosRadius: 10
-  chaosDuration: 300
-  panicTime: 8
-  gearRadius: 1.6
-  riderDeathChance: 0.6
-  loadTime: 6
-  policeDelay: 10
-  policeLineRadius: 5
-  rebuildTime: 600
+  windDownTime: 5
   electricalBoxOffset: {x: -3.3, y: 0, z: -0.6}
-  hingeOffset: {x: -1.4, y: 0, z: -1}
-  gearBoxOffset: {x: 0.5, y: 0, z: -0.8}
   closedAreaOffset: {x: 0, y: 0, z: 0.3}
   closedAreaSize: {x: 5.4, y: 3.4}
   queue: {fileID: 700000134}
@@ -2466,9 +2511,9 @@ MonoBehaviour:
   wheel: {fileID: 700000102}
   walkSpeed: 2
   runSpeed: 4
-  watchRadius: 3
   attendRadius: 15
   attendTime: 15
+  callTime: 4
 --- !u!1 &700000127
 GameObject:
   m_ObjectHideFlags: 0
@@ -2679,7 +2724,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0a366a45f3645cd9f0fbe195da33697, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameHud
-  objective: Break the Ferris wheel
+  objective: Cut the Ferris wheel's power
 --- !u!1 &719843468
 GameObject:
   m_ObjectHideFlags: 0
@@ -2705,7 +2750,7 @@ Transform:
   m_GameObject: {fileID: 719843468}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -5.75, y: 2.4, z: 12.22526}
+  m_LocalPosition: {x: -5.51, y: 2.4, z: -1.633}
   m_LocalScale: {x: 0.3, y: 0.3, z: 0.3}
   m_ConstrainProportionsScale: 1
   m_Children:
@@ -2880,8 +2925,8 @@ Transform:
   m_GameObject: {fileID: 931907711}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.04, y: -0.15, z: 1.28}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 0.19, y: -0.07, z: 0.4}
+  m_LocalScale: {x: 1.1, y: 1.1, z: 1.1}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 719843469}
@@ -4379,7 +4424,7 @@ TilemapRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 6213e63be3d0d40b3ba743568c20a83b, type: 2}
+  - {fileID: 2100000, guid: c8e2094e2e3374c38b5ef52592a346f5, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -5815,6 +5860,55 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
   m_BlendShapeWeights: []
+--- !u!1 &1786531566
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1786531568}
+  - component: {fileID: 1786531567}
+  m_Layer: 0
+  m_Name: Speaker
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1786531567
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1786531566}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 733e6fbaa02b4470e86acbf51cb449bb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Speaker
+  crowdOffset: {x: 0, y: 0, z: -1.6}
+  crowdRadius: 1.6
+  crowdSize: 6
+  cableEndOffset: {x: -2.5, y: 0, z: 0.5}
+  fountain: {fileID: 1916883789}
+--- !u!4 &1786531568
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1786531566}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -12, y: 0, z: 7}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1902451101
 GameObject:
   m_ObjectHideFlags: 0
@@ -5901,6 +5995,85 @@ MonoBehaviour:
   mechanicCharacter: mechanic
   mechanicName: Mechanic Joko
   mechanicPost: {fileID: 1625246199}
+  resetAgents: 2
+  resetAgentCharacter: malePersonTeal
+  cableManCharacter: maleAdventurer
+  cableManName: Cable Man Ucok
+  cableManPost: {fileID: 641270998}
+  technicianCharacter: malePersonRed
+  technicianName: Technician Bambang
+  technicianPost: {fileID: 407931831}
+--- !u!1 &1916883788
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1916883791}
+  - component: {fileID: 1916883790}
+  - component: {fileID: 1916883789}
+  m_Layer: 0
+  m_Name: Drinking Fountain
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1916883789
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1916883788}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ad80318ad8746480c804c1f3568eba82, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DrinkingFountain
+  puddleOffset: {x: -1, y: 0, z: -1}
+  startRadius: 0.5
+  growth: 0.45
+  maxRadius: 4.2
+  crowdToFlood: 3
+  victimsToCallMechanic: 3
+  fixTime: 12
+  mopTime: 8
+--- !u!114 &1916883790
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1916883788}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f5ff4daa78d69425e8fdd1d8f034d8e8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Interactable
+  range: 2
+  prompt: Interact
+  needsBody: 1
+  onInteract:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!4 &1916883791
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1916883788}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -9, y: 0, z: 7}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!65 &1946296364
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -19132,3 +19305,7 @@ SceneRoots:
   - {fileID: 554712940}
   - {fileID: 1625246199}
   - {fileID: 719843469}
+  - {fileID: 1916883791}
+  - {fileID: 1786531568}
+  - {fileID: 641270998}
+  - {fileID: 407931831}

@@ -1,0 +1,72 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+// A loudspeaker playing music. Visitors like to stand around in front of it for a while (Visitor picks it as
+// somewhere to go until the crowd is big enough). Its power cable is broken: the frayed live end (LiveCable) lies
+// sparking on the ground beside it.
+public class Speaker : MonoBehaviour
+{
+    public static readonly List<Speaker> All = new();
+
+    public Vector3 crowdOffset = new(0f, 0f, -1.6f); // where the crowd stands, relative to the speaker
+    public float crowdRadius = 1.6f;
+    public int crowdSize = 6;
+    public Vector3 cableEndOffset = new(-2.5f, 0f, 0.5f);
+    public DrinkingFountain fountain; // the puddle the cable can reach
+
+    public Vector3 CrowdCenter => new(transform.position.x + crowdOffset.x, 0f, transform.position.z + crowdOffset.z);
+
+    void OnEnable() => All.Add(this);
+    void OnDisable() => All.Remove(this);
+
+    void Start()
+    {
+        ParkArt.Solid(transform, "Props/speaker", 1.5f, new Color(0.22f, 0.2f, 0.26f));
+
+        var end = new GameObject("Live Cable");
+        end.SetActive(false); // so Interactable's Awake finds the rules component
+        end.transform.position = transform.position + cableEndOffset;
+        var cable = end.AddComponent<LiveCable>();
+        cable.speaker = this;
+        cable.fountain = fountain;
+        end.AddComponent<Interactable>().range = 1.6f;
+        end.SetActive(true);
+    }
+
+    // A speaker whose crowd isn't full yet, if any.
+    public static Speaker Wanting()
+    {
+        foreach (var s in All)
+            if (s.Listeners() < s.crowdSize) return s;
+        return null;
+    }
+
+    // The speaker this spot is in the crowd of, if any.
+    public static Speaker Near(Vector3 p)
+    {
+        foreach (var s in All)
+            if (s.InCrowd(p)) return s;
+        return null;
+    }
+
+    public Vector3 ListenSpot()
+    {
+        Vector2 r = Random.insideUnitCircle * crowdRadius;
+        return CrowdCenter + new Vector3(r.x, 0f, r.y);
+    }
+
+    bool InCrowd(Vector3 p)
+    {
+        Vector3 d = p - CrowdCenter;
+        d.y = 0f;
+        return d.magnitude <= crowdRadius + 0.5f;
+    }
+
+    int Listeners()
+    {
+        int n = 0;
+        foreach (var v in Visitor.All)
+            if (v.brain == null && v.Current is Visitor.State.Idle or Visitor.State.Wander && InCrowd(v.transform.position)) n++;
+        return n;
+    }
+}

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // A line of visitors waiting for a ride. The first slot is at this object's position and the line
-// runs along `direction`. While the ride runs normally and its operator is at the post,
+// runs along `direction`. While the ride has power and its operator is at the post,
 // the person at the front boards every `boardInterval` seconds and comes back out at `exit` later.
 // A possessed visitor can skip the line and board at the gate (RideGate) at its head.
 public class RideQueue : MonoBehaviour
@@ -41,8 +41,7 @@ public class RideQueue : MonoBehaviour
     public string BoardBlocked(Visitor v)
     {
         if (v.brain != null) return "Staff can't ride while they're on duty";
-        if (ride.IsBroken) return "The ride is broken";
-        if (!ride.IsRunningNormally) return "It's going way too fast to get on";
+        if (!ride.Powered) return "The ride's stopped";
         if (!rideOperator.AtPost) return "Nobody's running the ride";
         return null;
     }
@@ -58,7 +57,7 @@ public class RideQueue : MonoBehaviour
 
     public bool Join(Visitor v)
     {
-        if (!HasRoom || ride.IsBroken || line.Contains(v)) return false;
+        if (!HasRoom || line.Contains(v)) return false;
         line.Add(v);
         return true;
     }
@@ -71,6 +70,9 @@ public class RideQueue : MonoBehaviour
 
     void Update()
     {
+        // No power: riders are stuck up in their cabins and the line waits for it to come back.
+        if (!ride.Powered) return;
+
         for (int i = riders.Count - 1; i >= 0; i--)
         {
             if (Time.time < riders[i].until) continue;
@@ -78,15 +80,7 @@ public class RideQueue : MonoBehaviour
             riders.RemoveAt(i);
         }
 
-        // Nobody waits in line for a wrecked ride.
-        if (ride.IsBroken)
-        {
-            foreach (var v in line.ToArray()) v.Panic(ride.transform.position, 6f);
-            return;
-        }
-
-        bool boarding = ride.IsRunningNormally && rideOperator.AtPost;
-        if (!boarding || line.Count == 0 || Time.time < nextBoard) return;
+        if (!rideOperator.AtPost || line.Count == 0 || Time.time < nextBoard) return;
 
         var front = line[0];
         Vector3 d = front.transform.position - Slot(0);
@@ -97,18 +91,6 @@ public class RideQueue : MonoBehaviour
         front.StartRide(ride.BoardingCabin());
         riders.Add((front, Time.time + rideTime));
         nextBoard = Time.time + boardInterval;
-    }
-
-    // Everyone in a cabin tumbles out at once (the wheel broke loose or jammed). Some don't survive the fall.
-    public void ThrowOutRiders(Vector3 around, float spread, float deathChance)
-    {
-        foreach (var (who, _) in riders)
-        {
-            Vector2 r = Random.insideUnitCircle * spread;
-            who.EndRide(around + new Vector3(r.x, 0, r.y));
-            if (Random.value < deathChance) who.Die();
-        }
-        riders.Clear();
     }
 
     void OnDrawGizmos()

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Values are fixed because they're saved in the scene (the stall's goods, the spawner's items).
-public enum VisitorItem { None = 0, Drink = 3, Screwdriver = 4, WaterBottle = 5 }
+public enum VisitorItem { None = 0, Drink = 3, Keys = 4, WaterBottle = 5 }
 
 // A park visitor going about their day: wandering, buying drinks at the stall, lining up for the Ferris wheel,
 // carrying their things over their head. They stop and stare at someone acting possessed, gather round to watch a
@@ -36,6 +36,8 @@ public class Visitor : MonoBehaviour, IInteraction
     // Places people like to hang around (benches, views). Empty = just roam.
     public Transform[] pointsOfInterest = new Transform[0];
     [Range(0, 1)] public float pointOfInterestChance = 0.3f;
+    [Range(0, 1)] public float listenChance = 0.5f;  // per stop, chance to go listen to a speaker whose crowd isn't full
+    public Vector2 listenTime = new(15f, 35f);        // how long they stand listening
 
     public float stareRadius = 3f;
     public float stareTime = 1.5f;
@@ -179,6 +181,8 @@ public class Visitor : MonoBehaviour, IInteraction
             var stall = Stall.All[Random.Range(0, Stall.All.Count)];
             if (Head(stall.ServePoint + new Vector3(Random.Range(-0.4f, 0.4f), 0f, 0f))) return;
         }
+        var speaker = Speaker.Wanting();
+        if (speaker != null && Random.value < listenChance && Head(speaker.ListenSpot())) return;
         PickTarget();
     }
 
@@ -186,7 +190,16 @@ public class Visitor : MonoBehaviour, IInteraction
     {
         SetState(State.Idle);
         walker.move = Vector2.zero;
-        stateEndsAt = Time.time + Random.Range(idleTime.x, idleTime.y);
+        // In front of a speaker they stay a while to listen.
+        var speaker = brain == null ? Speaker.Near(transform.position) : null;
+        if (speaker == null)
+        {
+            stateEndsAt = Time.time + Random.Range(idleTime.x, idleTime.y);
+            return;
+        }
+        stateEndsAt = Time.time + Random.Range(listenTime.x, listenTime.y);
+        Look.Face(speaker.transform.position);
+        if (Random.value < 0.3f) Look.Show("heart", 1.5f);
     }
 
     void PickTarget()
@@ -310,7 +323,6 @@ public class Visitor : MonoBehaviour, IInteraction
         if (away.sqrMagnitude < 0.01f) away = Vector3.back;
         Look.Show("question", 1.5f);
         GameHud.Say($"{by.name}: Staff only around here. Move along, please.");
-        Mischief.Complete(Mischief.Task.SendAway);
         for (int i = 0; i < 12; i++)
         {
             Vector3 spot = transform.position + Quaternion.Euler(0f, Random.Range(-50f, 50f), 0f) * away.normalized * sendAwayDistance;
@@ -373,7 +385,7 @@ public class Visitor : MonoBehaviour, IInteraction
         it.Thrown(this, CarryPoint, velocity);
     }
 
-    // Used up (poured out, jammed in the gears).
+    // Used up (poured out).
     public void TakeItem()
     {
         if (Held == null) return;
