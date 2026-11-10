@@ -1,42 +1,44 @@
 using System.Collections.Generic;
 
-// The level's objective, from the level design doc: break the Ferris wheel (primary) and find every way to do it
-// (secondary). Each way is a list of steps; GameHud shows them on Tab and ticks them off as they happen.
+// The level's sequence, from the level design doc: make a scene big enough to bring the mechanic, then use his keys
+// to cut the Ferris wheel's power. Each part is a list of steps; GameHud shows them on Tab and ticks them off as
+// the behaviours that make them happen report in. Nothing here drives the order: the world's own rules do.
 public static class Mischief
 {
-    public enum Task { Possess, LureMechanic, PossessMechanic, SendAway, LoosenHinge, PossessOperator, Overdrive, FryPanel, PickFight, JamGears, WheelRolled, WheelJammed }
+    public enum Task { Possess, FloodPuddle, PossessCableMan, Electrocute, LureMechanic, PossessMechanic, UnlockBox, CutPower, CallTechnician }
 
-    public static readonly (string title, (Task task, string label)[] steps)[] Methods =
+    public static readonly (string title, (Task task, string label)[] steps)[] Parts =
     {
-        ("Method 1: Loosen the support", new[]
+        ("1. A-leak-tricity", new[]
         {
             (Task.Possess, "Possess a visitor"),
-            (Task.LureMechanic, "Bang on the electrical box until the mechanic comes"),
-            (Task.PossessMechanic, "Possess the mechanic"),
-            (Task.SendAway, "As the mechanic, send the visitor away"),
-            (Task.LoosenHinge, "Walk into the closed area and loosen the support screws"),
-            (Task.PossessOperator, "Get close to the operator and possess him"),
-            (Task.Overdrive, "Start the ride at full speed"),
-            (Task.FryPanel, "Optional: pour a drink over the control panel"),
-            (Task.WheelRolled, "The wheel breaks loose and rolls away"),
+            (Task.FloodPuddle, "Flood the crowd at the speaker with the leaky fountain"),
+            (Task.PossessCableMan, "Possess the cable man"),
+            (Task.Electrocute, "Dip the broken speaker cable in the puddle"),
+            (Task.LureMechanic, "The mechanic comes to fix the fountain"),
         }),
-        ("Method 2: Jam the gears", new[]
+        ("2. Lights out", new[]
         {
-            (Task.Possess, "Possess a visitor and queue up close to the operator"),
-            (Task.PossessOperator, "Possess the operator"),
-            (Task.Overdrive, "Start the ride at full speed, then walk him away"),
-            (Task.FryPanel, "Pour a drink over the control panel"),
-            (Task.PickFight, "Pick a fight with another visitor to draw the staff away"),
-            (Task.JamGears, "Sneak into the closed area and throw a water bottle into the gear box"),
-            (Task.WheelJammed, "The wheel stops dead and the cabins fly off"),
+            (Task.PossessMechanic, "Possess the mechanic (he has the keys)"),
+            (Task.UnlockBox, "Unlock the Ferris wheel's electrical box"),
+            (Task.CutPower, "Cut the Ferris wheel's power"),
+            (Task.CallTechnician, "The operator calls the ride technician..."),
         }),
     };
 
-    public static readonly Task[] Endings = { Task.WheelRolled, Task.WheelJammed };
-
     static readonly HashSet<Task> done = new();
 
-    public static int MethodsFound => (IsDone(Task.WheelRolled) ? 1 : 0) + (IsDone(Task.WheelJammed) ? 1 : 0);
+    public static int StepCount
+    {
+        get
+        {
+            int n = 0;
+            foreach (var (_, steps) in Parts) n += steps.Length;
+            return n;
+        }
+    }
+
+    public static int StepsDone => done.Count;
 
     public static bool IsDone(Task t) => done.Contains(t);
 
@@ -46,8 +48,7 @@ public static class Mischief
     {
         if (!done.Add(t)) return;
         Sfx.Play(Sfx.TaskDone, 0.7f);
-        if (System.Array.IndexOf(Endings, t) >= 0) return; // the wheel breaking gets its own banner
-        foreach (var (_, steps) in Methods)
+        foreach (var (_, steps) in Parts)
             foreach (var (task, label) in steps)
                 if (task == t)
                 {

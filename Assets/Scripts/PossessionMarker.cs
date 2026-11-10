@@ -68,13 +68,12 @@ public class PossessionMarker : MonoBehaviour
             arrowHolder.localScale = Vector3.one * 0.6f;
         }
 
-        // 3. target ring where the throw lands: snaps onto the target and turns red when it will connect
+        // 3. target ring where the throw lands
         targetRing.enabled = possessing && spirit.Charging && spirit.Charge > 0f;
         if (targetRing.enabled)
         {
-            bool locked = spirit.AimLocked;
-            targetRing.color = locked ? new Color(1f, 0.35f, 0.3f) : new Color(1f, 0.95f, 0.6f);
-            Place(targetRing, spirit.PredictLanding(), -t * 90f, (locked ? 1.4f : 1f) + Mathf.Sin(t * 8f) * 0.08f);
+            targetRing.color = new Color(1f, 0.95f, 0.6f);
+            Place(targetRing, spirit.PredictLanding(), -t * 90f, 1f + Mathf.Sin(t * 8f) * 0.08f);
         }
 
         // ring under whoever you could possess (grey if they resist)

@@ -36,7 +36,6 @@ public class Possession : MonoBehaviour
     public bool Charging { get; private set; }
     public float Charge { get; private set; }
     public Vector3 AimDirection { get; private set; } = Vector3.right;
-    public GearBox AimTarget { get; private set; }
     // Sitting in a cabin on the Ferris wheel.
     public bool Riding => Host != null && Host.Current == Visitor.State.Riding;
 
@@ -184,12 +183,9 @@ public class Possession : MonoBehaviour
         Fx.Burst("Fx/sparkle", Host.HeadPoint, 18, Fx.Spirit, 3.5f, 0.45f, 0.6f);
         Fx.Shake(0.2f, 0.3f); // a small knock that sways and settles, like a landed hit
         GameHud.Say($"You possessed {Host.name}.", "UI/spirit");
-        Mischief.Complete(Host.brain switch
-        {
-            Mechanic => Mischief.Task.PossessMechanic,
-            RideOperator => Mischief.Task.PossessOperator,
-            _ => Mischief.Task.Possess,
-        });
+        if (Host.brain == null) Mischief.Complete(Mischief.Task.Possess);
+        else if (Host.brain is CableMan) Mischief.Complete(Mischief.Task.PossessCableMan);
+        else if (Host.brain is Mechanic) Mischief.Complete(Mischief.Task.PossessMechanic);
     }
 
     // ---------------------------------------------------------------- possessed
@@ -265,54 +261,14 @@ public class Possession : MonoBehaviour
 
     void Grab(Item it) => Host.GrabItem(it);
 
-    void Aim()
-    {
-        AimDirection = Host.Facing;
-        AimTarget = null;
-        float best = 40f; // gentle aim assist toward the gear box when it's roughly in front
-        foreach (var g in GearBox.All)
-        {
-            Vector3 to = Flat(g.transform.position - Host.transform.position);
-            float dist = to.magnitude;
-            if (dist > 12f || dist < 0.5f) continue;
-            float angle = Vector3.Angle(Host.Facing, to);
-            if (angle < best)
-            {
-                best = angle;
-                AimTarget = g;
-                AimDirection = to / dist;
-            }
-        }
-    }
+    void Aim() => AimDirection = Host.Facing;
 
-    // How far a throw at this charge can reach a locked-on target.
-    public static float MaxRange(float power) => 3f + 11f * power;
-
-    public bool AimLocked => AimTarget != null && Host != null &&
-                             Flat(AimTarget.transform.position - Host.transform.position).magnitude <= MaxRange(Charge);
-
-    public Vector3 ThrowVelocity(float power)
-    {
-        float g = Item.Gravity;
-        if (AimLocked)
-        {
-            // A lob that drops into the target: faster throws with more charge.
-            Vector3 start = Host.CarryPoint;
-            Vector3 goal = AimTarget.transform.position + Vector3.up * 0.5f;
-            Vector3 flat = Flat(goal - start);
-            float dist = Mathf.Max(0.1f, flat.magnitude);
-            float speed = 6f + 8f * power;
-            float t = Mathf.Max(0.15f, dist / speed);
-            float vy = (goal.y - start.y + 0.5f * g * t * t) / t;
-            return flat / dist * speed + Vector3.up * vy;
-        }
-        return AimDirection * (5f + 9f * power) + Vector3.up * (3.5f + 2.5f * power);
-    }
+    public Vector3 ThrowVelocity(float power) =>
+        AimDirection * (5f + 9f * power) + Vector3.up * (3.5f + 2.5f * power);
 
     // Where a throw released now would land.
     public Vector3 PredictLanding()
     {
-        if (AimLocked) return new Vector3(AimTarget.transform.position.x, 0.03f, AimTarget.transform.position.z);
         Vector3 start = Host.CarryPoint;
         Vector3 v = ThrowVelocity(Charge);
         float g = Item.Gravity;
@@ -325,7 +281,6 @@ public class Possession : MonoBehaviour
     void Throw()
     {
         Host.ThrowHeld(ThrowVelocity(Charge));
-        AimTarget = null;
     }
 
     // ---------------------------------------------------------------- leaving

@@ -5,9 +5,11 @@ using UnityEngine;
 // shadow, a tiny hop on every step while walking, squashes it when it's hit, and pops thought bubbles over its
 // head to telegraph what it's thinking, like the townsfolk in Untitled Goose Game.
 // Frames come from Resources/Visitors/<character>/character_<character>_<pose>.png, or for the new lineart bodies
-// (character = "body_<variant>") from Resources/ArtLineart/body_<variant>_idle / _walk1..4. If a body has white fill
+// (character = "body_<variant>") from Resources/ArtLineartTorso/body_<variant>_idle / _walk1..4. If a body has white fill
 // layers (body_<variant>_<pose>_skin/top/bottom/shoes, made by Tools > Split Coloured Body Art) they're stacked behind
-// the line, follow its frame, and each gets a random colour from its palette.
+// the line, follow its frame, and each gets a random colour from its palette. Bodies also get a random face and hair
+// from Resources/ArtLineartHead (face_<n>[_open/_closed], hair_<n> + _hair/_hat fills), pinned to the head of
+// whatever frame the body shows; faces with a _closed frame blink.
 [RequireComponent(typeof(SpriteRenderer))]
 public class CharacterSprite : MonoBehaviour
 {
@@ -37,6 +39,17 @@ public class CharacterSprite : MonoBehaviour
         Hex("#3B5B8C", "#C9B48A", "#3A3A42", "#7A7F87", "#556B2F"),                       // bottom
         Hex("#F4F4F4", "#2B2B2B", "#7B4A2A", "#C0392B"),                                  // shoes
     };
+    static readonly Color[] HairPalette = Hex("#1C1C1C", "#3B2618", "#6B4226", "#A0522D", "#C99B4F", "#8C8C8C");
+    static readonly Color[] HatPalette = Hex("#E74C3C", "#3498DB", "#2ECC71", "#F1C40F", "#F4F4F4", "#2B2B2B");
+    static Dictionary<string, Sprite> headArt;
+    static readonly List<string> faceIds = new(), hairIds = new();
+    static readonly Dictionary<Sprite, Vector3> headAnchors = new();
+    Transform head;
+    SpriteRenderer face;
+    Sprite faceOpen, faceClosed;
+    float nextBlink, blinkUntil;
+    readonly List<(SpriteRenderer r, Color c)> headParts = new();
+
     readonly List<SpriteRenderer> fills = new();
     readonly List<Color> fillColors = new();
     readonly Dictionary<Sprite, Sprite[]> fillFrames = new(); // line frame -> its fill frame per layer
@@ -73,7 +86,7 @@ public class CharacterSprite : MonoBehaviour
         if (character.StartsWith("body_"))
         {
             // Lineart bodies only have idle + a 4-frame walk so far; the other poses borrow those until they're drawn.
-            string line = $"ArtLineart/{character}_";
+            string line = $"ArtLineartTorso/{character}_";
             idle = Resources.Load<Sprite>(line + "idle");
             walk = new Sprite[4];
             for (int i = 0; i < 4; i++) walk[i] = Resources.Load<Sprite>(line + "walk" + (i + 1));
@@ -82,6 +95,8 @@ public class CharacterSprite : MonoBehaviour
             cheer = new[] { idle, idle };
             drawnFacingLeft = true;
             LoadFills(line);
+            LoadHead();
+            ApplyTint();
         }
         else
         {
@@ -142,9 +157,81 @@ public class CharacterSprite : MonoBehaviour
         ApplyTint();
     }
 
-    // Fills show the frame that matches whatever the line is showing.
+    void LoadHead()
+    {
+        if (headArt == null)
+        {
+            headArt = new Dictionary<string, Sprite>();
+            foreach (var s in Resources.LoadAll<Sprite>("ArtLineartHead"))
+            {
+                headArt[s.name] = s;
+                var parts = s.name.Split('_'); // face_3_open, face_6, hair_7, hair_7_hat
+                string id = parts[0] + "_" + parts[1];
+                if (parts[0] == "face" && !faceIds.Contains(id)) faceIds.Add(id);
+                if (parts[0] == "hair" && parts.Length == 2) hairIds.Add(id);
+            }
+        }
+        if (faceIds.Count == 0 && hairIds.Count == 0) return;
+
+        head = new GameObject("Head").transform;
+        head.SetParent(transform, false);
+        // In front of the body line (lower z is nearer the camera): face, then hair fills, then the hair line.
+        if (faceIds.Count > 0)
+        {
+            string id = faceIds[Random.Range(0, faceIds.Count)];
+            faceOpen = HeadArt(id + "_open") ?? HeadArt(id);
+            faceClosed = HeadArt(id + "_closed");
+            face = HeadPart("Face", faceOpen, -0.002f, Color.white);
+            nextBlink = Time.time + Random.Range(1f, 4f);
+        }
+        if (hairIds.Count > 0)
+        {
+            string id = hairIds[Random.Range(0, hairIds.Count)];
+            HeadPart("HairFill", HeadArt(id + "_hair"), -0.003f, HairPalette[Random.Range(0, HairPalette.Length)]);
+            HeadPart("HatFill", HeadArt(id + "_hat"), -0.003f, HatPalette[Random.Range(0, HatPalette.Length)]);
+            HeadPart("Hair", HeadArt(id), -0.004f, Color.white);
+        }
+    }
+
+    static Sprite HeadArt(string name) => headArt.TryGetValue(name, out var s) ? s : null;
+
+    SpriteRenderer HeadPart(string name, Sprite sprite, float z, Color color)
+    {
+        if (sprite == null) return null;
+        var r = new GameObject(name).AddComponent<SpriteRenderer>();
+        r.transform.SetParent(head, false);
+        r.transform.localPosition = new Vector3(0f, 0f, z);
+        r.sprite = sprite;
+        r.sharedMaterial = body.sharedMaterial;
+        ParkArt.CastShadows(r);
+        headParts.Add((r, color));
+        return r;
+    }
+
+    // Head pieces pivot on the head's top-left corner; find that corner on a body frame from its tight mesh, which
+    // hugs the drawing ~3 px outside it. Same head drawing in every body, so it's the same spot up to the bob.
+    static Vector3 HeadAnchor(Sprite s)
+    {
+        if (headAnchors.TryGetValue(s, out var a)) return a;
+        var v = s.vertices;
+        float top = float.MinValue, left = float.MaxValue, pad = 3f / s.pixelsPerUnit;
+        foreach (var p in v) top = Mathf.Max(top, p.y);
+        foreach (var p in v) if (p.y > top - 200f / s.pixelsPerUnit) left = Mathf.Min(left, p.x); // the head's rows
+        return headAnchors[s] = new Vector3(left + pad, top - pad, 0f);
+    }
+
+    // Fills show the frame that matches whatever the line is showing; the head follows its bob.
     void SyncFills()
     {
+        if (head != null)
+        {
+            head.localPosition = HeadAnchor(body.sprite);
+            if (faceClosed != null)
+            {
+                if (Time.time > nextBlink) { blinkUntil = Time.time + 0.12f; nextBlink = Time.time + Random.Range(2f, 5f); }
+                face.sprite = Time.time < blinkUntil ? faceClosed : faceOpen;
+            }
+        }
         if (fills.Count == 0) return;
         fillFrames.TryGetValue(body.sprite, out var set);
         for (int k = 0; k < fills.Count; k++) fills[k].sprite = set?[k];
@@ -210,6 +297,7 @@ public class CharacterSprite : MonoBehaviour
         body.enabled = visible;
         shadow.enabled = visible;
         foreach (var f in fills) f.enabled = visible;
+        foreach (var (r, _) in headParts) r.enabled = visible;
         if (!visible) bubble.enabled = false;
     }
 
@@ -227,6 +315,7 @@ public class CharacterSprite : MonoBehaviour
     {
         Tint(body, tint);
         for (int k = 0; k < fills.Count; k++) Tint(fills[k], tint * fillColors[k]);
+        foreach (var (r, c) in headParts) Tint(r, tint * c);
     }
 
     static void Tint(SpriteRenderer r, Color c)

@@ -3,16 +3,16 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-// The HUD, built at runtime in the style of My project's: the objective panel (break the Ferris wheel, ways found so
-// far, time left in the body), a context-sensitive controls bar whose keycaps light up while held, a prompt floating
-// over whatever you can possess / pick up / use, the intro banner, a feed of what's happening, the objective-complete
-// banner, and the steps of each way to break the wheel on Tab (the game pauses while it's open).
+// The HUD, built at runtime in the style of My project's: the objective panel (the objective, steps done so far,
+// time left in the body), a context-sensitive controls bar whose keycaps light up while held, a prompt floating over
+// whatever you can possess / pick up / use, the intro banner, a feed of what's happening, and the level's steps on
+// Tab (the game pauses while it's open).
 // It also gives the main camera its rig and the spirit its markers.
 public class GameHud : MonoBehaviour
 {
     public static GameHud Instance { get; private set; }
 
-    public string objective = "Break the Ferris wheel";
+    public string objective = "Cut the Ferris wheel's power";
 
     static readonly Color PanelDark = new(0.12f, 0.08f, 0.12f, 0.8f);
     static readonly Color Ink = new(0.17f, 0.1f, 0.13f);
@@ -30,7 +30,7 @@ public class GameHud : MonoBehaviour
     Possession spirit;
     PlayerInteractor interactor;
     RectTransform canvas;
-    Text waysLabel, gripLabel, winText;
+    Text stepsLabel, gripLabel;
     GameObject gripRow;
     GameObject controlsBar, floatHint, possessHint, walkHint, lookHint, grabHint, throwHint, dropHint, useHint, leaveHint;
     RectTransform prompt;
@@ -40,8 +40,6 @@ public class GameHud : MonoBehaviour
     float introAge;
     RectTransform feed, toastTemplate;
     readonly List<Toast> toasts = new();
-    CanvasGroup winBanner;
-    float winAge = -1f;
     CanvasGroup listScreen;
     RectTransform listPage;
     readonly List<(Mischief.Task task, Image box, Text label)> rows = new();
@@ -78,14 +76,6 @@ public class GameHud : MonoBehaviour
         else pending.Add((text, icon));
     }
 
-    // The Ferris wheel is broken: the level's objective is done (and one more way to do it found).
-    public static void ObjectiveComplete(string how)
-    {
-        if (Instance == null) return;
-        Instance.winText.text = $"{how}\nWays found: {Mischief.MethodsFound} / {Mischief.Methods.Length}";
-        Instance.winAge = 0f;
-    }
-
     // ---------------------------------------------------------------- every frame
 
     void Update()
@@ -109,7 +99,7 @@ public class GameHud : MonoBehaviour
 
     void UpdateCounters()
     {
-        waysLabel.text = $"Ways found  <b>{Mischief.MethodsFound}</b> / {Mischief.Methods.Length}";
+        stepsLabel.text = $"Steps done  <b>{Mischief.StepsDone}</b> / {Mischief.StepCount}";
 
         string grip = "";
         if (spirit.State == Possession.Mode.Spirit && spirit.CooldownLeft > 0f)
@@ -207,12 +197,6 @@ public class GameHud : MonoBehaviour
         if (spirit.Host != null && introAge < 9f) introAge = 9f; // got the idea
         intro.alpha = Mathf.Min(Mathf.Clamp01((introAge - 0.5f) * 2f), Mathf.Clamp01((10f - introAge) * 2f));
 
-        if (winAge >= 0f)
-        {
-            winAge += dt;
-            winBanner.alpha = winAge < 7f ? Mathf.Clamp01(winAge * 2f) : Mathf.Clamp01(1f - (winAge - 7f));
-            winBanner.transform.localScale = Vector3.one * (1f + Mathf.Max(0f, 0.3f - winAge));
-        }
 
         listFade = Mathf.MoveTowards(listFade, listOpen ? 1f : 0f, dt * 8f);
         listScreen.alpha = listFade;
@@ -267,7 +251,6 @@ public class GameHud : MonoBehaviour
         BuildPrompt();
         BuildIntro();
         BuildFeed();
-        BuildWinBanner();
         BuildList();
     }
 
@@ -288,11 +271,11 @@ public class GameHud : MonoBehaviour
         Icon(goal, "UI/spirit", 40f);
         Txt(Ui("Label", goal), objective, 30, Mint);
 
-        var ways = Ui("Ways Found", panel);
-        Row(ways, 10f).childAlignment = TextAnchor.MiddleLeft;
-        waysLabel = Txt(Ui("Label", ways), "Ways found", 24, Soft);
-        KeyCap(ways, "Tab", new[] { Key.Tab }, false, 36f);
-        Txt(Ui("Hint", ways), "steps", 22, new Color(0.8f, 0.75f, 0.85f));
+        var steps = Ui("Steps Done", panel);
+        Row(steps, 10f).childAlignment = TextAnchor.MiddleLeft;
+        stepsLabel = Txt(Ui("Label", steps), "Steps done", 24, Soft);
+        KeyCap(steps, "Tab", new[] { Key.Tab }, false, 36f);
+        Txt(Ui("Hint", steps), "steps", 22, new Color(0.8f, 0.75f, 0.85f));
 
         var grip = Ui("Grip", panel);
         Row(grip, 10f).childAlignment = TextAnchor.MiddleLeft;
@@ -360,7 +343,7 @@ public class GameHud : MonoBehaviour
         intro = banner.gameObject.AddComponent<CanvasGroup>();
         intro.alpha = 0f;
         Icon(banner, "UI/spirit", 46f);
-        Txt(Ui("Text", banner), $"You are an evil spirit loose in a theme park. <b>{objective}</b>, and find every way to do it (Tab).", 26, new Color(0.98f, 0.9f, 1f));
+        Txt(Ui("Text", banner), $"You are an evil spirit loose in a theme park. <b>{objective}</b>. Tab shows the steps.", 26, new Color(0.98f, 0.9f, 1f));
     }
 
     void BuildFeed()
@@ -390,24 +373,6 @@ public class GameHud : MonoBehaviour
         toastTemplate.gameObject.SetActive(false);
     }
 
-    void BuildWinBanner()
-    {
-        var banner = Ui("Win Banner", canvas);
-        Place(banner, new Vector2(0.5f, 0.68f), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
-        Img(banner, "UI/pill", new Color(0.18f, 0.08f, 0.26f, 0.9f));
-        var column = banner.gameObject.AddComponent<VerticalLayoutGroup>();
-        column.padding = new RectOffset(60, 60, 22, 26);
-        column.spacing = 4f;
-        column.childAlignment = TextAnchor.MiddleCenter;
-        column.childControlWidth = column.childControlHeight = true;
-        column.childForceExpandWidth = column.childForceExpandHeight = false;
-        Fit(banner);
-        winBanner = banner.gameObject.AddComponent<CanvasGroup>();
-        winBanner.alpha = 0f;
-        Txt(Ui("Title", banner), "Objective complete!", 64, Mint, TextAnchor.MiddleCenter, true);
-        winText = Txt(Ui("Subtitle", banner), "", 30, Soft, TextAnchor.MiddleCenter);
-    }
-
     void BuildList()
     {
         var screen = Ui("Steps List", canvas);
@@ -419,7 +384,7 @@ public class GameHud : MonoBehaviour
         Img(dim, null, new Color(0.05f, 0.03f, 0.06f, 0.45f));
 
         int lines = 0;
-        foreach (var (_, steps) in Mischief.Methods) lines += steps.Length + 1;
+        foreach (var (_, steps) in Mischief.Parts) lines += steps.Length + 1;
         listPage = Ui("Page", screen);
         float height = 190f + lines * 44f;
         Place(listPage, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(860f, height));
@@ -437,9 +402,9 @@ public class GameHud : MonoBehaviour
         column.childControlWidth = column.childControlHeight = true;
         column.childForceExpandWidth = true;
         column.childForceExpandHeight = false;
-        foreach (var (method, steps) in Mischief.Methods)
+        foreach (var (part, steps) in Mischief.Parts)
         {
-            Txt(Ui(method, list), method, 30, new Color(0.5f, 0.22f, 0.45f), TextAnchor.MiddleLeft, true);
+            Txt(Ui(part, list), part, 30, new Color(0.5f, 0.22f, 0.45f), TextAnchor.MiddleLeft, true);
             foreach (var (task, label) in steps)
             {
                 var row = Ui(task.ToString(), list);
