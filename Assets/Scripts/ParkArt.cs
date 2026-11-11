@@ -9,6 +9,16 @@ public static class ParkArt
     public const int DecalOrder = -40;  // lying on the ground: above the ground tiles (-50), under anything standing
     public const int OverheadOrder = 5; // bubbles, bars and markers drawn over people
 
+    // Every standing card leans back this far (X axis), so it faces the camera straight on. Colliders stay upright.
+    public static readonly Quaternion Card = Quaternion.Euler(45f, 0f, 0f);
+
+    // "Up" along a standing card: rising 1 also means moving 1 away from the camera (Y and Z together, like the
+    // tutorial's gravity rule), so things placed above a card stay on it instead of drifting toward the camera.
+    public static readonly Vector3 CardUp = Card * Vector3.up;
+
+    // The point `height` up a standing card from its feet.
+    public static Vector3 Above(Vector3 feet, float height) => feet + CardUp * height;
+
     static readonly Dictionary<string, Sprite> sprites = new();
     static Material material, litMaterial;
     static Font font;

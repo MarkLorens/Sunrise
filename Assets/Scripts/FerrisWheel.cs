@@ -182,11 +182,13 @@ public class FerrisWheel : MonoBehaviour
         go.SetActive(true);
 
         // Something people bump into: a box the size of its picture. Made after the scene loaded, so GroundWalker
-        // is told about it.
-        var box = art.gameObject.AddComponent<BoxCollider>();
+        // is told about it. It sits on the part itself, standing upright, while the picture leans 45° (a collider
+        // that leaned with the art would cover the wrong patch of floor).
+        var box = go.AddComponent<BoxCollider>();
         Bounds b = art.sprite.bounds;
-        box.center = b.center;
-        box.size = new Vector3(b.size.x, b.size.y, 0.2f);
+        float s = art.transform.localScale.y;
+        box.center = new Vector3(b.center.x * s, height * 0.5f + b.center.y * s, 0f);
+        box.size = new Vector3(b.size.x * s, b.size.y * s, 0.2f);
         GroundWalker.AddObstacle(box);
         return part;
     }
@@ -194,7 +196,10 @@ public class FerrisWheel : MonoBehaviour
     static SpriteRenderer Prop(Transform parent, string sprite, float height, Vector3 localFeet)
     {
         var r = ParkArt.Lit(ParkArt.Make("Sprite", parent, sprite, height, Color.white));
-        r.transform.localPosition = localFeet + new Vector3(0f, height * 0.5f, 0f);
+        // Lean the card 45° about its feet, whatever the parent's own rotation, so its bottom edge stays on the floor.
+        Quaternion lean = Quaternion.Inverse(parent.rotation) * ParkArt.Card;
+        r.transform.localRotation = lean;
+        r.transform.localPosition = localFeet + lean * new Vector3(0f, height * 0.5f, 0f);
         return r;
     }
 
@@ -260,7 +265,7 @@ public class FerrisWheel : MonoBehaviour
                 if (stateTime < 8f && Time.time >= nextPuff)
                 {
                     nextPuff = Time.time + 0.3f;
-                    Fx.Burst("Fx/puff", transform.position + Vector3.up * 0.6f, 2, new Color(0.5f, 0.5f, 0.5f, 0.7f), 1f, 0.6f, 1f);
+                    Fx.Burst("Fx/puff", ParkArt.Above(transform.position, 0.6f), 2, new Color(0.5f, 0.5f, 0.5f, 0.7f), 1f, 0.6f, 1f);
                 }
                 Aftermath();
                 break;

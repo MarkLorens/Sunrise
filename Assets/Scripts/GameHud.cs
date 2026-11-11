@@ -145,7 +145,7 @@ public class GameHud : MonoBehaviour
 
         if (spirit.State == Possession.Mode.Spirit && spirit.Candidate != null)
         {
-            anchor = spirit.Candidate.position + Vector3.up * 2.6f;
+            anchor = ParkArt.Above(spirit.Candidate.position, 2.6f);
             if (spirit.CandidateBlocked == null)
             {
                 key = "E";
@@ -159,7 +159,9 @@ public class GameHud : MonoBehaviour
             if (target != null)
             {
                 var r = target.GetComponent<SpriteRenderer>();
-                anchor = r != null ? new Vector3(target.transform.position.x, r.bounds.max.y + 0.4f, target.transform.position.z) : target.transform.position + Vector3.up * 2f;
+                Vector3 feet = target.transform.position;
+                // Height along the card: the leaning sprite's top is CardUp.y of its length above its feet.
+                anchor = r != null ? ParkArt.Above(feet, (r.bounds.max.y - feet.y) / ParkArt.CardUp.y + 0.4f) : ParkArt.Above(feet, 2f);
                 string blocked = target.Blocked(host);
                 key = blocked == null ? "E" : "";
                 text = blocked == null ? target.Prompt(host) : $"<color=#bbbbbb>{target.Prompt(host)}: {blocked}</color>";
@@ -167,7 +169,7 @@ public class GameHud : MonoBehaviour
             else if (spirit.GrabCandidate != null)
             {
                 var g = spirit.GrabCandidate;
-                anchor = g.transform.position + Vector3.up * 0.8f;
+                anchor = ParkArt.Above(g.transform.position, 0.8f);
                 key = "J";
                 text = $"Pick up the {g.DisplayName}";
             }

@@ -104,6 +104,7 @@ public class CharacterSprite : MonoBehaviour
 
         shadow = ParkArt.Make("Shadow", transform, "Markers/shadow", 0.42f, Color.white, ParkArt.DecalOrder, true);
         shadow.transform.parent.localPosition = new Vector3(0f, 0.02f, 0f);
+        shadow.transform.parent.rotation = Quaternion.identity; // flat, even though the body leans 45°
     }
 
     void LoadFills(string line)

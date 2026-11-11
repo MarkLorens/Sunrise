@@ -101,7 +101,7 @@ public class VisitorSpawner : MonoBehaviour
         var go = new GameObject(name);
         go.SetActive(false);
         go.transform.SetParent(transform, true);
-        go.transform.position = pos;
+        go.transform.SetPositionAndRotation(pos, ParkArt.Card);
         go.transform.localScale = Vector3.one * scale;
 
         var sr = go.AddComponent<SpriteRenderer>();

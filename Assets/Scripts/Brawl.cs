@@ -41,7 +41,8 @@ public class Brawl : MonoBehaviour
 
         visual = new GameObject("Visual").transform;
         visual.SetParent(transform, false);
-        visual.localPosition = new Vector3(0f, 1.2f, -0.3f);
+        visual.localPosition = ParkArt.Above(new Vector3(0f, 0f, -0.3f), 1.2f);
+        visual.localRotation = ParkArt.Card;
         cloud = ParkArt.Make("Cloud", visual, "Fx/brawl_cloud_0", 2.6f, Color.white, 2);
         figure = ParkArt.Make("Figure", visual, null, 1.1f, Color.white, 1);
         pow = ParkArt.Make("Pow", visual, pows[0], 1.1f, Color.white, 3);

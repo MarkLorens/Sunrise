@@ -23,7 +23,7 @@ public class ElectricalBox : MonoBehaviour, IInteraction
     {
         hits++;
         Sfx.Play(Sfx.HitWood, 0.9f, Random.Range(0.8f, 1.1f));
-        Fx.Burst("Fx/sparkle", transform.position + Vector3.up * 0.8f, 8, new Color(1f, 0.9f, 0.4f), 3f, 0.3f, 0.4f);
+        Fx.Burst("Fx/sparkle", ParkArt.Above(transform.position, 0.8f), 8, new Color(1f, 0.9f, 0.4f), 3f, 0.3f, 0.4f);
         Fx.Shake(0.08f);
         ParkChaos.Add(transform.position, 3f, 0.5f, ParkChaos.Scary);
         if (hits < hitsToLure)

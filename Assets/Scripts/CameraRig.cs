@@ -18,7 +18,9 @@ public class CameraRig : MonoBehaviour
 {
     public static CameraRig Instance { get; private set; }
 
-    public Vector3 offset = new(0f, 6.5f, -10.5f); // direction and base distance from the target
+    // Direction and base distance from the target. Looks down at 45°, the same angle the standing cards lean
+    // (ParkArt.Card), so every card faces the camera straight on. Same 12.35 distance as before.
+    public Vector3 offset = new(0f, 8.73f, -8.73f);
     public float followDamping = 0.5f; // seconds to settle after the player stops: lower = snappier, higher = floatier
 
     [Header("Shake")]
