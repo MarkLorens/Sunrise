@@ -84,6 +84,28 @@ public static class ParkArt
         return r;
     }
 
+    // A prop standing on `parent`'s position, `height` tall, that people walk around. Until there's art at
+    // Resources/Park/<sprite> it's a block of `standIn` colour.
+    public static SpriteRenderer Solid(Transform parent, string sprite, float height, Color standIn)
+    {
+        var r = Lit(Make("Sprite", parent, sprite, height, Color.white));
+        if (r.sprite == null)
+        {
+            // ponytail: coloured block until the prop is drawn.
+            r.sprite = Get("Markers/white");
+            r.color = standIn;
+            Vector3 size = r.sprite.bounds.size;
+            r.transform.localScale = new Vector3(height * 0.7f / size.x, height / size.y, 1f); // the marker isn't square
+        }
+        r.transform.localPosition = new Vector3(0f, height * 0.5f, 0f);
+        var box = r.gameObject.AddComponent<BoxCollider>();
+        Bounds b = r.sprite.bounds;
+        box.center = b.center;
+        box.size = new Vector3(b.size.x, b.size.y, 0.2f);
+        GroundWalker.AddObstacle(box);
+        return r;
+    }
+
     public static void Fit(SpriteRenderer r, float height)
     {
         if (r.sprite == null) return;

@@ -1,9 +1,6 @@
 using UnityEngine;
 
-// The Ferris wheel's control panel. Only the operator knows how to work it: possess him and push the ride to full
-// speed. Back at his post he'd turn it down again, unless someone fries the panel with a drink (or any water) while
-// it's maxed out. A loosened support (WheelHinge) won't hold the wheel at full speed for long, and at full speed the
-// gears (GearBox) can be jammed.
+// The Ferris wheel's control panel: the operator's post. Nothing to do with it for now, it's just there.
 [RequireComponent(typeof(Interactable))]
 public class ControlPanel : MonoBehaviour, IInteraction
 {
@@ -11,46 +8,11 @@ public class ControlPanel : MonoBehaviour, IInteraction
     public RideOperator rideOperator;
     public SpriteRenderer sparks;
 
-    void Update()
-    {
-        // Crackles while the wheel is being pushed past its limits, constantly once fried.
-        bool crackling = wheel.IsOverdrive ? Random.value < (wheel.PanelFried ? 0.3f : 0.08f) : wheel.Current == FerrisWheel.State.Breaking;
-        sparks.enabled = crackling && Random.value < 0.6f;
-        if (sparks.enabled) sparks.transform.localRotation = Quaternion.Euler(0, 0, Random.Range(0f, 360f));
-    }
+    void Start() => sparks.enabled = false;
 
-    static bool IsOperator(Visitor host) => host != null && host.brain is RideOperator;
+    public string Prompt(Visitor host) => "Control panel";
 
-    public string Prompt(Visitor host)
-    {
-        if (IsOperator(host)) return "Start the ride at full speed";
-        if (wheel.IsOverdrive && host != null && host.Held != null && host.Held.Wet) return $"Pour the {host.Held.DisplayName} over the panel";
-        return "Control panel";
-    }
+    public string Blocked(Visitor host) => wheel.Powered ? "Only the operator knows how to work this" : "No power";
 
-    public string Blocked(Visitor host)
-    {
-        if (wheel.IsBroken) return "Nothing left to break";
-        if (wheel.PanelFried) return "It's fried. Stuck at full speed";
-        if (IsOperator(host)) return wheel.IsOverdrive ? "It's already at full speed" : null;
-        if (rideOperator.WatchingPanel) return "The operator is watching the panel";
-        if (!wheel.IsOverdrive) return "Only the operator knows how to work this";
-        if (host.Held == null || !host.Held.Wet) return "It's going haywire... something wet might fry it for good";
-        return null;
-    }
-
-    public void Interact(Visitor host)
-    {
-        if (IsOperator(host))
-        {
-            wheel.Overdrive();
-            GameHud.Say("The wheel starts spinning faster... and faster...");
-            Mischief.Complete(Mischief.Task.Overdrive);
-            return;
-        }
-        host.TakeItem();
-        wheel.FryPanel();
-        GameHud.Say("*BZZZT!* The panel fries. The wheel is stuck at full speed!");
-        Mischief.Complete(Mischief.Task.FryPanel);
-    }
+    public void Interact(Visitor host) { }
 }

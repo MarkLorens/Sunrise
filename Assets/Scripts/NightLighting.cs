@@ -20,6 +20,12 @@ public class NightLighting : MonoBehaviour
     public Color ambient = new(0.3f, 0.27f, 0.48f);
     public Color sky = new(0.04f, 0.03f, 0.09f);   // camera background where the park ends
 
+    [Header("Fog")]
+    // Fades the park into the night sky with distance, so far things lose contrast and the near ones pop.
+    public bool fog = true;
+    public float fogStart = 14f; // metres from the camera (it sits ~12 from the player)
+    public float fogEnd = 45f;
+
     [Header("Grade")]
     public float exposure = -0.2f;
     [Range(-100, 100)] public float contrast = 12f;
@@ -97,6 +103,10 @@ public class NightLighting : MonoBehaviour
     SphericalHarmonicsL2 dayProbe;
     CameraClearFlags dayClear;
     Color dayBackground;
+    bool dayFog;
+    FogMode dayFogMode;
+    Color dayFogColor;
+    float dayFogStart, dayFogEnd;
 
     // Built on the first frame, once the park (wheel cabins, stalls) has set itself up.
     void LateUpdate()
@@ -121,6 +131,11 @@ public class NightLighting : MonoBehaviour
         RenderSettings.ambientMode = dayAmbientMode;
         RenderSettings.ambientLight = dayAmbient;
         RenderSettings.ambientProbe = dayProbe;
+        RenderSettings.fog = dayFog;
+        RenderSettings.fogMode = dayFogMode;
+        RenderSettings.fogColor = dayFogColor;
+        RenderSettings.fogStartDistance = dayFogStart;
+        RenderSettings.fogEndDistance = dayFogEnd;
         if (cam != null)
         {
             cam.clearFlags = dayClear;
@@ -162,6 +177,11 @@ public class NightLighting : MonoBehaviour
         dayAmbientMode = RenderSettings.ambientMode;
         dayAmbient = RenderSettings.ambientLight;
         dayProbe = RenderSettings.ambientProbe;
+        dayFog = RenderSettings.fog;
+        dayFogMode = RenderSettings.fogMode;
+        dayFogColor = RenderSettings.fogColor;
+        dayFogStart = RenderSettings.fogStartDistance;
+        dayFogEnd = RenderSettings.fogEndDistance;
         cam = Camera.main;
         if (cam != null)
         {
@@ -255,6 +275,11 @@ public class NightLighting : MonoBehaviour
         var probe = new SphericalHarmonicsL2();
         probe.AddAmbientLight(ambient.linear);
         RenderSettings.ambientProbe = probe;
+        RenderSettings.fog = fog;
+        RenderSettings.fogMode = FogMode.Linear;
+        RenderSettings.fogColor = sky; // same as the background, so the far edge melts into the sky
+        RenderSettings.fogStartDistance = fogStart;
+        RenderSettings.fogEndDistance = fogEnd;
         if (cam != null)
         {
             cam.clearFlags = CameraClearFlags.SolidColor;
@@ -287,8 +312,8 @@ public class NightLighting : MonoBehaviour
 
         foreach (var ride in rides)
         {
-            bool on = ride.wheel != null && !ride.wheel.IsBroken;
-            int step = (int)(Time.time * chaseSpeed * (on && ride.wheel.IsOverdrive ? 3f : 1f));
+            bool on = ride.wheel != null && ride.wheel.Powered;
+            int step = (int)(Time.time * chaseSpeed);
             for (int i = 0; i < ride.bulbs.Count; i++)
             {
                 var b = ride.bulbs[i];

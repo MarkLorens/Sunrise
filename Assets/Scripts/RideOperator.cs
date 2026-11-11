@@ -2,34 +2,32 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // The ride operator. His Visitor body can be possessed like anyone's (this script is switched off while it is).
-// Back at his post he puts an overdriven wheel back to normal (unless the panel's fried) and keeps an eye on the
-// ride's closed area. A brawl nearby pulls him off his post for a while to break it up.
+// He runs the ride from his post and keeps an eye on its closed area. A brawl nearby pulls him off his post for a
+// while to break it up. When the wheel loses power he calls the ride technician (RideTechnician), who doesn't pick up,
+// and stands at his post at a loss.
 [RequireComponent(typeof(GroundWalker), typeof(CharacterSprite))]
 public class RideOperator : MonoBehaviour
 {
     // Operators going about their job (not possessed).
     public static readonly List<RideOperator> All = new();
 
-    public enum State { AtPost, Returning, Shocked, Attending }
+    public enum State { AtPost, Returning, Attending, Calling, Stumped }
 
     public Transform post;
     public FerrisWheel wheel;
     public float walkSpeed = 2f;
     public float runSpeed = 4f;
-    public float watchRadius = 3f; // how close he has to be to notice someone at the panel
     public float attendRadius = 15f; // how far away a brawl pulls him off his post
     public float attendTime = 15f;   // how long he stays after it's over, seeing to whoever got hurt
+    public float callTime = 4f;      // ringing before he gives up
 
     public State Current { get; private set; }
     public bool AtPost => enabled && Current == State.AtPost;
     public bool BreakingUpFight => Current == State.Attending;
-    public bool WatchingPanel => enabled && (Current == State.AtPost ||
-                                 (Current == State.Returning && Vector3.Distance(transform.position, post.position) < watchRadius));
 
     GroundWalker walker;
     CharacterSprite look;
     float stateEndsAt;
-    bool friedNoticed;
     Vector3 brawlAt, attendSpot;
 
     // Switched off while possessed; on release he picks up again from wherever the spirit left him.
@@ -37,12 +35,8 @@ public class RideOperator : MonoBehaviour
     {
         All.Add(this);
         if (walker == null) return; // first enable, before Awake has run
-        if (Current != State.Shocked) Set(State.Returning);
-        else
-        {
-            look.pose = look.think;
-            look.SetIcon("Panic");
-        }
+        if (Current is State.Calling or State.Stumped) look.pose = look.think;
+        else Set(State.Returning);
     }
 
     void OnDisable() => All.Remove(this);
@@ -58,32 +52,34 @@ public class RideOperator : MonoBehaviour
 
     void Update()
     {
-        if (Current == State.Shocked && !wheel.IsBroken)
+        if (!wheel.Powered && Current is State.AtPost or State.Returning or State.Attending)
         {
-            // The wheel's been rebuilt: back to work.
-            look.pose = null;
-            look.SetIcon(null);
-            Set(State.Returning);
-        }
-        if (wheel.IsBroken && Current is State.AtPost or State.Returning or State.Attending)
-        {
-            Set(State.Shocked);
-            walker.move = Vector2.zero;
+            Set(State.Calling);
+            stateEndsAt = Time.time + callTime;
             look.pose = look.think;
-            look.SetIcon("Panic");
+            look.Show("question", callTime);
+            GameHud.Say("Operator: The power's gone?! Hang on, folks! *calls the ride technician*");
         }
 
         switch (Current)
         {
             case State.AtPost:
+            case State.Stumped:
                 WalkTo(post.position);
-                FixWheel();
                 break;
 
             case State.Returning:
-                if (WalkTo(post.position)) break;
-                Set(State.AtPost);
-                FixWheel();
+                if (!WalkTo(post.position)) Set(State.AtPost);
+                break;
+
+            case State.Calling:
+                WalkTo(post.position);
+                if (Time.time < stateEndsAt) break;
+                foreach (var t in RideTechnician.All) t.Ring();
+                GameHud.Say("Operator: ...He's not picking up. Sorry folks, the ride's stuck!");
+                Mischief.Complete(Mischief.Task.CallTechnician);
+                Set(State.Stumped);
+                look.pose = look.think;
                 break;
 
             case State.Attending:
@@ -93,21 +89,6 @@ public class RideOperator : MonoBehaviour
                 Set(State.Returning);
                 break;
         }
-    }
-
-    void FixWheel()
-    {
-        if (!wheel.PanelFried) friedNoticed = false;
-        if (!wheel.IsOverdrive || friedNoticed) return;
-        look.Gesture(look.interact, 1f);
-        if (wheel.PanelFried)
-        {
-            friedNoticed = true; // nothing he can do about it now
-            GameHud.Say("Operator: It won't slow down! Who fried the panel?!");
-            return;
-        }
-        wheel.ResetToNormal();
-        GameHud.Say("Operator: Whoa, who touched this?! *click* ...Back to normal.");
     }
 
     // A brawl nearby: he leaves his post to break it up, then sees to whoever got hurt.
@@ -131,6 +112,7 @@ public class RideOperator : MonoBehaviour
         Current = s;
         walker.speed = s == State.Attending ? runSpeed : walkSpeed;
         look.running = s == State.Attending;
+        look.pose = null;
     }
 
     bool WalkTo(Vector3 p) => walker.WalkTo(p);
