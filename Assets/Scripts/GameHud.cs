@@ -57,6 +57,7 @@ public class GameHud : MonoBehaviour
         ParkChaos.Reset();
 
         if (Camera.main != null && Camera.main.GetComponent<CameraRig>() == null) Camera.main.gameObject.AddComponent<CameraRig>();
+        if (Camera.main != null && Camera.main.GetComponent<SeeThrough>() == null) Camera.main.gameObject.AddComponent<SeeThrough>();
         if (FindAnyObjectByType<NightLighting>() == null) new GameObject("Night Lighting").AddComponent<NightLighting>();
         if (GetComponent<PossessionMarker>() == null) gameObject.AddComponent<PossessionMarker>();
         if (GetComponent<ActionOutline>() == null) gameObject.AddComponent<ActionOutline>();

@@ -20,7 +20,7 @@ public static class ParkArt
     public static Vector3 Above(Vector3 feet, float height) => feet + CardUp * height;
 
     static readonly Dictionary<string, Sprite> sprites = new();
-    static Material material, litMaterial;
+    static Material material, litMaterial, characterMaterial;
     static Font font;
 
     // Same shader as Palletes/Shaders/SpriteLit2.5 (lit, alpha clip, casts shadows, tinted by SpriteRenderer.color).
@@ -32,6 +32,22 @@ public static class ParkArt
             return litMaterial;
         }
     }
+
+    // The same lit sprite shader for people (visitors, staff, the spirit), with the see-through hole switched off:
+    // a person standing between you and the camera stays whole; only scenery opens up (SeeThrough.cs).
+    public static Material CharacterMaterial
+    {
+        get
+        {
+            if (characterMaterial == null)
+            {
+                characterMaterial = new Material(LitMaterial) { name = "Park Character Sprite" };
+                characterMaterial.SetFloat(SeeThroughCutId, 0f);
+            }
+            return characterMaterial;
+        }
+    }
+    static readonly int SeeThroughCutId = Shader.PropertyToID("_SeeThroughCut");
 
     // A standing sprite: lit, casts and receives shadows.
     public static SpriteRenderer Lit(SpriteRenderer r)
