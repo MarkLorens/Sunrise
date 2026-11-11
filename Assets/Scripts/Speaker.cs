@@ -49,10 +49,16 @@ public class Speaker : MonoBehaviour
         return null;
     }
 
+    // A random spot in the crowd that isn't inside a lamp, bench or prop.
     public Vector3 ListenSpot()
     {
-        Vector2 r = Random.insideUnitCircle * crowdRadius;
-        return CrowdCenter + new Vector3(r.x, 0f, r.y);
+        for (int i = 0; i < 10; i++)
+        {
+            Vector2 r = Random.insideUnitCircle * crowdRadius;
+            Vector3 p = CrowdCenter + new Vector3(r.x, 0f, r.y);
+            if (!GroundWalker.NearObstacle(p, 0.35f)) return p;
+        }
+        return CrowdCenter;
     }
 
     bool InCrowd(Vector3 p)
