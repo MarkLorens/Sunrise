@@ -18,7 +18,9 @@ public class CameraRig : MonoBehaviour
 {
     public static CameraRig Instance { get; private set; }
 
-    public Vector3 offset = new(0f, 6.5f, -10.5f); // direction and base distance from the target
+    // Direction and base distance from the target. Looks down at 45°, the same angle the standing cards lean
+    // (ParkArt.Card), so every card faces the camera straight on. Same 12.35 distance as before.
+    public Vector3 offset = new(0f, 8.73f, -8.73f);
     public float followDamping = 0.5f; // seconds to settle after the player stops: lower = snappier, higher = floatier
 
     [Header("Shake")]
@@ -31,7 +33,9 @@ public class CameraRig : MonoBehaviour
     public float leaveRadius = 8f;    // ...and ease out again past this (the gap stops flicker at the edge)
     public float interestWeight = 0.5f; // combined pull of everything nearby vs. the player's 1
     public float fadeTime = 0.8f;     // seconds for a point of interest to fully ease in/out
-    public Vector2 dollyRange = new(-2f, 6f); // how much closer / further than `offset` the camera may go
+    // How much closer / further than `offset` the camera may go. Group framing pulls in as close as it is allowed;
+    // 3 keeps it about 9.35 from the player (was 6 = 6.35), so the 45° view still shows the park behind them.
+    public Vector2 dollyRange = new(-2f, 4f);
 
     [Header("Depth of field")]
     // Tilt-shift look: the player stays sharp, the ground in front and behind blurs, so the park reads as a diorama.
@@ -98,6 +102,18 @@ public class CameraRig : MonoBehaviour
         brain.IgnoreTimeScale = true; // keeps moving through hit-stop / slow-mo like the old rig
         brain.DefaultBlend = new CinemachineBlendDefinition(CinemachineBlendDefinition.Styles.EaseInOut, rideBlend);
         var lens = LensSettings.FromCamera(GetComponent<Camera>());
+
+        // Temporal anti-aliasing: blends the last few frames. Besides smoothing edges, it turns the see-through hole's
+        // moving dither (SeeThrough.hlsl) into a smooth fade instead of a visible dot pattern.
+        var urp = GetComponent<Camera>().GetUniversalAdditionalCameraData();
+        urp.antialiasing = AntialiasingMode.TemporalAntiAliasing;
+        urp.antialiasingQuality = AntialiasingQuality.High;
+        // Average more frames (blend) and clamp the history less tightly, so the dither noise melts into a smooth
+        // fade. Push these further and fast movement starts to leave faint trails (ghosting).
+        var taa = urp.taaSettings;
+        taa.baseBlendFactor = 0.95f;     // default 0.9
+        taa.varianceClampScale = 1.5f;   // default 0.9
+        urp.taaSettings = taa;
 
         group = new GameObject("Camera Target Group").AddComponent<CinemachineTargetGroup>();
 

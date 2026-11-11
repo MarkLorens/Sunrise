@@ -26,6 +26,7 @@ public class PossessionMarker : MonoBehaviour
 
         triangleHolder = new GameObject("Triangle").transform;
         triangleHolder.SetParent(root, false);
+        triangleHolder.rotation = ParkArt.Card; // a standing card like the people it marks
         triangle = ParkArt.Make("Quad", triangleHolder, "Markers/triangle", 0.4f, Cyan, ParkArt.OverheadOrder);
         powerBar = WorldBar.Create(triangleHolder, new Vector3(0f, -0.4f, 0f), 0.9f);
 
@@ -47,8 +48,8 @@ public class PossessionMarker : MonoBehaviour
         bool floating = spirit.State == Possession.Mode.Spirit;
 
         // 1. triangle over whoever you control
-        Vector3 head = possessing ? host.HeadPoint + Vector3.up * 0.75f : transform.position + Vector3.up * 1.6f;
-        triangleHolder.position = head + Vector3.up * Mathf.Sin(t * 4f) * 0.08f;
+        Vector3 head = possessing ? ParkArt.Above(host.HeadPoint, 0.75f) : ParkArt.Above(spirit.Middle, 1.6f);
+        triangleHolder.position = ParkArt.Above(head, Mathf.Sin(t * 4f) * 0.08f);
         triangle.enabled = floating || possessing;
         triangle.color = possessing ? Cyan : Purple;
 

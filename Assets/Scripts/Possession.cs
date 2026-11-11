@@ -42,7 +42,10 @@ public class Possession : MonoBehaviour
     // What the camera follows.
     public Transform Focus => Host != null ? Host.transform : transform;
     // Where souls fly to.
-    public Vector3 SpiritPoint => Host != null ? Host.HeadPoint : transform.position + Vector3.up * 0.5f;
+    public Vector3 SpiritPoint => Host != null ? Host.HeadPoint : ParkArt.Above(Middle, 0.5f);
+    // The middle of the spirit's picture. Its pivot is at its feet on the floor, like everyone else's, so the leaning
+    // card meets the floor right where it bumps into things.
+    public Vector3 Middle => transform.TransformPoint(sprite.sprite.bounds.center);
 
     readonly Dictionary<Visitor, float> lockedUntil = new();
     float readyAt;
@@ -57,6 +60,7 @@ public class Possession : MonoBehaviour
     Rigidbody rb;
     Collider body;
     SpriteRenderer sprite;
+    Quaternion homeRotation; // the spirit's card lean (45°), kept through the dive's spin
 
     void Awake()
     {
@@ -64,9 +68,11 @@ public class Possession : MonoBehaviour
         InputBlocked = false;
         walker = GetComponent<GroundWalker>();
         rb = GetComponent<Rigidbody>();
-        body = GetComponent<Collider>();
+        body = GetComponentInChildren<Collider>(); // on an upright child, while the spirit's art leans 45°
         sprite = GetComponent<SpriteRenderer>();
+        sprite.sharedMaterial = ParkArt.CharacterMaterial; // the spirit is a person too: never see-through
         baseScale = transform.localScale;
+        homeRotation = transform.localRotation;
     }
 
     void Update()
@@ -146,7 +152,7 @@ public class Possession : MonoBehaviour
         }
         State = Mode.Diving;
         diveTarget = v;
-        diveFrom = transform.position;
+        diveFrom = Middle;
         diveTime = 0f;
         walker.enabled = false;
         rb.linearVelocity = Vector3.zero;
@@ -163,13 +169,15 @@ public class Possession : MonoBehaviour
     {
         diveTime += Time.deltaTime / 0.35f;
         float t = Mathf.SmoothStep(0f, 1f, diveTime);
-        transform.position = Vector3.Lerp(diveFrom, diveTarget.HeadPoint, t) + Vector3.up * Mathf.Sin(t * Mathf.PI) * 1.2f;
+        Vector3 middle = ParkArt.Above(Vector3.Lerp(diveFrom, diveTarget.HeadPoint, t), Mathf.Sin(t * Mathf.PI) * 1.2f);
         transform.localScale = baseScale * Mathf.Lerp(1f, 0.1f, t);
-        transform.localRotation = Quaternion.Euler(0f, 0f, t * 540f);
+        transform.localRotation = homeRotation * Quaternion.Euler(0f, 0f, t * 540f);
+        // Spin and shrink about the middle of the picture, not the feet it pivots on.
+        transform.position = middle - transform.TransformVector(sprite.sprite.bounds.center);
         if (diveTime < 1f) return;
 
         transform.localScale = baseScale;
-        transform.localRotation = Quaternion.identity;
+        transform.localRotation = homeRotation;
         if (!diveTarget.CanBePossessed)
         {
             // They got away (onto a ride, into a brawl...).

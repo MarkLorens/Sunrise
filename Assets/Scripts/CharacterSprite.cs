@@ -77,7 +77,8 @@ public class CharacterSprite : MonoBehaviour
         loaded = true;
         body = GetComponent<SpriteRenderer>();
         // Characters whose renderer was auto-added (e.g. the Mechanic) start on Unity's default sprite material.
-        if (body.sharedMaterial == null || body.sharedMaterial.shader != ParkArt.LitMaterial.shader) body.sharedMaterial = ParkArt.LitMaterial;
+        // People never get a see-through hole cut into them (their fill layers copy this material below).
+        body.sharedMaterial = ParkArt.CharacterMaterial;
         ParkArt.CastShadows(body);
         rb =GetComponent<Rigidbody>();
         animOffset = Random.value * 10f;
@@ -119,6 +120,7 @@ public class CharacterSprite : MonoBehaviour
 
         shadow = ParkArt.Make("Shadow", transform, "Markers/shadow", 0.42f, Color.white, ParkArt.DecalOrder, true);
         shadow.transform.parent.localPosition = new Vector3(0f, 0.02f, 0f);
+        shadow.transform.parent.rotation = Quaternion.identity; // flat, even though the body leans 45°
     }
 
     void LoadFills(string line)

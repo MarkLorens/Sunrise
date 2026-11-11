@@ -28,7 +28,7 @@ public class ElectricalBox : MonoBehaviour, IInteraction
             Mischief.Complete(Mischief.Task.UnlockBox);
             return;
         }
-        Fx.Burst("Fx/sparkle", transform.position + Vector3.up * 0.8f, 12, new Color(1f, 0.9f, 0.4f), 3f, 0.3f, 0.4f);
+        Fx.Burst("Fx/sparkle", ParkArt.Above(transform.position, 0.8f), 12, new Color(1f, 0.9f, 0.4f), 3f, 0.3f, 0.4f);
         wheel.CutPower();
         Mischief.Complete(Mischief.Task.CutPower);
     }

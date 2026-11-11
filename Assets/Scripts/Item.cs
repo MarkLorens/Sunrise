@@ -31,7 +31,7 @@ public class Item : MonoBehaviour
     public static Item Create(VisitorItem kind, Vector3 position, Visitor owner)
     {
         var go = new GameObject(kind.ToString());
-        go.transform.position = position;
+        go.transform.SetPositionAndRotation(position, ParkArt.Card);
         var item = go.AddComponent<Item>();
         item.kind = kind;
         item.Owner = owner;
@@ -88,8 +88,8 @@ public class Item : MonoBehaviour
         if (Holder != null)
         {
             // Carried over the head with a little wobble (hidden while the holder rides or brawls).
-            transform.position = Holder.CarryPoint + Vector3.up * Mathf.Sin(Time.time * 6f) * 0.04f;
-            transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Sin(Time.time * 3f) * 8f);
+            transform.position = ParkArt.Above(Holder.CarryPoint, Mathf.Sin(Time.time * 6f) * 0.04f);
+            transform.rotation = ParkArt.Card * Quaternion.Euler(0f, 0f, Mathf.Sin(Time.time * 3f) * 8f);
             sprite.enabled = Holder.Look.Visible;
             shadow.enabled = false;
             return;
@@ -136,7 +136,7 @@ public class Item : MonoBehaviour
     void Land()
     {
         transform.position = new Vector3(transform.position.x, Size * 0.5f, transform.position.z);
-        transform.rotation = Quaternion.identity;
+        transform.rotation = ParkArt.Card;
         velocity = Vector3.zero;
         if (thrown) Sfx.Play(Sfx.HitSoft, 0.4f, 1.2f);
         InFlight = thrown = false;

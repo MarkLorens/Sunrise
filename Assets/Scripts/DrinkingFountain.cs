@@ -44,7 +44,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     {
         if (Fixed || Time.time < nextDrip) return;
         nextDrip = Time.time + 1.2f;
-        Fx.Burst("Fx/sparkle", transform.position + Vector3.up * 0.9f, 2, Water, 1.2f, 0.18f, 0.5f);
+        Fx.Burst("Fx/sparkle", ParkArt.Above(transform.position, 0.9f), 2, Water, 1.2f, 0.18f, 0.5f);
     }
 
     public bool InPuddle(Vector3 p)
@@ -85,7 +85,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     {
         SetRadius(Mathf.Min(maxRadius, Mathf.Max(Radius, startRadius) + growth));
         Sfx.Play(Sfx.HitSoft, 0.6f, 1.4f);
-        Fx.Burst("Fx/puff", transform.position + Vector3.up * 0.8f, 6, Water, 2f, 0.35f, 0.5f);
+        Fx.Burst("Fx/puff", ParkArt.Above(transform.position, 0.8f), 6, Water, 2f, 0.35f, 0.5f);
         GameHud.Say("*sploosh* The leak gets worse and the puddle spreads.");
         if (VisitorsInPuddle() >= crowdToFlood) Mischief.Complete(Mischief.Task.FloodPuddle);
     }
@@ -153,7 +153,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     void Mop()
     {
         SetRadius(Fixed ? 0f : startRadius);
-        Fx.Burst("Fx/puff", PuddleCenter + Vector3.up * 0.3f, 10, Color.white, 2f, 0.5f, 0.6f);
+        Fx.Burst("Fx/puff", ParkArt.Above(PuddleCenter, 0.3f), 10, Color.white, 2f, 0.5f, 0.6f);
         GameHud.Say("The Reset Agents mop up the puddle.");
     }
 

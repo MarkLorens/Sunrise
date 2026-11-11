@@ -52,8 +52,8 @@ public class Visitor : MonoBehaviour, IInteraction
     public VisitorItem HeldKind => Held != null ? Held.kind : VisitorItem.None;
     public Vector3 Facing { get; private set; } = Vector3.right;
     public float HeadHeight => Look.HeadHeight;
-    public Vector3 HeadPoint => transform.position + Vector3.up * HeadHeight;
-    public Vector3 CarryPoint => transform.position + Vector3.up * (HeadHeight + 0.3f);
+    public Vector3 HeadPoint => ParkArt.Above(transform.position, HeadHeight);
+    public Vector3 CarryPoint => ParkArt.Above(transform.position, HeadHeight + 0.3f);
     // The cabin they're sitting in while riding.
     public Transform Cabin { get; private set; }
     bool IsHost => Possession.Instance != null && Possession.Instance.Host == this;

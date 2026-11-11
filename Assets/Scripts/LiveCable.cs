@@ -34,7 +34,7 @@ public class LiveCable : MonoBehaviour, IInteraction
         line.SetPosition(1, end + Vector3.up * 0.05f);
         if (Time.time < nextSpark) return;
         nextSpark = Time.time + Random.Range(0.6f, 1.4f);
-        Fx.Burst("Fx/sparkle", end + Vector3.up * 0.15f, dipped ? 6 : 3, Spark, 1.5f, 0.2f, 0.3f);
+        Fx.Burst("Fx/sparkle", ParkArt.Above(end, 0.15f), dipped ? 6 : 3, Spark, 1.5f, 0.2f, 0.3f);
     }
 
     static bool IsCableMan(Visitor host) => host != null && host.brain is CableMan;

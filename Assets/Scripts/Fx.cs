@@ -11,10 +11,11 @@ public static class Fx
         for (int i = 0; i < count; i++)
         {
             var r = ParkArt.Make("Fx", null, sprite, size * Random.Range(0.6f, 1.2f), color, ParkArt.OverheadOrder);
-            r.transform.position = at;
+            r.transform.SetPositionAndRotation(at, ParkArt.Card);
             var bit = r.gameObject.AddComponent<FxBit>();
             Vector3 dir = Random.onUnitSphere;
             dir.z *= 0.3f; // mostly across the screen, where it reads
+            dir = ParkArt.Card * dir; // the screen's plane is the card plane, leaning 45°
             bit.velocity = dir * speed * Random.Range(0.5f, 1f);
             bit.life = life * Random.Range(0.7f, 1.2f);
         }
