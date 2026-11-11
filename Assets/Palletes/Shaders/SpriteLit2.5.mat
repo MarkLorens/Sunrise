@@ -45,6 +45,9 @@ Material:
     - _QueueControl: 0
     - _QueueOffset: 0
     - _SeeThroughCut: 1
+    - _SwayScale: 0
+    - _SwaySpeed: 0
+    - _SwayStrength: 0
     m_Colors:
     - _Tint: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []

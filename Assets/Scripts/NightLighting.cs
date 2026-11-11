@@ -312,8 +312,8 @@ public class NightLighting : MonoBehaviour
 
         foreach (var ride in rides)
         {
-            bool on = ride.wheel != null && !ride.wheel.IsBroken;
-            int step = (int)(Time.time * chaseSpeed * (on && ride.wheel.IsOverdrive ? 3f : 1f));
+            bool on = ride.wheel != null && ride.wheel.Powered;
+            int step = (int)(Time.time * chaseSpeed);
             for (int i = 0; i < ride.bulbs.Count; i++)
             {
                 var b = ride.bulbs[i];

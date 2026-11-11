@@ -1,38 +1,35 @@
 using UnityEngine;
 
-// The Ferris wheel's electrical box. Does nothing on its own, but bang on it a few times and the racket brings the
-// mechanic over to check on it.
+// The Ferris wheel's electrical box. It's the mechanic's, and it's locked: only his keys open it. Once it's open,
+// flip the switch and the wheel loses power.
 [RequireComponent(typeof(Interactable))]
 public class ElectricalBox : MonoBehaviour, IInteraction
 {
     public FerrisWheel wheel;
-    public int hitsToLure = 3;
 
-    int hits;
+    public bool Unlocked { get; private set; }
 
-    public string Prompt(Visitor host) => "Bang on the electrical box";
+    public string Prompt(Visitor host) => Unlocked ? "Cut the Ferris wheel's power" : "Unlock the mechanic's electrical box";
 
     public string Blocked(Visitor host)
     {
-        if (wheel.IsBroken) return "It's dead";
-        if (Mechanic.Busy) return "The mechanic's already on his way";
+        if (!wheel.Powered) return "The power's off";
+        if (!Unlocked && host.HeldKind != VisitorItem.Keys) return "Locked. The mechanic has the keys";
         return null;
     }
 
     public void Interact(Visitor host)
     {
-        hits++;
-        Sfx.Play(Sfx.HitWood, 0.9f, Random.Range(0.8f, 1.1f));
-        Fx.Burst("Fx/sparkle", ParkArt.Above(transform.position, 0.8f), 8, new Color(1f, 0.9f, 0.4f), 3f, 0.3f, 0.4f);
-        Fx.Shake(0.08f);
-        ParkChaos.Add(transform.position, 3f, 0.5f, ParkChaos.Scary);
-        if (hits < hitsToLure)
+        if (!Unlocked)
         {
-            GameHud.Say("*CLANG!*");
+            Unlocked = true;
+            Sfx.Play(Sfx.HitWood, 0.7f, 1.5f);
+            GameHud.Say("*click* The electrical box swings open.");
+            Mischief.Complete(Mischief.Task.UnlockBox);
             return;
         }
-        hits = 0;
-        if (Mechanic.Lure(transform.position)) Mischief.Complete(Mischief.Task.LureMechanic);
-        else GameHud.Say("*CLANG!* ...nobody comes.");
+        Fx.Burst("Fx/sparkle", ParkArt.Above(transform.position, 0.8f), 12, new Color(1f, 0.9f, 0.4f), 3f, 0.3f, 0.4f);
+        wheel.CutPower();
+        Mischief.Complete(Mischief.Task.CutPower);
     }
 }

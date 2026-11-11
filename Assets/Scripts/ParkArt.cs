@@ -110,6 +110,35 @@ public static class ParkArt
         return r;
     }
 
+    // A prop standing on `parent`'s position, `height` tall, that people walk around. Until there's art at
+    // Resources/Park/<sprite> it's a block of `standIn` colour.
+    public static SpriteRenderer Solid(Transform parent, string sprite, float height, Color standIn)
+    {
+        var r = Lit(Make("Sprite", parent, sprite, height, Color.white));
+        if (r.sprite == null)
+        {
+            // ponytail: coloured block until the prop is drawn.
+            r.sprite = Get("Markers/white");
+            r.color = standIn;
+            Vector3 size = r.sprite.bounds.size;
+            r.transform.localScale = new Vector3(height * 0.7f / size.x, height / size.y, 1f); // the marker isn't square
+        }
+        // Lean the card 45° about its feet, whatever the parent's own rotation, so its bottom edge stays on the floor.
+        Quaternion lean = Quaternion.Inverse(parent.rotation) * Card;
+        r.transform.localRotation = lean;
+        r.transform.localPosition = lean * new Vector3(0f, height * 0.5f, 0f);
+        // The collider stays upright on its own child (one that leaned with the art would cover the wrong patch of floor).
+        var holder = new GameObject("Collider (upright)");
+        holder.transform.SetParent(parent, false);
+        var box = holder.AddComponent<BoxCollider>();
+        Bounds b = r.sprite.bounds;
+        Vector3 s = r.transform.localScale;
+        box.center = new Vector3(b.center.x * s.x, height * 0.5f + b.center.y * s.y, 0f);
+        box.size = new Vector3(b.size.x * s.x, b.size.y * s.y, 0.2f);
+        GroundWalker.AddObstacle(box);
+        return r;
+    }
+
     public static void Fit(SpriteRenderer r, float height)
     {
         if (r.sprite == null) return;

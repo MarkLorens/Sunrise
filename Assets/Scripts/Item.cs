@@ -1,9 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Something a visitor carries over their head: a drink, a water bottle, the mechanic's screwdriver. Possessing
-// someone, you can use what they hold or own: drop it, pick it back up, throw it. A thrown item knocks people back;
-// a long, sturdy one that lands in the Ferris wheel's gear box jams it.
+// Something a visitor carries over their head: a drink, a water bottle, the mechanic's keys. Possessing someone, you
+// can use what they hold or own: drop it, pick it back up, throw it. A thrown item knocks people back.
 public class Item : MonoBehaviour
 {
     public static readonly List<Item> All = new();
@@ -19,14 +18,10 @@ public class Item : MonoBehaviour
     public string DisplayName => kind switch
     {
         VisitorItem.Drink => "drink",
-        VisitorItem.Screwdriver => "screwdriver",
+        VisitorItem.Keys => "keys",
         VisitorItem.WaterBottle => "water bottle",
         _ => "thing",
     };
-    // Long and sturdy enough to jam the Ferris wheel's gears.
-    public bool Sturdy => kind is VisitorItem.WaterBottle or VisitorItem.Screwdriver;
-    // Wet enough to fry the control panel.
-    public bool Wet => kind is VisitorItem.Drink or VisitorItem.WaterBottle;
     public float HitPower => kind == VisitorItem.Drink ? 1f : 0.75f; // a full cup to the face is the worst
 
     SpriteRenderer sprite, shadow;
@@ -84,7 +79,7 @@ public class Item : MonoBehaviour
         InFlight = thrown = true;
     }
 
-    // Eaten, poured out, left in a lock...
+    // Eaten, poured out...
     public void Consume() => Destroy(gameObject);
 
     void LateUpdate()
@@ -107,7 +102,7 @@ public class Item : MonoBehaviour
         transform.position += velocity * Time.deltaTime;
         transform.Rotate(0f, 0f, -velocity.x * 60f * Time.deltaTime);
 
-        if (thrown && (HitSomeone() || HitGears())) return;
+        if (thrown && HitSomeone()) return;
         if (transform.position.y <= Size * 0.5f && velocity.y < 0f) Land();
     }
 
@@ -136,25 +131,6 @@ public class Item : MonoBehaviour
         Fx.Burst("Fx/sparkle", at, 12, new Color(1f, 0.95f, 0.5f), 3f, 0.35f, 0.45f);
         thrown = false;
         velocity = new Vector3(-velocity.x * 0.25f, 3f, -velocity.z * 0.25f);
-    }
-
-    // Landed in the Ferris wheel's gear box: jams it if it can, otherwise bounces off the cover.
-    bool HitGears()
-    {
-        foreach (var g in GearBox.All)
-        {
-            if (!g.Catches(transform.position)) continue;
-            string refused = g.Refusal(this, LastHolder);
-            if (refused == null)
-            {
-                g.Jam(this);
-                return true;
-            }
-            GameHud.Say(refused + ".");
-            Bounce(transform.position);
-            return true;
-        }
-        return false;
     }
 
     void Land()

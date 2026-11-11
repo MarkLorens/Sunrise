@@ -51,7 +51,6 @@ public class Brawl : MonoBehaviour
         Sfx.Punch(1f);
         Fx.Shake(0.3f);
         GameHud.Say($"BRAWL! {a.name} vs {b.name}", "Bubbles/swords");
-        Mischief.Complete(Mischief.Task.PickFight);
 
         float over = Time.time + Duration;
         foreach (var v in Visitor.All) v.Watch(transform.position, over);
