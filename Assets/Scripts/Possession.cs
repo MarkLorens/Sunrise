@@ -57,6 +57,7 @@ public class Possession : MonoBehaviour
     Rigidbody rb;
     Collider body;
     SpriteRenderer sprite;
+    LoopingSound hover; // the spirit's wobbly drift: only while it moves (in a body, Footsteps takes over)
 
     void Awake()
     {
@@ -68,7 +69,10 @@ public class Possession : MonoBehaviour
         sprite = GetComponent<SpriteRenderer>();
         sprite.sharedMaterial = ParkArt.CharacterMaterial; // the spirit is a person too: never see-through
         baseScale = transform.localScale;
+        hover = new LoopingSound(gameObject, rb);
     }
+
+    void OnDestroy() => hover.Release();
 
     void Update()
     {
@@ -92,6 +96,15 @@ public class Possession : MonoBehaviour
                 Possessing(q, j, jDown, k);
                 break;
         }
+        Hover();
+    }
+
+    void Hover()
+    {
+        var events = FMODEvents.instance;
+        bool drifting = State == Mode.Spirit && !rb.isKinematic && Flat(rb.linearVelocity).sqrMagnitude > 0.04f;
+        if (events != null && drifting) hover.Play(events.spiritHover);
+        else hover.Stop();
     }
 
     // Ride along inside the host.
