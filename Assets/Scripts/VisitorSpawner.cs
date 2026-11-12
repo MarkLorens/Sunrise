@@ -6,7 +6,7 @@ using UnityEngine.Tilemaps;
 // carrying a drink or a water bottle. Plus the staff: the mechanic (keys in hand) and the Reset Agents behind the
 // staff door, the cable man by the speaker and the ride technician asleep at his spot.
 // Visitors use the lineart bodies in Resources/ArtLineartTorso; staff still use Resources/Visitors/<character>/
-// (Kenney Toon Characters 1, CC0).
+// (Kenney Toon Characters 1, CC0). Nobody has a personal name: visitors are all "Visitor", staff go by their job.
 public class VisitorSpawner : MonoBehaviour
 {
     public Tilemap ground;
@@ -24,32 +24,29 @@ public class VisitorSpawner : MonoBehaviour
     public int startInQueue = 5;
 
     public string[] characters = { "body_kaos" };
-    public string[] names = { "Budi", "Sari", "Rina", "Dodi", "Wati", "Andi", "Maya", "Joni", "Tika", "Bayu", "Lina", "Eko", "Nina", "Rudi", "Dewi", "Agus", "Fitri", "Hendra", "Intan", "Yusuf" };
     public Transform[] pointsOfInterest = new Transform[0];
     public string mechanicCharacter = "mechanic";
-    public string mechanicName = "Mechanic Joko";
+    public string mechanicName = "Mechanic";
     public Transform mechanicPost; // the staff door: the mechanic and Reset Agents wait behind it; empty = a random spot
     public int resetAgents = 2;
     public string resetAgentCharacter = "malePersonTeal";
     public string cableManCharacter = "maleAdventurer";
-    public string cableManName = "Cable Man Ucok";
+    public string cableManName = "Cable Man";
     public Transform cableManPost;  // empty = no cable man
     public string technicianCharacter = "malePersonRed";
-    public string technicianName = "Technician Bambang";
+    public string technicianName = "Technician";
     public Transform technicianPost; // empty = no technician
 
-    int nameIndex;
+    const string VisitorName = "Visitor";
 
     void Start()
     {
-        Shuffle(names);
-
         for (int i = 0; i < count; i++)
         {
             int queued = i - guaranteedItems.Length;
             if (queue != null && queued >= 0 && queued < startInQueue && queue.HasRoom)
             {
-                var v = Spawn(NextName(), queue.transform.position);
+                var v = Spawn(VisitorName, queue.transform.position);
                 queue.Join(v);
                 v.EnterQueue(queue);
                 v.transform.position = queue.SlotPosition(v); // already standing in line
@@ -57,7 +54,7 @@ public class VisitorSpawner : MonoBehaviour
             }
 
             if (!RandomTile(out Vector3 pos)) break;
-            var visitor = Spawn(NextName(), pos);
+            var visitor = Spawn(VisitorName, pos);
             var item = i < guaranteedItems.Length ? guaranteedItems[i]
                 : Random.value < carryChance ? carryItems[Random.Range(0, carryItems.Length)]
                 : VisitorItem.None;
@@ -85,17 +82,6 @@ public class VisitorSpawner : MonoBehaviour
         go.AddComponent<T>();
         go.SetActive(true);
         return go.GetComponent<Visitor>();
-    }
-
-    string NextName() => names[nameIndex++ % names.Length];
-
-    static void Shuffle(string[] list)
-    {
-        for (int i = list.Length - 1; i > 0; i--)
-        {
-            int j = Random.Range(0, i + 1);
-            (list[i], list[j]) = (list[j], list[i]);
-        }
     }
 
     bool RandomTile(out Vector3 pos)

@@ -43,9 +43,9 @@ public class LiveCable : MonoBehaviour, IInteraction
 
     public string Blocked(Visitor host)
     {
-        if (!IsCableMan(host)) return "It's live! Only the cable man knows how to handle it";
-        if (Time.time < readyAt) return "Still crackling from the last zap";
-        if (fountain.Radius <= 0f || fountain.Gap(transform.position) > reach) return "The puddle's too far away for the cable to reach";
+        if (!IsCableMan(host)) return GameText.CableLive;
+        if (Time.time < readyAt) return GameText.CableCrackling;
+        if (fountain.Radius <= 0f || fountain.Gap(transform.position) > reach) return GameText.CableTooFar;
         return null;
     }
 
@@ -58,6 +58,7 @@ public class LiveCable : MonoBehaviour, IInteraction
         dippedAt = transform.position + toPuddle.normalized * Mathf.Min(into, toPuddle.magnitude);
         dipUntil = Time.time + 1.5f;
         readyAt = Time.time + recharge;
+        GameHud.Say(GameText.DippedCable);
         fountain.Electrify(dippedAt);
     }
 }

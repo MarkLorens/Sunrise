@@ -18,7 +18,11 @@ public static class ParkArt
     {
         get
         {
-            if (litMaterial == null) litMaterial = new Material(Shader.Find("Shader Graphs/SpriteLit3D")) { name = "Park Lit Sprite" };
+            if (litMaterial == null)
+            {
+                litMaterial = new Material(Shader.Find("Shader Graphs/SpriteLit3D")) { name = "Park Lit Sprite" };
+                litMaterial.SetFloat("_SwayStrength", 0f); // the graph's default sways; SpriteLit2.5.mat doesn't
+            }
             return litMaterial;
         }
     }

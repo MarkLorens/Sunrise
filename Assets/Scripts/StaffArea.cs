@@ -60,12 +60,7 @@ public class StaffArea : MonoBehaviour
     {
         if (Time.time < nextWarning) return;
         nextWarning = Time.time + 3f;
-        GameHud.Say($"{watcher.name}: {line}");
-        if (watcher.TryGetComponent(out CharacterSprite look))
-        {
-            look.Face(transform.position);
-            look.Show("exclaim", 1.5f);
-        }
+        if (watcher.TryGetComponent(out CharacterSprite look)) look.Face(transform.position);
     }
 
     // A possessed visitor caught inside when staff come back: out they go, to the front of the area.

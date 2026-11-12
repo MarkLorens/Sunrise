@@ -10,5 +10,9 @@ public class RideGate : MonoBehaviour, IInteraction
 
     public string Blocked(Visitor host) => queue.BoardBlocked(host);
 
-    public void Interact(Visitor host) => queue.Board(host);
+    public void Interact(Visitor host)
+    {
+        queue.Board(host);
+        GameHud.Say(GameText.BoardedRide);
+    }
 }

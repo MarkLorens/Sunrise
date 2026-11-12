@@ -95,8 +95,6 @@ public abstract class StaffWorker : MonoBehaviour
         job = j;
         hasJob = true;
         Set(State.Going);
-        look.Show("exclaim", 1.5f);
-        if (j.shout != null) GameHud.Say($"{name}: {j.shout}");
     }
 
     void NextJob()

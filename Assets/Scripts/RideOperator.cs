@@ -57,8 +57,6 @@ public class RideOperator : MonoBehaviour
             Set(State.Calling);
             stateEndsAt = Time.time + callTime;
             look.pose = look.think;
-            look.Show("question", callTime);
-            GameHud.Say("Operator: The power's gone?! Hang on, folks! *calls the ride technician*");
         }
 
         switch (Current)
@@ -76,7 +74,6 @@ public class RideOperator : MonoBehaviour
                 WalkTo(post.position);
                 if (Time.time < stateEndsAt) break;
                 foreach (var t in RideTechnician.All) t.Ring();
-                GameHud.Say("Operator: ...He's not picking up. Sorry folks, the ride's stuck!");
                 Mischief.Complete(Mischief.Task.CallTechnician);
                 Set(State.Stumped);
                 look.pose = look.think;
@@ -85,7 +82,6 @@ public class RideOperator : MonoBehaviour
             case State.Attending:
                 if (!WalkTo(attendSpot)) look.Face(brawlAt);
                 if (Time.time < stateEndsAt) break;
-                GameHud.Say("Operator: Somebody call first aid... I've got a ride to run.");
                 Set(State.Returning);
                 break;
         }
@@ -103,8 +99,6 @@ public class RideOperator : MonoBehaviour
         attendSpot = brawl + away.normalized * 1.8f;
         Set(State.Attending);
         stateEndsAt = over + attendTime;
-        look.Show("exclaim", 1.5f);
-        GameHud.Say("Operator: Hey! HEY! Break it up, you two!");
     }
 
     void Set(State s)

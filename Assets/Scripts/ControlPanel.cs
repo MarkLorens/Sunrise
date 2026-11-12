@@ -12,7 +12,7 @@ public class ControlPanel : MonoBehaviour, IInteraction
 
     public string Prompt(Visitor host) => "Control panel";
 
-    public string Blocked(Visitor host) => wheel.Powered ? "Only the operator knows how to work this" : "No power";
+    public string Blocked(Visitor host) => wheel.Powered ? GameText.OperatorOnly : GameText.NoPower;
 
     public void Interact(Visitor host) { }
 }

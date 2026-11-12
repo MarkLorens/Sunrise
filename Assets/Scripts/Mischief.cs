@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 
 // The level's sequence, from the level design doc: make a scene big enough to bring the mechanic, then use his keys
-// to cut the Ferris wheel's power. Each part is a list of steps; GameHud shows them on Tab and ticks them off as
-// the behaviours that make them happen report in. Nothing here drives the order: the world's own rules do.
+// to cut the Ferris wheel's power. Each part is a list of steps; GameHud lists the part you're on (top left) and
+// ticks them off as the behaviours that make them happen report in. Nothing here drives the
+// order: the world's own rules do.
 public static class Mischief
 {
     public enum Task { Possess, FloodPuddle, PossessCableMan, Electrocute, LureMechanic, PossessMechanic, UnlockBox, CutPower, CallTechnician }
@@ -48,12 +49,6 @@ public static class Mischief
     {
         if (!done.Add(t)) return;
         Sfx.Play(Sfx.TaskDone, 0.7f);
-        foreach (var (_, steps) in Parts)
-            foreach (var (task, label) in steps)
-                if (task == t)
-                {
-                    GameHud.Say($"<color=#ffd75e>Step done:</color> {label}", "UI/check_on");
-                    return;
-                }
+        GameHud.StepDone(GameText.StepDone(t)); // the pop-up at the bottom left
     }
 }

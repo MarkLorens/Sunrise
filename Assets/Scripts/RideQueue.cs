@@ -40,9 +40,9 @@ public class RideQueue : MonoBehaviour
 
     public string BoardBlocked(Visitor v)
     {
-        if (v.brain != null) return "Staff can't ride while they're on duty";
-        if (!ride.Powered) return "The ride's stopped";
-        if (!rideOperator.AtPost) return "Nobody's running the ride";
+        if (v.brain != null) return GameText.StaffCantRide;
+        if (!ride.Powered) return GameText.RideStopped;
+        if (!rideOperator.AtPost) return GameText.NobodyRunningRide;
         return null;
     }
 
@@ -52,7 +52,6 @@ public class RideQueue : MonoBehaviour
         v.StartRide(ride.BoardingCabin());
         riders.Add((v, Time.time + rideTime));
         nextBoard = Time.time + boardInterval;
-        GameHud.Say($"{v.name} hops into a cabin.");
     }
 
     public bool Join(Visitor v)

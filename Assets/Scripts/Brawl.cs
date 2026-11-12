@@ -23,10 +23,7 @@ public class Brawl : MonoBehaviour
         // The spirit can't stay inside a body that's brawling: it gets thrown out.
         var spirit = Possession.Instance;
         if (spirit != null && (spirit.Host == first || spirit.Host == second))
-        {
-            GameHud.Say("You're thrown out of the body as the brawl begins!");
             spirit.Release();
-        }
         new GameObject($"Brawl ({first.name} vs {second.name})").AddComponent<Brawl>().Init(first, second);
     }
 
@@ -49,7 +46,6 @@ public class Brawl : MonoBehaviour
 
         Sfx.Punch(1f);
         Fx.Shake(0.3f);
-        GameHud.Say($"BRAWL! {a.name} vs {b.name}", "Bubbles/swords");
 
         float over = Time.time + Duration;
         foreach (var v in Visitor.All) v.Watch(transform.position, over);
@@ -128,7 +124,6 @@ public class Brawl : MonoBehaviour
         loser.ExitFight(false);
         Fx.Burst("Fx/puff", transform.position + Vector3.up, 16, new Color(0.95f, 0.9f, 0.8f), 3f, 0.8f, 0.7f);
         Sfx.Play(Sfx.Thud, 1f, 0.8f);
-        GameHud.Say($"{winner.name} wins! {loser.name} is no more...", "Bubbles/skull");
         Destroy(gameObject);
     }
 }

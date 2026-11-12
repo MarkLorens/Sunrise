@@ -59,7 +59,5 @@ public class Mechanic : StaffWorker
         attendSpot = brawl + away.normalized * 1.8f;
         Set(State.Attending);
         attendEndsAt = over + attendTime;
-        look.Show("exclaim", 1.5f);
-        GameHud.Say($"{name}: Whoa, whoa! Break it up!");
     }
 }

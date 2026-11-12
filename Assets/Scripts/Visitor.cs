@@ -5,7 +5,7 @@ using UnityEngine;
 public enum VisitorItem { None = 0, Drink = 3, Keys = 4, WaterBottle = 5 }
 
 // A park visitor going about their day: wandering, buying drinks at the stall, lining up for the Ferris wheel,
-// carrying their things over their head. They stop and stare at someone acting possessed, gather round to watch a
+// carrying their things in their hand. They stop and stare at someone acting possessed, gather round to watch a
 // fight, and scream and run when something terrible happens nearby (ParkChaos). When the spirit leaves they stand
 // around confused for a few seconds.
 // While possessing someone else, E on a visitor picks a fight with them (a brawl one of them won't walk away from);
@@ -53,7 +53,8 @@ public class Visitor : MonoBehaviour, IInteraction
     public Vector3 Facing { get; private set; } = Vector3.right;
     public float HeadHeight => Look.HeadHeight;
     public Vector3 HeadPoint => transform.position + Vector3.up * HeadHeight;
-    public Vector3 CarryPoint => transform.position + Vector3.up * (HeadHeight + 0.3f);
+    // The hand nearer the camera, where whatever they carry sits (and where a throw leaves from).
+    public Vector3 CarryPoint => Look.HandPoint;
     // The cabin they're sitting in while riding.
     public Transform Cabin { get; private set; }
     bool IsHost => Possession.Instance != null && Possession.Instance.Host == this;
@@ -199,7 +200,6 @@ public class Visitor : MonoBehaviour, IInteraction
         }
         stateEndsAt = Time.time + Random.Range(listenTime.x, listenTime.y);
         Look.Face(speaker.transform.position);
-        if (Random.value < 0.3f) Look.Show("heart", 1.5f);
     }
 
     void PickTarget()
@@ -293,7 +293,6 @@ public class Visitor : MonoBehaviour, IInteraction
         SetState(State.Stare);
         walker.move = Vector2.zero;
         Look.Face(host.transform.position);
-        Look.Show("question", stareTime);
         stateEndsAt = Time.time + stareTime;
         nextStare = stateEndsAt + Random.Range(6f, 9f);
         return true;
@@ -311,7 +310,6 @@ public class Visitor : MonoBehaviour, IInteraction
         target = brawl + Quaternion.Euler(0f, Random.Range(-40f, 40f), 0f) * away.normalized * Random.Range(1.8f, 2.6f);
         SetState(State.Watching);
         stateEndsAt = until + Random.Range(0.5f, 2f);
-        Look.Show("exclaim", 1.2f);
     }
 
     // Told to move along by staff: walk off away from them.
@@ -321,8 +319,6 @@ public class Visitor : MonoBehaviour, IInteraction
         Vector3 away = transform.position - by.transform.position;
         away.y = 0;
         if (away.sqrMagnitude < 0.01f) away = Vector3.back;
-        Look.Show("question", 1.5f);
-        GameHud.Say($"{by.name}: Staff only around here. Move along, please.");
         for (int i = 0; i < 12; i++)
         {
             Vector3 spot = transform.position + Quaternion.Euler(0f, Random.Range(-50f, 50f), 0f) * away.normalized * sendAwayDistance;
@@ -338,8 +334,8 @@ public class Visitor : MonoBehaviour, IInteraction
 
     public string Blocked(Visitor host)
     {
-        if (!CanBeHit || Current == State.Possessed) return $"{name} is busy";
-        if (host.brain == null && !host.CanBeHit) return "You're in no state to fight";
+        if (!CanBeHit || Current == State.Possessed) return GameText.Busy(name);
+        if (host.brain == null && !host.CanBeHit) return GameText.CantFight;
         return null;
     }
 
@@ -348,10 +344,11 @@ public class Visitor : MonoBehaviour, IInteraction
         if (host.brain != null)
         {
             SendAway(host);
+            GameHud.Say(GameText.ToldToMoveAlong(name));
             return;
         }
         Look.Face(host.transform.position);
-        GameHud.Say($"{host.name}: Hey! What are YOU looking at?!");
+        GameHud.Say(GameText.PickedFight(name));
         Brawl.Begin(host, this);
     }
 
@@ -405,7 +402,6 @@ public class Visitor : MonoBehaviour, IInteraction
         Sfx.Punch();
         Fx.Burst("Fx/sparkle", HeadPoint, 10, new Color(1f, 0.9f, 0.4f), 3f, 0.3f, 0.4f);
         Fx.Shake(0.12f);
-        if (Current != State.Possessed && brain == null) Look.Show("exclaim", 1.5f);
     }
 
     // ---------------------------------------------------------------- brawls
@@ -416,7 +412,6 @@ public class Visitor : MonoBehaviour, IInteraction
         DropHeld();
         SetState(State.Fighting);
         walker.move = Vector2.zero;
-        Look.HideBubble();
         Look.SetVisible(false);
     }
 
@@ -429,7 +424,6 @@ public class Visitor : MonoBehaviour, IInteraction
             return;
         }
         SetState(State.Confused); // dazed
-        Look.Show("swords", 2f);
         stateEndsAt = Time.time + 2f;
     }
 
@@ -445,7 +439,6 @@ public class Visitor : MonoBehaviour, IInteraction
         Look.SetVisible(true);
         Look.SetTint(new Color(0.6f, 0.6f, 0.65f));
         SetState(State.Down);
-        Look.Show("skull", 3f);
         ParkChaos.Add(transform.position, 9f, 30f, ParkChaos.Terrifying);
     }
 
@@ -487,7 +480,6 @@ public class Visitor : MonoBehaviour, IInteraction
         SetState(State.Possessed);
         if (brain != null) brain.enabled = false;
         walker.readKeyboard = true;
-        Look.HideBubble();
         Look.Cheer(0.4f);
         Look.SetTint(possessedTint);
     }
@@ -502,12 +494,11 @@ public class Visitor : MonoBehaviour, IInteraction
         if (brain != null)
         {
             SetState(State.Idle);
-            brain.enabled = true; // last, so the brain's own pose and icon survive SetState
+            brain.enabled = true; // last, so the brain's own pose survives SetState
             return;
         }
 
         SetState(State.Confused);
-        Look.Show("question", confusedTime);
         stateEndsAt = Time.time + confusedTime;
     }
 
@@ -527,7 +518,5 @@ public class Visitor : MonoBehaviour, IInteraction
             State.Down => Look.fallDown,
             _ => null,
         };
-        if (s == State.Panic) Look.Show("Scream", 999f, true);
-        else if (s is State.Idle or State.Wander or State.Queueing) Look.HideBubble();
     }
 }
