@@ -215,8 +215,7 @@ public class CharacterSprite : MonoBehaviour
 
     // Where a held item goes: the hand nearer the camera, which is the back hand as drawn (the lineart faces left, so
     // its right-hand one; Kenney art faces right, so its left-hand one). It's the outermost point of the frame's tight
-    // mesh on that side between 20% and 50% of the way up (below the sleeves, above the feet), moved in by about half
-    // a hand. Measured on every lineart frame, it lands on that hand while walking too. Poses that move the arms
+    // mesh on that side between 20% and 50% of the way up (below the sleeves, above the feet), moved in by HandInset. Measured on every lineart frame, it lands on that hand while walking too. Poses that move the arms
     // (cheering, falling, reaching) keep the idle frame's spot.
     public Vector3 HandPoint
     {
@@ -228,6 +227,10 @@ public class CharacterSprite : MonoBehaviour
             return transform.TransformPoint(HandAnchor(armsDown ? s : idle, drawnFacingLeft));
         }
     }
+
+    // How far in from the hand's outer edge its middle is, as a fraction of the body's height (measured on the
+    // lineart: hands are ~0.14 of the height wide, their middle ~0.075 in, plus the tight mesh's few pixels of margin).
+    const float HandInset = 0.08f;
 
     static Vector3 HandAnchor(Sprite s, bool rightSide)
     {
@@ -248,7 +251,7 @@ public class CharacterSprite : MonoBehaviour
             outermost = p.x * side;
             hand = p;
         }
-        if (outermost > float.MinValue) hand.x -= side * 0.05f * h;
+        if (outermost > float.MinValue) hand.x -= side * HandInset * h;
         return handAnchors[s] = new Vector3(hand.x, hand.y, 0f);
     }
 

@@ -10,6 +10,7 @@ public class Item : MonoBehaviour
 
     const float Size = 0.5f;     // lying around or flying: big enough to spot and pick up
     const float HeldSize = 0.3f; // in a hand: about one and a half hands tall
+    const float HeldTilt = 15f;  // degrees a held thing leans in toward the holder's body
     public const float Gravity = 18f;
 
     public VisitorItem kind;
@@ -93,10 +94,12 @@ public class Item : MonoBehaviour
         var shadowHolder = shadow.transform.parent;
         if (Holder != null)
         {
-            // In the hand, drawn in front of it (and of the whole body), sticking up out of the fist. It swings with
-            // the hand on every walk frame (hidden while the holder rides or brawls).
+            // In the hand, drawn in front of it (and of the whole body), sticking up out of the fist and tipped a little
+            // in toward the body, so it reads as held. It swings with the hand on every walk frame (hidden while the
+            // holder rides or brawls).
             transform.localScale = Vector3.one * (HeldSize / Size);
-            transform.SetPositionAndRotation(Holder.CarryPoint + Vector3.up * (HeldSize * 0.3f) - Holder.transform.forward * 0.02f, Quaternion.identity);
+            var tilt = Quaternion.Euler(0f, 0f, Holder.Look.FacingLeft ? HeldTilt : -HeldTilt);
+            transform.SetPositionAndRotation(Holder.CarryPoint + tilt * Vector3.up * (HeldSize * 0.3f) - Holder.transform.forward * 0.02f, tilt);
             sprite.enabled = Holder.Look.Visible;
             shadow.enabled = false;
             return;

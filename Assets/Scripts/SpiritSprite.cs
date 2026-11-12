@@ -5,7 +5,8 @@ using UnityEngine;
 //   Body:  MC_idle_1..4, looping (the flame on its head flickers).
 //   Eyes:  MC_face_eyes left -> center -> right -> center -> left ..., on a timer like the visitors' blinking;
 //          where it moves doesn't change where it looks.
-//   Hands: a small up-and-down bob. The left hand sits behind the body, the right hand in front of it.
+//   Bob:   body (with its eyes) and both hands float up and down together, in step. The left hand sits behind the
+//          body, the right hand in front of it.
 // Like the possessed visitors it turns to face the way it floats: the art faces left, so moving right mirrors it.
 // The pieces hang off a "Visual" child, so mirroring never touches the spirit's own collider (or the camera). They
 // show and hide with the spirit's own SpriteRenderer (Possession hides that while you're inside someone), which no
@@ -20,7 +21,10 @@ public class SpiritSprite : MonoBehaviour
     [Tooltip("Seconds on the centre frame while the eyes swing across.")]
     public float eyeTransition = 0.15f;
     [Tooltip("How far the hands bob up and down, in pixels of the drawing.")]
-    public float handBobPixels = 8f;
+    public float handBobPixels = 16f;
+    [Tooltip("How far the body (and its eyes) bobs up and down, in pixels of the drawing.")]
+    public float bodyBobPixels = 8f;
+    [Tooltip("How fast everything bobs (radians per second: one full bob takes 2\u03c0 / speed seconds).")]
     public float handBobSpeed = 4f;
 
     // Measured from the compile guide: each piece's centre in pixels from the centre of the guide, y up (the pieces
@@ -105,16 +109,18 @@ public class SpiritSprite : MonoBehaviour
             eyes.sprite = eyeCycle[eyeStep];
         }
 
-        // A small bob, the right hand a touch behind the left.
-        float bob = handBobPixels / PixelsPerUnit;
-        Bob(handLeft, HandLeftAt, bob * Mathf.Sin(Time.time * handBobSpeed));
-        Bob(handRight, HandRightAt, bob * Mathf.Sin(Time.time * handBobSpeed - 0.8f));
+        // Everything bobs together on one wave: both hands by handBobPixels, the body and eyes by bodyBobPixels.
+        float wave = Mathf.Sin(Time.time * handBobSpeed) / PixelsPerUnit;
+        Bob(handLeft, HandLeftAt, handBobPixels * wave);
+        Bob(handRight, HandRightAt, handBobPixels * wave);
+        Bob(body, BodyAt, bodyBobPixels * wave);
+        Bob(eyes, EyesAt, bodyBobPixels * wave);
     }
 
-    static void Bob(SpriteRenderer hand, Vector2 at, float offset)
+    static void Bob(SpriteRenderer part, Vector2 at, float offset)
     {
-        var p = hand.transform.localPosition;
+        var p = part.transform.localPosition;
         p.y = at.y / PixelsPerUnit + offset;
-        hand.transform.localPosition = p;
+        part.transform.localPosition = p;
     }
 }
