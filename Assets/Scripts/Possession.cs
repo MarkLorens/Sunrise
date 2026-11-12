@@ -66,6 +66,7 @@ public class Possession : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         body = GetComponent<Collider>();
         sprite = GetComponent<SpriteRenderer>();
+        sprite.sharedMaterial = ParkArt.CharacterMaterial; // the spirit is a person too: never see-through
         baseScale = transform.localScale;
     }
 
