@@ -99,7 +99,19 @@ public class CameraRig : MonoBehaviour
         brain.DefaultBlend = new CinemachineBlendDefinition(CinemachineBlendDefinition.Styles.EaseInOut, rideBlend);
         var lens = LensSettings.FromCamera(GetComponent<Camera>());
 
-        group = new GameObject("Camera Target Group").AddComponent<CinemachineTargetGroup>();
+        // Temporal anti-aliasing: blends the last few frames. Besides smoothing edges, it turns the see-through hole's
+        // moving dither (SeeThrough.hlsl) into a smooth fade instead of a visible dot pattern.
+        var urp = GetComponent<Camera>().GetUniversalAdditionalCameraData();
+        urp.antialiasing = AntialiasingMode.TemporalAntiAliasing;
+        urp.antialiasingQuality = AntialiasingQuality.High;
+        // Average more frames (blend) and clamp the history less tightly, so the dither noise melts into a smooth
+        // fade. Push these further and fast movement starts to leave faint trails (ghosting).
+        var taa = urp.taaSettings;
+        taa.baseBlendFactor = 0.95f;     // default 0.9
+        taa.varianceClampScale = 1.5f;   // default 0.9
+        urp.taaSettings = taa;
+
+        group =new GameObject("Camera Target Group").AddComponent<CinemachineTargetGroup>();
 
         var go = new GameObject("Framing Camera");
         go.transform.rotation = Quaternion.LookRotation(-offset, Vector3.up); // fixed angle: no aim component
