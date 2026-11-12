@@ -75,9 +75,9 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
 
     public string Blocked(Visitor host)
     {
-        if (Fixed) return "Fixed. Not a drop";
-        if (mechanicCalled) return "The mechanic's on it";
-        if (Radius >= maxRadius) return "The puddle won't spread any further";
+        if (Fixed) return GameText.FountainFixed;
+        if (mechanicCalled) return GameText.MechanicOnIt;
+        if (Radius >= maxRadius) return GameText.PuddleFull;
         return null;
     }
 
@@ -86,7 +86,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
         SetRadius(Mathf.Min(maxRadius, Mathf.Max(Radius, startRadius) + growth));
         Sfx.Play(Sfx.HitSoft, 0.6f, 1.4f);
         Fx.Burst("Fx/puff", transform.position + Vector3.up * 0.8f, 6, Water, 2f, 0.35f, 0.5f);
-        GameHud.Say("*sploosh* The leak gets worse and the puddle spreads.");
+        GameHud.Say(GameText.PressedFountain);
         if (VisitorsInPuddle() >= crowdToFlood) Mischief.Complete(Mischief.Task.FloodPuddle);
     }
 
@@ -115,13 +115,8 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
             v.Die();
             victims++;
         }
-        if (victims == 0)
-        {
-            GameHud.Say("*BZZT!* ...nobody was standing in it.");
-            return;
-        }
+        if (victims == 0) return;
 
-        GameHud.Say($"*BZZZZZT!* {victims} {(victims == 1 ? "person gets" : "people get")} electrocuted in the puddle!", "Bubbles/skull");
         Mischief.Complete(Mischief.Task.Electrocute);
         ResetAgent.Call(new StaffWorker.Job
         {
@@ -133,11 +128,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
         });
 
         if (mechanicCalled) return;
-        if (victims < victimsToCallMechanic)
-        {
-            GameHud.Say("Not much of a scene. Nobody's coming to fix that fountain yet.");
-            return;
-        }
+        if (victims < victimsToCallMechanic) return; // not much of a scene: nobody's coming to fix it yet
         mechanicCalled = true;
         Mechanic.Call(new StaffWorker.Job
         {
@@ -154,13 +145,11 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     {
         SetRadius(Fixed ? 0f : startRadius);
         Fx.Burst("Fx/puff", PuddleCenter + Vector3.up * 0.3f, 10, Color.white, 2f, 0.5f, 0.6f);
-        GameHud.Say("The Reset Agents mop up the puddle.");
     }
 
     void Fix()
     {
         Fixed = true;
         Sfx.Play(Sfx.HitWood, 0.8f);
-        GameHud.Say("The mechanic fixes the drinking fountain. Not a drop.");
     }
 }

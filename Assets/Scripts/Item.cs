@@ -1,13 +1,15 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Something a visitor carries over their head: a drink, a water bottle, the mechanic's keys. Possessing someone, you
+// Something a visitor carries in their hand: a drink, a water bottle, the mechanic's keys. Possessing someone, you
 // can use what they hold or own: drop it, pick it back up, throw it. A thrown item knocks people back.
+[DefaultExecutionOrder(50)] // after CharacterSprite has picked this frame's pose, so it follows the hand exactly
 public class Item : MonoBehaviour
 {
     public static readonly List<Item> All = new();
 
-    const float Size = 0.5f;
+    const float Size = 0.5f;     // lying around or flying: big enough to spot and pick up
+    const float HeldSize = 0.3f; // in a hand: about one and a half hands tall
     public const float Gravity = 18f;
 
     public VisitorItem kind;
@@ -25,6 +27,10 @@ public class Item : MonoBehaviour
     public float HitPower => kind == VisitorItem.Drink ? 1f : 0.75f; // a full cup to the face is the worst
 
     SpriteRenderer sprite, shadow;
+
+    // What the HUD's inventory box shows (a grey block until the item has art).
+    public Sprite Icon => sprite.sprite;
+    public Color IconColor => sprite.color;
     Vector3 velocity;
     bool thrown;
 
@@ -87,13 +93,15 @@ public class Item : MonoBehaviour
         var shadowHolder = shadow.transform.parent;
         if (Holder != null)
         {
-            // Carried over the head with a little wobble (hidden while the holder rides or brawls).
-            transform.position = Holder.CarryPoint + Vector3.up * Mathf.Sin(Time.time * 6f) * 0.04f;
-            transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Sin(Time.time * 3f) * 8f);
+            // In the hand, drawn in front of it (and of the whole body), sticking up out of the fist. It swings with
+            // the hand on every walk frame (hidden while the holder rides or brawls).
+            transform.localScale = Vector3.one * (HeldSize / Size);
+            transform.SetPositionAndRotation(Holder.CarryPoint + Vector3.up * (HeldSize * 0.3f) - Holder.transform.forward * 0.02f, Quaternion.identity);
             sprite.enabled = Holder.Look.Visible;
             shadow.enabled = false;
             return;
         }
+        transform.localScale = Vector3.one;
         sprite.enabled = shadow.enabled = true;
         shadowHolder.SetPositionAndRotation(new Vector3(transform.position.x, 0.02f, transform.position.z), Quaternion.identity);
         if (!InFlight) return;

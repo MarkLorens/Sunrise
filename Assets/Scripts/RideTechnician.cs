@@ -53,7 +53,6 @@ public class RideTechnician : MonoBehaviour
 
     public void Ring()
     {
-        look.Show("question", 3f);
-        GameHud.Say($"{name}: Zzz... *snore*... five more minutes...");
+        // Asleep: he doesn't pick up.
     }
 }

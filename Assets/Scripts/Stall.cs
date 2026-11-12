@@ -21,7 +21,6 @@ public class Stall : MonoBehaviour, IInteraction
         if (customer.Held != null) return;
         var item = Item.Create(sells, ServePoint + Vector3.up, customer);
         customer.GrabItem(item);
-        customer.Look.Show("heart", 1.2f);
     }
 
     string Goods => sells switch
@@ -32,11 +31,11 @@ public class Stall : MonoBehaviour, IInteraction
 
     public string Prompt(Visitor host) => $"Buy {Goods}";
 
-    public string Blocked(Visitor host) => host.Held != null ? "Your hands are full" : null;
+    public string Blocked(Visitor host) => host.Held != null ? GameText.HandsFull : null;
 
     public void Interact(Visitor host)
     {
         Sell(host);
-        GameHud.Say($"{host.name} buys {Goods}.");
+        if (host.Held != null) GameHud.Say(GameText.Bought(host.Held.DisplayName));
     }
 }

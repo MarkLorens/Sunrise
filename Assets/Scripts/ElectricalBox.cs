@@ -13,8 +13,8 @@ public class ElectricalBox : MonoBehaviour, IInteraction
 
     public string Blocked(Visitor host)
     {
-        if (!wheel.Powered) return "The power's off";
-        if (!Unlocked && host.HeldKind != VisitorItem.Keys) return "Locked. The mechanic has the keys";
+        if (!wheel.Powered) return GameText.PowerOff;
+        if (!Unlocked && host.HeldKind != VisitorItem.Keys) return GameText.BoxLocked;
         return null;
     }
 
@@ -24,12 +24,13 @@ public class ElectricalBox : MonoBehaviour, IInteraction
         {
             Unlocked = true;
             Sfx.Play(Sfx.HitWood, 0.7f, 1.5f);
-            GameHud.Say("*click* The electrical box swings open.");
+            GameHud.Say(GameText.UnlockedBox);
             Mischief.Complete(Mischief.Task.UnlockBox);
             return;
         }
         Fx.Burst("Fx/sparkle", transform.position + Vector3.up * 0.8f, 12, new Color(1f, 0.9f, 0.4f), 3f, 0.3f, 0.4f);
         wheel.CutPower();
+        GameHud.Say(GameText.CutPower);
         Mischief.Complete(Mischief.Task.CutPower);
     }
 }

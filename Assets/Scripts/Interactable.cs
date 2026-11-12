@@ -33,7 +33,7 @@ public class Interactable : MonoBehaviour
 
     public string Blocked(Visitor host)
     {
-        if (needsBody && host == null) return "You need a body to touch things";
+        if (needsBody && host == null) return GameText.NeedBody;
         return rules?.Blocked(host);
     }
 

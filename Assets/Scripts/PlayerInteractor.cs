@@ -25,7 +25,7 @@ public class PlayerInteractor : MonoBehaviour
         string blocked = target.Blocked(Host);
         if (blocked != null)
         {
-            GameHud.Say(blocked);
+            GameHud.Refuse(target.transform, blocked); // over whatever said no
             return;
         }
         if (Host != null) Host.Look.Gesture(Host.Look.interact);

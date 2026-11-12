@@ -63,7 +63,6 @@ public class FerrisWheel : MonoBehaviour
         if (!Powered) return;
         Current = State.Unpowered;
         Sfx.Play(Sfx.Thud, 0.8f, 0.6f);
-        GameHud.Say("*clunk* The Ferris wheel's lights die and it slowly grinds to a halt.");
     }
 
     // The cabin at the bottom of the wheel, where riders get on.

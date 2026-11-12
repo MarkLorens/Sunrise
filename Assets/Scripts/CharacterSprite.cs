@@ -2,8 +2,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Animates a flat character sprite (walk / run / idle, cheering with arms up, or a held pose), gives it a soft
-// shadow, a tiny hop on every step while walking, squashes it when it's hit, and pops thought bubbles over its
-// head to telegraph what it's thinking, like the townsfolk in Untitled Goose Game.
+// shadow, a tiny hop on every step while walking, squashes it when it's hit, and knows where its hand is on every
+// frame (HandPoint), so what it carries stays in its hand.
 // Frames come from Resources/Visitors/<character>/character_<character>_<pose>.png, or for the new lineart bodies
 // (character = "body_<variant>") from Resources/ArtLineartTorso/body_<variant>_idle / _walk1..4. If a body has white fill
 // layers (body_<variant>_<pose>_skin/top/bottom/shoes, made by Tools > Split Coloured Body Art) they're stacked behind
@@ -28,7 +28,7 @@ public class CharacterSprite : MonoBehaviour
     public bool FacingLeft => facingLeft;
     public float HeadHeight => idle.bounds.size.y * transform.lossyScale.y;
 
-    SpriteRenderer body, bubble, shadow;
+    SpriteRenderer body, shadow;
 
     // Fill layers under the lineart. Palettes are placeholders until the art direction settles.
     static readonly string[] FillLayers = { "skin", "top", "bottom", "shoes" };
@@ -44,6 +44,7 @@ public class CharacterSprite : MonoBehaviour
     static Dictionary<string, Sprite> headArt;
     static readonly List<string> faceIds = new(), hairIds = new();
     static readonly Dictionary<Sprite, Vector3> headAnchors = new();
+    static readonly Dictionary<Sprite, Vector3> handAnchors = new();
     Transform head;
     SpriteRenderer face;
     Sprite faceOpen, faceClosed;
@@ -64,10 +65,6 @@ public class CharacterSprite : MonoBehaviour
     bool loaded;
     bool facingLeft, drawnFacingLeft; // Kenney art faces right, the lineart faces left
     static readonly int TintId = Shader.PropertyToID("_Tint");
-
-    string bubbleName;
-    float bubbleAge, bubbleDuration;
-    bool bubbleSticky;
 
     void Awake() => Load();
 
@@ -112,11 +109,6 @@ public class CharacterSprite : MonoBehaviour
             if (cheer[0] == null) cheer = new[] { interact, interact };
         }
         body.sprite = idle;
-
-        float h = idle.bounds.size.y;
-        bubble = ParkArt.Make("Bubble", transform, null, 0.8f, Color.white, ParkArt.OverheadOrder);
-        bubble.transform.localPosition = new Vector3(0.3f, h + 0.45f, -0.02f);
-        bubble.enabled = false;
 
         shadow = ParkArt.Make("Shadow", transform, "Markers/shadow", 0.42f, Color.white, ParkArt.DecalOrder, true);
         shadow.transform.parent.localPosition = new Vector3(0f, 0.02f, 0f);
@@ -221,6 +213,45 @@ public class CharacterSprite : MonoBehaviour
         return headAnchors[s] = new Vector3(left + pad, top - pad, 0f);
     }
 
+    // Where a held item goes: the hand nearer the camera, which is the back hand as drawn (the lineart faces left, so
+    // its right-hand one; Kenney art faces right, so its left-hand one). It's the outermost point of the frame's tight
+    // mesh on that side between 20% and 50% of the way up (below the sleeves, above the feet), moved in by about half
+    // a hand. Measured on every lineart frame, it lands on that hand while walking too. Poses that move the arms
+    // (cheering, falling, reaching) keep the idle frame's spot.
+    public Vector3 HandPoint
+    {
+        get
+        {
+            Load();
+            var s = body.sprite;
+            bool armsDown = s == idle || System.Array.IndexOf(walk, s) >= 0 || System.Array.IndexOf(run, s) >= 0;
+            return transform.TransformPoint(HandAnchor(armsDown ? s : idle, drawnFacingLeft));
+        }
+    }
+
+    static Vector3 HandAnchor(Sprite s, bool rightSide)
+    {
+        if (handAnchors.TryGetValue(s, out var a)) return a;
+        var v = s.vertices;
+        float bottom = float.MaxValue, top = float.MinValue;
+        foreach (var p in v)
+        {
+            bottom = Mathf.Min(bottom, p.y);
+            top = Mathf.Max(top, p.y);
+        }
+        float h = top - bottom, side = rightSide ? 1f : -1f;
+        Vector2 hand = new(0f, bottom + 0.35f * h);
+        float outermost = float.MinValue;
+        foreach (var p in v)
+        {
+            if (p.y < bottom + 0.2f * h || p.y > bottom + 0.5f * h || p.x * side <= outermost) continue;
+            outermost = p.x * side;
+            hand = p;
+        }
+        if (outermost > float.MinValue) hand.x -= side * 0.05f * h;
+        return handAnchors[s] = new Vector3(hand.x, hand.y, 0f);
+    }
+
     // Fills show the frame that matches whatever the line is showing; the head follows its bob.
     void SyncFills()
     {
@@ -252,44 +283,6 @@ public class CharacterSprite : MonoBehaviour
         return frames;
     }
 
-    // ---------------------------------------------------------------- thought bubbles
-
-    // Show a thought bubble: Park/Bubbles/<name> (question, exclaim, anger, heart, skull, snack, swords)
-    // or an icon from Resources/Icons. Sticky ones stay until replaced or hidden (e.g. anger while chasing).
-    public void Show(string name, float seconds = 1.8f, bool stay = false)
-    {
-        Load();
-        var s = ParkArt.Get("Bubbles/" + name);
-        if (s == null) s = ParkArt.Get("Icons/" + name);
-        if (s == null) return;
-        if (bubble.enabled && bubbleName == name && bubbleAge > 0.2f)
-        {
-            bubbleDuration = Mathf.Max(bubbleDuration, bubbleAge + seconds);
-            bubbleSticky = stay;
-            return;
-        }
-        bubbleName = name;
-        bubble.sprite = s;
-        ParkArt.Fit(bubble, 0.8f);
-        bubble.enabled = body.enabled;
-        bubbleAge = 0f;
-        bubbleDuration = seconds;
-        bubbleSticky = stay;
-    }
-
-    public void HideBubble()
-    {
-        bubbleSticky = false;
-        bubbleDuration = Mathf.Min(bubbleDuration, bubbleAge + 0.15f);
-    }
-
-    // Older API: a sticky bubble, or null to hide it.
-    public void SetIcon(string name)
-    {
-        if (string.IsNullOrEmpty(name)) HideBubble();
-        else Show(name, 999f, true);
-    }
-
     // ---------------------------------------------------------------- body
 
     public void SetVisible(bool visible)
@@ -299,7 +292,6 @@ public class CharacterSprite : MonoBehaviour
         shadow.enabled = visible;
         foreach (var f in fills) f.enabled = visible;
         foreach (var (r, _) in headParts) r.enabled = visible;
-        if (!visible) bubble.enabled = false;
     }
 
     // Tinted characters (possessed, dead). SpriteRenderer.color doesn't reach the lit shader graph in Unity 6,
@@ -385,29 +377,5 @@ public class CharacterSprite : MonoBehaviour
         float flip = facingLeft != drawnFacingLeft ? -1f : 1f;
         var scale = new Vector3(baseScale.x * flip * sx, baseScale.y * sy, baseScale.z);
         if (transform.localScale != scale) transform.localScale = scale;
-
-        AnimateBubble();
-    }
-
-    // Pop in with overshoot, bob, shrink away at the end.
-    void AnimateBubble()
-    {
-        if (bubbleName == null) return;
-        bubbleAge += Time.deltaTime;
-        if (!bubbleSticky && bubbleAge >= bubbleDuration)
-        {
-            bubble.enabled = false;
-            bubbleName = null;
-            return;
-        }
-        bubble.enabled = body.enabled;
-        float pop = bubbleAge < 0.18f ? Mathf.Sin(bubbleAge / 0.18f * Mathf.PI * 0.5f) * 1.15f : Mathf.Lerp(1.15f, 1f, (bubbleAge - 0.18f) * 8f);
-        float outro = bubbleSticky ? 1f : Mathf.Clamp01((bubbleDuration - bubbleAge) / 0.15f);
-        float size = 0.8f / bubble.sprite.bounds.size.y;
-        bubble.transform.localScale = Vector3.one * size * Mathf.Max(0.01f, Mathf.Min(pop, 1.15f) * outro);
-        if (transform.localScale.x < 0f) bubble.transform.localScale = Vector3.Scale(bubble.transform.localScale, new Vector3(-1f, 1f, 1f)); // keep icons readable
-        var p = bubble.transform.localPosition;
-        p.y = idle.bounds.size.y + 0.45f + Mathf.Sin(bubbleAge * 4f) * 0.05f;
-        bubble.transform.localPosition = p;
     }
 }

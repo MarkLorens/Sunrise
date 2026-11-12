@@ -67,6 +67,7 @@ public class Possession : MonoBehaviour
         body = GetComponent<Collider>();
         sprite = GetComponent<SpriteRenderer>();
         sprite.sharedMaterial = ParkArt.CharacterMaterial; // the spirit is a person too: never see-through
+        if (!TryGetComponent(out SpiritSprite _)) gameObject.AddComponent<SpiritSprite>(); // its body, eyes and hands
         baseScale = transform.localScale;
     }
 
@@ -117,9 +118,9 @@ public class Possession : MonoBehaviour
             best = d;
             Candidate = v.transform;
             CandidateName = v.name;
-            CandidateBlocked = !v.CanBePossessed ? $"{v.name} can't be possessed"
-                : IsLocked(v, out float left) ? $"{v.name} is still shaken ({Mathf.CeilToInt(left)}s)"
-                : CooldownLeft > 0f ? $"Too weak to possess anyone ({Mathf.CeilToInt(CooldownLeft)}s)"
+            CandidateBlocked = !v.CanBePossessed ? GameText.CantBePossessed(v.name)
+                : IsLocked(v, out float left) ? GameText.StillShaken(v.name, Mathf.CeilToInt(left))
+                : CooldownLeft > 0f ? GameText.TooWeak(Mathf.CeilToInt(CooldownLeft))
                 : null;
         }
     }
@@ -142,7 +143,7 @@ public class Possession : MonoBehaviour
         if (v == null)
         {
             Sfx.Play(Sfx.Refuse, 0.5f);
-            GameHud.Say(CandidateBlocked + ".");
+            GameHud.Refuse(Candidate, CandidateBlocked, true);
             return true; // E was used up on trying
         }
         State = Mode.Diving;
@@ -183,7 +184,7 @@ public class Possession : MonoBehaviour
         Host.BeginPossession();
         Fx.Burst("Fx/sparkle", Host.HeadPoint, 18, Fx.Spirit, 3.5f, 0.45f, 0.6f);
         Fx.Shake(0.2f, 0.3f); // a small knock that sways and settles, like a landed hit
-        GameHud.Say($"You possessed {Host.name}.", "UI/spirit");
+        GameHud.Say(GameText.Possessed(Host.name));
         if (Host.brain == null) Mischief.Complete(Mischief.Task.Possess);
         else if (Host.brain is CableMan) Mischief.Complete(Mischief.Task.PossessCableMan);
         else if (Host.brain is Mechanic) Mischief.Complete(Mischief.Task.PossessMechanic);
@@ -201,6 +202,7 @@ public class Possession : MonoBehaviour
         if (q)
         {
             Release();
+            GameHud.Say(GameText.LeftBody);
             return;
         }
         if (Riding)
@@ -221,6 +223,7 @@ public class Possession : MonoBehaviour
         if (k)
         {
             Charging = false;
+            GameHud.Say(GameText.Dropped(Host.Held.DisplayName));
             Host.DropHeld();
             return;
         }
@@ -260,7 +263,10 @@ public class Possession : MonoBehaviour
         return best;
     }
 
-    void Grab(Item it) => Host.GrabItem(it);
+    void Grab(Item it)
+    {
+        if (Host.GrabItem(it)) GameHud.Say(GameText.PickedUp(it.DisplayName));
+    }
 
     void Aim() => AimDirection = Host.Facing;
 
@@ -281,6 +287,7 @@ public class Possession : MonoBehaviour
 
     void Throw()
     {
+        GameHud.Say(GameText.Threw(Host.Held.DisplayName));
         Host.ThrowHeld(ThrowVelocity(Charge));
     }
 

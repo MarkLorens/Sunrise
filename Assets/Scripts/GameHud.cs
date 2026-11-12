@@ -3,10 +3,11 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-// The HUD, built at runtime in the style of My project's: the objective panel (the objective, steps done so far,
-// time left in the body), a context-sensitive controls bar whose keycaps light up while held, a prompt floating over
-// whatever you can possess / pick up / use, the intro banner, a feed of what's happening, and the level's steps on
-// Tab (the game pauses while it's open).
+// The HUD, built at runtime in the style of My project's: the objectives (top left: the part of the level you're on
+// and its steps; a step that gets done is struck through and stays on the list), a pop-up line for each thing the
+// player does and each step done (bottom left; the wording is all in GameText), a prompt floating over whatever you
+// can possess / pick up / use (and why not, when E is refused), and the intro banner. While you're in someone, an
+// inventory box (bottom right) shows what they're holding.
 // It also gives the main camera its rig and the spirit its markers.
 public class GameHud : MonoBehaviour
 {
@@ -17,34 +18,52 @@ public class GameHud : MonoBehaviour
     static readonly Color PanelDark = new(0.12f, 0.08f, 0.12f, 0.8f);
     static readonly Color Ink = new(0.17f, 0.1f, 0.13f);
     static readonly Color Soft = new(0.96f, 0.92f, 0.88f);
-    static readonly Color Mint = new(0.6f, 1f, 0.92f);
-    static readonly List<(string text, string icon)> pending = new();
+    static readonly Color Brush = new(0.1f, 0.07f, 0.1f, 0.9f);
+    static readonly Color StepInk = new(0.97f, 0.93f, 0.86f);
+    static readonly List<string> pending = new();
+    static Font handFont;
+    static Font HandFont => handFont != null ? handFont : handFont = Resources.Load<Font>("Park/Fonts/LoveYaLikeASister");
 
-    class Toast
+    // A step in the objectives list. age < 0 until it's done; then a line is drawn through it and it stays put.
+    class StepRow
     {
-        public RectTransform rect, body;
+        public Mischief.Task task;
+        public LayoutElement slot;
+        public RectTransform body, strike;
         public CanvasGroup group;
-        public float age;
+        public float width, age = -1f, appear;
     }
 
     Possession spirit;
     PlayerInteractor interactor;
     RectTransform canvas;
-    Text stepsLabel, gripLabel;
+    CanvasGroup objectives;
+    Text objectiveTitle;
+    RectTransform stepList;
+    readonly List<StepRow> stepRows = new();
+    int shownPart = -2; // index into Mischief.Parts, -1 when every step is done
+    RectTransform doneBody;
+    CanvasGroup doneGroup;
+    Text doneText;
+    float doneAge = DoneTime, doneShow = DoneTime;
+    readonly List<string> doneQueue = new();
+    int actionFrame = -1; // the frame the last line in doneQueue was queued by Say (a step done then takes its place)
+    const float DoneTime = 3.6f, DoneMin = 1.4f, DoneFade = 0.4f, StepHeight = 38f;
+    const float PartHold = 1.5f; // seconds the finished part's struck-through list stays up before the next part
+    Text gripLabel;
     GameObject gripRow;
-    GameObject controlsBar, floatHint, possessHint, walkHint, lookHint, grabHint, throwHint, dropHint, useHint, leaveHint;
     RectTransform prompt;
     GameObject promptCap;
     Text promptKey, promptText;
+    Transform refusedBy;
+    bool refusedPerson;
+    string refusal;
+    float refusedAt = -10f;
+    const float RefusalTime = 1.6f;
     CanvasGroup intro;
     float introAge;
-    RectTransform feed, toastTemplate;
-    readonly List<Toast> toasts = new();
-    CanvasGroup listScreen;
-    RectTransform listPage;
-    readonly List<(Mischief.Task task, Image box, Text label)> rows = new();
-    bool listOpen;
-    float listFade;
+    CanvasGroup inventory;
+    Image inventoryItem;
 
     void Awake()
     {
@@ -60,67 +79,154 @@ public class GameHud : MonoBehaviour
         if (GetComponent<PossessionMarker>() == null) gameObject.AddComponent<PossessionMarker>();
         if (GetComponent<ActionOutline>() == null) gameObject.AddComponent<ActionOutline>();
         Build();
-        foreach (var (text, icon) in pending) Push(text, icon);
+        doneQueue.AddRange(pending);
         pending.Clear();
     }
 
     void OnDestroy()
     {
-        if (listOpen) Time.timeScale = 1f;
         if (Instance == this) Instance = null;
     }
 
-    // A line in the event feed, with an optional icon (a sprite path for ParkArt.Get).
-    public static void Say(string text, string icon = null)
+    // A line in the bottom-left pop-up for something the player just did. One at a time: later ones wait their turn.
+    public static void Say(string text)
     {
-        if (Instance != null) Instance.Push(text, icon);
-        else pending.Add((text, icon));
+        if (Instance == null)
+        {
+            pending.Add(text);
+            return;
+        }
+        Instance.doneQueue.Add(text);
+        Instance.actionFrame = Time.frameCount;
+    }
+
+    // The pop-up line for a step that just got done. If what the player did this very frame is what did it, this
+    // line takes the place of that one: one thing happened, one line.
+    public static void StepDone(string text)
+    {
+        if (Instance == null)
+        {
+            pending.Add(text);
+            return;
+        }
+        var q = Instance.doneQueue;
+        if (Instance.actionFrame == Time.frameCount && q.Count > 0) q[q.Count - 1] = text;
+        else q.Add(text);
+        Instance.actionFrame = -1;
+    }
+
+    // Why pressing E didn't work, floated over whatever said no for a moment (person: someone you tried to possess).
+    public static void Refuse(Transform by, string why, bool person = false)
+    {
+        if (Instance == null || by == null || string.IsNullOrEmpty(why)) return;
+        Instance.refusedBy = by;
+        Instance.refusedPerson = person;
+        Instance.refusal = why;
+        Instance.refusedAt = Time.unscaledTime;
     }
 
     // ---------------------------------------------------------------- every frame
 
     void Update()
     {
-        var kb = Keyboard.current;
-        bool toggle = kb != null && (kb.tabKey.wasPressedThisFrame || (listOpen && kb.escapeKey.wasPressedThisFrame));
-        if (toggle)
-        {
-            listOpen = !listOpen;
-            Time.timeScale = listOpen ? 0f : 1f;
-            Possession.InputBlocked = listOpen;
-            if (listOpen) RefreshList();
-        }
-
-        UpdateCounters();
-        UpdateControls();
+        UpdateObjectives();
+        UpdateStepPopup();
+        UpdateGrip();
         UpdatePrompt();
-        UpdateFeed();
+        UpdateInventory();
         UpdateBanners();
     }
 
-    void UpdateCounters()
+    // The part you're on: the first one with a step still to do (-1 once they're all done).
+    static int ActivePart()
     {
-        stepsLabel.text = $"Steps done  <b>{Mischief.StepsDone}</b> / {Mischief.StepCount}";
+        for (int p = 0; p < Mischief.Parts.Length; p++)
+            foreach (var (task, _) in Mischief.Parts[p].steps)
+                if (!Mischief.IsDone(task)) return p;
+        return -1;
+    }
 
+    void UpdateObjectives()
+    {
+        float dt = Time.unscaledDeltaTime;
+        // Move on to the next part once every step of this one has been struck through and stayed up a moment.
+        int part = ActivePart();
+        if (part != shownPart && stepRows.TrueForAll(r => r.age >= PartHold)) ShowPart(part);
+        objectives.alpha = Mathf.MoveTowards(objectives.alpha, shownPart >= 0 ? 1f : 0f, dt * 3f);
+
+        foreach (var r in stepRows)
+        {
+            if (r.age < 0f)
+            {
+                // New rows ease in from the left.
+                r.appear = Mathf.Min(1f, r.appear + dt / 0.3f);
+                r.group.alpha = r.appear;
+                r.body.anchoredPosition = new Vector2((r.appear - 1f) * 40f, 0f);
+                if (!Mischief.IsDone(r.task)) continue;
+                r.age = 0f;
+                r.group.alpha = 1f;
+                r.body.anchoredPosition = Vector2.zero;
+            }
+            // Done: a line is drawn through it, and it stays on the list.
+            r.age += dt;
+            float strike = 1f - Mathf.Pow(1f - Mathf.Clamp01(r.age / 0.35f), 3f);
+            r.strike.sizeDelta = new Vector2(r.width * strike, 3f);
+        }
+    }
+
+    void ShowPart(int part)
+    {
+        shownPart = part;
+        if (part < 0) return; // all done: the panel fades away, last list and all
+        foreach (var r in stepRows) Destroy(r.slot.gameObject);
+        stepRows.Clear();
+        var (title, steps) = Mischief.Parts[part];
+        int dot = title.IndexOf(". ");
+        objectiveTitle.text = dot >= 0 && dot < 3 ? title[(dot + 2)..] : title; // "1. A-leak-tricity" -> "A-leak-tricity"
+        foreach (var (task, label) in steps)
+        {
+            var slot = Ui(task.ToString(), stepList);
+            var body = Ui("Body", slot);
+            Stretch(body);
+            var group = body.gameObject.AddComponent<CanvasGroup>();
+            group.alpha = 0f;
+            var text = Txt(body, "› " + label, 26, StepInk);
+            text.font = HandFont;
+            var strike = Ui("Strike", body);
+            Place(strike, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(0f, -1f), new Vector2(0f, 3f));
+            Img(strike, null, StepInk);
+            var element = slot.gameObject.AddComponent<LayoutElement>();
+            element.preferredWidth = text.preferredWidth;
+            element.preferredHeight = StepHeight;
+            stepRows.Add(new StepRow { task = task, slot = element, body = body, strike = strike, group = group, width = text.preferredWidth });
+        }
+    }
+
+    void UpdateStepPopup()
+    {
+        doneAge += Time.unscaledDeltaTime;
+        // More lines waiting: the one up now gives way sooner, once it's been up long enough to read.
+        if (doneQueue.Count > 0) doneShow = Mathf.Min(doneShow, Mathf.Max(doneAge + DoneFade, DoneMin));
+        if (doneAge >= doneShow && doneQueue.Count > 0)
+        {
+            doneText.text = doneQueue[0];
+            doneQueue.RemoveAt(0);
+            doneAge = 0f;
+            doneShow = DoneTime;
+        }
+        // Slides in, stays a few seconds, fades.
+        float fadeIn = Mathf.Clamp01(doneAge / 0.15f);
+        doneGroup.alpha = Mathf.Min(fadeIn, Mathf.Clamp01((doneShow - doneAge) / DoneFade));
+        doneBody.anchoredPosition = new Vector2((fadeIn - 1f) * 60f, 0f);
+    }
+
+    void UpdateGrip()
+    {
         string grip = "";
         if (spirit.State == Possession.Mode.Spirit && spirit.CooldownLeft > 0f)
             grip = $"<color=#ffb38a>Too weak to possess  <b>{Mathf.CeilToInt(spirit.CooldownLeft)}s</b></color>";
         if (gripRow.activeSelf != grip.Length > 0) gripRow.SetActive(grip.Length > 0);
         gripLabel.text = grip;
-    }
-
-    void UpdateControls()
-    {
-        bool isSpirit = spirit.Host == null;
-        bool riding = spirit.Riding;
-        bool holding = !isSpirit && !riding && spirit.Host.Held != null;
-        Set(walkHint, !isSpirit && !riding);
-        Set(lookHint, riding);
-        Set(grabHint, !isSpirit && !riding && !holding && spirit.GrabCandidate != null);
-        Set(throwHint, holding);
-        Set(dropHint, holding);
-        Set(useHint, !isSpirit && !riding && interactor.Nearest() != null);
-        Set(leaveHint, !isSpirit);
     }
 
     static void Set(GameObject go, bool on)
@@ -134,9 +240,15 @@ public class GameHud : MonoBehaviour
         string key = "", text = "";
         var host = spirit.Host;
 
-        if (spirit.State == Possession.Mode.Spirit && spirit.Candidate != null)
+        if (refusedBy != null && Time.unscaledTime - refusedAt < RefusalTime)
         {
-            anchor = spirit.Candidate.position + Vector3.up * 2.6f;
+            // E was just refused: say why, over whatever said no.
+            anchor = refusedPerson ? PersonTop(refusedBy) : ThingTop(refusedBy);
+            text = $"<color=#bbbbbb>{refusal}</color>";
+        }
+        else if (spirit.State == Possession.Mode.Spirit && spirit.Candidate != null)
+        {
+            anchor = PersonTop(spirit.Candidate);
             if (spirit.CandidateBlocked == null)
             {
                 key = "E";
@@ -149,8 +261,7 @@ public class GameHud : MonoBehaviour
             var target = interactor.Nearest();
             if (target != null)
             {
-                var r = target.GetComponent<SpriteRenderer>();
-                anchor = r != null ? new Vector3(target.transform.position.x, r.bounds.max.y + 0.4f, target.transform.position.z) : target.transform.position + Vector3.up * 2f;
+                anchor = ThingTop(target.transform);
                 string blocked = target.Blocked(host);
                 key = blocked == null ? "E" : "";
                 text = blocked == null ? target.Prompt(host) : $"<color=#bbbbbb>{target.Prompt(host)}: {blocked}</color>";
@@ -166,7 +277,7 @@ public class GameHud : MonoBehaviour
 
         var cam = Camera.main;
         Vector3 screen = anchor.HasValue && cam != null ? cam.WorldToScreenPoint(anchor.Value) : Vector3.back;
-        bool show = anchor.HasValue && screen.z > 0f && !listOpen;
+        bool show = anchor.HasValue && screen.z > 0f;
         Set(prompt.gameObject, show);
         if (!show) return;
         RectTransformUtility.ScreenPointToLocalPointInRectangle(canvas, screen, null, out Vector2 local);
@@ -176,19 +287,26 @@ public class GameHud : MonoBehaviour
         promptText.text = text;
     }
 
-    void UpdateFeed()
+    // Where the floating prompt goes: over the head of someone you could possess, or over the top of a thing.
+    static Vector3 PersonTop(Transform t) => t.position + Vector3.up * 2.6f;
+
+    static Vector3 ThingTop(Transform t)
     {
-        for (int i = toasts.Count - 1; i >= 0; i--)
-        {
-            var t = toasts[i];
-            t.age += Time.unscaledDeltaTime;
-            float fadeIn = Mathf.Clamp01(t.age / 0.15f);
-            t.group.alpha = Mathf.Min(fadeIn, Mathf.Clamp01((3.6f - t.age) / 0.4f));
-            t.body.anchoredPosition = new Vector2((1f - fadeIn) * 60f, 0f);
-            if (t.age < 3.6f) continue;
-            Destroy(t.rect.gameObject);
-            toasts.RemoveAt(i);
-        }
+        var r = t.GetComponent<SpriteRenderer>();
+        return r != null ? new Vector3(t.position.x, r.bounds.max.y + 0.4f, t.position.z) : t.position + Vector3.up * 2f;
+    }
+
+    // Shown while you're in someone (not from a Ferris wheel cabin): empty, or the item in their hand.
+    void UpdateInventory()
+    {
+        var host = spirit.Host;
+        bool show = host != null && !spirit.Riding;
+        inventory.alpha = Mathf.MoveTowards(inventory.alpha, show ? 1f : 0f, Time.unscaledDeltaTime * 6f);
+        var held = show ? host.Held : null;
+        Set(inventoryItem.gameObject, held != null);
+        if (held == null) return;
+        inventoryItem.sprite = held.Icon;
+        inventoryItem.color = held.IconColor;
     }
 
     void UpdateBanners()
@@ -197,40 +315,6 @@ public class GameHud : MonoBehaviour
         introAge += dt;
         if (spirit.Host != null && introAge < 9f) introAge = 9f; // got the idea
         intro.alpha = Mathf.Min(Mathf.Clamp01((introAge - 0.5f) * 2f), Mathf.Clamp01((10f - introAge) * 2f));
-
-
-        listFade = Mathf.MoveTowards(listFade, listOpen ? 1f : 0f, dt * 8f);
-        listScreen.alpha = listFade;
-        // The page slides up and tilts in like a notepad being pulled out.
-        listPage.anchoredPosition = new Vector2(0f, Mathf.Lerp(-120f, 0f, listFade));
-        listPage.localRotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(-6f, -2f, listFade));
-    }
-
-    void RefreshList()
-    {
-        foreach (var (task, box, label) in rows)
-        {
-            bool done = Mischief.IsDone(task);
-            box.sprite = ParkArt.Get(done ? "UI/check_on" : "UI/check_off");
-            label.color = done ? new Color(0.55f, 0.5f, 0.48f) : Ink;
-        }
-    }
-
-    void Push(string text, string icon)
-    {
-        var rect = Instantiate(toastTemplate, feed);
-        rect.gameObject.SetActive(true);
-        var body = (RectTransform)rect.GetChild(0);
-        body.GetComponentInChildren<Text>().text = text;
-        var iconImage = body.GetChild(0).GetComponent<Image>();
-        iconImage.sprite = ParkArt.Get(icon);
-        iconImage.gameObject.SetActive(iconImage.sprite != null);
-        toasts.Add(new Toast { rect = rect, body = body, group = rect.GetComponent<CanvasGroup>() });
-        while (toasts.Count > 5)
-        {
-            Destroy(toasts[0].rect.gameObject);
-            toasts.RemoveAt(0);
-        }
     }
 
     // ---------------------------------------------------------------- building the canvas
@@ -247,75 +331,71 @@ public class GameHud : MonoBehaviour
         scaler.referenceResolution = new Vector2(1920f, 1080f);
         scaler.matchWidthOrHeight = 0.5f;
 
-        BuildCounters();
-        BuildControls();
+        BuildObjectives();
+        BuildStepPopup();
         BuildPrompt();
         BuildIntro();
-        BuildFeed();
-        BuildList();
+        BuildInventory();
     }
 
-    void BuildCounters()
+    // Top left: a brush-stroke title (the part you're on) over a dim panel of its steps.
+    void BuildObjectives()
     {
-        var panel = Ui("Counters", canvas);
-        Place(panel, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -26f), Vector2.zero);
-        Img(panel, "UI/pill", PanelDark);
-        var column = panel.gameObject.AddComponent<VerticalLayoutGroup>();
-        column.padding = new RectOffset(22, 30, 12, 12);
-        column.spacing = 4f;
-        column.childControlWidth = column.childControlHeight = true;
-        column.childForceExpandWidth = column.childForceExpandHeight = false;
-        Fit(panel);
+        var column = Ui("Objectives", canvas);
+        Place(column, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, -40f), Vector2.zero);
+        Column(column, 0f, new RectOffset());
+        Fit(column);
 
-        var goal = Ui("Objective", panel);
-        Row(goal, 10f).childAlignment = TextAnchor.MiddleLeft;
-        Icon(goal, "UI/spirit", 40f);
-        Txt(Ui("Label", goal), objective, 30, Mint);
+        var panel = Ui("Panel", column);
+        Column(panel, 0f, new RectOffset());
+        objectives = panel.gameObject.AddComponent<CanvasGroup>();
+        objectives.alpha = 0f;
 
-        var steps = Ui("Steps Done", panel);
-        Row(steps, 10f).childAlignment = TextAnchor.MiddleLeft;
-        stepsLabel = Txt(Ui("Label", steps), "Steps done", 24, Soft);
-        KeyCap(steps, "Tab", new[] { Key.Tab }, false, 36f);
-        Txt(Ui("Hint", steps), "steps", 22, new Color(0.8f, 0.75f, 0.85f));
+        var banner = Ui("Title", panel);
+        Img(banner, "UI/objective_banner", Brush);
+        var size = banner.gameObject.AddComponent<LayoutElement>();
+        size.preferredWidth = 560f;
+        size.preferredHeight = 75f;
+        var title = Ui("Label", banner);
+        Stretch(title);
+        title.offsetMin = new Vector2(36f, 0f);
+        objectiveTitle = Txt(title, "", 38, Color.white, TextAnchor.MiddleLeft, true);
+        objectiveTitle.font = HandFont;
 
-        var grip = Ui("Grip", panel);
-        Row(grip, 10f).childAlignment = TextAnchor.MiddleLeft;
-        gripLabel = Txt(Ui("Label", grip), "", 24, Soft);
+        stepList = Ui("Steps", panel);
+        Img(stepList, null, new Color(0.1f, 0.07f, 0.1f, 0.35f));
+        Column(stepList, 4f, new RectOffset(36, 30, 12, 14));
+        stepList.gameObject.AddComponent<LayoutElement>().minWidth = 520f;
+
+        // "Too weak to possess", under the objectives (only while possessing is on cooldown).
+        var grip = Ui("Grip", column);
+        Column(grip, 0f, new RectOffset(28, 0, 12, 0));
+        var pill = Ui("Pill", grip);
+        Img(pill, "UI/pill", PanelDark);
+        Row(pill, 10f, new RectOffset(22, 30, 8, 8)).childAlignment = TextAnchor.MiddleLeft;
+        gripLabel = Txt(Ui("Label", pill), "", 24, Soft);
         gripRow = grip.gameObject;
     }
 
-    void BuildControls()
+    // Bottom left: a dim strip with one line, shown when a step gets done.
+    void BuildStepPopup()
     {
-        var bar = Ui("Controls Bar", canvas);
-        Place(bar, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 26f), Vector2.zero);
-        Img(bar, "UI/pill", PanelDark);
-        Row(bar, 34f, new RectOffset(32, 32, 12, 12));
-        Fit(bar);
-        controlsBar = bar.gameObject;
-
-        GameObject Group(string name, string label, params (string text, Key[] keys, bool mouse)[] caps)
-        {
-            var group = Ui(name, bar);
-            Row(group, 7f);
-            foreach (var (text, keys, mouse) in caps) KeyCap(group, text, keys, mouse);
-            Txt(Ui("Label", group), label, 25, Soft);
-            return group.gameObject;
-        }
-
-        var wasd = new (string, Key[], bool)[]
-        {
-            ("W", new[] { Key.W, Key.UpArrow }, false), ("A", new[] { Key.A, Key.LeftArrow }, false),
-            ("S", new[] { Key.S, Key.DownArrow }, false), ("D", new[] { Key.D, Key.RightArrow }, false),
-        };
-        floatHint = Group("Float", "Float", wasd);
-        possessHint = Group("Possess", "Possess", ("E", new[] { Key.E }, false));
-        walkHint = Group("Walk", "Walk", wasd);
-        lookHint = Group("Look", "Look around", wasd);
-        grabHint = Group("Pick Up", "Pick up", ("J", new[] { Key.J }, true));
-        throwHint = Group("Throw", "Hold: Throw", ("J", new[] { Key.J }, true));
-        dropHint = Group("Drop", "Drop", ("K", new[] { Key.K }, false));
-        useHint = Group("Use", "Use", ("E", new[] { Key.E }, false));
-        leaveHint = Group("Leave", "Leave body", ("Q", new[] { Key.Q }, false));
+        var popup = Ui("Step Done", canvas);
+        Place(popup, Vector2.zero, Vector2.zero, new Vector2(0f, 120f), new Vector2(560f, 58f));
+        doneGroup = popup.gameObject.AddComponent<CanvasGroup>();
+        doneGroup.alpha = 0f;
+        doneBody = Ui("Body", popup);
+        doneBody.anchorMin = Vector2.zero;
+        doneBody.anchorMax = new Vector2(0f, 1f);
+        doneBody.pivot = new Vector2(0f, 0.5f);
+        doneBody.anchoredPosition = Vector2.zero;
+        doneBody.sizeDelta = Vector2.zero;
+        Img(doneBody, null, new Color(0.1f, 0.07f, 0.1f, 0.55f));
+        Row(doneBody, 0f, new RectOffset(36, 44, 8, 8)).childAlignment = TextAnchor.MiddleLeft;
+        doneBody.gameObject.AddComponent<ContentSizeFitter>().horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+        doneText = Txt(Ui("Label", doneBody), "", 28, Color.white);
+        doneText.font = HandFont;
+        doneText.gameObject.AddComponent<LayoutElement>().minWidth = 440f;
     }
 
     void BuildPrompt()
@@ -344,80 +424,29 @@ public class GameHud : MonoBehaviour
         intro = banner.gameObject.AddComponent<CanvasGroup>();
         intro.alpha = 0f;
         Icon(banner, "UI/spirit", 46f);
-        Txt(Ui("Text", banner), $"You are an evil spirit loose in a theme park. <b>{objective}</b>. Tab shows the steps.", 26, new Color(0.98f, 0.9f, 1f));
+        Txt(Ui("Text", banner), $"You are an evil spirit loose in a theme park. <b>{objective}</b>.", 26, new Color(0.98f, 0.9f, 1f));
     }
 
-    void BuildFeed()
+    // Bottom right: a light box with a dark border, the held item in the middle.
+    void BuildInventory()
     {
-        feed = Ui("Event Feed", canvas);
-        Place(feed, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-30f, 120f), new Vector2(900f, 420f));
-        var column = feed.gameObject.AddComponent<VerticalLayoutGroup>();
-        column.childAlignment = TextAnchor.LowerRight;
-        column.spacing = 8f;
-        column.childControlWidth = column.childControlHeight = false;
-        column.childForceExpandWidth = column.childForceExpandHeight = false;
-
-        toastTemplate = Ui("Entry", feed);
-        toastTemplate.sizeDelta = new Vector2(900f, 52f);
-        toastTemplate.gameObject.AddComponent<CanvasGroup>();
-        var body = Ui("Body", toastTemplate);
-        body.anchorMin = new Vector2(1f, 0f);
-        body.anchorMax = new Vector2(1f, 1f);
-        body.pivot = new Vector2(1f, 0.5f);
-        body.anchoredPosition = Vector2.zero;
-        body.sizeDelta = Vector2.zero;
-        Img(body, "UI/pill", new Color(0.12f, 0.08f, 0.12f, 0.88f));
-        Row(body, 10f, new RectOffset(12, 24, 5, 5));
-        body.gameObject.AddComponent<ContentSizeFitter>().horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-        Icon(body, "UI/soul", 40f);
-        Txt(Ui("Label", body), "Event", 24, Color.white);
-        toastTemplate.gameObject.SetActive(false);
-    }
-
-    void BuildList()
-    {
-        var screen = Ui("Steps List", canvas);
-        Stretch(screen);
-        listScreen = screen.gameObject.AddComponent<CanvasGroup>();
-        listScreen.alpha = 0f;
-        var dim = Ui("Dim", screen);
-        Stretch(dim);
-        Img(dim, null, new Color(0.05f, 0.03f, 0.06f, 0.45f));
-
-        int lines = 0;
-        foreach (var (_, steps) in Mischief.Parts) lines += steps.Length + 1;
-        listPage = Ui("Page", screen);
-        float height = 190f + lines * 44f;
-        Place(listPage, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(860f, height));
-        Img(listPage, "UI/paper", Color.white).pixelsPerUnitMultiplier = 0.5f;
-
-        var title = Ui("Title", listPage);
-        Place(title, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -40f), new Vector2(780f, 64f));
-        Txt(title, objective, 50, Ink, TextAnchor.MiddleLeft, true);
-
-        var list = Ui("Rows", listPage);
-        Place(list, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -120f), new Vector2(770f, lines * 44f));
-        var column = list.gameObject.AddComponent<VerticalLayoutGroup>();
-        column.spacing = 6f;
-        column.childAlignment = TextAnchor.UpperLeft;
-        column.childControlWidth = column.childControlHeight = true;
-        column.childForceExpandWidth = true;
-        column.childForceExpandHeight = false;
-        foreach (var (part, steps) in Mischief.Parts)
-        {
-            Txt(Ui(part, list), part, 30, new Color(0.5f, 0.22f, 0.45f), TextAnchor.MiddleLeft, true);
-            foreach (var (task, label) in steps)
-            {
-                var row = Ui(task.ToString(), list);
-                Row(row, 14f, new RectOffset(18, 0, 0, 0)).childAlignment = TextAnchor.MiddleLeft;
-                var box = Icon(row, "UI/check_off", 34f);
-                rows.Add((task, box, Txt(Ui("Label", row), label, 25, Ink)));
-            }
-        }
-
-        var footer = Ui("Footer", listPage);
-        Place(footer, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 30f), new Vector2(780f, 36f));
-        Txt(footer, "Tab to close", 22, new Color(0.45f, 0.38f, 0.36f), TextAnchor.MiddleRight);
+        var box = Ui("Inventory", canvas);
+        Place(box, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-40f, 40f), new Vector2(170f, 170f));
+        inventory = box.gameObject.AddComponent<CanvasGroup>();
+        inventory.alpha = 0f;
+        Img(box, "UI/pill", new Color(Ink.r, Ink.g, Ink.b, 0.92f)).pixelsPerUnitMultiplier = 2.5f;
+        var inside = Ui("Inside", box);
+        Stretch(inside);
+        inside.offsetMin = new Vector2(7f, 7f);
+        inside.offsetMax = new Vector2(-7f, -7f);
+        Img(inside, "UI/pill", new Color(0.93f, 0.92f, 0.95f, 0.88f)).pixelsPerUnitMultiplier = 2.8f;
+        var item = Ui("Item", inside);
+        Stretch(item);
+        item.offsetMin = new Vector2(26f, 22f);
+        item.offsetMax = new Vector2(-26f, -22f);
+        inventoryItem = Img(item, null, Color.white);
+        inventoryItem.preserveAspect = true;
+        item.gameObject.SetActive(false);
     }
 
     // ---------------------------------------------------------------- UI helpers
@@ -492,6 +521,17 @@ public class GameHud : MonoBehaviour
         row.childControlWidth = row.childControlHeight = true;
         row.childForceExpandWidth = row.childForceExpandHeight = false;
         return row;
+    }
+
+    static VerticalLayoutGroup Column(RectTransform rt, float spacing, RectOffset padding)
+    {
+        var column = rt.gameObject.AddComponent<VerticalLayoutGroup>();
+        column.spacing = spacing;
+        column.padding = padding;
+        column.childAlignment = TextAnchor.UpperLeft;
+        column.childControlWidth = column.childControlHeight = true;
+        column.childForceExpandWidth = column.childForceExpandHeight = false;
+        return column;
     }
 
     static void Fit(RectTransform rt)
