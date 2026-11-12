@@ -44,6 +44,7 @@ Material:
     m_Floats:
     - _QueueControl: 0
     - _QueueOffset: 0
+    - _SeeThroughCut: 1
     - _SwayScale: 0.5
     - _SwaySpeed: 1.5
     - _SwayStrength: 0.08

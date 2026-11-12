@@ -21,7 +21,6 @@ public class Speaker : MonoBehaviour
 
     void Start()
     {
-        ParkArt.Solid(transform, "Props/speaker", 1.5f, new Color(0.22f, 0.2f, 0.26f));
 
         var end = new GameObject("Live Cable");
         end.SetActive(false); // so Interactable's Awake finds the rules component

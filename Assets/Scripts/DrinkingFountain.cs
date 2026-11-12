@@ -34,7 +34,6 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
 
     void Start()
     {
-        ParkArt.Solid(transform, "Props/drinking_fountain", 1f, new Color(0.7f, 0.78f, 0.85f));
         puddle = ParkArt.Make("Puddle", null, "Markers/shadow", 1f, new Color(Water.r, Water.g, Water.b, 0.55f), ParkArt.DecalOrder, true);
         puddle.transform.parent.position = PuddleCenter + Vector3.up * 0.02f;
         SetRadius(startRadius);

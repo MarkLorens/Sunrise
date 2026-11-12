@@ -90,7 +90,8 @@ public abstract class StaffWorker : MonoBehaviour
 
     protected virtual void OnDisable() => bar.Set(0f, Color.white, false);
 
-    void Take(Job j)
+    // Straight to this one, skipping the crew's queue (the electrical box's cutscene).
+    public void Take(Job j)
     {
         job = j;
         hasJob = true;

@@ -51,6 +51,16 @@ public class CharacterSprite : MonoBehaviour
     float nextBlink, blinkUntil;
     readonly List<(SpriteRenderer r, Color c)> headParts = new();
 
+    // While possessed the face is the spirit's (Resources/MC/MC_face_eyes *), glancing left -> center -> right like
+    // SpiritSprite's. Its drawing (eyes + grin) is PossessedFaceWidth pixels of the head art wide on everyone (the
+    // faces are ~160 px; not measured per face, since face_5's glasses make it 247), centred on their own face.
+    static Sprite[] mcEyes;
+    const float PossessedFaceWidth = 250f;
+    SpriteRenderer possessedFace;
+    bool possessed;
+    int eyeStep;
+    float eyeUntil;
+
     readonly List<SpriteRenderer> fills = new();
     readonly List<Color> fillColors = new();
     readonly Dictionary<Sprite, Sprite[]> fillFrames = new(); // line frame -> its fill frame per layer
@@ -77,7 +87,7 @@ public class CharacterSprite : MonoBehaviour
         // People never get a see-through hole cut into them (their fill layers copy this material below).
         body.sharedMaterial = ParkArt.CharacterMaterial;
         ParkArt.CastShadows(body);
-        rb =GetComponent<Rigidbody>();
+        rb = GetComponent<Rigidbody>();
         animOffset = Random.value * 10f;
         baseScale = transform.localScale;
 
@@ -188,6 +198,46 @@ public class CharacterSprite : MonoBehaviour
 
     static Sprite HeadArt(string name) => headArt.TryGetValue(name, out var s) ? s : null;
 
+    // Swap to the spirit's face (Possession, via Visitor.BeginPossession / EndPossession).
+    public void SetPossessed(bool on)
+    {
+        Load();
+        if (face == null) return;
+        if (on && possessedFace == null)
+        {
+            if (mcEyes == null)
+            {
+                var center = Resources.Load<Sprite>("MC/MC_face_eyes center");
+                mcEyes = new[] { Resources.Load<Sprite>("MC/MC_face_eyes left"), center, Resources.Load<Sprite>("MC/MC_face_eyes right"), center };
+            }
+            if (mcEyes[1] == null) return;
+            possessedFace = new GameObject("Possessed Face").AddComponent<SpriteRenderer>();
+            possessedFace.transform.SetParent(head, false);
+            possessedFace.sharedMaterial = body.sharedMaterial;
+            ParkArt.CastShadows(possessedFace);
+            // Centre the spirit's drawing on the visitor's face drawing (both tight meshes), at a fixed width.
+            Rect mine = DrawnRect(faceOpen), theirs = DrawnRect(mcEyes[1]);
+            float scale = PossessedFaceWidth / faceOpen.pixelsPerUnit / theirs.width;
+            Vector2 at = mine.center - theirs.center * scale;
+            possessedFace.transform.localPosition = new Vector3(at.x, at.y, -0.002f);
+            possessedFace.transform.localScale = Vector3.one * scale;
+            possessedFace.sprite = mcEyes[0];
+            ApplyTint();
+        }
+        possessed = on && possessedFace != null;
+        eyeStep = 0;
+        eyeUntil = Time.time + Random.Range(1.5f, 3f);
+        if (possessedFace != null) possessedFace.sprite = mcEyes[0];
+        SetVisible(body.enabled);
+    }
+
+    static Rect DrawnRect(Sprite s)
+    {
+        Vector2 min = Vector2.positiveInfinity, max = Vector2.negativeInfinity;
+        foreach (var p in s.vertices) { min = Vector2.Min(min, p); max = Vector2.Max(max, p); }
+        return Rect.MinMaxRect(min.x, min.y, max.x, max.y);
+    }
+
     SpriteRenderer HeadPart(string name, Sprite sprite, float z, Color color)
     {
         if (sprite == null) return null;
@@ -266,6 +316,12 @@ public class CharacterSprite : MonoBehaviour
                 if (Time.time > nextBlink) { blinkUntil = Time.time + 0.12f; nextBlink = Time.time + Random.Range(2f, 5f); }
                 face.sprite = Time.time < blinkUntil ? faceClosed : faceOpen;
             }
+            if (possessed && Time.time >= eyeUntil)
+            {
+                eyeStep = (eyeStep + 1) % mcEyes.Length;
+                eyeUntil = Time.time + (eyeStep % 2 == 1 ? 0.15f : Random.Range(1.5f, 3f));
+                possessedFace.sprite = mcEyes[eyeStep];
+            }
         }
         if (fills.Count == 0) return;
         fillFrames.TryGetValue(body.sprite, out var set);
@@ -295,6 +351,8 @@ public class CharacterSprite : MonoBehaviour
         shadow.enabled = visible;
         foreach (var f in fills) f.enabled = visible;
         foreach (var (r, _) in headParts) r.enabled = visible;
+        if (face != null) face.enabled = visible && !possessed;
+        if (possessedFace != null) possessedFace.enabled = visible && possessed;
     }
 
     // Tinted characters (possessed, dead). SpriteRenderer.color doesn't reach the lit shader graph in Unity 6,
@@ -312,6 +370,7 @@ public class CharacterSprite : MonoBehaviour
         Tint(body, tint);
         for (int k = 0; k < fills.Count; k++) Tint(fills[k], tint * fillColors[k]);
         foreach (var (r, c) in headParts) Tint(r, tint * c);
+        if (possessedFace != null) Tint(possessedFace, tint);
     }
 
     static void Tint(SpriteRenderer r, Color c)

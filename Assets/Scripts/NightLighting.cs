@@ -108,6 +108,28 @@ public class NightLighting : MonoBehaviour
     Color dayFogColor;
     float dayFogStart, dayFogEnd;
 
+    public static NightLighting Instance { get; private set; }
+
+    // The lamp sputtering on and off (the mechanic's fixing it), or -1.
+    public int Sputtering { get; set; } = -1;
+
+    // The lamp post closest to p: its index (for Sputtering) and where its post stands.
+    public bool NearestLamp(Vector3 p, out int index, out Vector3 foot)
+    {
+        index = -1;
+        foot = default;
+        if (!built) Build();
+        for (int i = 0; i < lamps.Count; i++)
+            if (index < 0 || (lamps[i].foot - p).sqrMagnitude < (foot - p).sqrMagnitude)
+            {
+                index = i;
+                foot = lamps[i].foot;
+            }
+        return index >= 0;
+    }
+
+    void Awake() => Instance = this;
+
     // Built on the first frame, once the park (wheel cabins, stalls) has set itself up.
     void LateUpdate()
     {
@@ -301,6 +323,7 @@ public class NightLighting : MonoBehaviour
         {
             // Each lamp on its own slow noise, so they waver like flames rather than pulse together.
             float f = 1f - lampFlicker * Mathf.PerlinNoise(Time.time * lampFlickerSpeed, i * 7.31f);
+            if (i == Sputtering && Mathf.PerlinNoise(Time.time * 9f, 0.5f) < 0.45f) f = 0.08f; // a faulty bulb cutting out
             var l = lamps[i];
             Set(l.light, lampColor, lampIntensity * f, lampRange);
             Set(l.pool, lampColor, poolIntensity * f, poolRange);
