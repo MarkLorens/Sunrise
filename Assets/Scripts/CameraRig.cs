@@ -87,6 +87,12 @@ public class CameraRig : MonoBehaviour
         rig.spotUntil = Time.unscaledTime + seconds;
     }
 
+    // Hands the shot back to the player now (it eases back over fadeTime).
+    public static void EndSpotlight()
+    {
+        if (Instance != null) Instance.spotUntil = 0f;
+    }
+
     void Awake()
     {
         Instance = this;
@@ -202,13 +208,14 @@ public class CameraRig : MonoBehaviour
         }
     }
 
-    // Focus on the player along the view axis; off in the cabin, where you look out over the whole park.
+    // Focus on the player (or whatever's spotlit) along the view axis; off in the cabin, where you look out over the whole park.
     void Focus()
     {
         dof.active = depthOfField && cabin == null && target != null;
         if (!dof.active) return;
         var cam = transform; // the brain places the main camera
-        dof.focusDistance.Override(Mathf.Max(0.5f, Vector3.Dot(target.position - cam.position, cam.forward)));
+        var on = spot != null ? spot : target;
+        dof.focusDistance.Override(Mathf.Max(0.5f, Vector3.Dot(on.position - cam.position, cam.forward)));
         dof.focalLength.Override(focalLength);
         dof.aperture.Override(aperture);
     }

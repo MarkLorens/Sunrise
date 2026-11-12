@@ -68,7 +68,7 @@ public class GroundWalker : MonoBehaviour
     static Vector2 KeyboardInput()
     {
         var kb = Keyboard.current;
-        if (kb == null) return Vector2.zero;
+        if (kb == null || Possession.InputBlocked) return Vector2.zero;
         return new Vector2(
             (kb.dKey.isPressed || kb.rightArrowKey.isPressed ? 1 : 0) - (kb.aKey.isPressed || kb.leftArrowKey.isPressed ? 1 : 0),
             (kb.wKey.isPressed || kb.upArrowKey.isPressed ? 1 : 0) - (kb.sKey.isPressed || kb.downArrowKey.isPressed ? 1 : 0)).normalized;

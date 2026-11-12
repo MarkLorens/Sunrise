@@ -482,12 +482,14 @@ public class Visitor : MonoBehaviour, IInteraction
         walker.readKeyboard = true;
         Look.Cheer(0.4f);
         Look.SetTint(possessedTint);
+        Look.SetPossessed(true);
     }
 
     public void EndPossession()
     {
         walker.readKeyboard = false;
         walker.move = Vector2.zero;
+        Look.SetPossessed(false);
         if (Current == State.Down) return;
         Look.SetTint(Color.white);
         if (Current is State.Fighting or State.Riding) return; // a rider left in a cabin just enjoys the view
