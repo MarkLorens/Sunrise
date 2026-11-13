@@ -19,7 +19,7 @@ public class Stall : MonoBehaviour, IInteraction
     public void Sell(Visitor customer)
     {
         if (customer.Held != null) return;
-        var item = Item.Create(sells, ServePoint + Vector3.up, customer);
+        var item = Item.Create(sells, ServePoint + Vector3.up);
         customer.GrabItem(item);
     }
 

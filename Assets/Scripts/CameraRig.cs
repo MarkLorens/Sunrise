@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using Unity.Cinemachine;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
@@ -10,10 +9,8 @@ using UnityEngine.Rendering.Universal;
 // and no look-ahead, so the player never drifts off-centre. Optionally (framePointsOfInterest) it also eases
 // anything interesting nearby into shot, Untitled Goose Game style. Spotlight hands the shot to an event for a moment.
 // Shake is smooth noise (a short sway that settles), not a new random spot every frame.
-// While the host rides the Ferris wheel a second camera sits in their cabin and looks out over the park, rising
-// and falling with the wheel; WASD turns the rider's head. The brain blends between the two.
 // GameHud puts it on the main camera; it builds the Cinemachine pieces itself.
-[DefaultExecutionOrder(-50)] // place the cabin camera after the wheel moves, before the brain reads it
+[DefaultExecutionOrder(-50)] // set up the shot before the brain reads it
 public class CameraRig : MonoBehaviour
 {
     public static CameraRig Instance { get; private set; }
@@ -40,25 +37,12 @@ public class CameraRig : MonoBehaviour
     [Range(1, 300)] public float focalLength = 120f; // mm
     [Range(1, 32)] public float aperture = 4f;       // f-stop
 
-    [Header("Riding")]
-    public float rideFov = 85f;
-    public float rideTilt = 25f;     // degrees looking down when you get in
-    public float lookYaw = 100f;     // how far you can turn your head either way
-    public Vector2 lookPitch = new(-5f, 70f);
-    public float lookSpeed = 80f;    // degrees per second
-    public Vector3 seat = new(0f, -0.2f, -2f);   // eye position from the cabin's hook: a step back toward the park, for a wider view
-    public float rideBlend = 1.2f;   // seconds to swoop into / out of the cabin
-
     CinemachineTargetGroup group;
     CinemachinePositionComposer body;
-    CinemachineCameraOffset shakeOffset, rideShakeOffset;
-    CinemachineCamera rideCam;
+    CinemachineCameraOffset shakeOffset;
     Transform target, spot;
     float spotUntil;
     float shake, shakeRate = 1.5f; // current strength, and how much of it fades per second
-
-    Transform cabin;
-    Vector2 look;    // yaw, pitch
 
     VolumeProfile dofProfile;
     DepthOfField dof;
@@ -102,7 +86,6 @@ public class CameraRig : MonoBehaviour
 
         if (!TryGetComponent(out CinemachineBrain brain)) brain = gameObject.AddComponent<CinemachineBrain>();
         brain.IgnoreTimeScale = true; // keeps moving through hit-stop / slow-mo like the old rig
-        brain.DefaultBlend = new CinemachineBlendDefinition(CinemachineBlendDefinition.Styles.EaseInOut, rideBlend);
         var lens = LensSettings.FromCamera(GetComponent<Camera>());
 
         // Temporal anti-aliasing: blends the last few frames. Besides smoothing edges, it turns the see-through hole's
@@ -137,14 +120,6 @@ public class CameraRig : MonoBehaviour
 
         shakeOffset = go.AddComponent<CinemachineCameraOffset>();
 
-        // Placed by hand each frame (no body/aim), switched on only while riding so it takes over the shot.
-        var ride = new GameObject("Cabin Camera");
-        rideCam = ride.AddComponent<CinemachineCamera>();
-        lens.FieldOfView = rideFov;
-        rideCam.Lens = lens;
-        rideShakeOffset = ride.AddComponent<CinemachineCameraOffset>();
-        rideCam.enabled = false;
-
         dofProfile = ScriptableObject.CreateInstance<VolumeProfile>();
         dof = dofProfile.Add<DepthOfField>();
         dof.mode.Override(DepthOfFieldMode.Bokeh);
@@ -159,21 +134,12 @@ public class CameraRig : MonoBehaviour
     {
         if (group != null) Destroy(group.gameObject);
         if (shakeOffset != null) Destroy(shakeOffset.gameObject);
-        if (rideCam != null) Destroy(rideCam.gameObject);
         if (dofProfile != null) Destroy(dofProfile);
     }
 
     void LateUpdate()
     {
         var spirit = Possession.Instance;
-        var ride = spirit != null && spirit.Riding ? spirit.Host.Cabin : null;
-        if (ride != cabin)
-        {
-            cabin = ride;
-            look = new Vector2(0f, rideTilt);
-            rideCam.enabled = cabin != null; // the most recently enabled camera goes live; the brain blends
-        }
-        if (cabin != null) Ride();
         body.Damping = Vector3.one * followDamping; // same on every axis, so moving up/down the screen feels like left/right
         Follow(spirit != null ? spirit.Focus : null);
         Focus();
@@ -182,10 +148,10 @@ public class CameraRig : MonoBehaviour
         shake = Mathf.MoveTowards(shake, 0f, Time.unscaledDeltaTime * shakeRate);
         float t = Time.unscaledTime * shakeFrequency;
         var sway = new Vector3(Mathf.PerlinNoise(t, 0.3f) * 2f - 1f, (Mathf.PerlinNoise(t, 7.7f) * 2f - 1f) * 0.6f, 0f);
-        shakeOffset.Offset = rideShakeOffset.Offset = sway * (shake * shakeDistance);
+        shakeOffset.Offset = sway * (shake * shakeDistance);
     }
 
-    // Keeps the framing camera's group up to date (also while riding, so stepping out lands on a sensible shot).
+    // Keeps the framing camera's group up to date.
     void Follow(Transform focus)
     {
         if (focus != target)
@@ -208,32 +174,16 @@ public class CameraRig : MonoBehaviour
         }
     }
 
-    // Focus on the player (or whatever's spotlit) along the view axis; off in the cabin, where you look out over the whole park.
+    // Focus on the player (or whatever's spotlit) along the view axis.
     void Focus()
     {
-        dof.active = depthOfField && cabin == null && target != null;
+        dof.active = depthOfField && target != null;
         if (!dof.active) return;
         var cam = transform; // the brain places the main camera
         var on = spot != null ? spot : target;
         dof.focusDistance.Override(Mathf.Max(0.5f, Vector3.Dot(on.position - cam.position, cam.forward)));
         dof.focalLength.Override(focalLength);
         dof.aperture.Override(aperture);
-    }
-
-    // In the cabin, facing out over the park (the wheel stands at the back of it).
-    void Ride()
-    {
-        float dt = Time.unscaledDeltaTime;
-        var kb = Keyboard.current;
-        if (!Possession.InputBlocked && kb != null)
-        {
-            float x = (kb.dKey.isPressed || kb.rightArrowKey.isPressed ? 1f : 0f) - (kb.aKey.isPressed || kb.leftArrowKey.isPressed ? 1f : 0f);
-            float y = (kb.wKey.isPressed || kb.upArrowKey.isPressed ? 1f : 0f) - (kb.sKey.isPressed || kb.downArrowKey.isPressed ? 1f : 0f);
-            look.x = Mathf.Clamp(look.x + x * lookSpeed * dt, -lookYaw, lookYaw);
-            look.y = Mathf.Clamp(look.y - y * lookSpeed * dt, lookPitch.x, lookPitch.y);
-        }
-
-        rideCam.transform.SetPositionAndRotation(cabin.position + seat * cabin.lossyScale.y, Quaternion.Euler(look.y, 180f + look.x, 0f));
     }
 
     // Points of interest ease in (weight up) when they come within joinRadius and ease out past leaveRadius

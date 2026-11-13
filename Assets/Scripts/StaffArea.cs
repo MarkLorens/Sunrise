@@ -2,9 +2,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // The Ferris wheel's closed area: the marked-off ground at the foot of the wheel with the support hinge and the gear
-// box. Staff come and go as they like. Visitors never wander in, and while staff on duty are nearby (not possessed,
-// not off breaking up a fight) a possessed visitor can't either: they're stopped at the line, and one caught inside
-// is sent back out. With nobody watching, a possessed visitor can sneak in.
+// box. Staff come and go as they like. Visitors never wander in, and while staff on duty are nearby (not possessed)
+// a possessed visitor can't either: they're stopped at the line, and one caught inside is sent back out. With nobody
+// watching, a possessed visitor can sneak in.
 public class StaffArea : MonoBehaviour
 {
     public static readonly List<StaffArea> All = new();
@@ -23,13 +23,13 @@ public class StaffArea : MonoBehaviour
         return Mathf.Abs(d.x) <= size.x * 0.5f && Mathf.Abs(d.z) <= size.y * 0.5f;
     }
 
-    // The staff member on duty keeping an eye on it, if any. Breaking up a fight, they have their hands full.
+    // The staff member on duty keeping an eye on it, if any.
     public Component Watcher()
     {
         foreach (var o in RideOperator.All)
-            if (!o.BreakingUpFight && Near(o)) return o;
+            if (Near(o)) return o;
         foreach (var m in Mechanic.All)
-            if (!m.BreakingUpFight && Near(m)) return m;
+            if (Near(m)) return m;
         return null;
     }
 

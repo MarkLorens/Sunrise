@@ -16,17 +16,12 @@ public static class GameText
 
     // In someone's body
     public const string LeftBody = "You left the body";
-    public static string PickedUp(string what) => $"You picked up the {what}";
-    public static string Threw(string what) => $"You threw the {what}";
-    public static string Dropped(string what) => $"You dropped the {what}";
     public static string Bought(string what) => $"You bought a {what}";
-    public static string PickedFight(string who) => $"You picked a fight with {Someone(who)}";
     public static string ToldToMoveAlong(string who) => $"You told {Someone(who)} to move along";
     public const string PressedFountain = "The fountain leaks even more";
     public const string DippedCable = "You dipped the cable in the puddle";
     public const string UnlockedBox = "You unlocked the electrical box";
     public const string CutPower = "You cut the Ferris wheel's power";
-    public const string BoardedRide = "You got on the Ferris wheel";
 
     // "a visitor", "the mechanic", "the cable man" (staff go by their job; numbers like "Reset Agent 2" are dropped).
     static string Someone(string who)
@@ -65,7 +60,6 @@ public static class GameText
     public const string NeedBody = "You need a body to touch things";
     public const string HandsFull = "Your hands are full";
     public static string Busy(string who) => $"{who} is busy";
-    public const string CantFight = "You're in no state to fight";
 
     // The drinking fountain
     public const string FountainFixed = "Fixed. Not a drop";
@@ -78,9 +72,6 @@ public static class GameText
     public const string CableTooFar = "The puddle's too far away for the cable to reach";
 
     // The Ferris wheel
-    public const string StaffCantRide = "Staff can't ride while they're on duty";
-    public const string RideStopped = "The ride's stopped";
-    public const string NobodyRunningRide = "Nobody's running the ride";
     public const string OperatorOnly = "Only the operator knows how to work this";
     public const string NoPower = "No power";
     public const string PowerOff = "The power's off";

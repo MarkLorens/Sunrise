@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// A small bar floating in the world (anger, throw power, possession grip),
+// A small bar floating in the world (how long a staff job has left),
 // like the stamina/power bars over players in football games.
 public class WorldBar : MonoBehaviour
 {
@@ -22,11 +22,6 @@ public class WorldBar : MonoBehaviour
         bar.Set(0f, Color.white, false);
         return bar;
     }
-
-    // Green -> yellow -> red, for anger or power.
-    public static Color Heat(float t) =>
-        t < 0.5f ? Color.Lerp(new Color(0.45f, 0.9f, 0.4f), new Color(1f, 0.85f, 0.2f), t * 2f)
-                 : Color.Lerp(new Color(1f, 0.85f, 0.2f), new Color(1f, 0.25f, 0.2f), (t - 0.5f) * 2f);
 
     public void Set(float value, Color color, bool visible)
     {

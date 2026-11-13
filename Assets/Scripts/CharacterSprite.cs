@@ -2,8 +2,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Animates a flat character sprite (walk / run / idle, cheering with arms up, or a held pose), gives it a soft
-// shadow, a tiny hop on every step while walking, squashes it when it's hit, and knows where its hand is on every
-// frame (HandPoint), so what it carries stays in its hand.
+// shadow, a tiny hop on every step while walking, and knows where its hand is on every frame (HandPoint), so what
+// it carries stays in its hand.
 // Frames come from Resources/Visitors/<character>/character_<character>_<pose>.png, or for the new lineart bodies
 // (character = "body_<variant>") from Resources/ArtLineartTorso/body_<variant>_idle / _walk1..4. If a body has white fill
 // layers (body_<variant>_<pose>_skin/top/bottom/shoes, made by Tools > Split Coloured Body Art) they're stacked behind
@@ -71,7 +71,6 @@ public class CharacterSprite : MonoBehaviour
     float animOffset;
     Vector3 baseScale;
     float stride;    // 0..1: eases the step hop in when they set off and out when they stop
-    float punchAge = 1f;
     bool loaded;
     bool facingLeft, drawnFacingLeft; // Kenney art faces right, the lineart faces left
     static readonly int TintId = Shader.PropertyToID("_Tint");
@@ -398,9 +397,6 @@ public class CharacterSprite : MonoBehaviour
     // Arms in the air: shouting, celebrating, outraged.
     public void Cheer(float seconds = 0.6f) => cheerUntil = Time.time + seconds;
 
-    // Squash and stretch when hit.
-    public void Punch() => punchAge = 0f;
-
     void LateUpdate()
     {
         Vector3 v = rb ? rb.linearVelocity : Vector3.zero;
@@ -427,14 +423,6 @@ public class CharacterSprite : MonoBehaviour
         stride = Mathf.MoveTowards(stride, stepping ? 1f : 0f, Time.deltaTime * 6f);
         float hop = (Mathf.Abs(Mathf.Sin(frame / cycle.Length * 2f * Mathf.PI)) - 0.3f) * stepBounce * (running ? 1.5f : 1f) * stride;
         float sx = 1f - hop * 0.5f, sy = 1f + hop;
-        // Hit: a big squash that wobbles back.
-        if (punchAge < 0.35f)
-        {
-            punchAge += Time.deltaTime;
-            float k = Mathf.Sin(punchAge / 0.35f * Mathf.PI) * (1f - punchAge / 0.35f);
-            sx *= 1f + k * 0.35f;
-            sy *= 1f - k * 0.3f;
-        }
         // Facing is a negative x scale, not flipX: the lit shader draws flipped asymmetric sprites washed out.
         float flip = facingLeft != drawnFacingLeft ? -1f : 1f;
         var scale = new Vector3(baseScale.x * flip * sx, baseScale.y * sy, baseScale.z);

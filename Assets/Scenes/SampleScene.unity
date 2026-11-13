@@ -1233,7 +1233,6 @@ MonoBehaviour:
   touchRange: 1
   sameTargetCooldown: 10
   abilityCooldown: 0
-  grabRange: 1.6
 --- !u!1 &554712938
 GameObject:
   m_ObjectHideFlags: 0
@@ -2078,9 +2077,6 @@ MonoBehaviour:
   post: {fileID: 700000118}
   wheel: {fileID: 700000102}
   walkSpeed: 2
-  runSpeed: 4
-  attendRadius: 15
-  attendTime: 15
   callTime: 4
 --- !u!1 &700000132
 GameObject:
@@ -2134,7 +2130,6 @@ MonoBehaviour:
   capacity: 4
   boardInterval: 5
   rideTime: 20
-  gateRange: 1.4
 --- !u!1 &700000135
 GameObject:
   m_ObjectHideFlags: 0

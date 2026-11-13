@@ -12,7 +12,7 @@ public class SeeThrough : MonoBehaviour
     public float radius = 2f;
     [Range(0f, 1f), Tooltip("How much of the radius is a soft, dithered edge (0 = hard edge).")]
     public float softness = 0.8f;
-    [Tooltip("Seconds for the hole to open or close (e.g. getting on or off the Ferris wheel).")]
+    [Tooltip("Seconds for the hole to open or close.")]
     public float fadeTime = 0.25f;
 
     static readonly int PosId = Shader.PropertyToID("_SeeThroughPos");           // xyz: player's middle, w: radius
@@ -29,8 +29,7 @@ public class SeeThrough : MonoBehaviour
     {
         var spirit = Possession.Instance;
         Transform target = spirit != null ? spirit.Focus : null;
-        // From inside a Ferris wheel cabin you look out over the park; nothing needs cutting there.
-        bool wanted = target != null && !spirit.Riding;
+        bool wanted = target != null;
         strength = Mathf.MoveTowards(strength, wanted ? 1f : 0f, Time.unscaledDeltaTime / Mathf.Max(0.01f, fadeTime));
         Shader.SetGlobalFloat(StrengthId, strength);
         Shader.SetGlobalFloat(FrameId, Time.frameCount & 63);

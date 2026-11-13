@@ -6,9 +6,9 @@ using UnityEngine.UI;
 // The HUD, built at runtime in the style of My project's: the objectives (top left: the part of the level you're on
 // and its steps; a step that gets done is struck through and stays on the list), a pop-up line for each thing the
 // player does and each step done (bottom left; the wording is all in GameText), a prompt floating over whatever you
-// can possess / pick up / use (and why not, when E is refused), and the intro banner. While you're in someone, an
+// can possess / use (and why not, when E is refused), and the intro banner. While you're in someone, an
 // inventory box (bottom right) shows what they're holding.
-// It also gives the main camera its rig and the spirit its markers.
+// It also gives the main camera its rig and the spirit its outline of what it can act on.
 public class GameHud : MonoBehaviour
 {
     public static GameHud Instance { get; private set; }
@@ -76,7 +76,6 @@ public class GameHud : MonoBehaviour
         if (Camera.main != null && Camera.main.GetComponent<CameraRig>() == null) Camera.main.gameObject.AddComponent<CameraRig>();
         if (Camera.main != null && Camera.main.GetComponent<SeeThrough>() == null) Camera.main.gameObject.AddComponent<SeeThrough>();
         if (FindAnyObjectByType<NightLighting>() == null) new GameObject("Night Lighting").AddComponent<NightLighting>();
-        if (GetComponent<PossessionMarker>() == null) gameObject.AddComponent<PossessionMarker>();
         if (GetComponent<ActionOutline>() == null) gameObject.AddComponent<ActionOutline>();
         Build();
         doneQueue.AddRange(pending);
@@ -256,7 +255,7 @@ public class GameHud : MonoBehaviour
             }
             else text = spirit.CandidateBlocked;
         }
-        else if (host != null && !spirit.Riding)
+        else if (host != null)
         {
             var target = interactor.Nearest();
             if (target != null)
@@ -265,13 +264,6 @@ public class GameHud : MonoBehaviour
                 string blocked = target.Blocked(host);
                 key = blocked == null ? "E" : "";
                 text = blocked == null ? target.Prompt(host) : $"<color=#bbbbbb>{target.Prompt(host)}: {blocked}</color>";
-            }
-            else if (spirit.GrabCandidate != null)
-            {
-                var g = spirit.GrabCandidate;
-                anchor = g.transform.position + Vector3.up * 0.8f;
-                key = "J";
-                text = $"Pick up the {g.DisplayName}";
             }
         }
 
@@ -296,11 +288,11 @@ public class GameHud : MonoBehaviour
         return r != null ? new Vector3(t.position.x, r.bounds.max.y + 0.4f, t.position.z) : t.position + Vector3.up * 2f;
     }
 
-    // Shown while you're in someone (not from a Ferris wheel cabin): empty, or the item in their hand.
+    // Shown while you're in someone: empty, or the item in their hand.
     void UpdateInventory()
     {
         var host = spirit.Host;
-        bool show = host != null && !spirit.Riding;
+        bool show = host != null;
         inventory.alpha = Mathf.MoveTowards(inventory.alpha, show ? 1f : 0f, Time.unscaledDeltaTime * 6f);
         var held = show ? host.Held : null;
         Set(inventoryItem.gameObject, held != null);

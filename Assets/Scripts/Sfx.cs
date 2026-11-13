@@ -18,10 +18,7 @@ public static class Sfx
     public const string Grab = "pluck_001";
     public const string Drop = "drop_002";
 
-    static readonly string[] punches = { "impactPunch_heavy_000", "impactPunch_medium_000", "impactPunch_medium_001" };
     static readonly Dictionary<string, AudioClip> cache = new();
-
-    public static void Punch(float volume = 0.8f) => Play(punches[Random.Range(0, punches.Length)], volume, Random.Range(0.9f, 1.1f));
 
     public static void Play(string name, float volume = 1f, float pitch = 1f)
     {

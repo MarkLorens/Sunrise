@@ -5,18 +5,16 @@ using UnityEngine;
 public enum VisitorItem { None = 0, Drink = 3, Keys = 4, WaterBottle = 5 }
 
 // A park visitor going about their day: wandering, buying drinks at the stall, lining up for the Ferris wheel,
-// carrying their things in their hand. They stop and stare at someone acting possessed, gather round to watch a
-// fight, and scream and run when something terrible happens nearby (ParkChaos). When the spirit leaves they stand
-// around confused for a few seconds.
-// While possessing someone else, E on a visitor picks a fight with them (a brawl one of them won't walk away from);
-// staff send them on their way instead.
+// carrying their things in their hand. They stop and stare at someone acting possessed, and scream and run when
+// something terrible happens nearby (ParkChaos). When the spirit leaves they stand around confused for a few seconds.
+// While possessing staff, E on a visitor sends them on their way.
 [RequireComponent(typeof(GroundWalker), typeof(CharacterSprite))]
 public class Visitor : MonoBehaviour, IInteraction
 {
     // Every active visitor, so the spirit can find who it's touching without physics queries.
     public static readonly List<Visitor> All = new();
 
-    public enum State { Idle, Wander, Queueing, Riding, Possessed, Confused, Panic, Down, Stare, Fighting, Watching }
+    public enum State { Idle, Wander, Queueing, Riding, Possessed, Confused, Panic, Down, Stare }
 
     public bool possessable = true;
     // Staff (the ride operator, the mechanic) have their own AI. It's switched off while the spirit is inside, and
@@ -31,7 +29,6 @@ public class Visitor : MonoBehaviour, IInteraction
     [Range(0, 1)] public float queueChance = 0.15f; // per stop, chance to go line up for a ride
     [Range(0, 1)] public float shopChance = 0.35f;  // per stop with empty hands, chance to go buy something
     public Color possessedTint = new(0.75f, 0.55f, 1f);
-    public float strength = 3f; // stronger visitors usually win brawls
 
     // Places people like to hang around (benches, views). Empty = just roam.
     public Transform[] pointsOfInterest = new Transform[0];
@@ -41,22 +38,18 @@ public class Visitor : MonoBehaviour, IInteraction
 
     public float stareRadius = 3f;
     public float stareTime = 1.5f;
-    public float crowdRadius = 10f;  // how far away a brawl draws them over to watch
     public float sendAwayDistance = 7f;
 
     public State Current { get; private set; }
-    public bool CanBePossessed => possessable && Look.Visible && Current is not (State.Possessed or State.Riding or State.Down or State.Fighting);
-    public bool CanBeHit => isActiveAndEnabled && Current is not (State.Riding or State.Down or State.Fighting);
+    public bool CanBePossessed => possessable && Look.Visible && Current is not (State.Possessed or State.Riding or State.Down);
     public CharacterSprite Look { get; private set; }
     public Item Held { get; private set; }
     public VisitorItem HeldKind => Held != null ? Held.kind : VisitorItem.None;
     public Vector3 Facing { get; private set; } = Vector3.right;
     public float HeadHeight => Look.HeadHeight;
     public Vector3 HeadPoint => transform.position + Vector3.up * HeadHeight;
-    // The hand nearer the camera, where whatever they carry sits (and where a throw leaves from).
+    // The hand nearer the camera, where whatever they carry sits.
     public Vector3 CarryPoint => Look.HandPoint;
-    // The cabin they're sitting in while riding.
-    public Transform Cabin { get; private set; }
     bool IsHost => Possession.Instance != null && Possession.Instance.Host == this;
 
     GroundWalker walker;
@@ -64,9 +57,6 @@ public class Visitor : MonoBehaviour, IInteraction
     RideQueue queue;
     Vector3 target;
     Vector3 panicFrom;
-    Vector3 spectacle;    // the brawl they're watching
-    Vector3 knock;
-    float knockUntil;
     float stateEndsAt;
     float nextTurn;
     float nextStare;
@@ -81,28 +71,18 @@ public class Visitor : MonoBehaviour, IInteraction
         Idle();
     }
 
-    // Staff set `brain` in their own Awake, so by now we know whether this is someone you can pick a fight with.
+    // Staff set `brain` in their own Awake, so by now we know whether this is a visitor staff can send away.
     void Start()
     {
         if (brain != null) return;
         var i = gameObject.AddComponent<Interactable>();
         i.range = 1.3f;
         i.prompt = name;
+        i.staffOnly = true; // only staff have anything to say to them
     }
 
     void OnEnable() => All.Add(this);
     void OnDisable() => All.Remove(this);
-
-    void FixedUpdate()
-    {
-        // Knocked back by a hit: slide for a moment, then walk again.
-        bool knocked = Time.time < knockUntil;
-        if (walker.enabled == knocked) walker.enabled = !knocked;
-        if (!knocked) return;
-        knock = Vector3.MoveTowards(knock, Vector3.zero, 25f * Time.fixedDeltaTime);
-        Vector3 next = rb.position + knock * Time.fixedDeltaTime;
-        rb.linearVelocity = walker.IsWalkable(next) ? knock : Vector3.zero;
-    }
 
     void Update()
     {
@@ -110,14 +90,14 @@ public class Visitor : MonoBehaviour, IInteraction
         if (new Vector2(v.x, v.z).sqrMagnitude > 0.04f) Facing = new Vector3(v.x, 0f, v.z).normalized;
         if (brain != null && Current != State.Possessed) return;
 
-        if (Current is State.Idle or State.Wander or State.Stare or State.Confused or State.Watching)
+        if (Current is State.Idle or State.Wander or State.Stare or State.Confused)
         {
             if (ParkChaos.Threat(transform.position, false, out Vector3 horror))
             {
                 Panic(horror, Random.Range(3f, 5f));
                 return;
             }
-            if (Current is not (State.Confused or State.Watching) && LookForPossessed()) return;
+            if (Current != State.Confused && LookForPossessed()) return;
         }
 
         switch (Current)
@@ -148,11 +128,6 @@ public class Visitor : MonoBehaviour, IInteraction
             case State.Panic:
                 if (Time.time >= stateEndsAt) Idle();
                 else if (Time.time >= nextTurn) RunAway();
-                break;
-
-            case State.Watching:
-                if (!WalkTo(target)) Look.Face(spectacle);
-                if (Time.time >= stateEndsAt) Idle();
                 break;
         }
     }
@@ -256,29 +231,21 @@ public class Visitor : MonoBehaviour, IInteraction
         queue = null;
     }
 
-    public void StartRide(Transform cabin)
+    // Into a cabin (out of sight until the ride's over). Only visitors going about their day ride, never the spirit.
+    public void StartRide()
     {
         queue = null; // the queue already took us off the line
-        Cabin = cabin;
         SetState(State.Riding);
-        walker.readKeyboard = false;
         walker.move = Vector2.zero;
         Look.SetVisible(false);
     }
 
-    // Back on the ground. The spirit, if it rode along, takes the wheel again.
+    // Back on the ground.
     public void EndRide(Vector3 at)
     {
-        Cabin = null;
         rb.position = transform.position = new Vector3(at.x, transform.position.y, at.z);
         Look.SetVisible(true);
-        if (!IsHost)
-        {
-            Idle();
-            return;
-        }
-        SetState(State.Possessed);
-        walker.readKeyboard = true;
+        Idle();
     }
 
     // Someone nearby is acting strange (possessed): stop and stare for a moment.
@@ -298,20 +265,6 @@ public class Visitor : MonoBehaviour, IInteraction
         return true;
     }
 
-    // A brawl nearby: people going about their day wander over and stand round it until it's over.
-    public void Watch(Vector3 brawl, float until)
-    {
-        if (brain != null || Current is not (State.Idle or State.Wander or State.Stare or State.Confused)) return;
-        Vector3 away = transform.position - brawl;
-        away.y = 0;
-        if (away.magnitude > crowdRadius) return;
-        if (away.sqrMagnitude < 0.01f) away = Vector3.back;
-        spectacle = brawl;
-        target = brawl + Quaternion.Euler(0f, Random.Range(-40f, 40f), 0f) * away.normalized * Random.Range(1.8f, 2.6f);
-        SetState(State.Watching);
-        stateEndsAt = until + Random.Range(0.5f, 2f);
-    }
-
     // Told to move along by staff: walk off away from them.
     void SendAway(Visitor by)
     {
@@ -327,29 +280,17 @@ public class Visitor : MonoBehaviour, IInteraction
         Idle();
     }
 
-    // ---------------------------------------------------------------- E on this person (while possessing someone else)
+    // ---------------------------------------------------------------- E on this person (while possessing staff)
 
-    public string Prompt(Visitor host) =>
-        host != null && host.brain != null ? $"Tell {name} to move along" : $"Pick a fight with {name}";
+    public string Prompt(Visitor host) => $"Tell {name} to move along";
 
-    public string Blocked(Visitor host)
-    {
-        if (!CanBeHit || Current == State.Possessed) return GameText.Busy(name);
-        if (host.brain == null && !host.CanBeHit) return GameText.CantFight;
-        return null;
-    }
+    public string Blocked(Visitor host) =>
+        Current is State.Possessed or State.Riding or State.Down ? GameText.Busy(name) : null;
 
     public void Interact(Visitor host)
     {
-        if (host.brain != null)
-        {
-            SendAway(host);
-            GameHud.Say(GameText.ToldToMoveAlong(name));
-            return;
-        }
-        Look.Face(host.transform.position);
-        GameHud.Say(GameText.PickedFight(name));
-        Brawl.Begin(host, this);
+        SendAway(host);
+        GameHud.Say(GameText.ToldToMoveAlong(name));
     }
 
     // ---------------------------------------------------------------- things they carry
@@ -357,29 +298,18 @@ public class Visitor : MonoBehaviour, IInteraction
     public bool GrabItem(Item it, bool silent = false)
     {
         if (Held != null || it == null) return false;
-        if (it.Holder != null) it.Holder.LoseHeld();
         Held = it;
         it.PickedUp(this, silent);
         return true;
     }
 
-    public void LoseHeld() => Held = null;
-
+    // Let go of whatever they hold (panicking, going down): it tumbles to the ground.
     public void DropHeld()
     {
         if (Held == null) return;
         var it = Held;
         Held = null;
         it.Dropped(transform.position + Facing * 0.6f + Vector3.up * 1f);
-    }
-
-    public void ThrowHeld(Vector3 velocity)
-    {
-        if (Held == null) return;
-        var it = Held;
-        Held = null;
-        Look.Gesture(Look.interact, 0.3f);
-        it.Thrown(this, CarryPoint, velocity);
     }
 
     // Used up (poured out).
@@ -391,43 +321,7 @@ public class Visitor : MonoBehaviour, IInteraction
         it.Consume();
     }
 
-    // Hit by something thrown: knocked back a little.
-    public void GetHit(float power, Vector3 direction)
-    {
-        if (!CanBeHit) return;
-        direction.y = 0;
-        knock = (direction.sqrMagnitude > 0.01f ? direction.normalized : Facing) * 5f * power;
-        knockUntil = Time.time + 0.2f;
-        Look.Punch();
-        Sfx.Punch();
-        Fx.Burst("Fx/sparkle", HeadPoint, 10, new Color(1f, 0.9f, 0.4f), 3f, 0.3f, 0.4f);
-        Fx.Shake(0.12f);
-    }
-
-    // ---------------------------------------------------------------- brawls
-
-    public void EnterFight()
-    {
-        LeaveQueue();
-        DropHeld();
-        SetState(State.Fighting);
-        walker.move = Vector2.zero;
-        Look.SetVisible(false);
-    }
-
-    public void ExitFight(bool won)
-    {
-        Look.SetVisible(true);
-        if (!won)
-        {
-            Die();
-            return;
-        }
-        SetState(State.Confused); // dazed
-        stateEndsAt = Time.time + 2f;
-    }
-
-    // Gone for good: a by-product of the chaos (a brawl, the wheel), never the spirit's own doing.
+    // Gone for good: a by-product of the chaos (electrocuted in the puddle, the wheel), never the spirit's own doing.
     public void Die()
     {
         if (Current == State.Down) return;
@@ -449,7 +343,7 @@ public class Visitor : MonoBehaviour, IInteraction
 
     public void Panic(Vector3 from, float duration)
     {
-        if (brain != null || IsHost || Current is State.Possessed or State.Down or State.Fighting) return;
+        if (brain != null || IsHost || Current is State.Possessed or State.Down) return;
         if (Current == State.Riding) Look.SetVisible(true);
         LeaveQueue();
         DropHeld();
@@ -492,7 +386,6 @@ public class Visitor : MonoBehaviour, IInteraction
         Look.SetPossessed(false);
         if (Current == State.Down) return;
         Look.SetTint(Color.white);
-        if (Current is State.Fighting or State.Riding) return; // a rider left in a cabin just enjoys the view
         if (brain != null)
         {
             SetState(State.Idle);
