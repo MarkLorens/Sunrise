@@ -5276,7 +5276,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 9dfc825aed78fcd4ba02077103263b40, type: 2}
+  - {fileID: 2100000, guid: c8e2094e2e3374c38b5ef52592a346f5, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -5640,13 +5640,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DrinkingFountain
   puddleOffset: {x: 3.5, y: 0, z: 0}
   startRadius: 0.5
-  growth: 0.45
+  tapsToFull: 4
   maxRadius: 4.2
   crowdToFlood: 3
   victimsToCallMechanic: 3
   fixTime: 12
   mopTime: 8
   pressCooldown: 3
+  spreadSpeed: 0.45
+  puddleArt: {fileID: 21300000, guid: 97f82f522657f4961923fc77a80fc562, type: 3}
+  puddleOpacity: 0.6
 --- !u!114 &1916883790
 MonoBehaviour:
   m_ObjectHideFlags: 0
