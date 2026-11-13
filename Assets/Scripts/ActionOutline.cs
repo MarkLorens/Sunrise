@@ -6,9 +6,8 @@ using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Rendering.Universal;
 
 // A white outline round everything you could act on right now, like the edge on usable things in Cult of the Lamb:
-// whoever you'd possess, what E would use (a ride part, the stall, someone to pick a fight with), what J would pick
-// up, and the gear box a charged throw is locked onto. Only what you're allowed to act on lights up; refusals stay
-// plain (the rings and the HUD say why). Only lit sprites are outlined - the standing art, not shadows, bubbles or
+// whoever you'd possess, and what E would use (a ride part, the stall, or, as staff, a visitor to send away). Only
+// what you're allowed to act on lights up; refusals stay plain (the HUD says why). Only lit sprites are outlined - the standing art, not shadows, bubbles or
 // glows. Drawn over the finished frame (Resources/ActionOutline.shader), so the night grade doesn't tint it, and
 // injected from here rather than the renderer assets, so it works on the PC and Mobile renderers alike.
 // GameHud adds this to the spirit.
@@ -68,9 +67,8 @@ public class ActionOutline : MonoBehaviour
                 if (spirit.Candidate == null) AddUsable(null);
                 else if (spirit.CandidateBlocked == null) targets.Add(spirit.Candidate);
                 break;
-            case Possession.Mode.Possessing when !spirit.Riding:
+            case Possession.Mode.Possessing:
                 AddUsable(spirit.Host);
-                if (spirit.GrabCandidate != null) targets.Add(spirit.GrabCandidate.transform);
                 break;
         }
     }

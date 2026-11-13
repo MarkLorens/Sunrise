@@ -4,11 +4,9 @@ using UnityEngine.InputSystem;
 
 // The player: an evil spirit floating around the park, possessing visitors.
 //   Spirit:     WASD float anywhere in the park - E possess whoever you touch.
-//   Possessed:  WASD walk, E use things (or pick a fight with someone), J pick up your own things - hold J to charge
-//               a throw, release to throw - K drop, Q leave the body.
-//   Riding:     on the Ferris wheel the camera moves into the cabin (CameraRig) - WASD look around, Q leave the body.
+//   Possessed:  WASD walk, E use things (or, as staff, tell a visitor to move along), Q leave the body.
 // Anyone can be possessed, by touching them, for as long as you like. After leaving someone you have to wait 10 s
-// before possessing the same person again; anyone else straight away. Whatever they hold or own is yours to use.
+// before possessing the same person again; anyone else straight away. Whatever they hold is yours to use.
 [RequireComponent(typeof(GroundWalker))]
 public class Possession : MonoBehaviour
 {
@@ -22,7 +20,6 @@ public class Possession : MonoBehaviour
     public float touchRange = 1.2f;        // weak spirit: has to actually touch someone
     public float sameTargetCooldown = 10f; // before the same person can be possessed again
     public float abilityCooldown = 0f;     // after leaving anyone (none: you can jump straight into someone else)
-    public float grabRange = 1.8f;
 
     public Mode State { get; private set; }
     public Visitor Host { get; private set; }
@@ -32,12 +29,6 @@ public class Possession : MonoBehaviour
     public Transform Candidate { get; private set; }
     public string CandidateName { get; private set; }
     public string CandidateBlocked { get; private set; }
-    public Item GrabCandidate { get; private set; }
-    public bool Charging { get; private set; }
-    public float Charge { get; private set; }
-    public Vector3 AimDirection { get; private set; } = Vector3.right;
-    // Sitting in a cabin on the Ferris wheel.
-    public bool Riding => Host != null && Host.Current == Visitor.State.Riding;
 
     // What the camera follows.
     public Transform Focus => Host != null ? Host.transform : transform;
@@ -46,7 +37,6 @@ public class Possession : MonoBehaviour
 
     readonly Dictionary<Visitor, float> lockedUntil = new();
     float readyAt;
-    float chargeTime;
     float diveTime;
     Vector3 diveFrom;
     Visitor diveTarget;
@@ -76,9 +66,6 @@ public class Possession : MonoBehaviour
         var kb = Keyboard.current;
         bool live = !InputBlocked && kb != null;
         bool q = live && kb.qKey.wasPressedThisFrame;
-        bool j = live && (kb.jKey.isPressed || (Mouse.current != null && Mouse.current.leftButton.isPressed));
-        bool jDown = live && (kb.jKey.wasPressedThisFrame || (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame));
-        bool k = live && (kb.kKey.wasPressedThisFrame || (Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame));
 
         switch (State)
         {
@@ -90,7 +77,7 @@ public class Possession : MonoBehaviour
                 Dive();
                 break;
             case Mode.Possessing:
-                Possessing(q, j, jDown, k);
+                Possessing(q);
                 break;
         }
     }
@@ -112,7 +99,7 @@ public class Possession : MonoBehaviour
         float best = touchRange;
         foreach (var v in Visitor.All)
         {
-            if (v.Current is Visitor.State.Down or Visitor.State.Riding or Visitor.State.Fighting || !v.Look.Visible) continue;
+            if (v.Current is Visitor.State.Down or Visitor.State.Riding || !v.Look.Visible) continue;
             float d = Flat(v.transform.position - transform.position).magnitude;
             if (d > best) continue;
             best = d;
@@ -174,7 +161,7 @@ public class Possession : MonoBehaviour
         transform.localRotation = Quaternion.identity;
         if (!diveTarget.CanBePossessed)
         {
-            // They got away (onto a ride, into a brawl...).
+            // They got away (onto a ride...).
             BackToSpirit(diveTarget.transform.position, abilityCooldown);
             return;
         }
@@ -192,103 +179,18 @@ public class Possession : MonoBehaviour
 
     // ---------------------------------------------------------------- possessed
 
-    void Possessing(bool q, bool j, bool jDown, bool k)
+    void Possessing(bool q)
     {
-        if (Host == null || Host.Current is not (Visitor.State.Possessed or Visitor.State.Riding))
+        if (Host == null || Host.Current != Visitor.State.Possessed)
         {
-            Release(); // knocked down, thrown into a brawl...
+            Release(); // knocked down...
             return;
         }
         if (q)
         {
             Release();
             GameHud.Say(GameText.LeftBody);
-            return;
         }
-        if (Riding)
-        {
-            Charging = false;
-            GrabCandidate = null;
-            return;
-        }
-        if (Host.Held == null)
-        {
-            Charging = false;
-            GrabCandidate = FindGrabbable();
-            if (jDown && GrabCandidate != null) Grab(GrabCandidate);
-            return;
-        }
-
-        GrabCandidate = null;
-        if (k)
-        {
-            Charging = false;
-            GameHud.Say(GameText.Dropped(Host.Held.DisplayName));
-            Host.DropHeld();
-            return;
-        }
-        if (jDown)
-        {
-            Charging = true;
-            chargeTime = 0f;
-        }
-        if (!Charging) return;
-        chargeTime += Time.deltaTime;
-        Charge = Mathf.Clamp01(chargeTime / 0.9f);
-        Aim();
-        if (j) return;
-        Charging = false;
-        Throw();
-        Charge = 0f;
-    }
-
-    Item FindGrabbable()
-    {
-        Item best = null;
-        float bestScore = float.MaxValue;
-        foreach (var it in Item.All)
-        {
-            // Only your own things, lying around: whatever someone else holds or owns isn't yours to use.
-            if (it.InFlight || it.Holder != null || (it.Owner != null && it.Owner != Host)) continue;
-            Vector3 to = Flat(it.transform.position - Host.transform.position);
-            float dist = to.magnitude;
-            if (dist > grabRange) continue;
-            float score = dist + Vector3.Angle(Host.Facing, to) / 180f; // prefer things in front
-            if (score < bestScore)
-            {
-                bestScore = score;
-                best = it;
-            }
-        }
-        return best;
-    }
-
-    void Grab(Item it)
-    {
-        if (Host.GrabItem(it)) GameHud.Say(GameText.PickedUp(it.DisplayName));
-    }
-
-    void Aim() => AimDirection = Host.Facing;
-
-    public Vector3 ThrowVelocity(float power) =>
-        AimDirection * (5f + 9f * power) + Vector3.up * (3.5f + 2.5f * power);
-
-    // Where a throw released now would land.
-    public Vector3 PredictLanding()
-    {
-        Vector3 start = Host.CarryPoint;
-        Vector3 v = ThrowVelocity(Charge);
-        float g = Item.Gravity;
-        float time = (v.y + Mathf.Sqrt(v.y * v.y + 2f * g * start.y)) / g;
-        Vector3 land = start + new Vector3(v.x, 0f, v.z) * time;
-        land.y = 0.03f;
-        return land;
-    }
-
-    void Throw()
-    {
-        GameHud.Say(GameText.Threw(Host.Held.DisplayName));
-        Host.ThrowHeld(ThrowVelocity(Charge));
     }
 
     // ---------------------------------------------------------------- leaving
@@ -302,9 +204,6 @@ public class Possession : MonoBehaviour
     {
         var host = Host;
         Host = null;
-        Charging = false;
-        Charge = 0f;
-        GrabCandidate = null;
         if (host == null)
         {
             BackToSpirit(transform.position, cooldown);

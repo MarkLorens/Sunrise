@@ -58,7 +58,7 @@ public class VisitorSpawner : MonoBehaviour
             var item = i < guaranteedItems.Length ? guaranteedItems[i]
                 : Random.value < carryChance ? carryItems[Random.Range(0, carryItems.Length)]
                 : VisitorItem.None;
-            if (item != VisitorItem.None) visitor.GrabItem(Item.Create(item, visitor.CarryPoint, visitor), true);
+            if (item != VisitorItem.None) visitor.GrabItem(Item.Create(item, visitor.CarryPoint), true);
         }
         SpawnStaff();
     }
@@ -70,7 +70,7 @@ public class VisitorSpawner : MonoBehaviour
         else if (!RandomTile(out door)) return;
 
         var body = Staff<Mechanic>(mechanicName, door, mechanicCharacter);
-        body.GrabItem(Item.Create(VisitorItem.Keys, body.CarryPoint, body), true);
+        body.GrabItem(Item.Create(VisitorItem.Keys, body.CarryPoint), true);
         for (int i = 0; i < resetAgents; i++) Staff<ResetAgent>($"Reset Agent {i + 1}", door, resetAgentCharacter);
         if (cableManPost != null) Staff<CableMan>(cableManName, cableManPost.position, cableManCharacter);
         if (technicianPost != null) Staff<RideTechnician>(technicianName, technicianPost.position, technicianCharacter);
@@ -130,7 +130,6 @@ public class VisitorSpawner : MonoBehaviour
         var go = Body(name, pos, characters[Random.Range(0, characters.Length)], personScale);
         var v = go.AddComponent<Visitor>();
         v.wanderSpeed = Random.Range(1.5f, 2.5f);
-        v.strength = Random.Range(2f, 4.5f);
         v.pointsOfInterest = pointsOfInterest;
 
         go.SetActive(true);

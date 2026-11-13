@@ -10,7 +10,7 @@ using UnityEngine;
 [RequireComponent(typeof(GroundWalker), typeof(CharacterSprite))]
 public abstract class StaffWorker : MonoBehaviour
 {
-    public enum State { Inside, Going, Working, Returning, Attending }
+    public enum State { Inside, Going, Working, Returning }
 
     // Somewhere to go, something to do there, and what happens when it's done.
     public struct Job
@@ -136,7 +136,7 @@ public abstract class StaffWorker : MonoBehaviour
     {
         Current = s;
         walker.move = Vector2.zero;
-        walker.speed = s is State.Going or State.Attending ? runSpeed : walkSpeed;
+        walker.speed = s == State.Going ? runSpeed : walkSpeed;
         look.running = false;
         look.pose = null;
         look.SetVisible(s != State.Inside); // behind the staff door

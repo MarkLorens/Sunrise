@@ -65,15 +65,6 @@ public class FerrisWheel : MonoBehaviour
         Sfx.Play(Sfx.Thud, 0.8f, 0.6f);
     }
 
-    // The cabin at the bottom of the wheel, where riders get on.
-    public Transform BoardingCabin()
-    {
-        Transform best = null;
-        foreach (var c in cabins)
-            if (best == null || c.position.y < best.position.y) best = c;
-        return best;
-    }
-
     // Offsets are relative to the wheel's base.
     T Part<T>(string name, Vector3 offset, string sprite, float height) where T : Component
     {
