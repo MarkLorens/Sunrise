@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // A leaky drinking fountain dripping into a puddle. Every press of its button (E, in anyone's body) makes the leak
-// worse and the puddle spread. Dip a live cable in it (LiveCable) and everyone standing in it is electrocuted. Enough
+// worse: the puddle starts small right under it and, press by press, slowly spreads out towards puddleOffset. Dip a live cable in it (LiveCable) and everyone standing in it is electrocuted. Enough
 // of a scene and the mechanic comes out to fix the fountain; either way the Reset Agents come to mop up. Once fixed
 // it stops leaking for good.
 [RequireComponent(typeof(Interactable))]
@@ -12,15 +12,20 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
 
     public Vector3 puddleOffset = new(-1f, 0f, -1f); // where the puddle spreads from, relative to the fountain
     public float startRadius = 0.5f;
-    public float growth = 0.45f;     // per press
+    public int tapsToFull = 4;       // presses from startRadius to maxRadius
     public float maxRadius = 4.2f;
     public int crowdToFlood = 3;     // listeners standing in it before it counts as reaching the crowd
     public int victimsToCallMechanic = 3; // how big a scene it takes before the mechanic bothers
     public float fixTime = 12f;      // how long the mechanic works on it: the window to possess him
     public float mopTime = 8f;
     public float pressCooldown = 3f; // before the button can be pressed again
+    public float spreadSpeed = 0.45f; // how fast the water creeps out after a press (radius per second)
+    public Sprite puddleArt;         // empty = a tinted round blob
+    [Range(0f, 1f)] public float puddleOpacity = 0.6f;
 
-    public Vector3 PuddleCenter => new(transform.position.x + puddleOffset.x, 0f, transform.position.z + puddleOffset.z);
+    // Under the fountain while small, sliding out to puddleOffset as it grows.
+    public Vector3 PuddleCenter => new Vector3(transform.position.x, 0f, transform.position.z)
+        + new Vector3(puddleOffset.x, 0f, puddleOffset.z) * Mathf.InverseLerp(startRadius, maxRadius, Radius);
     public float Radius { get; private set; }
     public bool Fixed { get; private set; }
 
@@ -28,7 +33,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
 
     SpriteRenderer puddle;
     bool mechanicCalled, thoughtAsSpirit, electrocutedOnce;
-    float nextDrip, readyAt;
+    float nextDrip, readyAt, target; // target: the radius the water is still spreading to
     int presses;
 
     void OnEnable() => All.Add(this);
@@ -37,12 +42,23 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     void Start()
     {
         puddle = ParkArt.Make("Puddle", null, "Markers/shadow", 1f, new Color(Water.r, Water.g, Water.b, 0.55f), ParkArt.DecalOrder, true);
-        puddle.transform.parent.position = PuddleCenter + Vector3.up * 0.02f;
-        SetRadius(startRadius);
+        if (puddleArt != null)
+        {
+            puddle.sprite = puddleArt;
+            puddle.color = new Color(1f, 1f, 1f, puddleOpacity);
+        }
+        puddle.transform.parent.rotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f); // not the same blob every time
+        SetRadius(target = startRadius);
     }
 
     void Update()
     {
+        if (Radius < target)
+        {
+            SetRadius(Mathf.MoveTowards(Radius, target, spreadSpeed * Time.deltaTime));
+            if (VisitorsInPuddle() >= crowdToFlood) Mischief.Complete(Mischief.Task.FloodPuddle);
+        }
+
         // The spirit floats up to it for the first time and notices the leak.
         if (!thoughtAsSpirit && !Fixed && Possession.Instance != null && Possession.Instance.State == Possession.Mode.Spirit
             && Possession.PlayerNear(transform.position, GetComponent<Interactable>().range))
@@ -76,6 +92,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
         Radius = r;
         puddle.enabled = r > 0f;
         if (r > 0f) ParkArt.Fit(puddle, r * 2f);
+        puddle.transform.parent.position = PuddleCenter + Vector3.up * 0.02f;
     }
 
     // ---------------------------------------------------------------- the button
@@ -86,7 +103,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     {
         if (Fixed) return GameText.FountainFixed;
         if (mechanicCalled) return GameText.MechanicOnIt;
-        if (Radius >= maxRadius) return GameText.PuddleFull;
+        if (target >= maxRadius) return GameText.PuddleFull;
         if (Time.time < readyAt) return GameText.FountainBusy;
         return null;
     }
@@ -97,11 +114,10 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
         var lines = GameText.ThinkFountainPress;
         if (presses < lines.Length) GameHud.Think(lines[presses]);
         presses++;
-        SetRadius(Mathf.Min(maxRadius, Mathf.Max(Radius, startRadius) + growth));
+        target = Mathf.Min(maxRadius, Mathf.Max(target, startRadius) + (maxRadius - startRadius) / tapsToFull); // Update lets it creep out
         Sfx.Play(Sfx.HitSoft, 0.6f, 1.4f);
         Fx.Burst("Fx/puff", transform.position + Vector3.up * 0.8f, 6, Water, 2f, 0.35f, 0.5f);
         GameHud.Say(GameText.PressedFountain);
-        if (VisitorsInPuddle() >= crowdToFlood) Mischief.Complete(Mischief.Task.FloodPuddle);
     }
 
     int VisitorsInPuddle()
@@ -160,7 +176,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
 
     void Mop()
     {
-        SetRadius(Fixed ? 0f : startRadius);
+        SetRadius(target = Fixed ? 0f : startRadius);
         Fx.Burst("Fx/puff", PuddleCenter + Vector3.up * 0.3f, 10, Color.white, 2f, 0.5f, 0.6f);
     }
 
