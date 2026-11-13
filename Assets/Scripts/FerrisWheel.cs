@@ -45,6 +45,7 @@ public class FerrisWheel : MonoBehaviour
     void Start()
     {
         speed = normalSpeed;
+        if (!TryGetComponent(out FerrisWheelAudio _)) gameObject.AddComponent<FerrisWheelAudio>();
         Part<ElectricalBox>("Electrical Box", electricalBoxOffset, "Props/electrical_box", 1.3f, electricalBoxArt).wheel = this;
         var mat = wheel.GetComponent<SpriteRenderer>().sharedMaterial;
         for (int i = 0; i < cabinCount; i++)
@@ -62,8 +63,7 @@ public class FerrisWheel : MonoBehaviour
     public void CutPower()
     {
         if (!Powered) return;
-        Current = State.Unpowered;
-        Sfx.Play(Sfx.Thud, 0.8f, 0.6f);
+        Current = State.Unpowered; // FerrisWheelAudio hears it and powers the sounds down
     }
 
     // Offsets are relative to the wheel's base.
