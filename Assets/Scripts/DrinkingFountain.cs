@@ -18,6 +18,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     public int victimsToCallMechanic = 3; // how big a scene it takes before the mechanic bothers
     public float fixTime = 12f;      // how long the mechanic works on it: the window to possess him
     public float mopTime = 8f;
+    public float pressCooldown = 3f; // before the button can be pressed again
 
     public Vector3 PuddleCenter => new(transform.position.x + puddleOffset.x, 0f, transform.position.z + puddleOffset.z);
     public float Radius { get; private set; }
@@ -26,8 +27,9 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     static readonly Color Water = new(0.45f, 0.75f, 1f);
 
     SpriteRenderer puddle;
-    bool mechanicCalled;
-    float nextDrip;
+    bool mechanicCalled, thoughtAsSpirit, electrocutedOnce;
+    float nextDrip, readyAt;
+    int presses;
 
     void OnEnable() => All.Add(this);
     void OnDisable() => All.Remove(this);
@@ -41,6 +43,14 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
 
     void Update()
     {
+        // The spirit floats up to it for the first time and notices the leak.
+        if (!thoughtAsSpirit && !Fixed && Possession.Instance != null && Possession.Instance.State == Possession.Mode.Spirit
+            && Possession.PlayerNear(transform.position, GetComponent<Interactable>().range))
+        {
+            thoughtAsSpirit = true;
+            GameHud.Think(GameText.ThinkFountainSpirit);
+        }
+
         if (Fixed || Time.time < nextDrip) return;
         nextDrip = Time.time + 1.2f;
         Fx.Burst("Fx/sparkle", transform.position + Vector3.up * 0.9f, 2, Water, 1.2f, 0.18f, 0.5f);
@@ -77,11 +87,16 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
         if (Fixed) return GameText.FountainFixed;
         if (mechanicCalled) return GameText.MechanicOnIt;
         if (Radius >= maxRadius) return GameText.PuddleFull;
+        if (Time.time < readyAt) return GameText.FountainBusy;
         return null;
     }
 
     public void Interact(Visitor host)
     {
+        readyAt = Time.time + pressCooldown;
+        var lines = GameText.ThinkFountainPress;
+        if (presses < lines.Length) GameHud.Think(lines[presses]);
+        presses++;
         SetRadius(Mathf.Min(maxRadius, Mathf.Max(Radius, startRadius) + growth));
         Sfx.Play(Sfx.HitSoft, 0.6f, 1.4f);
         Fx.Burst("Fx/puff", transform.position + Vector3.up * 0.8f, 6, Water, 2f, 0.35f, 0.5f);
@@ -116,6 +131,8 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
         }
         if (victims == 0) return;
 
+        if (!electrocutedOnce) GameHud.Think(GameText.ThinkElectrocuted);
+        electrocutedOnce = true;
         Mischief.Complete(Mischief.Task.Electrocute);
         ResetAgent.Call(new StaffWorker.Job
         {
@@ -136,6 +153,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
             seconds = fixTime,
             shout = "What happened here?! Who let that fountain leak all over the place?",
             done = Fix,
+            stay = true, // he keeps an eye on it from then on
         });
         Mischief.Complete(Mischief.Task.LureMechanic);
     }

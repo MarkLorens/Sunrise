@@ -231,4 +231,8 @@ public class Possession : MonoBehaviour
     }
 
     static Vector3 Flat(Vector3 v) => new(v.x, 0f, v.z);
+
+    // Is whoever you control (the spirit, or the body it's in) within `range` of p, along the floor?
+    public static bool PlayerNear(Vector3 p, float range) =>
+        Instance != null && Flat(Instance.Focus.position - p).magnitude <= range;
 }
