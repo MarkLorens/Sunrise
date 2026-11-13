@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="AudioFile" id="{64a7423f-3cdc-4f75-94f7-f0be14b276f8}">
+		<property name="assetPath">
+			<value>Cartoon, Impact, Wood Knocks, Fast x4 SND15504.wav</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>96</value>
+		</property>
+		<property name="channelCount">
+			<value>1</value>
+		</property>
+		<property name="length">
+			<value>0.45000000000000001</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{8c8416f5-ac4e-4dce-97e1-dfa1a76b2c55}</destination>
+		</relationship>
+	</object>
+</objects>

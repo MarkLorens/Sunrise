@@ -23,6 +23,8 @@ public class CharacterSprite : MonoBehaviour
     // Held pose that overrides walking/idle (e.g. confused, knocked down). Null = automatic.
     [HideInInspector] public Sprite pose;
     [HideInInspector] public bool running;
+    // True while the walk/run cycle is playing (moving, visible, not held in a pose): Footsteps plays while this is on.
+    public bool Stepping { get; private set; }
 
     public bool Visible => body.enabled;
     public bool FacingLeft => facingLeft;
@@ -87,6 +89,7 @@ public class CharacterSprite : MonoBehaviour
         body.sharedMaterial = ParkArt.CharacterMaterial;
         ParkArt.CastShadows(body);
         rb = GetComponent<Rigidbody>();
+        if (!TryGetComponent<Footsteps>(out _)) gameObject.AddComponent<Footsteps>();
         animOffset = Random.value * 10f;
         baseScale = transform.localScale;
 
@@ -416,6 +419,7 @@ public class CharacterSprite : MonoBehaviour
         }
         else body.sprite = idle;
         SyncFills();
+        Stepping = stepping && body.enabled;
 
         // Squash and stretch (the feet stay put: the sprite's pivot is at its feet).
         // Walking: two steps per cycle, footfalls on frames 0 and 4 - a slight squash as the foot lands, a slight

@@ -29,7 +29,9 @@ public class GroundWalker : MonoBehaviour
     //   than its leaves), so a wide bench blocks more than its one cell;
     // - each prop with a Box Collider (the stalls). People have no colliders of their own (so they don't shove each
     //   other around), so physics alone would let them walk straight through it.
-    const float ObjectDepth = 0.25f; // half an object's thickness front to back
+    // An object's box is a line just in front of its base. Grown by your body's radius, it keeps your feet off its
+    // front but lets you tuck in right behind it (the camera looks +z, so the object hides you there).
+    const float ObjectFront = 0.25f;
     static readonly List<Rect> footprints = new();
     static readonly List<Collider> props = new();
     static Tilemap obstaclesFor;
@@ -183,7 +185,7 @@ public class GroundWalker : MonoBehaviour
             }
             if (left > right) (left, right) = (s.bounds.min.x, s.bounds.max.x);
             Vector3 c = map.GetCellCenterWorld(cell);
-            footprints.Add(Rect.MinMaxRect(c.x + left, c.z - ObjectDepth, c.x + right, c.z + ObjectDepth));
+            footprints.Add(Rect.MinMaxRect(c.x + left, c.z - ObjectFront, c.x + right, c.z - ObjectFront));
         }
     }
 }

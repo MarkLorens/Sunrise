@@ -112,6 +112,7 @@ InitTestScene*.unity*
 .DS_Store
 
 
+
 # Never ignore DLLs in the FMOD subfolder.
 !/[Aa]ssets/Plugins/FMOD/**/lib/*
 
@@ -126,6 +127,8 @@ InitTestScene*.unity*
 /[Aa]ssets/StreamingAssets/**/*.bank
 /[Aa]ssets/StreamingAssets/**/*.bank.meta
 
-# If the source bank files are kept outside of the StreamingAssets folder then these can be ignored.
-# Log files can be ignored.
+# FMOD Studio generated cache
+/FMOD/**/.cache/
+
+# Log files
 fmod_editor.log

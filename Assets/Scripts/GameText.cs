@@ -76,4 +76,26 @@ public static class GameText
     public const string NoPower = "No power";
     public const string PowerOff = "The power's off";
     public const string BoxLocked = "Locked. The mechanic has the keys";
+
+    // The drinking fountain
+    public const string FountainBusy = "Still gurgling";
+
+    // ---------------------------------------------------------------- speech bubble: what the spirit thinks
+
+    // The electrical box
+    public const string ThinkBoxSpirit = "This must be how I turn the Ferris Wheel off.";       // first reaching it, as a spirit
+    public const string ThinkBoxLocked = "Ah that brat locked it. I'll get his attention alright!"; // after the mechanic cutscene
+    public const string ThinkBoxMechanic = "There you freaking go";                              // unlocking it as the mechanic
+
+    // The drinking fountain
+    public const string ThinkFountainSpirit = "A leak.. I wonder if I can use this";             // first reaching it, as a spirit
+    public static readonly string[] ThinkFountainPress =                                         // each press in a body, in order
+        { "Now let's make this bigger", "A bit more", "MORE!", "That should cover it" };
+
+    // The live cable (reaching it, any form)
+    public const string ThinkCableDry = "Maybe that cable needs to go somewhere... wet";          // the puddle doesn't reach it yet
+    public const string ThinkCableWet = "Hehehe let's get buzzed";                               // the puddle reaches it
+
+    // After the first electrocution, one after the other
+    public static readonly string[] ThinkElectrocuted = { "Uh oh, dropped the toaster again", "Anyways, that should get the brat's attention" };
 }
