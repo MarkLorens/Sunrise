@@ -2,8 +2,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // A loudspeaker playing music. Visitors like to stand around in front of it for a while (Visitor picks it as
-// somewhere to go until the crowd is big enough). Its power cable is broken: the frayed live end (LiveCable) lies
-// sparking on the ground beside it.
+// somewhere to go until the crowd is big enough). The one with livePlug on has a broken, live plug sticking out of
+// it (LiveCable), sparking.
 public class Speaker : MonoBehaviour
 {
     public static readonly List<Speaker> All = new();
@@ -11,7 +11,8 @@ public class Speaker : MonoBehaviour
     public Vector3 crowdOffset = new(0f, 0f, -1.6f); // where the crowd stands, relative to the speaker
     public float crowdRadius = 1.6f;
     public int crowdSize = 6;
-    public Vector3 cableEndOffset = new(-2.5f, 0f, 0.5f);
+    public bool livePlug = true; // its plug is the broken, live one (LiveCable)
+    public Vector3 cableEndOffset = new(0.8f, 0.83f, -0.12f); // the plug in the sprite, relative to the speaker
     public DrinkingFountain fountain; // the puddle the cable can reach
 
     public Vector3 CrowdCenter => new(transform.position.x + crowdOffset.x, 0f, transform.position.z + crowdOffset.z);
@@ -21,7 +22,7 @@ public class Speaker : MonoBehaviour
 
     void Start()
     {
-
+        if (!livePlug) return;
         var end = new GameObject("Live Cable");
         end.SetActive(false); // so Interactable's Awake finds the rules component
         end.transform.position = transform.position + cableEndOffset;

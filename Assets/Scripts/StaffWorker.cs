@@ -3,14 +3,14 @@ using UnityEngine;
 
 // Park staff who wait out of sight behind the staff door until they're called out to a job. They walk over, work on
 // it for a while (a bar over their head shows how long), then take the next job waiting for their crew or go back
-// inside. While they're out their Visitor body can be possessed like anyone's (this script is switched off while it
-// is); on release they go back to the job they were on.
+// inside (or, after a Job.stay one, back to it to hang around). While they're out their Visitor body can be
+// possessed like anyone's (this script is switched off while it is); on release they go back to the job they were on.
 // Each crew (Mechanic, ResetAgent) keeps its own roster and backlog and calls Dispatch to hand out jobs, so a new
 // use for a crew is just a new Job sent its way.
 [RequireComponent(typeof(GroundWalker), typeof(CharacterSprite))]
 public abstract class StaffWorker : MonoBehaviour
 {
-    public enum State { Inside, Going, Working, Returning }
+    public enum State { Inside, Going, Working, Returning, Staying }
 
     // Somewhere to go, something to do there, and what happens when it's done.
     public struct Job
@@ -20,13 +20,14 @@ public abstract class StaffWorker : MonoBehaviour
         public float seconds;
         public string shout;          // said when they set off (null = nothing)
         public System.Action done;
+        public bool stay;             // hang around here afterwards instead of going back inside (still takes new jobs)
     }
 
     public float walkSpeed = 2.2f;
     public float runSpeed = 3.6f;
 
     public State Current { get; private set; }
-    public bool Free => enabled && Current is State.Inside or State.Returning;
+    public bool Free => enabled && Current is State.Inside or State.Returning or State.Staying;
 
     protected GroundWalker walker;
     protected CharacterSprite look;
@@ -34,6 +35,8 @@ public abstract class StaffWorker : MonoBehaviour
 
     Job job;
     bool hasJob;
+    Job post;     // the job they stayed on at (Job.stay), if any
+    bool hasPost;
     float workEndsAt;
     WorldBar bar;
 
@@ -122,12 +125,18 @@ public abstract class StaffWorker : MonoBehaviour
                 if (left > 0f) break;
                 bar.Set(0f, Color.white, false);
                 hasJob = false;
+                if (job.stay) (post, hasPost) = (job, true);
                 job.done?.Invoke();
                 NextJob();
                 break;
 
             case State.Returning:
-                if (!walker.WalkTo(home)) Set(State.Inside);
+                if (walker.WalkTo(hasPost ? post.spot : home)) break;
+                Set(hasPost ? State.Staying : State.Inside);
+                break;
+
+            case State.Staying:
+                look.Face(post.at);
                 break;
         }
     }

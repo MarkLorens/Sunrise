@@ -1,7 +1,7 @@
 using UnityEngine;
 
-// The frayed live end of the speaker's broken power cable, sparking on the ground. Only the cable man knows how to
-// handle it: in his body, pick it up and dip it in the drinking fountain's puddle if it reaches.
+// The live plug sticking out of the speaker's sprite, sparking. Only the cable man knows how to handle it: in his
+// body, pull it out and dip it in the drinking fountain's puddle if it reaches (a cord is drawn while it's in).
 [RequireComponent(typeof(Interactable))]
 public class LiveCable : MonoBehaviour, IInteraction
 {
@@ -15,6 +15,25 @@ public class LiveCable : MonoBehaviour, IInteraction
     LineRenderer line;
     Vector3 dippedAt;
     float dipUntil, readyAt, nextSpark;
+    bool thoughtDry, thoughtWet;
+
+    bool Reaches => fountain.Radius > 0f && fountain.Gap(transform.position) <= reach;
+
+    // Coming up to it (in any form): a hint while the puddle's too far, glee once it reaches. Each said once.
+    void Think()
+    {
+        if (thoughtWet || !Possession.PlayerNear(transform.position, GetComponent<Interactable>().range)) return;
+        if (Reaches)
+        {
+            thoughtWet = true;
+            GameHud.Think(GameText.ThinkCableWet);
+        }
+        else if (!thoughtDry)
+        {
+            thoughtDry = true;
+            GameHud.Think(GameText.ThinkCableDry);
+        }
+    }
 
     void Start()
     {
@@ -28,9 +47,11 @@ public class LiveCable : MonoBehaviour, IInteraction
 
     void Update()
     {
+        Think();
         bool dipped = Time.time < dipUntil;
         Vector3 end = dipped ? dippedAt : transform.position;
-        line.SetPosition(0, speaker.transform.position + Vector3.up * 0.05f);
+        line.enabled = dipped; // the plug's own cord is part of the speaker's art
+        line.SetPosition(0, transform.position);
         line.SetPosition(1, end + Vector3.up * 0.05f);
         if (Time.time < nextSpark) return;
         nextSpark = Time.time + Random.Range(0.6f, 1.4f);
@@ -45,7 +66,7 @@ public class LiveCable : MonoBehaviour, IInteraction
     {
         if (!IsCableMan(host)) return GameText.CableLive;
         if (Time.time < readyAt) return GameText.CableCrackling;
-        if (fountain.Radius <= 0f || fountain.Gap(transform.position) > reach) return GameText.CableTooFar;
+        if (!Reaches) return GameText.CableTooFar;
         return null;
     }
 
@@ -56,6 +77,7 @@ public class LiveCable : MonoBehaviour, IInteraction
         toPuddle.y = 0f;
         float into = Mathf.Max(0f, toPuddle.magnitude - fountain.Radius) + 0.3f;
         dippedAt = transform.position + toPuddle.normalized * Mathf.Min(into, toPuddle.magnitude);
+        dippedAt.y = 0f; // the plug's up on the speaker; the dipped end lies in the water
         dipUntil = Time.time + 1.5f;
         readyAt = Time.time + recharge;
         GameHud.Say(GameText.DippedCable);

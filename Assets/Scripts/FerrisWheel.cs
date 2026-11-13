@@ -21,6 +21,7 @@ public class FerrisWheel : MonoBehaviour
     public float normalSpeed = 12f;  // degrees per second
     public float windDownTime = 5f;  // seconds to coast to a stop once the power's cut
     public Vector3 electricalBoxOffset = new(-3.3f, 0f, -0.6f);
+    public Sprite electricalBoxArt; // drawn at its own size, pivot at its feet (the palette's props); empty = Props/electrical_box
     public Vector3 closedAreaOffset = new(0f, 0f, 0.3f);
     public Vector2 closedAreaSize = new(5.4f, 3.4f);
     public RideQueue queue;
@@ -45,7 +46,7 @@ public class FerrisWheel : MonoBehaviour
     {
         speed = normalSpeed;
         if (!TryGetComponent(out FerrisWheelAudio _)) gameObject.AddComponent<FerrisWheelAudio>();
-        Part<ElectricalBox>("Electrical Box", electricalBoxOffset, "Props/electrical_box", 1.3f).wheel = this;
+        Part<ElectricalBox>("Electrical Box", electricalBoxOffset, "Props/electrical_box", 1.3f, electricalBoxArt).wheel = this;
         var mat = wheel.GetComponent<SpriteRenderer>().sharedMaterial;
         for (int i = 0; i < cabinCount; i++)
         {
@@ -66,20 +67,26 @@ public class FerrisWheel : MonoBehaviour
     }
 
     // Offsets are relative to the wheel's base.
-    T Part<T>(string name, Vector3 offset, string sprite, float height) where T : Component
+    T Part<T>(string name, Vector3 offset, string sprite, float height, Sprite art = null) where T : Component
     {
         var go = new GameObject(name);
         go.SetActive(false); // so Interactable's Awake finds the rules component
         go.transform.position = transform.position + offset * Scale;
-        var art = Prop(go.transform, sprite, height, Vector3.zero);
+        var pic = Prop(go.transform, sprite, height, Vector3.zero);
+        if (art != null)
+        {
+            pic.sprite = art;
+            pic.transform.localScale = Vector3.one;
+            pic.transform.localPosition = Vector3.zero;
+        }
         var part = go.AddComponent<T>();
         go.AddComponent<Interactable>();
         go.SetActive(true);
 
         // Something people bump into: a box the size of its picture. Made after the scene loaded, so GroundWalker
         // is told about it.
-        var box = art.gameObject.AddComponent<BoxCollider>();
-        Bounds b = art.sprite.bounds;
+        var box = pic.gameObject.AddComponent<BoxCollider>();
+        Bounds b = pic.sprite.bounds;
         box.center = b.center;
         box.size = new Vector3(b.size.x, b.size.y, 0.2f);
         GroundWalker.AddObstacle(box);

@@ -14,6 +14,7 @@ public class GameHud : MonoBehaviour
     public static GameHud Instance { get; private set; }
 
     public string objective = "Cut the Ferris wheel's power";
+    public Sprite spiritIcon; // the intro banner's icon (falls back to UI/spirit)
 
     static readonly Color PanelDark = new(0.12f, 0.08f, 0.12f, 0.8f);
     static readonly Color Ink = new(0.17f, 0.1f, 0.13f);
@@ -64,6 +65,11 @@ public class GameHud : MonoBehaviour
     float introAge;
     CanvasGroup inventory;
     Image inventoryItem;
+    RectTransform bubble;
+    CanvasGroup bubbleGroup;
+    Text bubbleText;
+    readonly List<string> thoughts = new();
+    float thoughtAge = 10f, thoughtShow;
 
     void Awake()
     {
@@ -124,6 +130,12 @@ public class GameHud : MonoBehaviour
         Instance.refusedAt = Time.unscaledTime;
     }
 
+    // A line the spirit says to itself, in a speech bubble over the player. One at a time: later ones wait their turn.
+    public static void Think(params string[] lines)
+    {
+        if (Instance != null) Instance.thoughts.AddRange(lines);
+    }
+
     // ---------------------------------------------------------------- every frame
 
     void Update()
@@ -134,6 +146,30 @@ public class GameHud : MonoBehaviour
         UpdatePrompt();
         UpdateInventory();
         UpdateBanners();
+        UpdateBubble();
+    }
+
+    void UpdateBubble()
+    {
+        thoughtAge += Time.unscaledDeltaTime;
+        if (thoughtAge >= thoughtShow && thoughts.Count > 0)
+        {
+            bubbleText.text = thoughts[0];
+            thoughtShow = Mathf.Clamp(1.2f + thoughts[0].Length * 0.05f, 2.2f, 4.5f); // long enough to read
+            thoughts.RemoveAt(0);
+            thoughtAge = 0f;
+        }
+        bubbleGroup.alpha = Mathf.Min(Mathf.Clamp01(thoughtAge / 0.15f), Mathf.Clamp01((thoughtShow - thoughtAge) / 0.25f));
+        if (bubbleGroup.alpha <= 0f) return;
+
+        // Over the host's head, or just above the little spirit.
+        var host = spirit.Host;
+        Vector3 over = host != null ? PersonTop(host.transform) : spirit.transform.position + Vector3.up * 1.4f;
+        var cam = Camera.main;
+        Vector3 screen = cam != null ? cam.WorldToScreenPoint(over) : Vector3.back;
+        if (screen.z <= 0f) return;
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(canvas, screen, null, out Vector2 local);
+        bubble.anchoredPosition = local;
     }
 
     // The part you're on: the first one with a step still to do (-1 once they're all done).
@@ -328,6 +364,27 @@ public class GameHud : MonoBehaviour
         BuildPrompt();
         BuildIntro();
         BuildInventory();
+        BuildBubble();
+    }
+
+    // A light speech bubble with a little tail, its point at `bubble`'s position.
+    void BuildBubble()
+    {
+        bubble = Ui("Speech Bubble", canvas);
+        Place(bubble, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0f), Vector2.zero, new Vector2(10f, 10f));
+        bubbleGroup = bubble.gameObject.AddComponent<CanvasGroup>();
+        bubbleGroup.alpha = 0f;
+        var tail = Ui("Tail", bubble);
+        Place(tail, new Vector2(0.5f, 0f), new Vector2(0.5f, 0.5f), new Vector2(0f, 14f), new Vector2(18f, 18f));
+        tail.localRotation = Quaternion.Euler(0f, 0f, 45f);
+        Img(tail, null, Soft);
+        var body = Ui("Body", bubble);
+        Place(body, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 18f), Vector2.zero);
+        Img(body, "UI/pill", Soft);
+        Row(body, 0f, new RectOffset(26, 26, 10, 12));
+        Fit(body);
+        bubbleText = Txt(Ui("Label", body), "", 30, Ink, TextAnchor.MiddleCenter);
+        bubbleText.font = HandFont;
     }
 
     // Top left: a brush-stroke title (the part you're on) over a dim panel of its steps.
@@ -415,7 +472,8 @@ public class GameHud : MonoBehaviour
         Fit(banner);
         intro = banner.gameObject.AddComponent<CanvasGroup>();
         intro.alpha = 0f;
-        Icon(banner, "UI/spirit", 46f);
+        var icon = Icon(banner, "UI/spirit", 46f);
+        if (spiritIcon != null) icon.sprite = spiritIcon;
         Txt(Ui("Text", banner), $"You are an evil spirit loose in a theme park. <b>{objective}</b>.", 26, new Color(0.98f, 0.9f, 1f));
     }
 
