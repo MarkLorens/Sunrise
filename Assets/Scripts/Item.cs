@@ -22,10 +22,6 @@ public class Item : MonoBehaviour
     };
 
     SpriteRenderer sprite, shadow;
-
-    // What the HUD's inventory box shows (a grey block until the item has art).
-    public Sprite Icon => sprite.sprite;
-    public Color IconColor => sprite.color;
     Vector3 velocity;
     bool falling;
 

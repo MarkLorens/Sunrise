@@ -6,8 +6,7 @@ using UnityEngine.UI;
 // The HUD, built at runtime in the style of My project's: the objectives (top left: the part of the level you're on
 // and its steps; a step that gets done is struck through and stays on the list), a pop-up line for each thing the
 // player does and each step done (bottom left; the wording is all in GameText), a prompt floating over whatever you
-// can possess / use (and why not, when E is refused), and the intro banner. While you're in someone, an
-// inventory box (bottom right) shows what they're holding.
+// can possess / use (and why not, when E is refused), and the intro banner.
 // It also gives the main camera its rig and the spirit its outline of what it can act on.
 public class GameHud : MonoBehaviour
 {
@@ -63,8 +62,6 @@ public class GameHud : MonoBehaviour
     const float RefusalTime = 1.6f;
     CanvasGroup intro;
     float introAge;
-    CanvasGroup inventory;
-    Image inventoryItem;
     RectTransform bubble;
     CanvasGroup bubbleGroup;
     Text bubbleText;
@@ -84,6 +81,7 @@ public class GameHud : MonoBehaviour
         if (FindAnyObjectByType<NightLighting>() == null) new GameObject("Night Lighting").AddComponent<NightLighting>();
         if (GetComponent<ActionOutline>() == null) gameObject.AddComponent<ActionOutline>();
         if (GetComponent<PauseMenu>() == null) gameObject.AddComponent<PauseMenu>();
+        if (GetComponent<Tutorial>() == null) gameObject.AddComponent<Tutorial>();
         Build();
         doneQueue.AddRange(pending);
         pending.Clear();
@@ -92,6 +90,18 @@ public class GameHud : MonoBehaviour
     void OnDestroy()
     {
         if (Instance == this) Instance = null;
+    }
+
+    // For the tutorial to point at: the objectives (top left) and the pop-up line (bottom left).
+    public RectTransform ObjectivesPanel => (RectTransform)objectives.transform;
+    public RectTransform PopUp => doneBody;
+
+    // Keeps `line` up in the pop-up while it's the one showing (the tutorial, while you read about it).
+    public void KeepPopUp(string line)
+    {
+        if (doneText.text != line || doneQueue.Count > 0) return;
+        doneAge = Mathf.Min(doneAge, 0.5f);
+        doneShow = DoneTime;
     }
 
     // A line in the bottom-left pop-up for something the player just did. One at a time: later ones wait their turn.
@@ -164,7 +174,6 @@ public class GameHud : MonoBehaviour
         UpdateStepPopup();
         UpdateGrip();
         UpdatePrompt();
-        UpdateInventory();
         UpdateBanners();
         UpdateBubble();
         UpdateShouts();
@@ -369,24 +378,12 @@ public class GameHud : MonoBehaviour
         return r != null ? new Vector3(t.position.x, r.bounds.max.y + 0.4f, t.position.z) : t.position + Vector3.up * 2f;
     }
 
-    // Shown while you're in someone: empty, or the item in their hand.
-    void UpdateInventory()
-    {
-        var host = spirit.Host;
-        bool show = host != null;
-        inventory.alpha = Mathf.MoveTowards(inventory.alpha, show ? 1f : 0f, Time.unscaledDeltaTime * 6f);
-        var held = show ? host.Held : null;
-        Set(inventoryItem.gameObject, held != null);
-        if (held == null) return;
-        inventoryItem.sprite = held.Icon;
-        inventoryItem.color = held.IconColor;
-    }
-
     void UpdateBanners()
     {
         float dt = Time.unscaledDeltaTime;
         introAge += dt;
         if (spirit.Host != null && introAge < 9f) introAge = 9f; // got the idea
+        if (Tutorial.Active) introAge = 0f; // the intro banner waits for the tutorial, then plays
         intro.alpha = Mathf.Min(Mathf.Clamp01((introAge - 0.5f) * 2f), Mathf.Clamp01((10f - introAge) * 2f));
     }
 
@@ -408,7 +405,6 @@ public class GameHud : MonoBehaviour
         BuildStepPopup();
         BuildPrompt();
         BuildIntro();
-        BuildInventory();
         BuildBubble();
     }
 
@@ -520,28 +516,6 @@ public class GameHud : MonoBehaviour
         var icon = Icon(banner, "UI/spirit", 46f);
         if (spiritIcon != null) icon.sprite = spiritIcon;
         Txt(Ui("Text", banner), $"You are an evil spirit loose in a theme park. <b>{objective}</b>.", 26, new Color(0.98f, 0.9f, 1f));
-    }
-
-    // Bottom right: a light box with a dark border, the held item in the middle.
-    void BuildInventory()
-    {
-        var box = Ui("Inventory", canvas);
-        Place(box, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-40f, 40f), new Vector2(170f, 170f));
-        inventory = box.gameObject.AddComponent<CanvasGroup>();
-        inventory.alpha = 0f;
-        Img(box, "UI/pill", new Color(Ink.r, Ink.g, Ink.b, 0.92f)).pixelsPerUnitMultiplier = 2.5f;
-        var inside = Ui("Inside", box);
-        Stretch(inside);
-        inside.offsetMin = new Vector2(7f, 7f);
-        inside.offsetMax = new Vector2(-7f, -7f);
-        Img(inside, "UI/pill", new Color(0.93f, 0.92f, 0.95f, 0.88f)).pixelsPerUnitMultiplier = 2.8f;
-        var item = Ui("Item", inside);
-        Stretch(item);
-        item.offsetMin = new Vector2(26f, 22f);
-        item.offsetMax = new Vector2(-26f, -22f);
-        inventoryItem = Img(item, null, Color.white);
-        inventoryItem.preserveAspect = true;
-        item.gameObject.SetActive(false);
     }
 
     // ---------------------------------------------------------------- UI helpers

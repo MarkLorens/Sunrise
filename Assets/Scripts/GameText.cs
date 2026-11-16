@@ -50,6 +50,11 @@ public static class GameText
         Mischief.Task.UnlockBox => "Electrical box unlocked",
         Mischief.Task.CutPower => "Ferris wheel power cut",
         Mischief.Task.CallTechnician => "Technician called",
+        Mischief.Task.TutorialPossess => "Visitor possessed",
+        Mischief.Task.TutorialSign => "Out of Order sign gone",
+        Mischief.Task.TutorialValve => "Water pressure: MAX",
+        Mischief.Task.TutorialLeave => "Left the body",
+        Mischief.Task.TutorialToilet => "Toilet geyser!",
         _ => t.ToString(),
     };
 
@@ -109,4 +114,50 @@ public static class GameText
 
     // After the first electrocution, one after the other
     public static readonly string[] ThinkElectrocuted = { "Uh oh, dropped the toaster again", "Anyways, that should get the brat's attention" };
+
+    // ---------------------------------------------------------------- tutorial (new game only)
+    // Each step: what the spirit says (speech bubble) and the instruction card at the bottom. [Key] shows that key
+    // as a keycap that lights up while it's held; [Arrows] shows the four arrow keys.
+
+    // 1. The spirit
+    public const string TutorialMeSays = "I'm so ready to have fun!";
+    public const string TutorialMe = "This little evil spirit is you.";
+    // 2. The objective (top left)
+    public const string TutorialGoalSays = "Ah! This is what I should do!";
+    public const string TutorialGoal = "Your mischief to-do list lives up here.";
+    // 3. Moving
+    public const string TutorialMove = "Float around with [Arrows]";
+    public const string TutorialMoveAlso = "or W A S D";
+    // 4. Someone to possess
+    public const string TutorialVisitorSays = "I want to possess someone.";
+    public const string TutorialVisitor = "Float over to that visitor.";
+    // 5. Possessing
+    public const string TutorialPossess = "Press [E] to possess them!";
+    // 6. An objective
+    public const string TutorialObjective = "Let's complete an objective!";
+    // 7. To the toilet
+    public const string TutorialWalk = "Walk your new body to the toilet.";
+    // 8. The sign
+    public const string TutorialSignSays = "Hihihi, let's remove this.";
+    public const string TutorialSign = "Press [E] to take down the sign.";
+    // 9. The valve
+    public const string TutorialValveSays = "Now, crank up this valve.";
+    public const string TutorialValve = "Press [E] until the pressure is maxed out.";
+    // 10. Leaving the body
+    public const string TutorialLeaveSays = "Alright, this guy is useless to me now.";
+    public const string TutorialLeave = "Press [Q] to leave the body.";
+    // 11. The payoff
+    public const string TutorialWatch = "Now sit back and watch...";
+    public const string TutorialLaughSays = "MWAHAHAHA!";
+    public const string TutorialSoaked = "AAAH! IT'S EVERYWHERE!";                                  // the soaked visitor
+    // 12. The pop-up (bottom left)
+    public const string TutorialEvent = "Everything you pull off shows up down here. Have fun!";
+
+    public const string TutorialNext = "Next";        // beside the [Space] keycap, on steps you just read
+    public const string TutorialSkip = "Hold [Tab] to skip tutorial";
+
+    // The toilet's sign and valve
+    public const string SignPrompt = "Take down the Out of Order sign";
+    public static string ValvePrompt(int turns, int of) => $"Crank up the valve ({turns}/{of})";
+    public const string ValveMaxed = "It won't turn any further";
 }

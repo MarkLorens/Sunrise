@@ -39,6 +39,9 @@ public static class SaveGame
 
     public static bool Exists => File.Exists(Path);
 
+    // A saved game is being put back (from Load Game until the level has set itself up).
+    public static bool Loading => pending != null;
+
     // Not mid-swoop or mid-cutscene: those don't come back sensibly.
     public static bool CanSave
     {

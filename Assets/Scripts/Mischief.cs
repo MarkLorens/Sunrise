@@ -1,15 +1,32 @@
 using System.Collections.Generic;
 
 // The level's sequence, from the level design doc: make a scene big enough to bring the mechanic, then use his keys
-// to cut the Ferris wheel's power. Each part is a list of steps; GameHud lists the part you're on (top left) and
+// to cut the Ferris wheel's power. Before it, on a new game, the tutorial's own little prank (Tutorial). Each part is a list of steps; GameHud lists the part you're on (top left) and
 // ticks them off as the behaviours that make them happen report in. Nothing here drives the
 // order: the world's own rules do.
 public static class Mischief
 {
-    public enum Task { Possess, FloodPuddle, PossessCableMan, Electrocute, LureMechanic, PossessMechanic, UnlockBox, CutPower, CallTechnician }
+    // New ones go at the end: saves keep these as numbers.
+    public enum Task
+    {
+        Possess, FloodPuddle, PossessCableMan, Electrocute, LureMechanic, PossessMechanic, UnlockBox, CutPower, CallTechnician,
+        TutorialPossess, TutorialSign, TutorialValve, TutorialLeave, TutorialToilet,
+    }
+
+    // The tutorial's steps: done for you when it's skipped, or when a saved game is loaded.
+    public static readonly Task[] TutorialTasks =
+        { Task.TutorialPossess, Task.TutorialSign, Task.TutorialValve, Task.TutorialLeave, Task.TutorialToilet };
 
     public static readonly (string title, (Task task, string label)[] steps)[] Parts =
     {
+        ("Toilet Trouble", new[]
+        {
+            (Task.TutorialPossess, "Possess a visitor"),
+            (Task.TutorialSign, "Take down the Out of Order sign"),
+            (Task.TutorialValve, "Crank up the toilet's water valve"),
+            (Task.TutorialLeave, "Leave the body"),
+            (Task.TutorialToilet, "Wait for someone to use the toilet..."),
+        }),
         ("1. A-leak-tricity", new[]
         {
             (Task.Possess, "Possess a visitor"),
@@ -52,7 +69,11 @@ public static class Mischief
     {
         done.Clear();
         done.UnionWith(tasks);
+        done.UnionWith(TutorialTasks); // a saved game is past the tutorial
     }
+
+    // Skipping the tutorial: its steps count as done, with no chime or pop-up.
+    public static void CompleteQuietly(IEnumerable<Task> tasks) => done.UnionWith(tasks);
 
     public static void Complete(Task t)
     {
