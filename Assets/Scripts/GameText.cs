@@ -26,6 +26,13 @@ public static class GameText
     public const string DippedCable = "You dipped the cable in the puddle";
     public const string UnlockedBox = "You unlocked the electrical box";
     public const string CutPower = "You cut the Ferris wheel's power";
+    public const string LiftedLid = "You lifted the gutter lid";
+    public const string OpenedValve = "You loosened the propane valve";
+    public const string SwitchedOffFan = "You switched off the hot dog man's fan";
+    public const string TurnedFan = "You turned the fan toward the hot dog stand";
+    public const string ScannedFinger = "Fingerprint accepted";
+    public const string LoosenedHinge = "You loosened the hinge";
+    public const string RestartedWheel = "You started the Ferris wheel";
 
     // "a visitor", "the mechanic", "the cable man" (staff go by their job; numbers like "Reset Agent 2" are dropped).
     static string Someone(string who)
@@ -50,6 +57,17 @@ public static class GameText
         Mischief.Task.UnlockBox => "Electrical box unlocked",
         Mischief.Task.CutPower => "Ferris wheel power cut",
         Mischief.Task.CallTechnician => "Technician called",
+        Mischief.Task.RatsOut => "Hot dog man chased off",
+        Mischief.Task.StallFanOff => "Stall fan off",
+        Mischief.Task.LeakPropane => "Propane leaking",
+        Mischief.Task.AimFan => "Fan turned",
+        Mischief.Task.GasCloud => "Hot dog stand gassed up",
+        Mischief.Task.Explode => "KABOOM",
+        Mischief.Task.WakeTechnician => "Technician awake",
+        Mischief.Task.PossessTechnician => "Technician possessed",
+        Mischief.Task.OpenPlatform => "Platform unlocked",
+        Mischief.Task.LoosenHinge => "Hinge loosened",
+        Mischief.Task.RestartWheel => "Ferris wheel running... sort of",
         _ => t.ToString(),
     };
 
@@ -84,6 +102,26 @@ public static class GameText
     // The drinking fountain
     public const string FountainBusy = "Still gurgling";
 
+    // Flaming hot dogs
+    public const string LidOpen = "The rats are already out";
+    public const string NobodyToScare = "Nobody around worth scaring";
+    public const string ValveOpen = "It's hissing away already";
+    public const string ValveSpent = "Nothing left in it";
+    public const string FanGuarded = "The hot dog man won't let you touch his fan";
+    public const string FanAimed = "It's blowing at the stand already";
+    public const string FanOff = "It's off";
+
+    // The technician's platform and the hinge
+    public const string TechnicianOnly = "Fingerprint lock: technician only";
+    public const string PlatformOpen = "It's open";
+    public const string PlatformLocked = "The platform's locked: fingerprint only";
+    public const string HingeNeedsTechnician = "Only the technician knows this hinge";
+    public const string NeedScrewdriver = "You need a screwdriver";
+    public const string HingeLoose = "Loose enough. Any looser and it falls off";
+    public const string HingeFirst = "Not yet: that hinge first";
+    public const string WheelWobbly = "It's running. Barely";
+    public const string TechnicianStarts = "Only the technician can restart the wheel";
+
     // ---------------------------------------------------------------- speech bubble: what the spirit thinks
 
     // The electrical box
@@ -106,6 +144,36 @@ public static class GameText
         "AAAAAH!", "Let us down!", "Why did it stop?!", "MOMMY!",
         "Is it supposed to do that?!", "HELP!", "We're gonna fall!", "I want my money back!",
     };
+
+    // Flaming hot dogs
+    public const string ThinkGutter = "Ugh, that stinks. Something's living down there";           // first reaching the gutter, any form
+    public const string ThinkRats = "Run, sausage boy, run!";                                       // the rats chase him off
+    public const string ThinkFanGuarded = "He's guarding that fan like it's his firstborn";        // refused by the hot dog man
+    public const string ThinkValve = "Smells like... opportunity";                                   // opening the valve
+    public const string ThinkFanAimed = "I mean, why'd they even put this here.";                                          // turning the tank's fan
+    public const string ThinkStallFanOff = "Nice and still. Perfect for a gas leak";                 // switching off the stall's fan
+    public const string ThinkGasBlownAway = "His fan keeps blowing the gas away. That has to go";   // gas reaching the stand with its fan on
+    public const string ThinkCloud = "And now. We wait...";            // the cloud is full
+    public const string ThinkBoom = "Well, THAT woke someone up";                                    // after the explosion
+    public const string ThinkPlatform = "Only his fingers open this. Good thing I have them";        // scanning as the technician
+    public const string ThinkHinge = "Lefty loosey...";                                               // loosening the hinge
+    public const string ThinkWobble = "Hehe. Enjoy the ride";                                         // the wobbly restart
+
+    public static readonly string[] CabinScreamsWobbly =
+    {
+        "NOW WHAT?", "You ever realize they don't have seatbelts in here?", "Why won't it stop?!", "DADDY!",
+        "What are they doing down there?!", "HELP!", "*Prayer Noise*", "I'm gonna throw up!",
+    };
+
+    // The hot dog man, out loud
+    public const string HotDogGuard = "Hey! Hands off my fan!";
+    public const string HotDogRats = "RATS! RAAATS!";
+    public const string HotDogBack = "Okay... they're gone. Back to work. Who wants a dog?";
+    public const string HotDogStove = "Let's fire up the grill!";
+    public const string PhoneRing = "*Ring ring*";     // the technician's phone, over his booth
+    public const string TechnicianSnore = "zzz...";    // sleeping through it
+    public const string TechnicianWake = "WHA- WHAT WAS THAT?!";
+    public const string TechnicianCall = "Hello? The wheel's out? Yeah, yeah, on my way...";
 
     // After the first electrocution, one after the other
     public static readonly string[] ThinkElectrocuted = { "Uh oh, dropped the toaster again", "Anyways, that should get the brat's attention" };

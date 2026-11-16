@@ -220,6 +220,7 @@ public class Possession : MonoBehaviour
         if (Host.brain == null) Mischief.Complete(Mischief.Task.Possess);
         else if (Host.brain is CableMan) Mischief.Complete(Mischief.Task.PossessCableMan);
         else if (Host.brain is Mechanic) Mischief.Complete(Mischief.Task.PossessMechanic);
+        else if (Host.brain is RideTechnician) Mischief.Complete(Mischief.Task.PossessTechnician);
     }
 
     // ---------------------------------------------------------------- possessed

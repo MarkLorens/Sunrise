@@ -5,6 +5,8 @@ using UnityEngine;
 // A flat Ferris wheel: the wheel sprite spins in its own plane and the cabins hang upright around it.
 // Its power runs through the mechanic's electrical box next to it (ElectricalBox): cut it and the wheel winds down
 // to a stop with whoever's riding stuck up in their cabins.
+// Started again (ElectricalBox) after its leg hinge was loosened (WheelHinge), it runs wobbly: lurching side to side and
+// speeding up and slowing down, the cabins rocking all the way round.
 // When the scene starts it marks out its staff-only closed area (StaffArea) and puts the electrical box just outside
 // it. Scale the whole object to resize the ride: radii, part offsets and the closed area are all in unscaled units
 // and grow with it.
@@ -28,11 +30,13 @@ public class FerrisWheel : MonoBehaviour
     public RideQueue queue;
     public float payoffTime = 6f;     // the camera stays on the wheel this long once the power's cut
     public float payoffPullBack = 8f;  // how much further back the camera sits to fit the whole wheel
-    public int screamingCabins = 4;   // cabins shouting in turns (GameText.CabinScreams) meanwhile
+    public int screamingCabins = 4;   // cabins shouting in turns (GameText.CabinScreams, or CabinScreamsWobbly) in a payoff
     public float cabinShake = 4f;     // degrees the stuck cabins rock
+    public float wobble = 0.08f;      // how far the wheel lurches side to side once the hinge is loose (wheel units)
 
     public State Current { get; private set; }
     public bool Powered => Current == State.Running;
+    public bool Wobbly { get; private set; }
     public StaffArea Area { get; private set; }
     public IReadOnlyList<Transform> Cabins => cabins;
     float Scale => transform.lossyScale.x;
@@ -41,6 +45,7 @@ public class FerrisWheel : MonoBehaviour
     float angle;
     float speed;
     float shakeUntil;
+    Vector3 wheelHome;
 
     void OnEnable() => All.Add(this);
     void OnDisable() => All.Remove(this);
@@ -51,6 +56,7 @@ public class FerrisWheel : MonoBehaviour
     void Start()
     {
         speed = normalSpeed;
+        wheelHome = wheel.localPosition;
         if (!TryGetComponent(out FerrisWheelAudio _)) gameObject.AddComponent<FerrisWheelAudio>();
         Part<ElectricalBox>("Electrical Box", electricalBoxOffset, "Props/electrical_box", 1.3f, electricalBoxArt).wheel = this;
         var mat = wheel.GetComponent<SpriteRenderer>().sharedMaterial;
@@ -73,6 +79,36 @@ public class FerrisWheel : MonoBehaviour
         speed = 0f;
     }
 
+    // Loading a save (SaveGame) with the wheel already started again: running wobbly, no payoff.
+    public void RestoreWobbly()
+    {
+        Current = State.Running;
+        Wobbly = true;
+    }
+
+    // Started again on a loosened hinge (ElectricalBox): it runs, but not right. The camera takes it in.
+    public void Restart()
+    {
+        if (Powered) return;
+        Current = State.Running;
+        Wobbly = true;
+        StartCoroutine(WobblyPayoff());
+    }
+
+    IEnumerator WobblyPayoff()
+    {
+        Possession.InputBlocked = true;
+        CameraRig.Spotlight(wheel, 999f, (wheelRadius + 1f) * Scale, payoffPullBack);
+        ScreamIn(GameText.CabinScreamsWobbly);
+        yield return new WaitForSeconds(1.5f);
+        Fx.Shake(0.15f, payoffTime - 1.5f);
+        yield return new WaitForSeconds(payoffTime - 1.5f);
+        CameraRig.EndSpotlight();
+        yield return new WaitForSeconds(1f); // the camera easing back
+        Possession.InputBlocked = false;
+        GameHud.Think(GameText.ThinkWobble);
+    }
+
     public void CutPower()
     {
         if (!Powered) return;
@@ -81,37 +117,58 @@ public class FerrisWheel : MonoBehaviour
     }
 
     // The power's out: the camera takes in the whole wheel as it winds down, the cabins rock, and a few of them
-    // scream in turns. Then the camera eases back to the player.
+    // scream in turns. Then it pans to the ride technician's booth, his phone ringing, him snoring, and eases back
+    // to the player.
     IEnumerator Payoff()
     {
         Possession.InputBlocked = true;
         CameraRig.Spotlight(wheel, 999f, (wheelRadius + 1f) * Scale, payoffPullBack);
         shakeUntil = Time.time + payoffTime;
 
-        var picks = new List<Transform>(cabins);
-        for (int i = 0; i < Mathf.Min(screamingCabins, picks.Count); i++)
-        {
-            int j = Random.Range(i, picks.Count);
-            (picks[i], picks[j]) = (picks[j], picks[i]);
-            StartCoroutine(Scream(picks[i]));
-        }
+        ScreamIn(GameText.CabinScreams);
 
         yield return new WaitForSeconds(payoffTime);
+        // Meanwhile the operator's ringing the technician, who sleeps right through it.
+        foreach (var t in RideTechnician.All)
+            if (!t.IsAwake)
+            {
+                yield return t.SleepThroughCall();
+                break;
+            }
         CameraRig.EndSpotlight();
         yield return new WaitForSeconds(1f); // the camera easing back
         Possession.InputBlocked = false;
     }
 
     // Short bursts with gaps, starting at different moments, so the cabins talk over each other rather than in chorus.
-    IEnumerator Scream(Transform cabin)
+    readonly HashSet<string> shouting = new(); // lines up on screen right now
+
+    // A few cabins at random shout `lines` in turns for the length of the payoff.
+    void ScreamIn(string[] lines)
+    {
+        var picks = new List<Transform>(cabins);
+        for (int i = 0; i < Mathf.Min(screamingCabins, picks.Count); i++)
+        {
+            int j = Random.Range(i, picks.Count);
+            (picks[i], picks[j]) = (picks[j], picks[i]);
+            StartCoroutine(Scream(picks[i], lines));
+        }
+    }
+
+    IEnumerator Scream(Transform cabin, string[] lines)
     {
         float end = Time.time + payoffTime - 0.4f;
         yield return new WaitForSeconds(Random.Range(0.4f, 1.5f));
         while (Time.time < end)
         {
             float show = Random.Range(0.6f, 1.1f);
-            GameHud.Shout(cabin, GameText.CabinScreams[Random.Range(0, GameText.CabinScreams.Length)], show);
-            yield return new WaitForSeconds(show + Random.Range(0.2f, 0.9f));
+            string line = lines[Random.Range(0, lines.Length)];
+            while (shouting.Contains(line) && shouting.Count < lines.Length) line = lines[Random.Range(0, lines.Length)];
+            shouting.Add(line); // nobody else picks it while it's up
+            GameHud.Shout(cabin, line, show);
+            yield return new WaitForSeconds(show);
+            shouting.Remove(line);
+            yield return new WaitForSeconds(Random.Range(0.2f, 0.9f));
         }
     }
 
@@ -178,7 +235,8 @@ public class FerrisWheel : MonoBehaviour
 
     void Update()
     {
-        float target = Powered ? normalSpeed : 0f;
+        float target = !Powered ? 0f : Wobbly ? normalSpeed * (1f + 0.35f * Mathf.Sin(Time.time * 1.7f)) : normalSpeed; // lurching
+        if (Wobbly) wheel.localPosition = wheelHome + new Vector3(Mathf.Sin(Time.time * 2.3f) * wobble, Mathf.Abs(Mathf.Sin(Time.time * 4.6f)) * wobble * 0.3f, 0f);
         speed = Mathf.MoveTowards(speed, target, normalSpeed / windDownTime * Time.deltaTime);
         angle += speed * Time.deltaTime;
         wheel.localRotation = Quaternion.Euler(0, 0, angle);
@@ -189,7 +247,7 @@ public class FerrisWheel : MonoBehaviour
             float a = (angle + i * 360f / cabins.Count) * Mathf.Deg2Rad;
             cabins[i].position = wheel.position + new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0) * cabinRadius * Scale + new Vector3(0, 0, -0.05f);
             // Stuck cabins rock, each to its own rhythm, settling as the payoff ends.
-            float rock = Mathf.Clamp01((shakeUntil - Time.time) / 1.5f) * cabinShake;
+            float rock = Wobbly ? cabinShake : Mathf.Clamp01((shakeUntil - Time.time) / 1.5f) * cabinShake;
             cabins[i].localRotation = Quaternion.Euler(0, 0, (Mathf.PerlinNoise(Time.time * 3f, i * 1.7f) * 2f - 1f) * rock);
         }
     }

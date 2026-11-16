@@ -18,6 +18,7 @@ public class Item : MonoBehaviour
         VisitorItem.Drink => "drink",
         VisitorItem.Keys => "keys",
         VisitorItem.WaterBottle => "water bottle",
+        VisitorItem.Screwdriver => "screwdriver",
         _ => "thing",
     };
 
