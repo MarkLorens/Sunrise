@@ -146,6 +146,25 @@ public class Possession : MonoBehaviour
         return left > 0f;
     }
 
+    public static bool InCutscene => cutscene;
+
+    // Loading a save (SaveGame): the spirit floats here, or goes straight into `host` with no swoop or fanfare.
+    public void Restore(Vector3 at, Visitor host)
+    {
+        transform.position = rb.position = new Vector3(at.x, transform.position.y, at.z);
+        if (host == null || State != Mode.Spirit) return;
+        walker.enabled = false;
+        rb.linearVelocity = Vector3.zero;
+        rb.isKinematic = true;
+        interpolation = rb.interpolation;
+        rb.interpolation = RigidbodyInterpolation.None;
+        body.enabled = false;
+        Host = host;
+        State = Mode.Possessing;
+        sprite.enabled = false;
+        Host.BeginPossession();
+    }
+
     // Dive into whoever the spirit is touching, if it can right now.
     public bool TryPossess()
     {

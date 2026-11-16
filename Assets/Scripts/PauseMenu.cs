@@ -21,12 +21,19 @@ public class PauseMenu : MonoBehaviour
         var column = MainMenu.Column(canvas);
         MainMenu.Title(column, "Paused", 560f, 64);
         MainMenu.Button(column, "Continue", () => SetPaused(false));
-        // ponytail: Save Game and Settings do nothing yet (no save system, no settings); wire them when those exist.
-        MainMenu.Button(column, "Save Game", null);
+        MainMenu.Button(column, "Save Game", () => GameHud.Say(SaveGame.Save() ? GameText.Saved : GameText.CantSave));
+        // ponytail: Settings does nothing yet (no settings); wire it when there are some.
         MainMenu.Button(column, "Settings", null);
         MainMenu.Button(column, "Back to Main Menu", BackToMainMenu);
         screen = canvas.gameObject;
         screen.SetActive(false);
+    }
+
+    // Coming from Load Game: put the park back the way it was saved, once everything in it has set itself up.
+    System.Collections.IEnumerator Start()
+    {
+        yield return null;
+        SaveGame.ApplyPending();
     }
 
     void Update()

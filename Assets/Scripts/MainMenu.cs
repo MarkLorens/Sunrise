@@ -31,8 +31,8 @@ public class MainMenu : MonoBehaviour
         var column = Column(Screen("Main Menu", 0));
         Title(column, Application.productName.Replace('_', ' '), 900f, 84);
         var first = Button(column, "New Game", NewGame);
-        // ponytail: Load Game and Credits do nothing yet (no saves, no credits screen); wire them when those exist.
-        Button(column, "Load Game", null);
+        Button(column, "Load Game", SaveGame.Load).interactable = SaveGame.Exists; // greyed out with no save yet
+        // ponytail: Credits does nothing yet (no credits screen); wire it when there is one.
         Button(column, "Credits", null);
         Button(column, "Quit Game", Quit);
         Select(first);
@@ -105,13 +105,16 @@ public class MainMenu : MonoBehaviour
         colors.normalColor = ButtonDark;
         colors.highlightedColor = colors.selectedColor = Soft; // hovered (which selects it) or picked with the keys
         colors.pressedColor = new Color(0.85f, 0.8f, 0.76f);
+        colors.disabledColor = new Color(ButtonDark.r, ButtonDark.g, ButtonDark.b, 0.45f);
         colors.fadeDuration = 0.08f;
         button.colors = colors;
         if (onClick != null) button.onClick.AddListener(onClick);
 
         var label = Label(Ui("Label", rt), text, 40, Soft);
         Stretch((RectTransform)label.transform);
-        rt.gameObject.AddComponent<MenuButtonInk>().label = label;
+        var ink = rt.gameObject.AddComponent<MenuButtonInk>();
+        ink.label = label;
+        ink.button = button;
         return button;
     }
 
@@ -169,10 +172,15 @@ public class MainMenu : MonoBehaviour
     class MenuButtonInk : MonoBehaviour, IPointerEnterHandler
     {
         public Text label;
+        public Button button;
 
-        public void OnPointerEnter(PointerEventData e) => EventSystem.current?.SetSelectedGameObject(gameObject);
+        public void OnPointerEnter(PointerEventData e)
+        {
+            if (button.interactable) EventSystem.current?.SetSelectedGameObject(gameObject);
+        }
 
-        void Update() =>
-            label.color = EventSystem.current != null && EventSystem.current.currentSelectedGameObject == gameObject ? Ink : Soft;
+        void Update() => label.color =
+            !button.interactable ? new Color(Soft.r, Soft.g, Soft.b, 0.35f)
+            : EventSystem.current != null && EventSystem.current.currentSelectedGameObject == gameObject ? Ink : Soft;
     }
 }

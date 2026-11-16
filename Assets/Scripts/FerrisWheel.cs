@@ -66,6 +66,13 @@ public class FerrisWheel : MonoBehaviour
         }
     }
 
+    // Loading a save (SaveGame) with the power already cut: standing still, no payoff.
+    public void RestoreUnpowered()
+    {
+        Current = State.Unpowered;
+        speed = 0f;
+    }
+
     public void CutPower()
     {
         if (!Powered) return;

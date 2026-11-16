@@ -45,6 +45,15 @@ public static class Mischief
 
     public static void Reset() => done.Clear();
 
+    public static IEnumerable<Task> Done => done;
+
+    // Loading a save (SaveGame): these steps are already done, no chime or pop-up.
+    public static void Restore(IEnumerable<Task> tasks)
+    {
+        done.Clear();
+        done.UnionWith(tasks);
+    }
+
     public static void Complete(Task t)
     {
         if (!done.Add(t)) return;

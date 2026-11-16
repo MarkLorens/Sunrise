@@ -15,6 +15,16 @@ public class ElectricalBox : MonoBehaviour, IInteraction
 
     bool shownMechanic, thoughtAsSpirit;
 
+    public bool ShownMechanic => shownMechanic;
+
+    // Loading a save (SaveGame). Unlocked comes from the steps done.
+    public void Restore(bool shown)
+    {
+        shownMechanic = shown;
+        Unlocked = Mischief.IsDone(Mischief.Task.UnlockBox);
+        thoughtAsSpirit = shown || Unlocked || Mischief.IsDone(Mischief.Task.PossessMechanic);
+    }
+
     // The spirit floats up to it for the first time: it works out what this is for.
     void Update()
     {
