@@ -168,17 +168,40 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
 
         if (mechanicCalled) return;
         if (victims < victimsToCallMechanic) return; // not much of a scene: nobody's coming to fix it yet
+        CallMechanic(false);
+        Mischief.Complete(Mischief.Task.LureMechanic);
+    }
+
+    // The mechanic comes out to fix it, and keeps an eye on it from then on. Already fixed (loading a save): he just
+    // comes back to stand by it.
+    void CallMechanic(bool alreadyFixed)
+    {
         mechanicCalled = true;
+        Fixed = alreadyFixed;
         Mechanic.Call(new StaffWorker.Job
         {
             spot = transform.position + Vector3.back * 0.9f,
             at = transform.position,
-            seconds = fixTime,
-            shout = "What happened here?! Who let that fountain leak all over the place?",
-            done = Fix,
-            stay = true, // he keeps an eye on it from then on
+            seconds = alreadyFixed ? 0.01f : fixTime,
+            shout = alreadyFixed ? null : "What happened here?! Who let that fountain leak all over the place?",
+            done = alreadyFixed ? null : Fix,
+            stay = true,
         });
-        Mischief.Complete(Mischief.Task.LureMechanic);
+    }
+
+    // ---------------------------------------------------------------- saving (SaveGame)
+
+    public float Target => target;
+    public int Presses => presses;
+    public bool MechanicCalled => mechanicCalled;
+
+    public void Restore(float radius, int pressCount, bool called, bool isFixed)
+    {
+        presses = pressCount;
+        thoughtNear = pressCount > 0;
+        electrocutedOnce = Mischief.IsDone(Mischief.Task.Electrocute);
+        SetRadius(target = radius);
+        if (called) CallMechanic(isFixed);
     }
 
     static readonly Color Spark = new(1f, 0.95f, 0.4f);

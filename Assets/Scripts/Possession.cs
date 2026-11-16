@@ -14,8 +14,13 @@ public class Possession : MonoBehaviour
 
     public static Possession Instance { get; private set; }
 
-    // Set while a menu or cutscene owns the keyboard.
-    public static bool InputBlocked;
+    // Set while a cutscene owns the keyboard; also true while the game's paused (PauseMenu).
+    public static bool InputBlocked
+    {
+        get => cutscene || PauseMenu.Paused;
+        set => cutscene = value;
+    }
+    static bool cutscene;
 
     public float touchRange = 1.2f;        // weak spirit: has to actually touch someone
     public float sameTargetCooldown = 10f; // before the same person can be possessed again
@@ -139,6 +144,25 @@ public class Possession : MonoBehaviour
     {
         left = lockedUntil.TryGetValue(v, out float t) ? t - Time.time : 0f;
         return left > 0f;
+    }
+
+    public static bool InCutscene => cutscene;
+
+    // Loading a save (SaveGame): the spirit floats here, or goes straight into `host` with no swoop or fanfare.
+    public void Restore(Vector3 at, Visitor host)
+    {
+        transform.position = rb.position = new Vector3(at.x, transform.position.y, at.z);
+        if (host == null || State != Mode.Spirit) return;
+        walker.enabled = false;
+        rb.linearVelocity = Vector3.zero;
+        rb.isKinematic = true;
+        interpolation = rb.interpolation;
+        rb.interpolation = RigidbodyInterpolation.None;
+        body.enabled = false;
+        Host = host;
+        State = Mode.Possessing;
+        sprite.enabled = false;
+        Host.BeginPossession();
     }
 
     // Dive into whoever the spirit is touching, if it can right now.

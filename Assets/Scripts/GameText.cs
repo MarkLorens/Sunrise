@@ -16,6 +16,10 @@ public static class GameText
 
     // In someone's body
     public const string LeftBody = "You left the body";
+
+    // The pause menu's Save Game
+    public const string Saved = "Game saved";
+    public const string CantSave = "Can't save right now";
     public static string Bought(string what) => $"You bought a {what}";
     public static string ToldToMoveAlong(string who) => $"You told {Someone(who)} to move along";
     public const string PressedFountain = "The fountain leaks even more";
