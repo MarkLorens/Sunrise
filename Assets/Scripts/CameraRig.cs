@@ -41,7 +41,7 @@ public class CameraRig : MonoBehaviour
     CinemachinePositionComposer body;
     CinemachineCameraOffset shakeOffset;
     Transform target, spot;
-    float spotUntil;
+    float spotUntil, spotPullBack;
     float shake, shakeRate = 1.5f; // current strength, and how much of it fades per second
 
     VolumeProfile dofProfile;
@@ -60,7 +60,8 @@ public class CameraRig : MonoBehaviour
     }
 
     // Briefly hands the shot to something else (e.g. the ferris wheel rolling away), then eases back to the player.
-    public static void Spotlight(Transform t, float seconds, float radius = 1f)
+    // pullBack: how much further back the camera sits meanwhile, to fit something big in.
+    public static void Spotlight(Transform t, float seconds, float radius = 1f, float pullBack = 0f)
     {
         var rig = Instance;
         if (rig == null || t == null) return;
@@ -69,6 +70,7 @@ public class CameraRig : MonoBehaviour
         rig.group.AddMember(t, 1f, radius);
         rig.spot = t;
         rig.spotUntil = Time.unscaledTime + seconds;
+        rig.spotPullBack = pullBack;
     }
 
     // Hands the shot back to the player now (it eases back over fadeTime).
@@ -141,6 +143,7 @@ public class CameraRig : MonoBehaviour
     {
         var spirit = Possession.Instance;
         body.Damping = Vector3.one * followDamping; // same on every axis, so moving up/down the screen feels like left/right
+        body.CameraDistance = offset.magnitude + (spot != null ? spotPullBack : 0f); // eased by the damping
         Follow(spirit != null ? spirit.Focus : null);
         Focus();
 

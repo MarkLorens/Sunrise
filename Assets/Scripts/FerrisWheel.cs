@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -25,6 +26,10 @@ public class FerrisWheel : MonoBehaviour
     public Vector3 closedAreaOffset = new(0f, 0f, 0.3f);
     public Vector2 closedAreaSize = new(5.4f, 3.4f);
     public RideQueue queue;
+    public float payoffTime = 6f;     // the camera stays on the wheel this long once the power's cut
+    public float payoffPullBack = 8f;  // how much further back the camera sits to fit the whole wheel
+    public int screamingCabins = 4;   // cabins shouting in turns (GameText.CabinScreams) meanwhile
+    public float cabinShake = 4f;     // degrees the stuck cabins rock
 
     public State Current { get; private set; }
     public bool Powered => Current == State.Running;
@@ -35,6 +40,7 @@ public class FerrisWheel : MonoBehaviour
     readonly List<Transform> cabins = new();
     float angle;
     float speed;
+    float shakeUntil;
 
     void OnEnable() => All.Add(this);
     void OnDisable() => All.Remove(this);
@@ -64,6 +70,42 @@ public class FerrisWheel : MonoBehaviour
     {
         if (!Powered) return;
         Current = State.Unpowered; // FerrisWheelAudio hears it and powers the sounds down
+        StartCoroutine(Payoff());
+    }
+
+    // The power's out: the camera takes in the whole wheel as it winds down, the cabins rock, and a few of them
+    // scream in turns. Then the camera eases back to the player.
+    IEnumerator Payoff()
+    {
+        Possession.InputBlocked = true;
+        CameraRig.Spotlight(wheel, 999f, (wheelRadius + 1f) * Scale, payoffPullBack);
+        shakeUntil = Time.time + payoffTime;
+
+        var picks = new List<Transform>(cabins);
+        for (int i = 0; i < Mathf.Min(screamingCabins, picks.Count); i++)
+        {
+            int j = Random.Range(i, picks.Count);
+            (picks[i], picks[j]) = (picks[j], picks[i]);
+            StartCoroutine(Scream(picks[i]));
+        }
+
+        yield return new WaitForSeconds(payoffTime);
+        CameraRig.EndSpotlight();
+        yield return new WaitForSeconds(1f); // the camera easing back
+        Possession.InputBlocked = false;
+    }
+
+    // Short bursts with gaps, starting at different moments, so the cabins talk over each other rather than in chorus.
+    IEnumerator Scream(Transform cabin)
+    {
+        float end = Time.time + payoffTime - 0.4f;
+        yield return new WaitForSeconds(Random.Range(0.4f, 1.5f));
+        while (Time.time < end)
+        {
+            float show = Random.Range(0.6f, 1.1f);
+            GameHud.Shout(cabin, GameText.CabinScreams[Random.Range(0, GameText.CabinScreams.Length)], show);
+            yield return new WaitForSeconds(show + Random.Range(0.2f, 0.9f));
+        }
     }
 
     // Offsets are relative to the wheel's base.
@@ -139,6 +181,9 @@ public class FerrisWheel : MonoBehaviour
         {
             float a = (angle + i * 360f / cabins.Count) * Mathf.Deg2Rad;
             cabins[i].position = wheel.position + new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0) * cabinRadius * Scale + new Vector3(0, 0, -0.05f);
+            // Stuck cabins rock, each to its own rhythm, settling as the payoff ends.
+            float rock = Mathf.Clamp01((shakeUntil - Time.time) / 1.5f) * cabinShake;
+            cabins[i].localRotation = Quaternion.Euler(0, 0, (Mathf.PerlinNoise(Time.time * 3f, i * 1.7f) * 2f - 1f) * rock);
         }
     }
 }

@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -18,6 +19,9 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     public int victimsToCallMechanic = 3; // how big a scene it takes before the mechanic bothers
     public float fixTime = 12f;      // how long the mechanic works on it: the window to possess him
     public float mopTime = 8f;
+    public int payoffVictims = 5;    // more zapped than this and the camera cuts to it (Payoff)
+    public float payoffPan = 1f;     // seconds for the camera to get there
+    public float payoffTwitch = 2f;  // seconds the victims twitch
     public float pressCooldown = 3f; // before the button can be pressed again
     public float spreadSpeed = 0.45f; // how fast the water creeps out after a press (radius per second)
     public Sprite puddleArt;         // empty = a tinted round blob
@@ -32,7 +36,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     static readonly Color Water = new(0.45f, 0.75f, 1f);
 
     SpriteRenderer puddle;
-    bool mechanicCalled, thoughtAsSpirit, electrocutedOnce;
+    bool mechanicCalled, thoughtNear, electrocutedOnce;
     float nextDrip, readyAt, target; // target: the radius the water is still spreading to
     int presses;
 
@@ -59,12 +63,12 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
             if (VisitorsInPuddle() >= crowdToFlood) Mischief.Complete(Mischief.Task.FloodPuddle);
         }
 
-        // The spirit floats up to it for the first time and notices the leak.
-        if (!thoughtAsSpirit && !Fixed && Possession.Instance != null && Possession.Instance.State == Possession.Mode.Spirit
-            && Possession.PlayerNear(transform.position, GetComponent<Interactable>().range))
+        // The player comes up to it for the first time, as the spirit or in anyone's body, and notices the leak (not
+        // once someone has pressed it).
+        if (!thoughtNear && !Fixed && presses == 0 && Possession.PlayerNear(transform.position, GetComponent<Interactable>().range))
         {
-            thoughtAsSpirit = true;
-            GameHud.Think(GameText.ThinkFountainSpirit);
+            thoughtNear = true;
+            GameHud.Think(GameText.ThinkFountainNear);
         }
 
         if (Fixed || Time.time < nextDrip) return;
@@ -133,22 +137,25 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
 
     public void Electrify(Vector3 from)
     {
-        Sfx.Play(Sfx.Crash, 1f, 1.6f);
-        Fx.Burst("Fx/sparkle", from, 20, new Color(1f, 0.95f, 0.4f), 5f, 0.4f, 0.6f);
-        Fx.Shake(0.3f);
-
-        int victims = 0;
+        var zapped = new List<Visitor>();
         foreach (var v in Visitor.All)
+            if (v.Look.Visible && v.Current is not (Visitor.State.Down or Visitor.State.Riding) && InPuddle(v.transform.position))
+                zapped.Add(v);
+        int victims = zapped.Count;
+
+        if (victims > payoffVictims)
         {
-            if (!v.Look.Visible || v.Current is Visitor.State.Down or Visitor.State.Riding || !InPuddle(v.transform.position)) continue;
-            Fx.Burst("Fx/sparkle", v.HeadPoint, 10, new Color(1f, 0.95f, 0.4f), 3f, 0.3f, 0.5f);
-            v.Die();
-            victims++;
+            foreach (var v in zapped) v.Die(payoffPan, payoffTwitch);
+            StartCoroutine(Payoff(from, zapped));
+        }
+        else
+        {
+            foreach (var v in zapped) v.Die();
+            Zap(from, zapped, 0.3f);
         }
         if (victims == 0) return;
 
-        if (!electrocutedOnce) GameHud.Think(GameText.ThinkElectrocuted);
-        electrocutedOnce = true;
+        if (victims <= payoffVictims) ThinkElectrocuted(); // a payoff thinks it once it's over
         Mischief.Complete(Mischief.Task.Electrocute);
         ResetAgent.Call(new StaffWorker.Job
         {
@@ -172,6 +179,50 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
             stay = true, // he keeps an eye on it from then on
         });
         Mischief.Complete(Mischief.Task.LureMechanic);
+    }
+
+    static readonly Color Spark = new(1f, 0.95f, 0.4f);
+
+    void Zap(Vector3 from, List<Visitor> zapped, float shake, float shakeFor = 0f)
+    {
+        Sfx.Play(Sfx.Crash, 1f, 1.6f);
+        Fx.Burst("Fx/sparkle", from, 20, Spark, 5f, 0.4f, 0.6f);
+        Fx.Shake(shake, shakeFor);
+        foreach (var v in zapped) Fx.Burst("Fx/sparkle", v.HeadPoint, 10, Spark, 3f, 0.3f, 0.5f);
+    }
+
+    // A big zap gets its moment: the camera pans to the crowd, it shakes while they twitch (Visitor.Die), they drop,
+    // the survivors run (their collapse sets everyone nearby panicking), then the camera eases back to the player.
+    IEnumerator Payoff(Vector3 from, List<Visitor> zapped)
+    {
+        Possession.InputBlocked = true;
+        Vector3 middle = Vector3.zero;
+        foreach (var v in zapped) middle += v.transform.position;
+        var shot = new GameObject("Zap Payoff").transform;
+        shot.position = middle / zapped.Count;
+        CameraRig.Spotlight(shot, 999f, 2.5f);
+
+        yield return new WaitForSeconds(payoffPan);
+        Zap(from, zapped, 0.45f, payoffTwitch);
+        for (float t = 0f; t < payoffTwitch; t += 0.2f)
+        {
+            var v = zapped[Random.Range(0, zapped.Count)];
+            Fx.Burst("Fx/sparkle", v.HeadPoint, 4, Spark, 2f, 0.2f, 0.3f);
+            yield return new WaitForSeconds(0.2f);
+        }
+
+        yield return new WaitForSeconds(1.5f); // they drop, everyone else runs
+        CameraRig.EndSpotlight();
+        yield return new WaitForSeconds(1f); // the camera easing back
+        Possession.InputBlocked = false;
+        Destroy(shot.gameObject);
+        ThinkElectrocuted();
+    }
+
+    void ThinkElectrocuted()
+    {
+        if (!electrocutedOnce) GameHud.Think(GameText.ThinkElectrocuted);
+        electrocutedOnce = true;
     }
 
     void Mop()

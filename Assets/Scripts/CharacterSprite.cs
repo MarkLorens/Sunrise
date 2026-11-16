@@ -69,7 +69,7 @@ public class CharacterSprite : MonoBehaviour
     Color tint = Color.white;
     Rigidbody rb;
     Sprite gesture;
-    float gestureUntil, cheerUntil;
+    float gestureUntil, cheerUntil, twitchUntil;
     float animOffset;
     Vector3 baseScale;
     float stride;    // 0..1: eases the step hop in when they set off and out when they stop
@@ -400,6 +400,9 @@ public class CharacterSprite : MonoBehaviour
     // Arms in the air: shouting, celebrating, outraged.
     public void Cheer(float seconds = 0.6f) => cheerUntil = Time.time + seconds;
 
+    // Electrocuted: flailing, flipping and jolting on the spot.
+    public void Twitch(float seconds) => twitchUntil = Time.time + seconds;
+
     void LateUpdate()
     {
         Vector3 v = rb ? rb.linearVelocity : Vector3.zero;
@@ -409,7 +412,9 @@ public class CharacterSprite : MonoBehaviour
         Sprite[] cycle = running ? run : walk;
         float frame = (Time.time + animOffset) * walkFps;
         bool stepping = false;
-        if (Time.time < gestureUntil) body.sprite = gesture;
+        bool twitching = Time.time < twitchUntil;
+        if (twitching) body.sprite = (int)(Time.time * 14f) % 2 == 0 ? cheer[0] : idle;
+        else if (Time.time < gestureUntil) body.sprite = gesture;
         else if (Time.time < cheerUntil) body.sprite = cheer[(int)(Time.time * 6f) % 2];
         else if (pose != null) body.sprite = pose;
         else if (moving)
@@ -427,6 +432,12 @@ public class CharacterSprite : MonoBehaviour
         stride = Mathf.MoveTowards(stride, stepping ? 1f : 0f, Time.deltaTime * 6f);
         float hop = (Mathf.Abs(Mathf.Sin(frame / cycle.Length * 2f * Mathf.PI)) - 0.3f) * stepBounce * (running ? 1.5f : 1f) * stride;
         float sx = 1f - hop * 0.5f, sy = 1f + hop;
+        if (twitching)
+        {
+            sx = Random.Range(0.85f, 1.15f);
+            sy = Random.Range(0.85f, 1.15f);
+            if (Random.value < 0.15f) facingLeft = !facingLeft;
+        }
         // Facing is a negative x scale, not flipX: the lit shader draws flipped asymmetric sprites washed out.
         float flip = facingLeft != drawnFacingLeft ? -1f : 1f;
         var scale = new Vector3(baseScale.x * flip * sx, baseScale.y * sy, baseScale.z);

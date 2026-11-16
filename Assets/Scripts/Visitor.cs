@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -323,7 +324,8 @@ public class Visitor : MonoBehaviour, IInteraction
     }
 
     // Gone for good: a by-product of the chaos (electrocuted in the puddle, the wheel), never the spirit's own doing.
-    public void Die()
+    // Frozen on the spot at once; with a twitch, they stand still for `wait`, jolt for `twitch` seconds, then drop.
+    public void Die(float wait = 0f, float twitch = 0f)
     {
         if (Current == State.Down) return;
         if (brain != null) brain.enabled = false;
@@ -332,8 +334,29 @@ public class Visitor : MonoBehaviour, IInteraction
         walker.readKeyboard = false;
         walker.move = Vector2.zero;
         Look.SetVisible(true);
-        Look.SetTint(new Color(0.6f, 0.6f, 0.65f));
         SetState(State.Down);
+        if (twitch <= 0f)
+        {
+            Collapse();
+            return;
+        }
+        Look.pose = null; // still standing until the twitching's over
+        StartCoroutine(Electrocuted(wait, twitch));
+    }
+
+    IEnumerator Electrocuted(float wait, float twitch)
+    {
+        yield return new WaitForSeconds(wait);
+        Look.Twitch(twitch);
+        yield return new WaitForSeconds(twitch);
+        Collapse();
+    }
+
+    // Down, greyed out, and anyone nearby runs (ParkChaos sets them panicking).
+    void Collapse()
+    {
+        Look.SetTint(new Color(0.6f, 0.6f, 0.65f));
+        Look.pose = Look.fallDown;
         ParkChaos.Add(transform.position, 9f, 30f, ParkChaos.Terrifying);
     }
 

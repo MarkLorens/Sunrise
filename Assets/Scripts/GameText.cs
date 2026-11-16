@@ -88,13 +88,20 @@ public static class GameText
     public const string ThinkBoxMechanic = "There you freaking go";                              // unlocking it as the mechanic
 
     // The drinking fountain
-    public const string ThinkFountainSpirit = "A leak.. I wonder if I can use this";             // first reaching it, as a spirit
+    public const string ThinkFountainNear = "A leak.. I wonder if I can use this";               // first reaching it, in any form
     public static readonly string[] ThinkFountainPress =                                         // each press in a body, in order
         { "Now let's make this bigger", "A bit more", "MORE!", "That should cover it" };
 
     // The live cable (reaching it, any form)
     public const string ThinkCableDry = "Maybe that cable needs to go somewhere... wet";          // the puddle doesn't reach it yet
     public const string ThinkCableWet = "Hehehe let's get buzzed";                               // the puddle reaches it
+
+    // Riders stuck in the Ferris wheel's cabins once the power's cut (FerrisWheel picks at random)
+    public static readonly string[] CabinScreams =
+    {
+        "AAAAAH!", "Let us down!", "Why did it stop?!", "MOMMY!",
+        "Is it supposed to do that?!", "HELP!", "We're gonna fall!", "I want my money back!",
+    };
 
     // After the first electrocution, one after the other
     public static readonly string[] ThinkElectrocuted = { "Uh oh, dropped the toaster again", "Anyways, that should get the brat's attention" };
