@@ -52,8 +52,9 @@ public class CameraRig : MonoBehaviour
     public static void Shake(float amount, float seconds = 0f)
     {
         var rig = Instance;
-        if (rig == null || amount <= 0f) return;
         if (seconds <= 0f) seconds = amount / 1.5f;
+        amount *= Settings.ShakeStrength; // the player's Screen shake setting
+        if (rig == null || amount <= 0f) return;
         float left = rig.shake / rig.shakeRate; // seconds the shake already going still has
         rig.shake = Mathf.Min(rig.shake + amount, 0.5f);
         rig.shakeRate = rig.shake / Mathf.Max(left, seconds);
@@ -180,7 +181,7 @@ public class CameraRig : MonoBehaviour
     // Focus on the player (or whatever's spotlit) along the view axis.
     void Focus()
     {
-        dof.active = depthOfField && target != null;
+        dof.active = depthOfField && Settings.DepthOfField && target != null;
         if (!dof.active) return;
         var cam = transform; // the brain places the main camera
         var on = spot != null ? spot : target;
