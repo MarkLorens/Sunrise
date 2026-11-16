@@ -164,7 +164,7 @@ public class GameHud : MonoBehaviour
 
         // Over the host's head, or just above the little spirit.
         var host = spirit.Host;
-        Vector3 over = host != null ? PersonTop(host.transform) : spirit.transform.position + Vector3.up * 1.4f;
+        Vector3 over = host != null ? PersonTop(host.transform) : ParkArt.Above(spirit.transform.position, 1.4f);
         var cam = Camera.main;
         Vector3 screen = cam != null ? cam.WorldToScreenPoint(over) : Vector3.back;
         if (screen.z <= 0f) return;
@@ -316,12 +316,14 @@ public class GameHud : MonoBehaviour
     }
 
     // Where the floating prompt goes: over the head of someone you could possess, or over the top of a thing.
-    static Vector3 PersonTop(Transform t) => t.position + Vector3.up * 2.6f;
+    static Vector3 PersonTop(Transform t) => ParkArt.Above(t.position, 2.6f);
 
     static Vector3 ThingTop(Transform t)
     {
         var r = t.GetComponent<SpriteRenderer>();
-        return r != null ? new Vector3(t.position.x, r.bounds.max.y + 0.4f, t.position.z) : t.position + Vector3.up * 2f;
+        Vector3 feet = t.position;
+        // Up along the picture: a leaning picture's top is CardUp.y of its length above its feet.
+        return r != null ? ParkArt.Above(feet, (r.bounds.max.y - feet.y) / ParkArt.CardUp.y + 0.4f) : ParkArt.Above(feet, 2f);
     }
 
     // Shown while you're in someone: empty, or the item in their hand.

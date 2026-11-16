@@ -32,7 +32,7 @@ public class Item : MonoBehaviour
     public static Item Create(VisitorItem kind, Vector3 position)
     {
         var go = new GameObject(kind.ToString());
-        go.transform.position = position;
+        go.transform.SetPositionAndRotation(position, ParkArt.Card);
         var item = go.AddComponent<Item>();
         item.kind = kind;
         item.sprite = ParkArt.Lit(ParkArt.Make("Sprite", go.transform, "Items/" + kind, Size, Color.white, 1));
@@ -78,7 +78,7 @@ public class Item : MonoBehaviour
             // in toward the body, so it reads as held. It swings with the hand on every walk frame (hidden while the
             // holder rides).
             transform.localScale = Vector3.one * (HeldSize / Size);
-            var tilt = Quaternion.Euler(0f, 0f, Holder.Look.FacingLeft ? HeldTilt : -HeldTilt);
+            var tilt = ParkArt.Card * Quaternion.Euler(0f, 0f, Holder.Look.FacingLeft ? HeldTilt : -HeldTilt);
             transform.SetPositionAndRotation(Holder.CarryPoint + tilt * Vector3.up * (HeldSize * 0.3f) - Holder.transform.forward * 0.02f, tilt);
             sprite.enabled = Holder.Look.Visible;
             shadow.enabled = false;
@@ -99,7 +99,7 @@ public class Item : MonoBehaviour
     void Land()
     {
         transform.position = new Vector3(transform.position.x, Size * 0.5f, transform.position.z);
-        transform.rotation = Quaternion.identity;
+        transform.rotation = ParkArt.Card;
         velocity = Vector3.zero;
         falling = false;
     }

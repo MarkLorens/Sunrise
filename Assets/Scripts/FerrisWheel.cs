@@ -73,22 +73,26 @@ public class FerrisWheel : MonoBehaviour
         go.SetActive(false); // so Interactable's Awake finds the rules component
         go.transform.position = transform.position + offset * Scale;
         var pic = Prop(go.transform, sprite, height, Vector3.zero);
+        Vector3 feetToCentre = new(0f, height * 0.5f, 0f); // where Prop put the picture's middle, before any lean
         if (art != null)
         {
             pic.sprite = art;
             pic.transform.localScale = Vector3.one;
             pic.transform.localPosition = Vector3.zero;
+            feetToCentre = Vector3.zero;
         }
         var part = go.AddComponent<T>();
         go.AddComponent<Interactable>();
         go.SetActive(true);
 
         // Something people bump into: a box the size of its picture. Made after the scene loaded, so GroundWalker
-        // is told about it.
-        var box = pic.gameObject.AddComponent<BoxCollider>();
+        // is told about it. It sits on the part itself, standing upright, even when the picture leans back (a box
+        // that leaned with it would cover the wrong patch of floor).
+        var box = go.AddComponent<BoxCollider>();
         Bounds b = pic.sprite.bounds;
-        box.center = b.center;
-        box.size = new Vector3(b.size.x, b.size.y, 0.2f);
+        float s = pic.transform.localScale.y;
+        box.center = feetToCentre + b.center * s;
+        box.size = new Vector3(b.size.x * s, b.size.y * s, 0.2f);
         GroundWalker.AddObstacle(box);
         return part;
     }
@@ -96,7 +100,10 @@ public class FerrisWheel : MonoBehaviour
     static SpriteRenderer Prop(Transform parent, string sprite, float height, Vector3 localFeet)
     {
         var r = ParkArt.Lit(ParkArt.Make("Sprite", parent, sprite, height, Color.white));
-        r.transform.localPosition = localFeet + new Vector3(0f, height * 0.5f, 0f);
+        // Lean back about its feet (whatever the parent's own rotation), so its bottom edge stays on the floor.
+        Quaternion lean = Quaternion.Inverse(parent.rotation) * ParkArt.Card;
+        r.transform.localRotation = lean;
+        r.transform.localPosition = localFeet + lean * new Vector3(0f, height * 0.5f, 0f);
         return r;
     }
 
@@ -138,7 +145,8 @@ public class FerrisWheel : MonoBehaviour
         for (int i = 0; i < cabins.Count; i++)
         {
             float a = (angle + i * 360f / cabins.Count) * Mathf.Deg2Rad;
-            cabins[i].position = wheel.position + new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0) * cabinRadius * Scale + new Vector3(0, 0, -0.05f);
+            // In the wheel's own plane, which leans back with the rest of the ride in the 45° scene.
+            cabins[i].position = wheel.position + transform.rotation * (new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0) * cabinRadius * Scale + new Vector3(0, 0, -0.05f));
         }
     }
 }

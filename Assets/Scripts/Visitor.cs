@@ -47,7 +47,7 @@ public class Visitor : MonoBehaviour, IInteraction
     public VisitorItem HeldKind => Held != null ? Held.kind : VisitorItem.None;
     public Vector3 Facing { get; private set; } = Vector3.right;
     public float HeadHeight => Look.HeadHeight;
-    public Vector3 HeadPoint => transform.position + Vector3.up * HeadHeight;
+    public Vector3 HeadPoint => ParkArt.Above(transform.position, HeadHeight);
     // The hand nearer the camera, where whatever they carry sits.
     public Vector3 CarryPoint => Look.HandPoint;
     bool IsHost => Possession.Instance != null && Possession.Instance.Host == this;

@@ -33,7 +33,7 @@ public class Possession : MonoBehaviour
     // What the camera follows.
     public Transform Focus => Host != null ? Host.transform : transform;
     // Where souls fly to.
-    public Vector3 SpiritPoint => Host != null ? Host.HeadPoint : transform.position + Vector3.up * 0.5f;
+    public Vector3 SpiritPoint => Host != null ? Host.HeadPoint : ParkArt.Above(transform.position, 0.5f);
 
     readonly Dictionary<Visitor, float> lockedUntil = new();
     float readyAt;
@@ -173,7 +173,7 @@ public class Possession : MonoBehaviour
     {
         diveTime += Time.deltaTime / 0.35f;
         float t = Mathf.SmoothStep(0f, 1f, diveTime);
-        transform.position = Vector3.Lerp(diveFrom, diveTarget.HeadPoint, t) + Vector3.up * Mathf.Sin(t * Mathf.PI) * 1.2f;
+        transform.position = ParkArt.Above(Vector3.Lerp(diveFrom, diveTarget.HeadPoint, t), Mathf.Sin(t * Mathf.PI) * 1.2f);
         transform.localScale = baseScale * Mathf.Lerp(1f, 0.1f, t);
         transform.localRotation = Quaternion.Euler(0f, 0f, t * 540f);
         if (diveTime < 1f) return;

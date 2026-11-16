@@ -100,6 +100,13 @@ public class CameraRig : MonoBehaviour
         taa.varianceClampScale = 1.5f;   // default 0.9
         urp.taaSettings = taa;
 
+        // The scene's own angle, if it has one (the 45° scene).
+        if (ViewAngle.Instance != null)
+        {
+            offset = ViewAngle.Instance.cameraOffset;
+            dollyRange = ViewAngle.Instance.dollyRange;
+        }
+
         group =new GameObject("Camera Target Group").AddComponent<CinemachineTargetGroup>();
 
         var go = new GameObject("Framing Camera");

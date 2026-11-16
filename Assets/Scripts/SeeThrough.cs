@@ -42,5 +42,5 @@ public class SeeThrough : MonoBehaviour
 
     // The middle of the player's picture.
     static Vector3 Middle(Transform t) =>
-        t.TryGetComponent(out SpriteRenderer r) && r.sprite != null ? r.bounds.center : t.position + Vector3.up * 0.8f;
+        t.TryGetComponent(out SpriteRenderer r) && r.sprite != null ? r.bounds.center : ParkArt.Above(t.position, 0.8f);
 }

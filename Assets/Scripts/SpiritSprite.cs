@@ -65,6 +65,7 @@ public class SpiritSprite : MonoBehaviour
 
         visual = new GameObject("Visual").transform;
         visual.SetParent(transform, false);
+        visual.localRotation = ParkArt.Card; // leans back like everyone else (the spirit itself, its collider and camera don't)
         handLeft = Part("Hand Left", Art("hand left"), HandLeftAt, Layer, HandScale);
         body = Part("Body", idle[0], BodyAt, 0f, 1f);
         eyes = Part("Eyes", eyeCycle[0], EyesAt, -Layer, 1f);

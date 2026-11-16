@@ -9,6 +9,26 @@ public static class ParkArt
     public const int DecalOrder = -40;  // lying on the ground: above the ground tiles (-50), under anything standing
     public const int OverheadOrder = 5; // bubbles, bars and markers drawn over people
 
+    // How far standing pictures lean back (degrees about X) to face a camera looking down at that angle. 0 = upright,
+    // as in SampleScene; a ViewAngle in the scene sets it (the 45° scene: 45). Colliders always stay upright.
+    public static float Lean { get; private set; }
+    // A standing picture's rotation ("card"), and which way is up along it.
+    public static Quaternion Card { get; private set; } = Quaternion.identity;
+    public static Vector3 CardUp { get; private set; } = Vector3.up;
+
+    public static void SetLean(float degrees)
+    {
+        Lean = degrees;
+        Card = Quaternion.Euler(degrees, 0f, 0f);
+        CardUp = Card * Vector3.up;
+    }
+
+    // The point `height` up a standing picture from its feet (straight up when nothing leans).
+    public static Vector3 Above(Vector3 feet, float height) => feet + CardUp * height;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetLean() => SetLean(0f);
+
     static readonly Dictionary<string, Sprite> sprites = new();
     static Material material, litMaterial, characterMaterial;
     static Font font;

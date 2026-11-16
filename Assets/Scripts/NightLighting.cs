@@ -220,7 +220,7 @@ public class NightLighting : MonoBehaviour
                 if (s == null || s.name != lampSprite) continue;
                 // Props stand upright on their cell with their feet at its centre.
                 Vector3 foot = map.GetCellCenterWorld(cell);
-                Vector3 lantern = foot + Vector3.up * (s.bounds.max.y * map.transform.lossyScale.y * lanternHeight);
+                Vector3 lantern = ParkArt.Above(foot, s.bounds.max.y * map.transform.lossyScale.y * lanternHeight);
                 // Well in front of the lantern, so it lights the lamp and the people near it without burning the glass white.
                 lamps.Add(new Lamp
                 {
@@ -230,6 +230,8 @@ public class NightLighting : MonoBehaviour
                     core = Glow("Lamp Core", root, lantern + Vector3.back * 0.05f, lampCoreSize, lampColor, lampCoreAlpha),
                     halo = Glow("Lamp Halo", root, lantern + Vector3.back * 0.04f, lampHaloSize, lampColor, lampHaloAlpha),
                 });
+                var lamp = lamps[lamps.Count - 1];
+                lamp.core.transform.rotation = lamp.halo.transform.rotation = ParkArt.Card; // facing the camera
             }
 
         foreach (var s in Stall.All)
