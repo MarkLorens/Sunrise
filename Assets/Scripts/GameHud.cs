@@ -136,6 +136,25 @@ public class GameHud : MonoBehaviour
         if (Instance != null) Instance.thoughts.AddRange(lines);
     }
 
+    // Someone (or something) shouting: a speech bubble over `over` for `seconds`. Any number at once.
+    public static void Shout(Transform over, string line, float seconds)
+    {
+        if (Instance == null || over == null) return;
+        var b = Instantiate(Instance.bubble.gameObject, Instance.canvas).GetComponent<RectTransform>();
+        b.GetComponentInChildren<Text>().text = line;
+        Instance.shouts.Add(new Shouted { bubble = b, group = b.GetComponent<CanvasGroup>(), over = over, life = seconds, until = Time.unscaledTime + seconds });
+    }
+
+    class Shouted
+    {
+        public RectTransform bubble;
+        public CanvasGroup group;
+        public Transform over;
+        public float life, until;
+    }
+
+    readonly List<Shouted> shouts = new();
+
     // ---------------------------------------------------------------- every frame
 
     void Update()
@@ -147,6 +166,31 @@ public class GameHud : MonoBehaviour
         UpdateInventory();
         UpdateBanners();
         UpdateBubble();
+        UpdateShouts();
+    }
+
+    // Pop in, hang over the top of whatever's shouting, fade out.
+    void UpdateShouts()
+    {
+        var cam = Camera.main;
+        for (int i = shouts.Count - 1; i >= 0; i--)
+        {
+            var s = shouts[i];
+            float left = s.until - Time.unscaledTime, age = s.life - left;
+            if (left <= 0f || s.over == null || cam == null)
+            {
+                Destroy(s.bubble.gameObject);
+                shouts.RemoveAt(i);
+                continue;
+            }
+            var r = s.over.GetComponent<Renderer>();
+            Vector3 top = r != null ? new Vector3(r.bounds.center.x, r.bounds.max.y, r.bounds.center.z) : s.over.position;
+            Vector3 screen = cam.WorldToScreenPoint(top);
+            s.group.alpha = screen.z <= 0f ? 0f : Mathf.Min(Mathf.Clamp01(age / 0.08f), Mathf.Clamp01(left / 0.15f));
+            s.bubble.localScale = Vector3.one * Mathf.Lerp(0.6f, 1f, age / 0.12f);
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(canvas, screen, null, out Vector2 local);
+            s.bubble.anchoredPosition = local;
+        }
     }
 
     void UpdateBubble()

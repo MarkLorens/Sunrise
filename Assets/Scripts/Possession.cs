@@ -87,6 +87,14 @@ public class Possession : MonoBehaviour
         Hover();
     }
 
+    // The FMOD possess sound; the old one if that isn't set up.
+    void PlayPossess()
+    {
+        var events = FMODEvents.instance;
+        if (events != null && !events.possess.IsNull && AudioManager.instance != null) AudioManager.instance.PlayOneShot(events.possess, transform.position);
+        else Sfx.Play(Sfx.Possess, 0.7f);
+    }
+
     void Hover()
     {
         var events = FMODEvents.instance;
@@ -156,7 +164,7 @@ public class Possession : MonoBehaviour
         interpolation = rb.interpolation;
         rb.interpolation = RigidbodyInterpolation.None; // we place it by hand from here on
         body.enabled = false;
-        Sfx.Play(Sfx.Possess, 0.7f);
+        PlayPossess();
         return true;
     }
 

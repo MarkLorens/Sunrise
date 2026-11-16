@@ -2,15 +2,15 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // A loudspeaker playing music. Visitors like to stand around in front of it for a while (Visitor picks it as
-// somewhere to go until the crowd is big enough). The one with livePlug on has a broken, live plug sticking out of
+// somewhere to go until the crowd is MaxListeners strong, counting everyone already on their way). The one with livePlug on has a broken, live plug sticking out of
 // it (LiveCable), sparking.
 public class Speaker : MonoBehaviour
 {
     public static readonly List<Speaker> All = new();
+    public const int MaxListeners = 15; // across all speakers: their crowds stand together
 
     public Vector3 crowdOffset = new(0f, 0f, -1.6f); // where the crowd stands, relative to the speaker
     public float crowdRadius = 1.6f;
-    public int crowdSize = 6;
     public bool livePlug = true; // its plug is the broken, live one (LiveCable)
     public Vector3 cableEndOffset = new(0.8f, 0.83f, -0.12f); // the plug in the sprite, relative to the speaker
     public DrinkingFountain fountain; // the puddle the cable can reach
@@ -33,13 +33,9 @@ public class Speaker : MonoBehaviour
         end.SetActive(true);
     }
 
-    // A speaker whose crowd isn't full yet, if any.
-    public static Speaker Wanting()
-    {
-        foreach (var s in All)
-            if (s.Listeners() < s.crowdSize) return s;
-        return null;
-    }
+    // A speaker to go and listen to, if the crowd isn't full yet.
+    public static Speaker Wanting() =>
+        All.Count == 0 || Listeners() >= MaxListeners ? null : All[Random.Range(0, All.Count)];
 
     // The speaker this spot is in the crowd of, if any.
     public static Speaker Near(Vector3 p)
@@ -68,11 +64,14 @@ public class Speaker : MonoBehaviour
         return d.magnitude <= crowdRadius + 0.5f;
     }
 
-    int Listeners()
+    // Everyone in a crowd or walking to one.
+    static int Listeners()
     {
         int n = 0;
         foreach (var v in Visitor.All)
-            if (v.brain == null && v.Current is Visitor.State.Idle or Visitor.State.Wander && InCrowd(v.transform.position)) n++;
+            if (v.brain == null && (v.Current == Visitor.State.Idle && Near(v.transform.position) != null
+                                    || v.Current == Visitor.State.Wander && Near(v.Target) != null))
+                n++;
         return n;
     }
 }
