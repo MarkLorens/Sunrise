@@ -14,8 +14,13 @@ public class Possession : MonoBehaviour
 
     public static Possession Instance { get; private set; }
 
-    // Set while a menu or cutscene owns the keyboard.
-    public static bool InputBlocked;
+    // Set while a cutscene owns the keyboard; also true while the game's paused (PauseMenu).
+    public static bool InputBlocked
+    {
+        get => cutscene || PauseMenu.Paused;
+        set => cutscene = value;
+    }
+    static bool cutscene;
 
     public float touchRange = 1.2f;        // weak spirit: has to actually touch someone
     public float sameTargetCooldown = 10f; // before the same person can be possessed again

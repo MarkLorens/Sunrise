@@ -83,6 +83,7 @@ public class GameHud : MonoBehaviour
         if (Camera.main != null && Camera.main.GetComponent<SeeThrough>() == null) Camera.main.gameObject.AddComponent<SeeThrough>();
         if (FindAnyObjectByType<NightLighting>() == null) new GameObject("Night Lighting").AddComponent<NightLighting>();
         if (GetComponent<ActionOutline>() == null) gameObject.AddComponent<ActionOutline>();
+        if (GetComponent<PauseMenu>() == null) gameObject.AddComponent<PauseMenu>();
         Build();
         doneQueue.AddRange(pending);
         pending.Clear();
