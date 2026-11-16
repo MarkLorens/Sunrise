@@ -25,6 +25,10 @@ public class FMODEvents : MonoBehaviour
     [field: Tooltip("The stuck cabins creaking once the wheel has stopped.")]
     [field: SerializeField] public EventReference ferrisCabinCreak { get; private set; }
 
+    [field: Header("A-leak-tricity")]
+    [field: Tooltip("The live cable hits the puddle and everyone standing in it gets zapped.")]
+    [field: SerializeField] public EventReference electrocution { get; private set; }
+
     public static FMODEvents instance { get; private set; }
 
     private void Awake()

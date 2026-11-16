@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="AudioFile" id="{ff8a3dd5-519c-4feb-b718-cd334962d26d}">
+		<property name="assetPath">
+			<value>Cartoon, Swish, Throw, High Pitched SND15509 copy.wav</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>96</value>
+		</property>
+		<property name="channelCount">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>0.42163541666666665</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{8c8416f5-ac4e-4dce-97e1-dfa1a76b2c55}</destination>
+		</relationship>
+	</object>
+</objects>

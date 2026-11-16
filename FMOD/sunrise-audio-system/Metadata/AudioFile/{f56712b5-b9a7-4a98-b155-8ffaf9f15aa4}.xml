@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="AudioFile" id="{f56712b5-b9a7-4a98-b155-8ffaf9f15aa4}">
+		<property name="assetPath">
+			<value>MusicDog_Playground-For-Playful-Animation-Soundtrack_main-01_full.wav</value>
+		</property>
+		<property name="isStreaming">
+			<value>true</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>44.0999985</value>
+		</property>
+		<property name="channelCount">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>81.061133786848075</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{8c8416f5-ac4e-4dce-97e1-dfa1a76b2c55}</destination>
+		</relationship>
+	</object>
+</objects>

@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="AudioFile" id="{6042243f-80dc-4a4d-98f7-8d89d9ec4ba6}">
 		<property name="assetPath">
-			<value>Cartoon, Vocal, Cartoon Character, High Pitched Voice Says Oh Hehe SND15141 3.wav</value>
+			<value>Woo Hehe.wav</value>
 		</property>
 		<property name="frequencyInKHz">
 			<value>96</value>

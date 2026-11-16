@@ -179,10 +179,10 @@
 			<value>1</value>
 		</property>
 		<property name="rate">
-			<value>0.399999976</value>
+			<value>0.199999988</value>
 		</property>
 		<property name="depth">
-			<value>2</value>
+			<value>1</value>
 		</property>
 	</object>
 	<object class="MixerBusEffectChain" id="{29fd7518-dba0-49fc-b5ea-35c2a9e2f944}">

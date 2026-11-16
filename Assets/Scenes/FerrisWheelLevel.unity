@@ -3651,11 +3651,11 @@ MonoBehaviour:
     Path: 
   <ferrisHydraulic>k__BackingField:
     Guid:
-      Data1: -946011965
-      Data2: 1166977381
-      Data3: -519375179
-      Data4: 2019170740
-    Path: event:/Ferris Wheel/Ferris/Hydraulic
+      Data1: -2033483464
+      Data2: 1100042892
+      Data3: -316655486
+      Data4: 62232473
+    Path: event:/Ferris Wheel/Ferris/Mechanical
   <ferrisPowerOff>k__BackingField:
     Guid:
       Data1: 1531511369
@@ -3665,11 +3665,18 @@ MonoBehaviour:
     Path: event:/Ferris Wheel/Ferris/PowerOff
   <ferrisCabinCreak>k__BackingField:
     Guid:
-      Data1: 312336226
-      Data2: 1091743763
-      Data3: 350874804
-      Data4: 2061409165
-    Path: event:/Ferris Wheel/Ferris/CabinCreak
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  <electrocution>k__BackingField:
+    Guid:
+      Data1: 269536171
+      Data2: 1233676029
+      Data3: -1008109921
+      Data4: -690956622
+    Path: event:/A-leak-tricity/Electric Shock Cartoon
 --- !u!114 &1680034634
 MonoBehaviour:
   m_ObjectHideFlags: 0

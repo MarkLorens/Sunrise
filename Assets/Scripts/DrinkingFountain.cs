@@ -135,6 +135,14 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
 
     // ---------------------------------------------------------------- a live cable in the water
 
+    // The FMOD electrocution sound where the cable hit the water; the old one if that isn't set up.
+    void PlayZap(Vector3 at)
+    {
+        var events = FMODEvents.instance;
+        if (events != null && !events.electrocution.IsNull && AudioManager.instance != null) AudioManager.instance.PlayOneShot(events.electrocution, at);
+        else Sfx.Play(Sfx.Crash, 1f, 1.6f);
+    }
+
     public void Electrify(Vector3 from)
     {
         var zapped = new List<Visitor>();
@@ -208,7 +216,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
 
     void Zap(Vector3 from, List<Visitor> zapped, float shake, float shakeFor = 0f)
     {
-        Sfx.Play(Sfx.Crash, 1f, 1.6f);
+        PlayZap(from);
         Fx.Burst("Fx/sparkle", from, 20, Spark, 5f, 0.4f, 0.6f);
         Fx.Shake(shake, shakeFor);
         foreach (var v in zapped) Fx.Burst("Fx/sparkle", v.HeadPoint, 10, Spark, 3f, 0.3f, 0.5f);
