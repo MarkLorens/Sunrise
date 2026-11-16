@@ -6,7 +6,7 @@ using UnityEngine.Tilemaps;
 // Walks on the X/Z floor, but only onto cells that have a tile on the ground tilemap, not into anything on the
 // Objects tilemap (trees, lamps, benches, fences: things you bump into; walk-over decor like flowers and bushes
 // lives on its own Decor tilemap) or into a prop with a Box Collider (the stalls), and, for visitors, not into a
-// staff-only area: StaffArea.
+// staff-only area: StaffArea, nor onto the Ferris wheel's locked platform: WheelPlatform.
 // Driven by WASD/arrows when readKeyboard is on, otherwise by whatever sets `move`: the visitor and staff AI call
 // WalkTo, which finds a way around whatever's in the way (NavGrid).
 // Gravity + the ground's collider keep it standing on the floor.
@@ -82,7 +82,8 @@ public class GroundWalker : MonoBehaviour
         cell.z = 0; // height above the floor doesn't matter
         return ground.HasTile(cell)
             && !BumpsIntoObject(transform.position, worldPos)
-            && StaffArea.Allows(visitor, transform.position, worldPos);
+            && StaffArea.Allows(visitor, transform.position, worldPos)
+            && WheelPlatform.Allows(visitor, transform.position, worldPos);
     }
 
     bool OnTile(Vector3 velocity) => IsWalkable(rb.position + velocity * Time.fixedDeltaTime);

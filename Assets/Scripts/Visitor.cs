@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Values are fixed because they're saved in the scene (the stall's goods, the spawner's items).
-public enum VisitorItem { None = 0, Drink = 3, Keys = 4, WaterBottle = 5 }
+public enum VisitorItem { None = 0, Drink = 3, Keys = 4, WaterBottle = 5, Screwdriver = 6 }
 
 // A park visitor going about their day: wandering, buying drinks at the stall, lining up for the Ferris wheel,
 // carrying their things in their hand. They stop and stare at someone acting possessed, and scream and run when
