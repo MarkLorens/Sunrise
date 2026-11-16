@@ -24,8 +24,10 @@ public class FerrisWheelAudio : MonoBehaviour
         if (events == null) return;
         if (ride.Powered)
         {
+            if (!wasPowered) foreach (var motor in GetComponents<StudioEventEmitter>()) motor.Play(); // started again
             hydraulic.Play(events.ferrisHydraulic);
-            creak.Stop();
+            if (ride.Wobbly) creak.Play(events.ferrisCabinCreak); // a loosened hinge: it creaks all the way round
+            else creak.Stop();
         }
         else
         {

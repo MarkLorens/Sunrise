@@ -10,6 +10,8 @@ public class PauseMenu : MonoBehaviour
     public static bool Paused { get; private set; }
 
     GameObject screen;
+    UnityEngine.UI.Button settingsButton;
+    int settingsClosedFrame = -1;
 
     void Awake()
     {
@@ -22,8 +24,7 @@ public class PauseMenu : MonoBehaviour
         MainMenu.Title(column, "Paused", 560f, 64);
         MainMenu.Button(column, "Continue", () => SetPaused(false));
         MainMenu.Button(column, "Save Game", () => GameHud.Say(SaveGame.Save() ? GameText.Saved : GameText.CantSave));
-        // ponytail: Settings does nothing yet (no settings); wire it when there are some.
-        MainMenu.Button(column, "Settings", null);
+        settingsButton = MainMenu.Button(column, "Settings", OpenSettings);
         MainMenu.Button(column, "Back to Main Menu", BackToMainMenu);
         screen = canvas.gameObject;
         screen.SetActive(false);
@@ -38,9 +39,23 @@ public class PauseMenu : MonoBehaviour
 
     void Update()
     {
+        // Esc in the settings screen goes back to this one, not out of the pause.
+        if (SettingsMenu.IsOpen || Time.frameCount == settingsClosedFrame) return;
         bool toggle = (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
                       || (Gamepad.current != null && Gamepad.current.startButton.wasPressedThisFrame);
         if (toggle) SetPaused(!Paused);
+    }
+
+    // The settings screen takes the pause menu's place until Back.
+    void OpenSettings()
+    {
+        screen.SetActive(false);
+        SettingsMenu.Open(20, () =>
+        {
+            settingsClosedFrame = Time.frameCount;
+            screen.SetActive(true);
+            MainMenu.Select(settingsButton);
+        });
     }
 
     void SetPaused(bool on)

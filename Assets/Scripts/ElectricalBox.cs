@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 
 // The Ferris wheel's electrical box. It's the mechanic's, and it's locked: only his keys open it. Once it's open,
-// flip the switch and the wheel loses power.
+// flip the switch and the wheel loses power. Only the ride technician can start it again.
 // The first time someone else tries it, a short cutscene shows who has the keys: the camera pans to the mechanic
 // fixing a flickering lamp by the staff door, follows him back behind the staff door, then returns to the player.
 [RequireComponent(typeof(Interactable))]
@@ -34,17 +34,30 @@ public class ElectricalBox : MonoBehaviour, IInteraction
         GameHud.Think(GameText.ThinkBoxSpirit);
     }
 
-    public string Prompt(Visitor host) => Unlocked ? "Cut the Ferris wheel's power" : "Unlock the mechanic's electrical box";
+    public string Prompt(Visitor host) => !wheel.Powered ? "Start the Ferris wheel" : Unlocked ? "Cut the Ferris wheel's power" : "Unlock the mechanic's electrical box";
 
     public string Blocked(Visitor host)
     {
-        if (!wheel.Powered) return GameText.PowerOff;
+        if (wheel.Wobbly) return GameText.WheelWobbly;
+        if (!wheel.Powered)
+        {
+            if (host.brain is not RideTechnician) return GameText.TechnicianStarts;
+            return Mischief.IsDone(Mischief.Task.LoosenHinge) ? null : GameText.HingeFirst;
+        }
         if (!Unlocked && host.HeldKind != VisitorItem.Keys) return IdleMechanic() != null ? null : GameText.BoxLocked;
         return null;
     }
 
     public void Interact(Visitor host)
     {
+        if (!wheel.Powered)
+        {
+            wheel.Restart();
+            Sfx.Play(Sfx.HitWood, 0.7f, 0.8f);
+            GameHud.Say(GameText.RestartedWheel);
+            Mischief.Complete(Mischief.Task.RestartWheel);
+            return;
+        }
         if (!Unlocked && host.HeldKind != VisitorItem.Keys)
         {
             StartCoroutine(ShowMechanic(IdleMechanic()));

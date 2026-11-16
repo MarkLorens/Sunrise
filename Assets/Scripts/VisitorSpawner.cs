@@ -4,7 +4,8 @@ using UnityEngine.Tilemaps;
 // Fills the park with people on random ground tiles around this object when the scene starts.
 // Some visitors start out lined up for the ride; the rest roam (and may wander over to the line later), many of them
 // carrying a drink or a water bottle. Plus the staff: the mechanic (keys in hand) and the Reset Agents behind the
-// staff door, the cable man by the speaker and the ride technician asleep at his spot.
+// staff door, the cable man by the speaker, the ride technician asleep in his booth (screwdriver in hand) and the
+// hot dog man behind his stand.
 // Visitors use the lineart bodies in Resources/ArtLineartTorso; staff still use Resources/Visitors/<character>/
 // (Kenney Toon Characters 1, CC0). Nobody has a personal name: visitors are all "Visitor", staff go by their job.
 public class VisitorSpawner : MonoBehaviour
@@ -35,7 +36,10 @@ public class VisitorSpawner : MonoBehaviour
     public Transform cableManPost;  // empty = no cable man
     public string technicianCharacter = "malePersonRed";
     public string technicianName = "Technician";
-    public Transform technicianPost; // empty = no technician
+    public Transform technicianPost; // empty = no technician (his booth goes here)
+    public string hotDogManCharacter = "malePerson";
+    public string hotDogManName = "Hot Dog Man";
+    public Transform hotDogManPost;  // behind the hot dog stand; empty = no hot dog man
 
     const string VisitorName = "Visitor";
 
@@ -73,7 +77,12 @@ public class VisitorSpawner : MonoBehaviour
         body.GrabItem(Item.Create(VisitorItem.Keys, body.CarryPoint), true);
         for (int i = 0; i < resetAgents; i++) Staff<ResetAgent>($"Reset Agent {i + 1}", door, resetAgentCharacter);
         if (cableManPost != null) Staff<CableMan>(cableManName, cableManPost.position, cableManCharacter);
-        if (technicianPost != null) Staff<RideTechnician>(technicianName, technicianPost.position, technicianCharacter);
+        if (technicianPost != null)
+        {
+            var tech = Staff<RideTechnician>(technicianName, technicianPost.position, technicianCharacter);
+            tech.GrabItem(Item.Create(VisitorItem.Screwdriver, tech.CarryPoint), true);
+        }
+        if (hotDogManPost != null) Staff<HotDogMan>(hotDogManName, hotDogManPost.position, hotDogManCharacter);
     }
 
     Visitor Staff<T>(string name, Vector3 pos, string character) where T : MonoBehaviour

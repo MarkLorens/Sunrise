@@ -1,12 +1,15 @@
 using System.Collections.Generic;
 
 // The level's sequence, from the level design doc: make a scene big enough to bring the mechanic, then use his keys
-// to cut the Ferris wheel's power. Each part is a list of steps; GameHud lists the part you're on (top left) and
+// to cut the Ferris wheel's power; then blow up the hot dog stand to wake the ride technician and use him to loosen
+// the wheel's hinge. Each part is a list of steps; GameHud lists the part you're on (top left) and
 // ticks them off as the behaviours that make them happen report in. Nothing here drives the
 // order: the world's own rules do.
 public static class Mischief
 {
-    public enum Task { Possess, FloodPuddle, PossessCableMan, Electrocute, LureMechanic, PossessMechanic, UnlockBox, CutPower, CallTechnician }
+    public enum Task { Possess, FloodPuddle, PossessCableMan, Electrocute, LureMechanic, PossessMechanic, UnlockBox, CutPower, CallTechnician,
+        RatsOut, StallFanOff, LeakPropane, AimFan, GasCloud, Explode, WakeTechnician,
+        PossessTechnician, OpenPlatform, LoosenHinge, RestartWheel }
 
     public static readonly (string title, (Task task, string label)[] steps)[] Parts =
     {
@@ -24,6 +27,23 @@ public static class Mischief
             (Task.UnlockBox, "Unlock the Ferris wheel's electrical box"),
             (Task.CutPower, "Cut the Ferris wheel's power"),
             (Task.CallTechnician, "The operator calls the ride technician..."),
+        }),
+        ("3. Flaming hot dogs", new[]
+        {
+            (Task.RatsOut, "Lift the stinky gutter lid to chase off the hot dog man"),
+            (Task.StallFanOff, "Switch off the hot dog man's fan"),
+            (Task.LeakPropane, "Loosen the propane tank's valve"),
+            (Task.AimFan, "Turn the tank's fan toward the hot dog stand"),
+            (Task.GasCloud, "Let the propane cloud up around the stand"),
+            (Task.Explode, "The hot dog man comes back and lights his stove..."),
+            (Task.WakeTechnician, "The ride technician wakes up and takes the call"),
+        }),
+        ("4. Loosen the Ferris wheel", new[]
+        {
+            (Task.PossessTechnician, "Possess the ride technician"),
+            (Task.OpenPlatform, "Open the wheel's platform with his fingerprint"),
+            (Task.LoosenHinge, "Loosen the leg hinge with his screwdriver"),
+            (Task.RestartWheel, "Start the Ferris wheel again at the electrical box"),
         }),
     };
 

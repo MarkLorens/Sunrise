@@ -4,7 +4,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 // One save slot: the level's progress, not a snapshot of every person in it. Kept: the steps done, the puddle, the
-// fountain and its mechanic, the electrical box, the wheel's power, who's lying dead where, and where the player
+// fountain and its mechanic, the electrical box, the wheel's power (the propane, fan, technician, platform and hinge
+// all follow from the steps done), who's lying dead where, and where the player
 // is and whose body they're in (with what in hand). Everyone else starts fresh around the park.
 // Saved from the pause menu (PauseMenu), loaded from the main menu (MainMenu): Load() opens the level, and the
 // level's PauseMenu calls ApplyPending() once everything in it has set itself up.
@@ -91,12 +92,20 @@ public static class SaveGame
         if (data == null) return;
 
         Mischief.Restore(data.done);
-        if (Mischief.IsDone(Mischief.Task.CutPower))
-            foreach (var w in FerrisWheel.All) w.RestoreUnpowered();
+        foreach (var w in FerrisWheel.All)
+            if (Mischief.IsDone(Mischief.Task.RestartWheel)) w.RestoreWobbly();
+            else if (Mischief.IsDone(Mischief.Task.CutPower)) w.RestoreUnpowered();
         var fountain = Object.FindAnyObjectByType<DrinkingFountain>();
         if (fountain != null) fountain.Restore(data.puddle, data.presses, data.mechanicCalled, data.fountainFixed);
         var box = Object.FindAnyObjectByType<ElectricalBox>();
         if (box != null) box.Restore(data.shownMechanic);
+        // Flaming hot dogs and the hinge: all of it follows from the steps done.
+        foreach (var t in RideTechnician.All) t.Restore();
+        foreach (var t in Object.FindObjectsByType<PropaneTank>()) t.Restore();
+        foreach (var f in Object.FindObjectsByType<TankFan>()) f.Restore();
+        foreach (var f in Object.FindObjectsByType<StallFan>()) f.Restore();
+        foreach (var s in Object.FindObjectsByType<FingerprintScanner>()) s.Restore();
+        foreach (var h in Object.FindObjectsByType<WheelHinge>()) h.Restore();
 
         var used = new HashSet<Visitor>();
         foreach (var d in data.dead)

@@ -94,11 +94,11 @@ public class MainMenu : MonoBehaviour
     }
 
     // A rounded button: dark with light text, light with dark text while hovered or picked with the keys.
-    public static Button Button(RectTransform parent, string text, UnityAction onClick)
+    public static Button Button(RectTransform parent, string text, UnityAction onClick, float width = 420f)
     {
         var rt = Ui(text, parent);
         var img = Img(rt, "UI/pill", Color.white);
-        Size(rt, 420f, 84f);
+        Size(rt, width, 84f);
         var button = rt.gameObject.AddComponent<Button>();
         button.targetGraphic = img;
         var colors = button.colors;
