@@ -56,6 +56,7 @@ public class Visitor : MonoBehaviour, IInteraction
     Rigidbody rb;
     RideQueue queue;
     Vector3 target;
+    public Vector3 Target => target; // where they're walking to
     Vector3 panicFrom;
     float stateEndsAt;
     float nextTurn;
