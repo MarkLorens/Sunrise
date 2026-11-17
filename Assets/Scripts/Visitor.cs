@@ -8,9 +8,9 @@ public enum VisitorItem { None = 0, Drink = 3, Keys = 4, WaterBottle = 5, Screwd
 // A park visitor going about their day: wandering, buying drinks at the stall, lining up for the Ferris wheel,
 // carrying their things in their hand. They stop and stare at someone acting possessed, and scream and run when
 // something terrible happens nearby (ParkChaos). When the spirit leaves they stand around confused for a few seconds.
-// While possessing staff, E on a visitor sends them on their way.
+// After an event they gawk at the scene from outside its police line (Aftermath); Reset Agents move them along.
 [RequireComponent(typeof(GroundWalker), typeof(CharacterSprite))]
-public class Visitor : MonoBehaviour, IInteraction
+public class Visitor : MonoBehaviour
 {
     // Every active visitor, so the spirit can find who it's touching without physics queries.
     public static readonly List<Visitor> All = new();
@@ -43,7 +43,7 @@ public class Visitor : MonoBehaviour, IInteraction
 
     public float stareRadius = 3f;
     public float stareTime = 1.5f;
-    public float sendAwayDistance = 7f;
+    public float sendAwayDistance = 7f; // how far a Reset Agent shoos people (MoveAlong)
 
     public State Current { get; private set; }
 
@@ -82,16 +82,6 @@ public class Visitor : MonoBehaviour, IInteraction
         Look.Load();
         walker.readKeyboard = false;
         Idle();
-    }
-
-    // Staff set `brain` in their own Awake, so by now we know whether this is a visitor staff can send away.
-    void Start()
-    {
-        if (brain != null) return;
-        var i = gameObject.AddComponent<Interactable>();
-        i.range = 1.3f;
-        i.prompt = name;
-        i.staffOnly = true; // only staff have anything to say to them
     }
 
     void OnEnable() => All.Add(this);
@@ -158,12 +148,13 @@ public class Visitor : MonoBehaviour, IInteraction
         Idle();
     }
 
-    public void SendTo(Vector3 spot)
+    // run: in a hurry (running speed and legs), like someone who really has to go.
+    public void SendTo(Vector3 spot, bool run = false)
     {
         LeaveQueue();
         scripted = true;
         scriptedSpot = spot;
-        SetState(State.Wander);
+        SetState(run ? State.Panic : State.Wander);
     }
 
     public void Free()
@@ -360,19 +351,6 @@ public class Visitor : MonoBehaviour, IInteraction
             if (Head(spot)) return;
         }
         Idle();
-    }
-
-    // ---------------------------------------------------------------- E on this person (while possessing staff)
-
-    public string Prompt(Visitor host) => $"Tell {name} to move along";
-
-    public string Blocked(Visitor host) =>
-        Current is State.Possessed or State.Riding or State.Down ? GameText.Busy(name) : null;
-
-    public void Interact(Visitor host)
-    {
-        SendAway(host);
-        GameHud.Say(GameText.ToldToMoveAlong(name));
     }
 
     // ---------------------------------------------------------------- things they carry

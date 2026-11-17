@@ -9,6 +9,7 @@ using UnityEngine;
 //   Mouth: MC_face_mouth grin, always the same.
 //   Hands: hands (both hands in one picture).
 //   Bob:   body (with its face) and the hands float up and down together, in step.
+//   Pose:  on top of the guide, the body leans forward (bodyAngle) and the face and hands are nudged to sit on it.
 // Like the possessed visitors it turns to face the way it floats: the art faces left, so moving right mirrors it.
 // The pieces hang off a "Visual" child, so mirroring never touches the spirit's own collider (or the camera). They
 // show and hide with the spirit's own SpriteRenderer (Possession hides that while you're inside someone), which no
@@ -29,10 +30,23 @@ public class SpiritSprite : MonoBehaviour
     [Tooltip("How fast everything bobs (radians per second: one full bob takes 2\u03c0 / speed seconds).")]
     public float handBobSpeed = 4f;
 
+    [Header("Pose (as drawn, facing left; mirrored with it)")]
+    [Tooltip("The body's lean in degrees: negative tips it forward, so the flame streams out behind.")]
+    public float bodyAngle = -25f;
+    [Tooltip("Where the eyes and mouth sit on the leaning body, in units of the drawing (1 = 100 px).")]
+    public Vector2 faceOffset = new(-0.15f, 0.35f);
+    [Tooltip("Where both hands sit, in units of the drawing (1 = 100 px).")]
+    public Vector2 handsOffset = new(-0.5f, -0.1f);
+    [Tooltip("The hands' tilt in degrees.")]
+    public float handsAngle = -8f;
+
     // The pieces use 100 pixels per unit (100 px = 1 unit before the spirit's own scale); all sit centred on the spirit.
     const float PixelsPerUnit = 100f;
-    // Front to back (lower z is nearer the camera): the lit shader writes depth, so pieces are spaced, not sorted.
-    const float Layer = 0.02f;
+    // Front to back: the lit shader writes depth, so the pieces are spaced, not sorted. Each one sits Layer world units
+    // nearer the camera than the one behind, straight along its view, so the gap doesn't nudge the face across the
+    // screen. It has to beat the body's doodle wobble (which can bring the body ~0.6 x its strength nearer at a
+    // pixel), or the body pokes through the face and the face flickers away.
+    const float Layer = 0.03f;
 
     SpriteRenderer root, body, eyes, mouth, hands;
     Transform visual;
@@ -60,10 +74,10 @@ public class SpiritSprite : MonoBehaviour
 
         visual = new GameObject("Visual").transform;
         visual.SetParent(transform, false);
-        body = Part("Body", idle[0], 0f);
-        eyes = Part("Eyes", eyeCycle[0], -Layer);
-        mouth = Part("Mouth", Art("MC_face_mouth grin"), -2f * Layer);
-        hands = Part("Hands", Art("hands"), -3f * Layer);
+        body = Part("Body", idle[0], ParkArt.SpiritMaterial);
+        eyes = Part("Eyes", eyeCycle[0], ParkArt.FaceMaterial); // the face holds still: no doodle wobble
+        mouth = Part("Mouth", Art("MC_face_mouth grin"), ParkArt.FaceMaterial);
+        hands = Part("Hands", Art("hands"), ParkArt.SpiritMaterial);
 
         root.forceRenderingOff = true; // the pieces draw the spirit now
         eyeUntil = Time.time + Random.Range(eyeHold.x, eyeHold.y);
@@ -71,13 +85,12 @@ public class SpiritSprite : MonoBehaviour
 
     static Sprite Art(string name) => Resources.Load<Sprite>("MC/" + name);
 
-    SpriteRenderer Part(string name, Sprite sprite, float z)
+    SpriteRenderer Part(string name, Sprite sprite, Material material)
     {
         var r = new GameObject(name).AddComponent<SpriteRenderer>();
         r.transform.SetParent(visual, false);
-        r.transform.localPosition = new Vector3(0f, 0f, z);
         r.sprite = sprite;
-        r.sharedMaterial = ParkArt.CharacterMaterial; // a person too: never see-through
+        r.sharedMaterial = material; // a person's, never see-through (the spirit's own copies, for its doodle wobble)
         ParkArt.CastShadows(r);
         return r;
     }
@@ -103,18 +116,21 @@ public class SpiritSprite : MonoBehaviour
             eyes.sprite = eyeCycle[eyeStep];
         }
 
+        // One step nearer the camera, in the pieces' own space (so the spirit's scale and flip are taken care of).
+        var cam = Camera.main;
+        Vector3 step = cam != null ? visual.InverseTransformVector(-cam.transform.forward * Layer) : Vector3.zero;
+
         // Everything bobs together on one wave: the hands by handBobPixels, the body and its face by bodyBobPixels.
         float wave = Mathf.Sin(Time.time * handBobSpeed) / PixelsPerUnit;
-        Bob(hands, handBobPixels * wave);
-        Bob(body, bodyBobPixels * wave);
-        Bob(eyes, bodyBobPixels * wave);
-        Bob(mouth, bodyBobPixels * wave);
+        Place(body, 0, bodyBobPixels * wave, step, Vector2.zero, bodyAngle);
+        Place(eyes, 1, bodyBobPixels * wave, step, faceOffset, 0f);
+        Place(mouth, 2, bodyBobPixels * wave, step, faceOffset, 0f);
+        Place(hands, 3, handBobPixels * wave, step, handsOffset, handsAngle);
     }
 
-    static void Bob(SpriteRenderer part, float offset)
+    static void Place(SpriteRenderer part, int layer, float bob, Vector3 step, Vector2 offset, float angle)
     {
-        var p = part.transform.localPosition;
-        p.y = offset;
-        part.transform.localPosition = p;
+        part.transform.localPosition = step * layer + new Vector3(offset.x, offset.y + bob, 0f);
+        part.transform.localRotation = Quaternion.Euler(0f, 0f, angle);
     }
 }

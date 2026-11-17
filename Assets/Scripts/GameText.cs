@@ -1,7 +1,7 @@
 // Every line the player reads about what they did, in one place, so the wording can be changed here without
 // hunting through the rest of the code:
 //   Pop-up (bottom left): one line for each thing the player does, and one for each step of the level done.
-//   Refusals: why pressing E didn't work, shown over whatever said no.
+//   Refusals: why pressing K didn't work, shown over whatever said no.
 // To reword a line, change the text between the quotes. Words in {curly brackets} are filled in by the game:
 //   {who}  someone's name as the game knows them ("Visitor", "Mechanic", "Cable Man"...)
 //   {what} a thing ("drink", "keys", "water bottle")
@@ -21,7 +21,6 @@ public static class GameText
     public const string Saved = "Game saved";
     public const string CantSave = "Can't save right now";
     public static string Bought(string what) => $"You bought a {what}";
-    public static string ToldToMoveAlong(string who) => $"You told {Someone(who)} to move along";
     public const string PressedFountain = "The fountain leaks even more";
     public const string DippedCable = "You dipped the cable in the puddle";
     public const string UnlockedBox = "You unlocked the electrical box";
@@ -89,7 +88,7 @@ public static class GameText
         _ => t.ToString(),
     };
 
-    // ---------------------------------------------------------------- refusals: why E didn't work
+    // ---------------------------------------------------------------- refusals: why K didn't work
 
     // Possessing someone
     public static string CantBePossessed(string who) => $"{who} can't be possessed";
@@ -99,7 +98,6 @@ public static class GameText
     // Touching things
     public const string NeedBody = "You need a body to touch things";
     public const string HandsFull = "Your hands are full";
-    public static string Busy(string who) => $"{who} is busy";
 
     // The drinking fountain
     public const string FountainFixed = "Fixed. Not a drop";
@@ -256,7 +254,7 @@ public static class GameText
 
     // ---------------------------------------------------------------- tutorial (new game only)
     // Each step: what the spirit says (speech bubble) and the instruction card at the bottom. [Key] shows that key
-    // as a keycap that lights up while it's held; [Arrows] shows the four arrow keys.
+    // as a keycap that lights up while it's held, on a line of its own under the sentence; [WASD] shows W A S D.
 
     // 1. The spirit
     public const string TutorialMeSays = "I'm so ready to have fun!";
@@ -265,29 +263,29 @@ public static class GameText
     public const string TutorialGoalSays = "Ah! This is what I should do!";
     public const string TutorialGoal = "Your mischief to-do list lives up here.";
     // 3. Moving
-    public const string TutorialMove = "Float around with [Arrows]";
-    public const string TutorialMoveAlso = "or W A S D";
+    public const string TutorialMove = "Float around with [WASD]";
     // 4. Someone to possess
     public const string TutorialVisitorSays = "I want to possess someone.";
     public const string TutorialVisitor = "Float over to that visitor.";
     // 5. Possessing
-    public const string TutorialPossess = "Press [E] to possess them!";
+    public const string TutorialPossess = "Press [J] to possess them!";
     // 6. An objective
     public const string TutorialObjective = "Let's complete an objective!";
     // 7. To the toilet
     public const string TutorialWalk = "Walk your new body to the toilet.";
     // 8. The sign
     public const string TutorialSignSays = "Hihihi, let's remove this.";
-    public const string TutorialSign = "Press [E] to take down the sign.";
+    public const string TutorialSign = "Press [K] to take down the sign.";
     // 9. The valve
     public const string TutorialValveSays = "Now, crank up this valve.";
-    public const string TutorialValve = "Press [E] until the pressure is maxed out.";
+    public const string TutorialValve = "Press [K] until the pressure is maxed out.";
     // 10. Leaving the body
     public const string TutorialLeaveSays = "Alright, this guy is useless to me now.";
-    public const string TutorialLeave = "Press [Q] to leave the body.";
+    public const string TutorialLeave = "Press [J] to leave the body.";
     // 11. The payoff
     public const string TutorialWatch = "Now sit back and watch...";
     public const string TutorialLaughSays = "MWAHAHAHA!";
+    public const string TutorialGottaGo = "Gotta go, gotta go, GOTTA GO!";                       // the visitor running in
     public const string TutorialSoaked = "AAAH! IT'S EVERYWHERE!";                                  // the soaked visitor
     // 12. The pop-up (bottom left)
     public const string TutorialEvent = "Everything you pull off shows up down here. Have fun!";

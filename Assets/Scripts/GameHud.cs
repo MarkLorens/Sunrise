@@ -351,7 +351,7 @@ public class GameHud : MonoBehaviour
             anchor = PersonTop(spirit.Candidate);
             if (spirit.CandidateBlocked == null)
             {
-                key = "E";
+                key = "J";
                 text = "Possess " + spirit.CandidateName;
             }
             else text = spirit.CandidateBlocked;
@@ -363,7 +363,7 @@ public class GameHud : MonoBehaviour
             {
                 anchor = ThingTop(target.transform);
                 string blocked = target.Blocked(host);
-                key = blocked == null ? "E" : "";
+                key = blocked == null ? "K" : "";
                 text = blocked == null ? target.Prompt(host) : $"<color=#bbbbbb>{target.Prompt(host)}: {blocked}</color>";
             }
         }
@@ -508,7 +508,7 @@ public class GameHud : MonoBehaviour
         Img(body, "UI/pill", new Color(0.12f, 0.08f, 0.12f, 0.88f));
         Row(body, 10f, new RectOffset(10, 22, 6, 6));
         Fit(body);
-        var cap = KeyCap(body, "E", new Key[0], false, 40f);
+        var cap = KeyCap(body, "K", new Key[0], false, 40f);
         Destroy(cap.GetComponent<KeyHint>());
         promptCap = cap.gameObject;
         promptKey = cap.GetComponentInChildren<Text>();

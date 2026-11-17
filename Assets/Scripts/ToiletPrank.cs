@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.Tilemaps;
 
 // The tutorial's prank, at the park's toilet block (the "bathroom" tile): an Out of Order sign in front of the door,
-// and a water valve on a pipe beside it. In a body (E): take the sign down (ToiletSign), crank the valve all the way
+// and a water valve on a pipe beside it. In a body (K): take the sign down (ToiletSign), crank the valve all the way
 // up (ToiletValve), and the next visitor who goes in comes back out in a geyser. Made by Tutorial, on a new game only.
 // ponytail: placeholder blocks until there's art at Resources/Park/Props/toilet_sign.png and toilet_valve.png.
 public class ToiletPrank : MonoBehaviour
@@ -11,6 +11,9 @@ public class ToiletPrank : MonoBehaviour
     public const int Turns = 3; // cranks to max the pressure
 
     static readonly Color Water = new(0.45f, 0.75f, 1f);
+    // The geyser: browns, from light splash to dark lumps.
+    // Light enough to read at night (the puff picture is soft and see-through, so it comes out darker than this).
+    static readonly Color[] Poop = { new(0.78f, 0.52f, 0.26f), new(0.62f, 0.4f, 0.18f), new(0.88f, 0.66f, 0.38f), new(0.5f, 0.3f, 0.12f) };
     static readonly Color SignRed = new(0.85f, 0.28f, 0.24f);
     static readonly Color PipeGrey = new(0.55f, 0.6f, 0.68f);
 
@@ -26,6 +29,12 @@ public class ToiletPrank : MonoBehaviour
 
     Transform wheel;
     float wheelAngle, wheelShown;
+    // The block's tile, put back after the copy has stood in for it while it rumbles.
+    Tilemap tiles;
+    Vector3Int cell;
+    TileBase tile;
+    Matrix4x4 tileMatrix;
+    Vector3 pictureAt;
 
     // Finds the toilet block and sets the prank up at it; null if this park has none.
     public static ToiletPrank Create()
@@ -84,10 +93,63 @@ public class ToiletPrank : MonoBehaviour
         r.transform.localScale = m.lossyScale;
         r.sprite = sprite;
         r.forceRenderingOff = true;
+        // Drawn like the tile when it stands in for it (Rumble).
+        var tr = map.GetComponent<TilemapRenderer>();
+        if (tr != null)
+        {
+            r.sharedMaterial = tr.sharedMaterial;
+            r.sortingLayerID = tr.sortingLayerID;
+            r.sortingOrder = tr.sortingOrder;
+            r.shadowCastingMode = tr.shadowCastingMode;
+            r.receiveShadows = tr.receiveShadows;
+        }
         Picture = r.transform;
+        pictureAt = r.transform.localPosition;
+        tiles = map;
+        this.cell = cell;
+        tile = map.GetTile(cell);
+        tileMatrix = map.GetTransformMatrix(cell);
     }
 
-    // Something you use with E, standing on the floor at `at`.
+    // The block shakes harder and harder for `seconds` (someone's in there): the tile steps aside and its copy, which
+    // can move, shakes in its place; the camera rattles too.
+    public IEnumerator Rumble(float seconds)
+    {
+        var picture = Picture.GetComponent<SpriteRenderer>();
+        picture.forceRenderingOff = false;
+        if (tiles != null) tiles.SetTile(cell, null);
+        float next = 0f;
+        for (float t = 0f; t < seconds; t += Time.deltaTime)
+        {
+            float k = t / seconds;
+            float amount = Mathf.Lerp(0.02f, 0.09f, k * k);
+            Picture.localPosition = pictureAt + new Vector3(Random.Range(-amount, amount), Random.Range(0f, amount), 0f);
+            if (t >= next)
+            {
+                next = t + Mathf.Lerp(0.35f, 0.12f, k);
+                Fx.Shake(Mathf.Lerp(0.05f, 0.18f, k));
+                Sfx.Play(Sfx.HitSoft, Mathf.Lerp(0.25f, 0.6f, k), Random.Range(0.6f, 0.8f));
+            }
+            yield return null;
+        }
+    }
+
+    // Back to the tile, standing still.
+    void Settle()
+    {
+        Picture.localPosition = pictureAt;
+        Picture.GetComponent<SpriteRenderer>().forceRenderingOff = true;
+        if (tiles == null || tile == null || tiles.GetTile(cell) != null) return;
+        tiles.SetTile(cell, tile);
+        tiles.SetTransformMatrix(cell, tileMatrix);
+    }
+
+    void OnDestroy()
+    {
+        if (Picture != null) Settle(); // skipped mid-rumble: the toilet comes back
+    }
+
+    // Something you use with K, standing on the floor at `at`.
     T Part<T>(string name, Vector3 at, string sprite, float height, Color standIn) where T : MonoBehaviour
     {
         var go = new GameObject(name);
@@ -151,23 +213,30 @@ public class ToiletPrank : MonoBehaviour
         Mischief.Complete(Mischief.Task.TutorialValve);
     }
 
-    // The payoff: water bursts out of the toilet, and whoever was in there runs out soaked.
+    // The payoff: a geyser of poop bursts out of the toilet, and whoever was in there runs out covered in it. The
+    // spray is soft and a little blurry (big, see-through puffs over smaller ones), so it reads without being gross.
     public IEnumerator Geyser(Visitor victim)
     {
-        Sfx.Play(Sfx.Crash, 1f, 1.4f);
-        Fx.Shake(0.35f, 0.5f);
-        for (int i = 0; i < 6; i++)
+        Settle();
+        Sfx.Play(Sfx.Crash, 1f, 0.9f);
+        Fx.Shake(0.45f, 0.6f);
+        // Out of the roof and up, in front of the block's picture (level with it, the puffs would hide behind it).
+        Vector3 roof = new(Block.center.x, Block.max.y, Door.z);
+        for (int i = 0; i < 10; i++)
         {
-            Fx.Burst("Fx/puff", Block.center + Vector3.up * (i * 0.35f), 14, Water, 4.5f, 0.55f, 0.9f);
-            Fx.Burst("Fx/sparkle", Door + Vector3.up * 0.4f, 10, Water, 5f, 0.3f, 0.6f);
-            if (i == 1 && victim != null)
+            Vector3 up = roof + Vector3.up * (i % 7 * 0.55f);
+            var c = Poop[i % Poop.Length];
+            Fx.Burst("Fx/puff", up, 10, new Color(c.r, c.g, c.b, 0.45f), 3f, 2.6f, 1.8f);  // the blur
+            Fx.Burst("Fx/puff", up, 16, c, 4.5f, 1.2f, 1.5f);
+            Fx.Burst("Fx/puff", Door + Vector3.up * 0.4f, 8, Poop[(i + 1) % Poop.Length], 4f, 0.7f, 1.2f); // splats
+            if (i == 3 && victim != null)
             {
                 victim.Look.SetVisible(true);
                 victim.Free();
                 victim.Panic(Block.center, 5f);
                 GameHud.Shout(victim.transform, GameText.TutorialSoaked, 2.5f);
             }
-            yield return new WaitForSeconds(0.2f);
+            yield return new WaitForSeconds(0.35f);
         }
         ParkChaos.Add(Door, 3.5f, 3f, ParkChaos.Scary);
         Mischief.Complete(Mischief.Task.TutorialToilet);
