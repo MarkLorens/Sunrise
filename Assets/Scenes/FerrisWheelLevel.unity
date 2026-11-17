@@ -366,6 +366,38 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
   m_BlendShapeWeights: []
+--- !u!1 &118214267
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 118214268}
+  m_Layer: 0
+  m_Name: Ice Cream Stand
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &118214268
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 118214267}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.00000008940697, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 11.5, y: 0.0000007748604, z: -6.500001}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1635370990}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &143391269
 GameObject:
   m_ObjectHideFlags: 0
@@ -436,6 +468,38 @@ Transform:
   - {fileID: 1983405299}
   - {fileID: 1910860605}
   - {fileID: 1513031350}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &306470515
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 306470516}
+  m_Layer: 0
+  m_Name: Ice Cream Stand 2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &306470516
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 306470515}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.00000008940697, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -16.5, y: 0.000000059604645, z: -0.50000006}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1158181820}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &330585543
@@ -1223,7 +1287,6 @@ MonoBehaviour:
   range: 1.6
   prompt: Interact
   needsBody: 1
-  staffOnly: 0
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -1260,7 +1323,6 @@ MonoBehaviour:
   range: 2
   prompt: Interact
   needsBody: 1
-  staffOnly: 0
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -1828,7 +1890,6 @@ MonoBehaviour:
   range: 1.6
   prompt: Interact
   needsBody: 1
-  staffOnly: 0
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -1860,7 +1921,6 @@ MonoBehaviour:
   range: 2
   prompt: Interact
   needsBody: 1
-  staffOnly: 0
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -2355,7 +2415,6 @@ MonoBehaviour:
   range: 1.5
   prompt: Control panel
   needsBody: 1
-  staffOnly: 0
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -2858,7 +2917,6 @@ MonoBehaviour:
   range: 1.3
   prompt: Interact
   needsBody: 1
-  staffOnly: 0
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -2890,7 +2948,6 @@ MonoBehaviour:
   range: 2
   prompt: Interact
   needsBody: 1
-  staffOnly: 0
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -3260,7 +3317,6 @@ MonoBehaviour:
   range: 1.4
   prompt: Interact
   needsBody: 1
-  staffOnly: 0
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -3293,7 +3349,6 @@ MonoBehaviour:
   range: 2
   prompt: Interact
   needsBody: 1
-  staffOnly: 0
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -3421,6 +3476,120 @@ Transform:
   - {fileID: 758648201}
   m_Father: {fileID: 220372967}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1158181819
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1158181820}
+  - component: {fileID: 1158181822}
+  - component: {fileID: 1158181821}
+  m_Layer: 0
+  m_Name: IceCreamBase
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1158181820
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1158181819}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 306470516}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &1158181821
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1158181819}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 2.811111, y: 3.9, z: 0.1}
+  m_Center: {x: 0.109999955, y: 1.95, z: -0.25}
+--- !u!212 &1158181822
+SpriteRenderer:
+  serializedVersion: 3
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1158181819}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: c8e2094e2e3374c38b5ef52592a346f5, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_Sprite: {fileID: -2159528020297290472, guid: 9d76ec96cc3eb43c3bf8dc540b5b07a6, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 3.6888888, y: 3.9}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 1
+  m_SpriteSortPoint: 0
+  m_BlendShapeWeights: []
 --- !u!1 &1214822902
 GameObject:
   m_ObjectHideFlags: 0
@@ -3965,7 +4134,6 @@ MonoBehaviour:
   range: 2
   prompt: Interact
   needsBody: 1
-  staffOnly: 0
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -3984,7 +4152,6 @@ MonoBehaviour:
   range: 2
   prompt: Interact
   needsBody: 1
-  staffOnly: 0
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -4052,7 +4219,6 @@ MonoBehaviour:
   range: 1.4
   prompt: Interact
   needsBody: 1
-  staffOnly: 0
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -4085,7 +4251,6 @@ MonoBehaviour:
   range: 2
   prompt: Interact
   needsBody: 1
-  staffOnly: 0
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -4450,7 +4615,6 @@ MonoBehaviour:
   range: 2
   prompt: Interact
   needsBody: 1
-  staffOnly: 0
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -4487,7 +4651,6 @@ MonoBehaviour:
   range: 2
   prompt: Interact
   needsBody: 1
-  staffOnly: 0
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -4540,7 +4703,6 @@ MonoBehaviour:
   range: 2
   prompt: Interact
   needsBody: 1
-  staffOnly: 0
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -4577,7 +4739,6 @@ MonoBehaviour:
   range: 2
   prompt: Interact
   needsBody: 1
-  staffOnly: 0
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -4814,7 +4975,6 @@ MonoBehaviour:
   range: 2
   prompt: Interact
   needsBody: 1
-  staffOnly: 0
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -4846,7 +5006,6 @@ MonoBehaviour:
   range: 2
   prompt: Interact
   needsBody: 1
-  staffOnly: 0
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -4881,6 +5040,120 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1635370989
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1635370990}
+  - component: {fileID: 1635370992}
+  - component: {fileID: 1635370991}
+  m_Layer: 0
+  m_Name: IceCreamBase
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1635370990
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1635370989}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 118214268}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &1635370991
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1635370989}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 2.811111, y: 3.9, z: 0.1}
+  m_Center: {x: 0.109999955, y: 1.95, z: -0.25}
+--- !u!212 &1635370992
+SpriteRenderer:
+  serializedVersion: 3
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1635370989}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: c8e2094e2e3374c38b5ef52592a346f5, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_Sprite: {fileID: -2159528020297290472, guid: 9d76ec96cc3eb43c3bf8dc540b5b07a6, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 3.6888888, y: 3.9}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 1
+  m_SpriteSortPoint: 0
+  m_BlendShapeWeights: []
 --- !u!1 &1680034631
 GameObject:
   m_ObjectHideFlags: 0
@@ -5815,16 +6088,6 @@ Tilemap:
       m_TileObjectToInstantiateIndex: 65535
       dummyAlignment: 0
       m_AllTileFlags: 1
-  - first: {x: 11, y: -7, z: 0}
-    second:
-      serializedVersion: 2
-      m_TileIndex: 1
-      m_TileSpriteIndex: 1
-      m_TileMatrixIndex: 0
-      m_TileColorIndex: 0
-      m_TileObjectToInstantiateIndex: 65535
-      dummyAlignment: 0
-      m_AllTileFlags: 1
   - first: {x: 13, y: -7, z: 0}
     second:
       serializedVersion: 2
@@ -5960,16 +6223,6 @@ Tilemap:
       serializedVersion: 2
       m_TileIndex: 4
       m_TileSpriteIndex: 4
-      m_TileMatrixIndex: 0
-      m_TileColorIndex: 0
-      m_TileObjectToInstantiateIndex: 65535
-      dummyAlignment: 0
-      m_AllTileFlags: 1
-  - first: {x: -17, y: -1, z: 0}
-    second:
-      serializedVersion: 2
-      m_TileIndex: 1
-      m_TileSpriteIndex: 1
       m_TileMatrixIndex: 0
       m_TileColorIndex: 0
       m_TileObjectToInstantiateIndex: 65535
@@ -6601,7 +6854,7 @@ Tilemap:
     m_RefCount: 1
     m_Data: {fileID: 11400000, guid: bfe426a6c72124f99932709ccf3db27d, type: 2}
   - serializedVersion: 2
-    m_RefCount: 2
+    m_RefCount: 0
     m_Data: {fileID: 11400000, guid: 3f529e140b4ea4ef3a1aeabd05dec2cd, type: 2}
   - serializedVersion: 2
     m_RefCount: 9
@@ -6641,7 +6894,7 @@ Tilemap:
     m_RefCount: 1
     m_Data: {fileID: -3994468753565417295, guid: fb79d8f404c6647ce9c95e7b8c18f88f, type: 3}
   - serializedVersion: 2
-    m_RefCount: 2
+    m_RefCount: 0
     m_Data: {fileID: -2159528020297290472, guid: 9d76ec96cc3eb43c3bf8dc540b5b07a6, type: 3}
   - serializedVersion: 2
     m_RefCount: 9
@@ -6678,7 +6931,7 @@ Tilemap:
     m_Data: {fileID: -4618000123858058707, guid: c90c4f9bb77e34525a562aff6db6b839, type: 3}
   m_TileMatrixArray:
   - serializedVersion: 2
-    m_RefCount: 150
+    m_RefCount: 148
     m_Data:
       e00: 1
       e01: 0
@@ -6717,7 +6970,7 @@ Tilemap:
       e33: 1
   m_TileColorArray:
   - serializedVersion: 2
-    m_RefCount: 151
+    m_RefCount: 149
     m_Data: {r: 1, g: 1, b: 1, a: 1}
   m_TileObjectToInstantiateArray: []
   m_AnimationFrameRate: 1
@@ -7326,7 +7579,6 @@ MonoBehaviour:
   range: 1.6
   prompt: Interact
   needsBody: 1
-  staffOnly: 0
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -7363,7 +7615,6 @@ MonoBehaviour:
   range: 2
   prompt: Interact
   needsBody: 1
-  staffOnly: 0
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -7428,7 +7679,6 @@ MonoBehaviour:
   range: 2
   prompt: Interact
   needsBody: 1
-  staffOnly: 0
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -7669,7 +7919,6 @@ MonoBehaviour:
   range: 2
   prompt: Interact
   needsBody: 1
-  staffOnly: 0
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -7712,7 +7961,6 @@ MonoBehaviour:
   range: 2
   prompt: Interact
   needsBody: 1
-  staffOnly: 0
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -7775,7 +8023,6 @@ MonoBehaviour:
   range: 2
   prompt: Interact
   needsBody: 1
-  staffOnly: 0
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -7794,7 +8041,6 @@ MonoBehaviour:
   range: 2
   prompt: Interact
   needsBody: 1
-  staffOnly: 0
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -94986,3 +95232,5 @@ SceneRoots:
   - {fileID: 220372967}
   - {fileID: 143391270}
   - {fileID: 1233068827}
+  - {fileID: 118214268}
+  - {fileID: 306470516}
