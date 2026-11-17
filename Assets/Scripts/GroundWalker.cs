@@ -84,7 +84,8 @@ public class GroundWalker : MonoBehaviour
         return ground.HasTile(cell)
             && !BumpsIntoObject(transform.position, worldPos)
             && StaffArea.Allows(Body, transform.position, worldPos)
-            && FingerprintArea.Allows(Body, transform.position, worldPos);
+            && FingerprintArea.Allows(Body, transform.position, worldPos)
+            && Aftermath.Allows(Body, transform.position, worldPos);
     }
 
     bool OnTile(Vector3 velocity) => IsWalkable(rb.position + velocity * Time.fixedDeltaTime);

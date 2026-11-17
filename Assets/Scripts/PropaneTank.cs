@@ -24,7 +24,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
     public float cloudRadius = 2.6f;
     public int cloudPuffs = 14;
     public float payoffTime = 2.5f;    // the camera on the fireball
-    public float wakeShot = 3.5f;      // then on the technician waking up
+    public float wakeShot = 4.5f;      // then on the technician waking up (and coming out, if the wheel's down)
 
     static readonly Color Gas = new(0.7f, 0.95f, 0.55f);
 
@@ -150,6 +150,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
         Fx.Shake(0.5f, 1.5f);
         ParkChaos.Add(Center, 10f, 20f, ParkChaos.Terrifying); // nobody's hurt, everybody runs
         Mischief.Complete(boomTask);
+        Aftermath.Add(Center, cloudRadius + 1.5f, 120f);
 
         var shot = new GameObject("Boom Payoff").transform;
         shot.position = Center + Vector3.up;

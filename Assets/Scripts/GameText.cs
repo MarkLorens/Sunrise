@@ -192,18 +192,52 @@ public static class GameText
 
     // Burn the locker room
     public const string ThinkMascot = "Who's the big fuzzy idiot guarding the fan?";                // the mascot refuses you
-    public const string ThinkStinkGone = "Bye bye, fuzzball";                                        // the mascot runs off
+    public const string ThinkStinkGone = "The fuzzball is just as smelly, to be honest.";           // the mascot runs off
     public const string ThinkLockerCloud = "Locker room's full of gas. Now, the mechanic and that cable..."; // the cloud is full
-    public const string ThinkFire = "Ooh, toasty. Now's my chance with the operator";                // after the fire payoff
+    public const string ThinkFire = "Shoddy Construction, really. Now's my chance with the operator"; // after the fire payoff
     public const string ThinkBooth = "His own finger. How trusting";                                  // scanning as the operator
     public const string ThinkMaxSpeed = "Faster... FASTER!";                                          // maxing the wheel
-    public const string ThinkRolled = "...I may have overdone it";                                    // after the wheel's rolled
+    public const string ThinkRolled = "Fare-thee-wheel... Hehehe";                                    // after the wheel's rolled
 
     // Out loud
     public const string MascotGuard = "*angry mascot noises* (Don't touch the fan!)";
     public const string MascotStink = "*gagging mascot noises*";
     public const string PAFire = "ATTENTION! FIRE AT THE LOCKER ROOM! ALL STAFF TO THE LOCKER ROOM, NOW!";
     public const string OperatorFire = "FIRE?! Not the lockers, my lunch is in there!";
+
+    // Reset Agents standing guard at a scene, in turns (Aftermath, ResetAgent)
+    public static readonly string[] MoveAlong =
+    {
+        "Move along!", "Nothing to see here, folks!", "Keep it moving!", "Please step back!",
+    };
+
+    // Visitors gossiping after each event, at random near the player (VisitorSpawner). Once an event's happened, its
+    // lines join the pool for the rest of the game.
+    public static readonly (Mischief.Task after, string[] lines)[] Gossip =
+    {
+        (Mischief.Task.Electrocute, new[]
+        {
+            "Did you see what happened at the dance spot?", "Don't go near the drinking fountains.",
+            "Those people were just dancing...", "I'm not standing in any puddles today.",
+        }),
+        (Mischief.Task.CutPower, new[]
+        {
+            "The Ferris wheel just stopped with people on it!", "I can hear them screaming up there.",
+            "Glad I skipped the Ferris wheel.",
+        }),
+        (Mischief.Task.Explode, new[]
+        {
+            "The hot dog stand EXPLODED!", "I'm never eating a hot dog again.", "Was that a gas leak?",
+        }),
+        (Mischief.Task.LockerFire, new[]
+        {
+            "The locker room's on fire!", "Is this park cursed or something?", "Where's the fire department?",
+        }),
+        (Mischief.Task.WheelRolled, new[]
+        {
+            "THE WHEEL JUST ROLLED AWAY!", "I want my money back!", "We need to get out of here!",
+        }),
+    };
 
     // The hot dog man, out loud
     public const string HotDogGuard = "Hey! Hands off my fan!";

@@ -272,6 +272,7 @@ public class FerrisWheel : MonoBehaviour
         yield return new WaitForSeconds(1f); // the camera easing back
         Possession.InputBlocked = false;
         Mischief.Complete(Mischief.Task.WheelRolled);
+        Aftermath.Add(new Vector3(wheel.position.x, 0f, wheel.position.z), 13f, 9999f); // just outside the wreck's panic zone
         GameHud.Think(GameText.ThinkRolled);
     }
 
