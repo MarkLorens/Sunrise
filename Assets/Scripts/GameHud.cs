@@ -75,6 +75,7 @@ public class GameHud : MonoBehaviour
         interactor = GetComponent<PlayerInteractor>();
         Mischief.Reset();
         ParkChaos.Reset();
+        Aftermath.Reset();
 
         if (Camera.main != null && Camera.main.GetComponent<CameraRig>() == null) Camera.main.gameObject.AddComponent<CameraRig>();
         if (Camera.main != null && Camera.main.GetComponent<SeeThrough>() == null) Camera.main.gameObject.AddComponent<SeeThrough>();
@@ -173,8 +174,18 @@ public class GameHud : MonoBehaviour
         UpdateObjectives();
         UpdateStepPopup();
         UpdateGrip();
-        UpdatePrompt();
         UpdateBanners();
+    }
+
+    // Anything pinned over something in the world waits for the camera to move this frame: placed in Update it used
+    // last frame's camera and lagged a frame behind, stuttering as the camera followed the player.
+    void OnEnable() => Unity.Cinemachine.CinemachineCore.CameraUpdatedEvent.AddListener(FollowCamera);
+    void OnDisable() => Unity.Cinemachine.CinemachineCore.CameraUpdatedEvent.RemoveListener(FollowCamera);
+
+    void FollowCamera(Unity.Cinemachine.CinemachineBrain brain)
+    {
+        if (brain.OutputCamera != Camera.main) return;
+        UpdatePrompt();
         UpdateBubble();
         UpdateShouts();
     }

@@ -64,6 +64,7 @@ public class LockerRoom : MonoBehaviour
             break;
         }
         Mischief.Complete(Mischief.Task.LockerFire);
+        Aftermath.Add(transform.position, 6.5f, 9999f); // just outside the fire's own panic zone
     }
 
     // Loading a save (SaveGame).

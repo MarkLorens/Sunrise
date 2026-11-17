@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
@@ -44,7 +45,34 @@ public class VisitorSpawner : MonoBehaviour
     public string mascotName = "Mascot";
     public Transform mascotPost;     // in front of the locker room's propane fan; empty = no mascot
 
+    public Vector2 gossipEvery = new(5f, 10f); // seconds between someone near the player gossiping (GameText.Gossip)
+    public float gossipRange = 12f;
+
     const string VisitorName = "Visitor";
+    float nextGossip;
+    readonly List<string> heard = new();
+
+    // After an event, now and then someone near the player talks about it.
+    void Update()
+    {
+        if (Time.time < nextGossip || Possession.Instance == null) return;
+        nextGossip = Time.time + Random.Range(gossipEvery.x, gossipEvery.y);
+        heard.Clear();
+        foreach (var (after, lines) in GameText.Gossip)
+            if (Mischief.IsDone(after)) heard.AddRange(lines);
+        if (heard.Count == 0) return;
+
+        var near = new List<Visitor>();
+        Vector3 player = Possession.Instance.Focus.position;
+        foreach (var v in Visitor.All)
+        {
+            Vector3 d = v.transform.position - player;
+            if (v.brain == null && v.Look.Visible && v.Current is Visitor.State.Idle or Visitor.State.Wander or Visitor.State.Stare
+                && new Vector2(d.x, d.z).magnitude <= gossipRange)
+                near.Add(v);
+        }
+        if (near.Count > 0) GameHud.Shout(near[Random.Range(0, near.Count)].transform, heard[Random.Range(0, heard.Count)], 2.5f);
+    }
 
     void Start()
     {

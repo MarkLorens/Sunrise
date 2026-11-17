@@ -37,6 +37,10 @@ public class Visitor : MonoBehaviour, IInteraction
     [Range(0, 1)] public float listenChance = 0.2f;  // per stop, chance to go listen to a speaker whose crowd isn't full
     public Vector2 listenTime = new(8f, 20f);         // how long they stand listening
 
+    [Range(0, 1)] public float gawkChance = 0.5f;    // per stop, chance to go gawk at a scene nearby (Aftermath)
+    public float gawkRange = 14f;                     // how far from a scene's gawking ring they notice it
+    public Vector2 gawkTime = new(6f, 12f);           // how long they stand gawking
+
     public float stareRadius = 3f;
     public float stareTime = 1.5f;
     public float sendAwayDistance = 7f;
@@ -63,6 +67,7 @@ public class Visitor : MonoBehaviour, IInteraction
     Rigidbody rb;
     RideQueue queue;
     Vector3 target;
+    Vector3? gawkAt; // heading to gawk at this scene (Aftermath)
     public Vector3 Target => target; // where they're walking to
     Vector3 panicFrom;
     float stateEndsAt;
@@ -125,7 +130,7 @@ public class Visitor : MonoBehaviour, IInteraction
                 if (!WalkTo(target))
                 {
                     TryShop();
-                    Idle();
+                    if (!Gawk()) Idle();
                 }
                 else if (Time.time >= stateEndsAt) Idle();
                 break;
@@ -194,6 +199,7 @@ public class Visitor : MonoBehaviour, IInteraction
             var stall = Stall.All[Random.Range(0, Stall.All.Count)];
             if (Head(stall.ServePoint + new Vector3(Random.Range(-0.4f, 0.4f), 0f, 0f))) return;
         }
+        if (Random.value < gawkChance && HeadToGawk()) return;
         var speaker = Speaker.Wanting();
         if (speaker != null && Random.value < listenChance && Head(speaker.ListenSpot())) return;
         PickTarget();
@@ -231,6 +237,7 @@ public class Visitor : MonoBehaviour, IInteraction
     // Set off for a spot, if it's somewhere you can walk and nothing terrible is happening there.
     bool Head(Vector3 spot)
     {
+        gawkAt = null;
         if (!walker.IsWalkable(spot) || ParkChaos.Threat(spot, false, out _)) return false;
         target = spot;
         SetState(State.Wander);
@@ -302,8 +309,46 @@ public class Visitor : MonoBehaviour, IInteraction
         return true;
     }
 
+    // ---------------------------------------------------------------- gawking (Aftermath)
+
+    // Off to a spot on the ring round a scene nearby, keeping its distance, on the side they're coming from.
+    bool HeadToGawk()
+    {
+        if (!Aftermath.Nearest(transform.position, gawkRange, out Vector3 center, out float keepBack)) return false;
+        Vector3 from = transform.position - center;
+        from.y = 0f;
+        if (from.sqrMagnitude < 0.01f) from = Vector3.back;
+        for (int i = 0; i < 8; i++)
+        {
+            Vector3 dir = Quaternion.Euler(0f, Random.Range(-40f, 40f), 0f) * from.normalized;
+            if (!Head(center + dir * (keepBack + Random.Range(0.5f, 2f)))) continue;
+            gawkAt = center;
+            return true;
+        }
+        return false;
+    }
+
+    // Arrived at the ring: stand and stare at it for a while.
+    bool Gawk()
+    {
+        if (!gawkAt.HasValue) return false;
+        SetState(State.Stare);
+        walker.move = Vector2.zero;
+        Look.Face(gawkAt.Value);
+        stateEndsAt = Time.time + Random.Range(gawkTime.x, gawkTime.y);
+        gawkAt = null;
+        return true;
+    }
+
+    // A Reset Agent telling the crowd to move along (ResetAgent): off they go, away from them.
+    public void MoveAlong(Component by)
+    {
+        if (brain != null || Current is State.Possessed or State.Riding or State.Down or State.Queueing) return;
+        SendAway(by);
+    }
+
     // Told to move along by staff: walk off away from them.
-    void SendAway(Visitor by)
+    void SendAway(Component by)
     {
         LeaveQueue();
         Vector3 away = transform.position - by.transform.position;

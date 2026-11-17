@@ -165,6 +165,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
             shout = "Clean-up on the fountain! Everybody out of the way!",
             done = Mop,
         });
+        Aftermath.Add(PuddleCenter, Radius + 1f, 90f); // another agent guards its edge
 
         if (mechanicCalled) return;
         if (victims < victimsToCallMechanic) return; // not much of a scene: nobody's coming to fix it yet

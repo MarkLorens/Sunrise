@@ -150,6 +150,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
         Fx.Shake(0.5f, 1.5f);
         ParkChaos.Add(Center, 10f, 20f, ParkChaos.Terrifying); // nobody's hurt, everybody runs
         Mischief.Complete(boomTask);
+        Aftermath.Add(Center, cloudRadius + 1.5f, 120f);
 
         var shot = new GameObject("Boom Payoff").transform;
         shot.position = Center + Vector3.up;
