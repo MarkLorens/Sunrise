@@ -11,7 +11,7 @@ public interface IInteraction
     void Interact(Visitor host);
 }
 
-// Anything the player can press E on. Simple ones hook up onInteract in the Inspector;
+// Anything the player can press K on. Simple ones hook up onInteract in the Inspector;
 // puzzle pieces add an IInteraction component for rules that depend on who's interacting.
 public class Interactable : MonoBehaviour
 {
@@ -21,7 +21,6 @@ public class Interactable : MonoBehaviour
     public float range = 2f;
     public string prompt = "Interact";
     public bool needsBody = true; // the spirit can't touch the world; it has to be inside someone
-    public bool staffOnly;        // only shows up for, and works for, someone possessing staff
     public UnityEvent onInteract = new(); // AddComponent doesn't create it, only the Inspector does
 
     IInteraction rules;

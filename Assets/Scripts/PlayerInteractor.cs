@@ -1,9 +1,8 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-// Pressing E as a spirit possesses whoever you're touching. Inside someone, E interacts with the nearest
-// Interactable whose range reaches the player (a ride part, the stall, or, as staff, a visitor), on behalf of
-// whoever the spirit is possessing.
+// K uses the nearest Interactable whose range reaches the player (a ride part, the stall...), on behalf of whoever
+// the spirit is possessing. As a spirit there's nothing it can touch: K just says so. (Possessing is J: Possession.)
 public class PlayerInteractor : MonoBehaviour
 {
     Possession possession;
@@ -15,9 +14,8 @@ public class PlayerInteractor : MonoBehaviour
     void Update()
     {
         var kb = Keyboard.current;
-        if (Possession.InputBlocked || kb == null || !kb.eKey.wasPressedThisFrame) return;
+        if (Possession.InputBlocked || kb == null || !kb.kKey.wasPressedThisFrame) return;
         if (possession.State == Possession.Mode.Diving) return;
-        if (Host == null && possession.TryPossess()) return;
 
         var target = Nearest();
         if (target == null) return;
@@ -40,7 +38,6 @@ public class PlayerInteractor : MonoBehaviour
         foreach (var i in Interactable.All)
         {
             if (Host != null && i.gameObject == Host.gameObject) continue; // yourself
-            if (i.staffOnly && (Host == null || Host.brain == null)) continue; // nothing for anyone else to do here
             Vector3 d = i.transform.position - transform.position;
             d.y = 0; // distance along the floor only, so sprite height/pivot doesn't count
             float dist = d.magnitude;

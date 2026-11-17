@@ -5,7 +5,7 @@ using UnityEngine.Rendering.Universal;
 using UnityEngine.Tilemaps;
 
 // Night at the carnival, laid over the day scene at runtime (no new art, no scene changes): the sun becomes a dim
-// blue moon, the ambient light drops to a dusky purple, the sky goes dark, a night grade goes over the
+// moon, the ambient light drops to a cool blue-grey (the park's own colours still read), the sky goes dark, a night grade goes over the
 // post-processing, and the park's own lights come on - warm pools under every lamp post, the stalls lit, chasing
 // bulbs round the Ferris wheel rim and a glow in every cabin. The wheel's bulbs race in overdrive and the whole ride
 // goes dark when it breaks. A soft spirit glow follows whoever you control so you never lose yourself in the dark.
@@ -15,10 +15,10 @@ using UnityEngine.Tilemaps;
 public class NightLighting : MonoBehaviour
 {
     [Header("Sky")]
-    public Color moonColor = new(0.62f, 0.66f, 1f);
-    public float moonIntensity = 0.9f;
-    public Color ambient = new(0.3f, 0.27f, 0.48f);
-    public Color sky = new(0.04f, 0.03f, 0.09f);   // camera background where the park ends
+    public Color moonColor = new(0.9f, 0.95f, 1f);
+    public float moonIntensity = 0.8f;
+    public Color ambient = new(0.52f, 0.62f, 0.62f);
+    public Color sky = new(0.15f, 0.1f, 0.26f);   // camera background where the park ends
 
     [Header("Fog")]
     // Fades the park into the night sky with distance, so far things lose contrast and the near ones pop.
@@ -27,9 +27,9 @@ public class NightLighting : MonoBehaviour
     public float fogEnd = 45f;
 
     [Header("Grade")]
-    public float exposure = -0.2f;
-    [Range(-100, 100)] public float contrast = 12f;
-    [Range(-100, 100)] public float saturation = -5f;
+    public float exposure = -0.1f;
+    [Range(-100, 100)] public float contrast = 8f;
+    [Range(-100, 100)] public float saturation = -20f;
     public Color shadowTint = new(1f, 0.92f, 1.12f); // pushes the darkest tones purple
     public float bloom = 0.8f;
     [Range(0, 1)] public float vignette = 0.35f;
@@ -37,14 +37,20 @@ public class NightLighting : MonoBehaviour
     [Header("Park lights")]
     public string lampSprite = "lamp"; // tiles drawn with this sprite get a light in their lantern
     public float lanternHeight = 0.87f; // where the lantern is, as a fraction of the lamp's height
-    public Color lampColor = new(1f, 0.78f, 0.48f);
-    public float lampIntensity = 2f;
+    // The lamps take these in turn (lamp 1 the first, lamp 2 the second, ...). Add or remove colours freely.
+    public Color[] lampColors =
+    {
+        new(0.25f, 0.45f, 1f),  // #4073FF blue
+        new(0.6f, 0.25f, 1f),   // #9940FF purple
+        new(1f, 0.25f, 0.7f),   // #FF40B3 pink
+    };
+    public float lampIntensity = 1.4f;
     public float lampRange = 4f;
-    public float lampCoreSize = 0.55f;   // the hot spot inside the glass
-    [Range(0, 1)] public float lampCoreAlpha = 0.4f;
-    public float lampHaloSize = 3.5f;    // the faint haze around it
-    [Range(0, 1)] public float lampHaloAlpha = 0.07f;
-    public float poolIntensity = 1.2f;   // the wide, soft pool the lamp throws on the ground around its post
+    public float lampCoreSize = 0.9f;   // the hot spot inside the glass
+    [Range(0, 1)] public float lampCoreAlpha = 0.55f;
+    public float lampHaloSize = 4f;    // the faint haze around it
+    [Range(0, 1)] public float lampHaloAlpha = 0.13f;
+    public float poolIntensity = 0.8f;   // the wide, soft pool the lamp throws on the ground around its post
     public float poolRange = 8f;
     public float poolHeight = 1.2f;      // how far above the ground it sits: higher spreads it wider and fainter
     [Range(0, 1)] public float lampFlicker = 0.08f; // how far a flame dips, as a fraction of full brightness
@@ -60,15 +66,16 @@ public class NightLighting : MonoBehaviour
     public float rideIntensity = 2.5f; // the coloured wash on the platform
 
     [Header("Player")]
-    public Color playerColor = new(0.85f, 0.7f, 1f);
-    public float playerIntensity = 1.5f;
-    public float playerRange = 4f;
+    public Color playerColor = new(1f, 0.62f, 0.18f); // a warm glow off the spirit
+    public float playerIntensity = 6f;
+    public float playerRange = 4.5f; // it sits above and in front: shorter and it misses the spirit
 
     class Lamp
     {
         public Vector3 foot;
         public Light light, pool;
         public SpriteRenderer core, halo;
+        public Color color;
     }
 
     class Ride
@@ -221,10 +228,12 @@ public class NightLighting : MonoBehaviour
                 // Props stand upright on their cell with their feet at its centre.
                 Vector3 foot = map.GetCellCenterWorld(cell);
                 Vector3 lantern = foot + Vector3.up * (s.bounds.max.y * map.transform.lossyScale.y * lanternHeight);
+                Color lampColor = LampColor(lamps.Count);
                 // Well in front of the lantern, so it lights the lamp and the people near it without burning the glass white.
                 lamps.Add(new Lamp
                 {
                     foot = foot,
+                    color = lampColor,
                     light = PointLight("Lamp Light", root, lantern + Vector3.back * 1.2f),
                     pool = PointLight("Lamp Pool", root, foot),
                     core = Glow("Lamp Core", root, lantern + Vector3.back * 0.05f, lampCoreSize, lampColor, lampCoreAlpha),
@@ -265,6 +274,8 @@ public class NightLighting : MonoBehaviour
         }
         return ride;
     }
+
+    Color LampColor(int i) => lampColors.Length > 0 ? lampColors[i % lampColors.Length] : Color.white;
 
     Color Bulb(int i) => bulbColors.Length > 0 ? bulbColors[i % bulbColors.Length] : Color.white;
 
@@ -325,11 +336,11 @@ public class NightLighting : MonoBehaviour
             float f = 1f - lampFlicker * Mathf.PerlinNoise(Time.time * lampFlickerSpeed, i * 7.31f);
             if (i == Sputtering && Mathf.PerlinNoise(Time.time * 9f, 0.5f) < 0.45f) f = 0.08f; // a faulty bulb cutting out
             var l = lamps[i];
-            Set(l.light, lampColor, lampIntensity * f, lampRange);
-            Set(l.pool, lampColor, poolIntensity * f, poolRange);
+            Set(l.light, l.color, lampIntensity * f, lampRange);
+            Set(l.pool, l.color, poolIntensity * f, poolRange);
             l.pool.transform.position = l.foot + new Vector3(0f, poolHeight, -0.3f);
-            Tint(l.core, lampColor, lampCoreAlpha * f, lampCoreSize);
-            Tint(l.halo, lampColor, lampHaloAlpha * f, lampHaloSize);
+            Tint(l.core, l.color, lampCoreAlpha * f, lampCoreSize);
+            Tint(l.halo, l.color, lampHaloAlpha * f, lampHaloSize);
         }
         foreach (var l in stalls) Set(l, stallColor, stallIntensity, stallRange);
 

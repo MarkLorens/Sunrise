@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // A drinks stall. Visitors with empty hands wander over and buy whatever it sells;
-// a possessed visitor can buy one too (E) - handy when the puzzle needs another drink.
+// a possessed visitor can buy one too (K) - handy when the puzzle needs another drink.
 [RequireComponent(typeof(Interactable))]
 public class Stall : MonoBehaviour, IInteraction
 {

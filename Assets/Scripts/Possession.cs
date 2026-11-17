@@ -3,8 +3,8 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 // The player: an evil spirit floating around the park, possessing visitors.
-//   Spirit:     WASD float anywhere in the park - E possess whoever you touch.
-//   Possessed:  WASD walk, E use things (or, as staff, tell a visitor to move along), Q leave the body.
+//   Spirit:     WASD float anywhere in the park - J possess whoever you touch.
+//   Possessed:  WASD walk, K use things (PlayerInteractor), J leave the body.
 // Anyone can be possessed, by touching them, for as long as you like. After leaving someone you have to wait 10 s
 // before possessing the same person again; anyone else straight away. Whatever they hold is yours to use.
 [RequireComponent(typeof(GroundWalker))]
@@ -74,19 +74,19 @@ public class Possession : MonoBehaviour
     {
         var kb = Keyboard.current;
         bool live = !InputBlocked && kb != null;
-        bool q = live && kb.qKey.wasPressedThisFrame;
+        bool j = live && kb.jKey.wasPressedThisFrame; // J: in when you're out, out when you're in
 
         switch (State)
         {
             case Mode.Spirit:
                 FindCandidate();
-                if (q) TryPossess();
+                if (j) TryPossess();
                 break;
             case Mode.Diving:
                 Dive();
                 break;
             case Mode.Possessing:
-                Possessing(q);
+                Possessing(j);
                 break;
         }
         Hover();
@@ -225,14 +225,14 @@ public class Possession : MonoBehaviour
 
     // ---------------------------------------------------------------- possessed
 
-    void Possessing(bool q)
+    void Possessing(bool leave)
     {
         if (Host == null || Host.Current != Visitor.State.Possessed)
         {
             Release(); // knocked down...
             return;
         }
-        if (q)
+        if (leave)
         {
             Release();
             GameHud.Say(GameText.LeftBody);

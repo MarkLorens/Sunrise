@@ -6,7 +6,7 @@ using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Rendering.Universal;
 
 // A white outline round everything you could act on right now, like the edge on usable things in Cult of the Lamb:
-// whoever you'd possess, and what E would use (a ride part, the stall, or, as staff, a visitor to send away). Only
+// whoever you'd possess, and what K would use (a ride part, the stall...). Only
 // what you're allowed to act on lights up; refusals stay plain (the HUD says why). Only lit sprites are outlined - the standing art, not shadows, bubbles or
 // glows. Drawn over the finished frame (Resources/ActionOutline.shader), so the night grade doesn't tint it, and
 // injected from here rather than the renderer assets, so it works on the PC and Mobile renderers alike.
@@ -63,7 +63,7 @@ public class ActionOutline : MonoBehaviour
         switch (spirit.State)
         {
             case Possession.Mode.Spirit:
-                // E possesses whoever you're touching; with nobody there it goes to the nearest thing instead.
+                // J possesses whoever you're touching; with nobody there, the nearest thing K would use.
                 if (spirit.Candidate == null) AddUsable(null);
                 else if (spirit.CandidateBlocked == null) targets.Add(spirit.Candidate);
                 break;
