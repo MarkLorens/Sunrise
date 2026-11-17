@@ -1,12 +1,14 @@
 using UnityEngine;
 
 // The spirit's look, built from separate pieces of art in Resources/MC and put together exactly as in the artist's
-// compile guide ("MC compile guide.PNG"):
+// compile guide ("MC compile guide.PNG"). Every piece is drawn on the guide's full canvas, already in its place, so
+// they're simply stacked on one spot (back to front: body, eyes, mouth, hands):
 //   Body:  MC_idle_1..4, looping (the flame on its head flickers).
 //   Eyes:  MC_face_eyes left -> center -> right -> center -> left ..., on a timer like the visitors' blinking;
 //          where it moves doesn't change where it looks.
-//   Bob:   body (with its eyes) and both hands float up and down together, in step. The left hand sits behind the
-//          body, the right hand in front of it.
+//   Mouth: MC_face_mouth grin, always the same.
+//   Hands: hands (both hands in one picture).
+//   Bob:   body (with its face) and the hands float up and down together, in step.
 // Like the possessed visitors it turns to face the way it floats: the art faces left, so moving right mirrors it.
 // The pieces hang off a "Visual" child, so mirroring never touches the spirit's own collider (or the camera). They
 // show and hide with the spirit's own SpriteRenderer (Possession hides that while you're inside someone), which no
@@ -27,19 +29,12 @@ public class SpiritSprite : MonoBehaviour
     [Tooltip("How fast everything bobs (radians per second: one full bob takes 2\u03c0 / speed seconds).")]
     public float handBobSpeed = 4f;
 
-    // Measured from the compile guide: each piece's centre in pixels from the centre of the guide, y up (the pieces
-    // use the same 100 pixels per unit, so 100 px = 1 unit before the spirit's own scale). The hands are drawn
-    // at 78% of their file's size. The guide is the same size as the old single picture, so the spirit stays put.
-    static readonly Vector2 BodyAt = new(28.5f, 21f);
-    static readonly Vector2 EyesAt = new(-17.5f, -68f);
-    static readonly Vector2 HandLeftAt = new(-147.5f, -187f);
-    static readonly Vector2 HandRightAt = new(105f, -186.5f);
-    const float HandScale = 0.78f;
+    // The pieces use 100 pixels per unit (100 px = 1 unit before the spirit's own scale); all sit centred on the spirit.
     const float PixelsPerUnit = 100f;
     // Front to back (lower z is nearer the camera): the lit shader writes depth, so pieces are spaced, not sorted.
     const float Layer = 0.02f;
 
-    SpriteRenderer root, body, eyes, handLeft, handRight;
+    SpriteRenderer root, body, eyes, mouth, hands;
     Transform visual;
     Sprite[] idle;
     Sprite[] eyeCycle; // left, center, right, center
@@ -65,10 +60,10 @@ public class SpiritSprite : MonoBehaviour
 
         visual = new GameObject("Visual").transform;
         visual.SetParent(transform, false);
-        handLeft = Part("Hand Left", Art("hand left"), HandLeftAt, Layer, HandScale);
-        body = Part("Body", idle[0], BodyAt, 0f, 1f);
-        eyes = Part("Eyes", eyeCycle[0], EyesAt, -Layer, 1f);
-        handRight = Part("Hand Right", Art("hand right"), HandRightAt, -2f * Layer, HandScale);
+        body = Part("Body", idle[0], 0f);
+        eyes = Part("Eyes", eyeCycle[0], -Layer);
+        mouth = Part("Mouth", Art("MC_face_mouth grin"), -2f * Layer);
+        hands = Part("Hands", Art("hands"), -3f * Layer);
 
         root.forceRenderingOff = true; // the pieces draw the spirit now
         eyeUntil = Time.time + Random.Range(eyeHold.x, eyeHold.y);
@@ -76,12 +71,11 @@ public class SpiritSprite : MonoBehaviour
 
     static Sprite Art(string name) => Resources.Load<Sprite>("MC/" + name);
 
-    SpriteRenderer Part(string name, Sprite sprite, Vector2 at, float z, float scale)
+    SpriteRenderer Part(string name, Sprite sprite, float z)
     {
         var r = new GameObject(name).AddComponent<SpriteRenderer>();
         r.transform.SetParent(visual, false);
-        r.transform.localPosition = new Vector3(at.x / PixelsPerUnit, at.y / PixelsPerUnit, z);
-        r.transform.localScale = Vector3.one * scale;
+        r.transform.localPosition = new Vector3(0f, 0f, z);
         r.sprite = sprite;
         r.sharedMaterial = ParkArt.CharacterMaterial; // a person too: never see-through
         ParkArt.CastShadows(r);
@@ -91,7 +85,7 @@ public class SpiritSprite : MonoBehaviour
     void LateUpdate()
     {
         bool shown = root.enabled;
-        if (body.enabled != shown) body.enabled = eyes.enabled = handLeft.enabled = handRight.enabled = shown;
+        if (body.enabled != shown) body.enabled = eyes.enabled = mouth.enabled = hands.enabled = shown;
         if (!shown) return;
 
         // Face the way it floats (keeps the last way while standing still).
@@ -109,18 +103,18 @@ public class SpiritSprite : MonoBehaviour
             eyes.sprite = eyeCycle[eyeStep];
         }
 
-        // Everything bobs together on one wave: both hands by handBobPixels, the body and eyes by bodyBobPixels.
+        // Everything bobs together on one wave: the hands by handBobPixels, the body and its face by bodyBobPixels.
         float wave = Mathf.Sin(Time.time * handBobSpeed) / PixelsPerUnit;
-        Bob(handLeft, HandLeftAt, handBobPixels * wave);
-        Bob(handRight, HandRightAt, handBobPixels * wave);
-        Bob(body, BodyAt, bodyBobPixels * wave);
-        Bob(eyes, EyesAt, bodyBobPixels * wave);
+        Bob(hands, handBobPixels * wave);
+        Bob(body, bodyBobPixels * wave);
+        Bob(eyes, bodyBobPixels * wave);
+        Bob(mouth, bodyBobPixels * wave);
     }
 
-    static void Bob(SpriteRenderer part, Vector2 at, float offset)
+    static void Bob(SpriteRenderer part, float offset)
     {
         var p = part.transform.localPosition;
-        p.y = at.y / PixelsPerUnit + offset;
+        p.y = offset;
         part.transform.localPosition = p;
     }
 }

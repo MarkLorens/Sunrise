@@ -30,6 +30,9 @@ public class CameraRig : MonoBehaviour
     public float fadeTime = 0.8f;     // seconds for a point of interest to fully ease in/out
     public Vector2 dollyRange = new(-2f, 6f); // how much closer / further than `offset` the camera may go
 
+    [Header("Zoom")]
+    public float zoomTime = 0.5f; // roughly how long Zoom / EndZoom take to ease in and out: higher = slower
+
     [Header("Depth of field")]
     // Tilt-shift look: the player stays sharp, the ground in front and behind blurs, so the park reads as a diorama.
     // Focus follows whoever you control (and the dolly). Blur grows with focal length and shrinks with aperture.
@@ -43,6 +46,10 @@ public class CameraRig : MonoBehaviour
     Transform target, spot;
     float spotUntil, spotPullBack;
     float shake, shakeRate = 1.5f; // current strength, and how much of it fades per second
+    CinemachineCamera vcam;
+    bool orthographic;
+    float baseLens; // the scene camera's field of view (or orthographic size)
+    float zoom = 1f, zoomTarget = 1f, zoomVelocity;
 
     VolumeProfile dofProfile;
     DepthOfField dof;
@@ -52,8 +59,9 @@ public class CameraRig : MonoBehaviour
     public static void Shake(float amount, float seconds = 0f)
     {
         var rig = Instance;
-        if (rig == null || amount <= 0f) return;
         if (seconds <= 0f) seconds = amount / 1.5f;
+        amount *= Settings.ShakeStrength; // the player's Screen shake setting
+        if (rig == null || amount <= 0f) return;
         float left = rig.shake / rig.shakeRate; // seconds the shake already going still has
         rig.shake = Mathf.Min(rig.shake + amount, 0.5f);
         rig.shakeRate = rig.shake / Mathf.Max(left, seconds);
@@ -79,6 +87,15 @@ public class CameraRig : MonoBehaviour
         if (Instance != null) Instance.spotUntil = 0f;
     }
 
+    // Smoothly zooms the lens in on whatever's in shot: amount 0.6 = everything looks 1/0.6 times bigger
+    // (above 1 zooms out). Stays until EndZoom, which eases back to normal.
+    public static void Zoom(float amount)
+    {
+        if (Instance != null) Instance.zoomTarget = Mathf.Max(0.1f, amount);
+    }
+
+    public static void EndZoom() => Zoom(1f);
+
     void Awake()
     {
         Instance = this;
@@ -89,6 +106,8 @@ public class CameraRig : MonoBehaviour
         if (!TryGetComponent(out CinemachineBrain brain)) brain = gameObject.AddComponent<CinemachineBrain>();
         brain.IgnoreTimeScale = true; // keeps moving through hit-stop / slow-mo like the old rig
         var lens = LensSettings.FromCamera(GetComponent<Camera>());
+        orthographic = GetComponent<Camera>().orthographic;
+        baseLens = orthographic ? lens.OrthographicSize : lens.FieldOfView;
 
         // Temporal anti-aliasing: blends the last few frames. Besides smoothing edges, it turns the see-through hole's
         // moving dither (SeeThrough.hlsl) into a smooth fade instead of a visible dot pattern.
@@ -106,7 +125,7 @@ public class CameraRig : MonoBehaviour
 
         var go = new GameObject("Framing Camera");
         go.transform.rotation = Quaternion.LookRotation(-offset, Vector3.up); // fixed angle: no aim component
-        var cam = go.AddComponent<CinemachineCamera>();
+        var cam = vcam = go.AddComponent<CinemachineCamera>();
         cam.Lens = lens;
         cam.Follow = group.transform;
 
@@ -135,6 +154,7 @@ public class CameraRig : MonoBehaviour
     void OnDestroy()
     {
         if (group != null) Destroy(group.gameObject);
+        if (aim != null) Destroy(aim.gameObject);
         if (shakeOffset != null) Destroy(shakeOffset.gameObject);
         if (dofProfile != null) Destroy(dofProfile);
     }
@@ -144,7 +164,7 @@ public class CameraRig : MonoBehaviour
         var spirit = Possession.Instance;
         body.Damping = Vector3.one * followDamping; // same on every axis, so moving up/down the screen feels like left/right
         body.CameraDistance = offset.magnitude + (spot != null ? spotPullBack : 0f); // eased by the damping
-        Follow(spirit != null ? spirit.Focus : null);
+        Follow(Aim(spirit));
         Focus();
 
         // Smooth noise, so the camera sways and settles instead of buzzing; wider than tall, like a hit's knock.
@@ -152,7 +172,41 @@ public class CameraRig : MonoBehaviour
         float t = Time.unscaledTime * shakeFrequency;
         var sway = new Vector3(Mathf.PerlinNoise(t, 0.3f) * 2f - 1f, (Mathf.PerlinNoise(t, 7.7f) * 2f - 1f) * 0.6f, 0f);
         shakeOffset.Offset = sway * (shake * shakeDistance);
+
+        Lens();
     }
+
+    // Eases the lens toward zoomTarget (Zoom / EndZoom), starting and stopping gently.
+    void Lens()
+    {
+        if (zoom == zoomTarget) return;
+        zoom = Mathf.SmoothDamp(zoom, zoomTarget, ref zoomVelocity, zoomTime, Mathf.Infinity, Time.unscaledDeltaTime);
+        if (Mathf.Abs(zoom - zoomTarget) < 0.001f) zoom = zoomTarget;
+        var lens = vcam.Lens;
+        if (orthographic) lens.OrthographicSize = baseLens * zoom;
+        // The view's height shrinks by `zoom` (not the angle), so 0.5 really makes things twice as big.
+        else lens.FieldOfView = 2f * Mathf.Atan(Mathf.Tan(baseLens * 0.5f * Mathf.Deg2Rad) * zoom) * Mathf.Rad2Deg;
+        vcam.Lens = lens;
+    }
+
+    // What the camera centres on: the middle of whoever you control, not their feet. Someone you're in stands on their
+    // feet (their pivot), so the point is lifted by half their height; the spirit's own pivot is already its middle.
+    // Eased, so stepping into or out of someone doesn't jolt the shot.
+    Transform Aim(Possession spirit)
+    {
+        var focus = spirit != null ? spirit.Focus : null;
+        if (focus == null) return null;
+        if (aim == null) aim = new GameObject("Camera Aim").transform;
+        aimed = focus;
+        var host = spirit.Host;
+        float lift = host != null ? host.HeadHeight * 0.5f : 0f;
+        centreLift = Mathf.SmoothDamp(centreLift, lift, ref centreLiftSpeed, followDamping, Mathf.Infinity, Time.unscaledDeltaTime);
+        aim.position = focus.position + Vector3.up * centreLift;
+        return aim;
+    }
+
+    Transform aim, aimed; // the point, and whose middle it is
+    float centreLift, centreLiftSpeed;
 
     // Keeps the framing camera's group up to date.
     void Follow(Transform focus)
@@ -180,7 +234,7 @@ public class CameraRig : MonoBehaviour
     // Focus on the player (or whatever's spotlit) along the view axis.
     void Focus()
     {
-        dof.active = depthOfField && target != null;
+        dof.active = depthOfField && Settings.DepthOfField && target != null;
         if (!dof.active) return;
         var cam = transform; // the brain places the main camera
         var on = spot != null ? spot : target;
@@ -197,7 +251,7 @@ public class CameraRig : MonoBehaviour
         if (framePointsOfInterest)
             foreach (var t in Interesting())
             {
-                if (t == target || t == spot || t.IsChildOf(target)) continue;
+                if (t == target || t == spot || (aimed != null && t.IsChildOf(aimed))) continue; // not the player themselves
                 if (group.FindMember(t) < 0 && Vector3.Distance(here, t.position) < joinRadius) group.AddMember(t, 0f, 0.8f);
             }
 

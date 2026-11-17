@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 2008ae907e6b34c678ee947d0edea4b1
+guid: bf4b127ba00cc46029f5938087c76535
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -906679661110713943
-    second: hand left_0
+      213: -907886317600548988
+    second: MC_face_mouth grin_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -115,13 +115,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: hand left_0
+      name: MC_face_mouth grin_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 226
-        height: 177
+        width: 711
+        height: 628
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -130,8 +130,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 9a1ac6ae6a3da63f0800000000000000
-      internalID: -906679661110713943
+      spriteID: 4875bfe443a8663f0800000000000000
+      internalID: -907886317600548988
       vertices: []
       indices: 
       edges: []

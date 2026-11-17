@@ -18,14 +18,11 @@ public class Item : MonoBehaviour
         VisitorItem.Drink => "drink",
         VisitorItem.Keys => "keys",
         VisitorItem.WaterBottle => "water bottle",
+        VisitorItem.Screwdriver => "screwdriver",
         _ => "thing",
     };
 
     SpriteRenderer sprite, shadow;
-
-    // What the HUD's inventory box shows (a grey block until the item has art).
-    public Sprite Icon => sprite.sprite;
-    public Color IconColor => sprite.color;
     Vector3 velocity;
     bool falling;
 

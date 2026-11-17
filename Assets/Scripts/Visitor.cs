@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Values are fixed because they're saved in the scene (the stall's goods, the spawner's items).
-public enum VisitorItem { None = 0, Drink = 3, Keys = 4, WaterBottle = 5 }
+public enum VisitorItem { None = 0, Drink = 3, Keys = 4, WaterBottle = 5, Screwdriver = 6 }
 
 // A park visitor going about their day: wandering, buying drinks at the stall, lining up for the Ferris wheel,
 // carrying their things in their hand. They stop and stare at someone acting possessed, and scream and run when
@@ -42,6 +42,12 @@ public class Visitor : MonoBehaviour, IInteraction
     public float sendAwayDistance = 7f;
 
     public State Current { get; private set; }
+
+    // Taken over by a script for a moment (the tutorial): standing still, or walking to scriptedSpot. Free() hands
+    // them back. Possessing them frees them.
+    bool scripted;
+    Vector3? scriptedSpot;
+    public bool Walking => scripted && scriptedSpot.HasValue;
     public bool CanBePossessed => possessable && Look.Visible && Current is not (State.Possessed or State.Riding or State.Down);
     public CharacterSprite Look { get; private set; }
     public Item Held { get; private set; }
@@ -91,6 +97,12 @@ public class Visitor : MonoBehaviour, IInteraction
         Vector3 v = rb.linearVelocity;
         if (new Vector2(v.x, v.z).sqrMagnitude > 0.04f) Facing = new Vector3(v.x, 0f, v.z).normalized;
         if (brain != null && Current != State.Possessed) return;
+        if (scripted && Current != State.Possessed)
+        {
+            if (scriptedSpot.HasValue && !WalkTo(scriptedSpot.Value)) scriptedSpot = null; // there
+            if (!scriptedSpot.HasValue) walker.move = Vector2.zero;
+            return;
+        }
 
         if (Current is State.Idle or State.Wander or State.Stare or State.Confused)
         {
@@ -132,6 +144,29 @@ public class Visitor : MonoBehaviour, IInteraction
                 else if (Time.time >= nextTurn) RunAway();
                 break;
         }
+    }
+
+    public void Hold()
+    {
+        scripted = true;
+        scriptedSpot = null;
+        Idle();
+    }
+
+    public void SendTo(Vector3 spot)
+    {
+        LeaveQueue();
+        scripted = true;
+        scriptedSpot = spot;
+        SetState(State.Wander);
+    }
+
+    public void Free()
+    {
+        if (!scripted) return;
+        scripted = false;
+        scriptedSpot = null;
+        if (Current != State.Possessed) Idle();
     }
 
     // Walks toward a point, around whatever's in the way; returns false once there.
@@ -394,6 +429,8 @@ public class Visitor : MonoBehaviour, IInteraction
 
     public void BeginPossession()
     {
+        scripted = false;
+        scriptedSpot = null;
         LeaveQueue();
         SetState(State.Possessed);
         if (brain != null) brain.enabled = false;

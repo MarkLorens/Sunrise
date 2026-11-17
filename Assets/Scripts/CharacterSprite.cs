@@ -53,10 +53,13 @@ public class CharacterSprite : MonoBehaviour
     float nextBlink, blinkUntil;
     readonly List<(SpriteRenderer r, Color c)> headParts = new();
 
-    // While possessed the face is the spirit's (Resources/MC/MC_face_eyes *), glancing left -> center -> right like
-    // SpiritSprite's. Its drawing (eyes + grin) is PossessedFaceWidth pixels of the head art wide on everyone (the
-    // faces are ~160 px; not measured per face, since face_5's glasses make it 247), centred on their own face.
+    // While possessed the face is the spirit's (Resources/MC: MC_face_eyes *, glancing left -> center -> right like
+    // SpiritSprite's, over its MC_face_mouth grin). Its drawing (eyes + grin) is PossessedFaceWidth pixels of the head
+    // art wide on everyone (the faces are ~160 px; not measured per face, since face_5's glasses make it 247), centred
+    // on their own face. The spirit's pieces are drawn on one shared canvas, so eyes and grin line up as they are.
     static Sprite[] mcEyes;
+    static Sprite mcMouth;
+    SpriteRenderer possessedMouth;
     const float PossessedFaceWidth = 250f;
     SpriteRenderer possessedFace;
     bool possessed;
@@ -211,6 +214,7 @@ public class CharacterSprite : MonoBehaviour
             {
                 var center = Resources.Load<Sprite>("MC/MC_face_eyes center");
                 mcEyes = new[] { Resources.Load<Sprite>("MC/MC_face_eyes left"), center, Resources.Load<Sprite>("MC/MC_face_eyes right"), center };
+                mcMouth = Resources.Load<Sprite>("MC/MC_face_mouth grin");
             }
             if (mcEyes[1] == null) return;
             possessedFace = new GameObject("Possessed Face").AddComponent<SpriteRenderer>();
@@ -219,11 +223,26 @@ public class CharacterSprite : MonoBehaviour
             ParkArt.CastShadows(possessedFace);
             // Centre the spirit's drawing on the visitor's face drawing (both tight meshes), at a fixed width.
             Rect mine = DrawnRect(faceOpen), theirs = DrawnRect(mcEyes[1]);
+            if (mcMouth != null)
+            {
+                Rect grin = DrawnRect(mcMouth);
+                theirs = Rect.MinMaxRect(Mathf.Min(theirs.xMin, grin.xMin), Mathf.Min(theirs.yMin, grin.yMin),
+                    Mathf.Max(theirs.xMax, grin.xMax), Mathf.Max(theirs.yMax, grin.yMax));
+            }
             float scale = PossessedFaceWidth / faceOpen.pixelsPerUnit / theirs.width;
             Vector2 at = mine.center - theirs.center * scale;
             possessedFace.transform.localPosition = new Vector3(at.x, at.y, -0.002f);
             possessedFace.transform.localScale = Vector3.one * scale;
             possessedFace.sprite = mcEyes[0];
+            if (mcMouth != null)
+            {
+                possessedMouth = new GameObject("Possessed Mouth").AddComponent<SpriteRenderer>();
+                possessedMouth.transform.SetParent(possessedFace.transform, false);
+                possessedMouth.transform.localPosition = new Vector3(0f, 0f, -0.001f); // over the eyes
+                possessedMouth.sprite = mcMouth;
+                possessedMouth.sharedMaterial = body.sharedMaterial;
+                ParkArt.CastShadows(possessedMouth);
+            }
             ApplyTint();
         }
         possessed = on && possessedFace != null;
@@ -355,6 +374,7 @@ public class CharacterSprite : MonoBehaviour
         foreach (var (r, _) in headParts) r.enabled = visible;
         if (face != null) face.enabled = visible && !possessed;
         if (possessedFace != null) possessedFace.enabled = visible && possessed;
+        if (possessedMouth != null) possessedMouth.enabled = visible && possessed;
     }
 
     // Tinted characters (possessed, dead). SpriteRenderer.color doesn't reach the lit shader graph in Unity 6,
@@ -373,6 +393,7 @@ public class CharacterSprite : MonoBehaviour
         for (int k = 0; k < fills.Count; k++) Tint(fills[k], tint * fillColors[k]);
         foreach (var (r, c) in headParts) Tint(r, tint * c);
         if (possessedFace != null) Tint(possessedFace, tint);
+        if (possessedMouth != null) Tint(possessedMouth, tint);
     }
 
     static void Tint(SpriteRenderer r, Color c)
