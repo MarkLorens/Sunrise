@@ -5,7 +5,7 @@ using UnityEngine;
 // when the wheel loses power) and all you get is a snore. Something loud enough (the hot dog stand blowing up,
 // PropaneTank) wakes him: he stumbles out, picks up the call, and goes to fiddle with the wheel's electrical box.
 // Awake, he can be possessed like other staff (this script is switched off while he is); he carries a screwdriver,
-// and only his fingerprint opens the wheel's platform (WheelPlatform).
+// and only his fingerprint opens the wheel's platform (FingerprintArea).
 [RequireComponent(typeof(GroundWalker), typeof(CharacterSprite))]
 public class RideTechnician : MonoBehaviour
 {
