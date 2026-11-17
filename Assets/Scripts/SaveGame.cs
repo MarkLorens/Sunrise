@@ -109,6 +109,10 @@ public static class SaveGame
         foreach (var f in Object.FindObjectsByType<StallFan>()) f.Restore();
         foreach (var s in Object.FindObjectsByType<FingerprintScanner>()) s.Restore();
         foreach (var h in Object.FindObjectsByType<WheelHinge>()) h.Restore();
+        foreach (var g in Object.FindObjectsByType<Gutter>()) g.Restore();
+        foreach (var m in Mascot.All) m.Restore();
+        foreach (var r in Object.FindObjectsByType<LockerRoom>()) r.Restore();
+        // ponytail: a save after the wheel has rolled loads it standing, wobbly. Nothing comes after it yet.
 
         var used = new HashSet<Visitor>();
         foreach (var d in data.dead)

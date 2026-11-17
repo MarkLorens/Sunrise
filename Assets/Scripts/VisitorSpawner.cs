@@ -40,6 +40,9 @@ public class VisitorSpawner : MonoBehaviour
     public string hotDogManCharacter = "malePerson";
     public string hotDogManName = "Hot Dog Man";
     public Transform hotDogManPost;  // behind the hot dog stand; empty = no hot dog man
+    public string mascotCharacter = "femalePersonPink";
+    public string mascotName = "Mascot";
+    public Transform mascotPost;     // in front of the locker room's propane fan; empty = no mascot
 
     const string VisitorName = "Visitor";
 
@@ -83,6 +86,7 @@ public class VisitorSpawner : MonoBehaviour
             tech.GrabItem(Item.Create(VisitorItem.Screwdriver, tech.CarryPoint), true);
         }
         if (hotDogManPost != null) Staff<HotDogMan>(hotDogManName, hotDogManPost.position, hotDogManCharacter);
+        if (mascotPost != null) Staff<Mascot>(mascotName, mascotPost.position, mascotCharacter);
     }
 
     Visitor Staff<T>(string name, Vector3 pos, string character) where T : MonoBehaviour

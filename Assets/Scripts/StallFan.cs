@@ -13,9 +13,6 @@ public class StallFan : MonoBehaviour, IInteraction
 
     public bool On { get; private set; } = true;
 
-    // Any stall fan still on.
-    public static bool Blowing => All.Exists(f => f.On);
-
     SpriteRenderer art;
     float nextGust;
     bool thoughtGuarded;

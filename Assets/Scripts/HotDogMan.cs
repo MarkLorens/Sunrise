@@ -79,13 +79,14 @@ public class HotDogMan : MonoBehaviour
                 if (walker.WalkTo(post)) break;
                 look.Face(post + Vector3.back);
                 // The cloud's waiting for a spark: he lights his stove a moment after he's back at it.
-                if (PropaneTank.CloudReady == null) { stoveAt = float.MaxValue; break; }
+                var tank = PropaneTank.ReadyNear(post, 2f);
+                if (tank == null) { stoveAt = float.MaxValue; break; }
                 if (stoveAt == float.MaxValue)
                 {
                     stoveAt = Time.time + 2f;
                     GameHud.Shout(transform, GameText.HotDogStove, 1.8f);
                 }
-                if (Time.time >= stoveAt) PropaneTank.CloudReady.Explode(this);
+                if (Time.time >= stoveAt) tank.Explode();
                 break;
 
             case State.Fleeing:
