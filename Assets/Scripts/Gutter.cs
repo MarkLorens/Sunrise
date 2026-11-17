@@ -4,6 +4,8 @@ using UnityEngine;
 
 // A stinky gutter by the hot dog stand. Lift its lid (E, in anyone's body) and rats pour out, make straight for the
 // hot dog man and chase him off his stand (HotDogMan.Scare), then scurry back down and the lid drops shut.
+// A smellOnly one (by the locker room) has no rats: opened, it stays open and stinks, and its fan (TankFan) carries the
+// stink wherever it blows: at the mascot, once it's turned (Mascot).
 [RequireComponent(typeof(Interactable))]
 public class Gutter : MonoBehaviour, IInteraction
 {
@@ -11,6 +13,11 @@ public class Gutter : MonoBehaviour, IInteraction
     public float ratSpeed = 5f;
     public float chaseTime = 4f; // seconds the rats keep after him before going home
     public float size = 1f;
+    public bool smellOnly;
+    public TankFan fan; // smellOnly: carries the stink
+
+    // Open and reeking (smellOnly).
+    public bool Stinking => smellOnly && open;
 
     static readonly Color Stink = new(0.6f, 0.75f, 0.3f, 0.6f);
 
@@ -34,8 +41,18 @@ public class Gutter : MonoBehaviour, IInteraction
             GameHud.Think(GameText.ThinkGutter);
         }
         if (Time.time < nextStink) return;
-        nextStink = Time.time + 0.8f;
-        Fx.Burst("Fx/puff", transform.position + Vector3.up * 0.3f, 1, Stink, 0.5f, 0.35f, 1.4f);
+        nextStink = Time.time + (Stinking ? 0.2f : 0.8f);
+        if (!Stinking || fan == null)
+        {
+            Fx.Burst("Fx/puff", transform.position + Vector3.up * 0.3f, 1, Stink, 0.5f, 0.35f, 1.4f);
+            return;
+        }
+        // Open: a stream of stink along the fan's wind.
+        var w = ParkArt.Make("Stink", null, "Fx/puff", 0.6f, Stink, ParkArt.OverheadOrder);
+        w.transform.position = transform.position + Vector3.up * 0.5f;
+        var bit = w.gameObject.AddComponent<FxBit>();
+        bit.velocity = fan.Wind * 3f + Vector3.up * 0.3f;
+        bit.life = 2f;
     }
 
     static HotDogMan Target()
@@ -45,17 +62,25 @@ public class Gutter : MonoBehaviour, IInteraction
         return null;
     }
 
-    public string Prompt(Visitor host) => "Lift the stinky gutter lid";
+    public string Prompt(Visitor host) => smellOnly ? "Open the smelly gutter" : "Lift the stinky gutter lid";
 
     public string Blocked(Visitor host)
     {
-        if (open) return GameText.LidOpen;
-        if (Target() == null) return GameText.NobodyToScare;
+        if (open) return smellOnly ? GameText.GutterOpen : GameText.LidOpen;
+        if (!smellOnly && Target() == null) return GameText.NobodyToScare;
         return null;
     }
 
     public void Interact(Visitor host)
     {
+        if (smellOnly)
+        {
+            Open();
+            Sfx.Play(Sfx.HitWood, 0.6f, 0.7f);
+            Fx.Burst("Fx/puff", transform.position + Vector3.up * 0.3f, 8, Stink, 2f, 0.5f, 1f);
+            GameHud.Say(GameText.OpenedGutter);
+            return;
+        }
         GameHud.Say(GameText.LiftedLid);
         StartCoroutine(Rats(Target()));
     }
@@ -126,4 +151,17 @@ public class Gutter : MonoBehaviour, IInteraction
     }
 
     static float Flat(Vector3 d) => new Vector2(d.x, d.z).magnitude;
+
+    void Open()
+    {
+        open = true;
+        lid.transform.parent.localPosition = new Vector3(0.7f * size, 0.03f, -0.2f); // slid aside
+        hole.enabled = true;
+    }
+
+    // Loading a save (SaveGame): a smellOnly one that did its job stays open.
+    public void Restore()
+    {
+        if (smellOnly && Mischief.IsDone(Mischief.Task.SmellMascot)) Open();
+    }
 }

@@ -38,12 +38,24 @@ public class RideQueue : MonoBehaviour
 
     public Vector3 SlotPosition(Visitor v) => Slot(Mathf.Max(0, line.IndexOf(v)));
 
+    // The wheel tore off its hinge (FerrisWheel): everyone riding is flung out around `around`. They don't make it.
+    public void ThrowOutRiders(Vector3 around, float spread)
+    {
+        foreach (var (who, _) in riders)
+        {
+            Vector2 r = Random.insideUnitCircle * spread;
+            who.EndRide(around + new Vector3(r.x, 0f, r.y));
+            who.Die();
+        }
+        riders.Clear();
+    }
+
     Vector3 Slot(int i) => transform.position + direction.normalized * spacing * i;
 
     void Update()
     {
         // No power: riders are stuck up in their cabins and the line waits for it to come back.
-        if (!ride.Powered) return;
+        if (ride.Current != FerrisWheel.State.Running) return; // and nobody gets on a wheel at max speed
 
         for (int i = riders.Count - 1; i >= 0; i--)
         {

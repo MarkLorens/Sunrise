@@ -28,10 +28,13 @@ public static class GameText
     public const string LiftedLid = "You lifted the gutter lid";
     public const string OpenedValve = "You loosened the propane valve";
     public const string SwitchedOffFan = "You switched off the hot dog man's fan";
-    public const string TurnedFan = "You turned the fan toward the hot dog stand";
+    public static string TurnedFan(string at) => $"You turned the fan toward the {at}";
     public const string ScannedFinger = "Fingerprint accepted";
     public const string LoosenedHinge = "You loosened the hinge";
     public const string RestartedWheel = "You started the Ferris wheel";
+    public const string OpenedGutter = "You opened the gutter";
+    public const string SparkedCable = "You sparked the broken cable";
+    public const string MaxedSpeed = "You turned the Ferris wheel up to max speed";
 
     // "a visitor", "the mechanic", "the cable man" (staff go by their job; numbers like "Reset Agent 2" are dropped).
     static string Someone(string who)
@@ -67,6 +70,16 @@ public static class GameText
         Mischief.Task.OpenPlatform => "Platform unlocked",
         Mischief.Task.LoosenHinge => "Hinge loosened",
         Mischief.Task.RestartWheel => "Ferris wheel running... sort of",
+        Mischief.Task.SmellMascot => "Mascot stunk out",
+        Mischief.Task.LeakLockerGas => "Propane leaking",
+        Mischief.Task.AimLockerFan => "Fan turned",
+        Mischief.Task.LockerGasCloud => "Locker room gassed up",
+        Mischief.Task.SparkLocker => "Spark!",
+        Mischief.Task.LockerFire => "Locker room on fire",
+        Mischief.Task.PossessOperator => "Operator possessed",
+        Mischief.Task.OpenBooth => "Booth unlocked",
+        Mischief.Task.MaxSpeed => "MAX SPEED",
+        Mischief.Task.WheelRolled => "The Ferris wheel is loose!",
         Mischief.Task.TutorialPossess => "Visitor possessed",
         Mischief.Task.TutorialSign => "Out of Order sign gone",
         Mischief.Task.TutorialValve => "Water pressure: MAX",
@@ -123,6 +136,15 @@ public static class GameText
     public const string HingeLoose = "Loose enough. Any looser and it falls off";
     public const string HingeFirst = "Not yet: that hinge first";
     public const string WheelWobbly = "It's running. Barely";
+    public const string OperatorFingerOnly = "Fingerprint lock: operator only";
+    public const string GutterOpen = "It's open. The smell's out";
+    public const string MascotGuards = "The mascot won't let you near the fan";
+    public const string CableSparks = "Pretty sparks. Nothing here to burn yet";
+    public const string NeedKeys = "Locked. The mechanic has the keys";
+    public const string AlreadyBurning = "It's already burning";
+    public const string PanelNotYet = "The technician has to start the ride first";
+    public const string PanelFromBooth = "You have to be in the booth to reach it";
+    public const string AlreadyMaxed = "It's already flat out";
     public const string TechnicianStarts = "Only the technician can restart the wheel";
 
     // ---------------------------------------------------------------- speech bubble: what the spirit thinks
@@ -167,6 +189,21 @@ public static class GameText
         "NOW WHAT?", "You ever realize they don't have seatbelts in here?", "Why won't it stop?!", "DADDY!",
         "What are they doing down there?!", "HELP!", "*Prayer Noise*", "I'm gonna throw up!",
     };
+
+    // Burn the locker room
+    public const string ThinkMascot = "Who's the big fuzzy idiot guarding the fan?";                // the mascot refuses you
+    public const string ThinkStinkGone = "Bye bye, fuzzball";                                        // the mascot runs off
+    public const string ThinkLockerCloud = "Locker room's full of gas. Now, the mechanic and that cable..."; // the cloud is full
+    public const string ThinkFire = "Ooh, toasty. Now's my chance with the operator";                // after the fire payoff
+    public const string ThinkBooth = "His own finger. How trusting";                                  // scanning as the operator
+    public const string ThinkMaxSpeed = "Faster... FASTER!";                                          // maxing the wheel
+    public const string ThinkRolled = "...I may have overdone it";                                    // after the wheel's rolled
+
+    // Out loud
+    public const string MascotGuard = "*angry mascot noises* (Don't touch the fan!)";
+    public const string MascotStink = "*gagging mascot noises*";
+    public const string PAFire = "ATTENTION! FIRE AT THE LOCKER ROOM! ALL STAFF TO THE LOCKER ROOM, NOW!";
+    public const string OperatorFire = "FIRE?! Not the lockers, my lunch is in there!";
 
     // The hot dog man, out loud
     public const string HotDogGuard = "Hey! Hands off my fan!";
