@@ -75,6 +75,7 @@ public class GameHud : MonoBehaviour
         interactor = GetComponent<PlayerInteractor>();
         Mischief.Reset();
         ParkChaos.Reset();
+        Aftermath.Reset();
 
         if (Camera.main != null && Camera.main.GetComponent<CameraRig>() == null) Camera.main.gameObject.AddComponent<CameraRig>();
         if (Camera.main != null && Camera.main.GetComponent<SeeThrough>() == null) Camera.main.gameObject.AddComponent<SeeThrough>();
@@ -173,8 +174,18 @@ public class GameHud : MonoBehaviour
         UpdateObjectives();
         UpdateStepPopup();
         UpdateGrip();
-        UpdatePrompt();
         UpdateBanners();
+    }
+
+    // Anything pinned over something in the world waits for the camera to move this frame: placed in Update it used
+    // last frame's camera and lagged a frame behind, stuttering as the camera followed the player.
+    void OnEnable() => Unity.Cinemachine.CinemachineCore.CameraUpdatedEvent.AddListener(FollowCamera);
+    void OnDisable() => Unity.Cinemachine.CinemachineCore.CameraUpdatedEvent.RemoveListener(FollowCamera);
+
+    void FollowCamera(Unity.Cinemachine.CinemachineBrain brain)
+    {
+        if (brain.OutputCamera != Camera.main) return;
+        UpdatePrompt();
         UpdateBubble();
         UpdateShouts();
     }
@@ -340,7 +351,7 @@ public class GameHud : MonoBehaviour
             anchor = PersonTop(spirit.Candidate);
             if (spirit.CandidateBlocked == null)
             {
-                key = "E";
+                key = "J";
                 text = "Possess " + spirit.CandidateName;
             }
             else text = spirit.CandidateBlocked;
@@ -352,7 +363,7 @@ public class GameHud : MonoBehaviour
             {
                 anchor = ThingTop(target.transform);
                 string blocked = target.Blocked(host);
-                key = blocked == null ? "E" : "";
+                key = blocked == null ? "K" : "";
                 text = blocked == null ? target.Prompt(host) : $"<color=#bbbbbb>{target.Prompt(host)}: {blocked}</color>";
             }
         }
@@ -497,7 +508,7 @@ public class GameHud : MonoBehaviour
         Img(body, "UI/pill", new Color(0.12f, 0.08f, 0.12f, 0.88f));
         Row(body, 10f, new RectOffset(10, 22, 6, 6));
         Fit(body);
-        var cap = KeyCap(body, "E", new Key[0], false, 40f);
+        var cap = KeyCap(body, "K", new Key[0], false, 40f);
         Destroy(cap.GetComponent<KeyHint>());
         promptCap = cap.gameObject;
         promptKey = cap.GetComponentInChildren<Text>();

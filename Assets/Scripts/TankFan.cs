@@ -1,12 +1,19 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
-// The big fan by the propane tank, blowing away from it, so any gas it leaks drifts off to nothing. Turn it round
-// (E, in anyone's body) to blow at the hot dog stand instead. (The fan the hot dog man guards is StallFan.)
+// A big standing fan anyone can turn round (E, in anyone's body). It starts out blowing away from `awayFrom`; turned,
+// it blows at `aimAt`. By the hot dog stand's propane tank it carries the gas to the stand (PropaneTank); by the
+// locker room it carries the gas to the locker room, but the mascot won't let anyone touch that one (Mascot); and by
+// the smelly gutter it carries the stink to the mascot (Gutter). (The fan the hot dog man guards is StallFan.)
 [RequireComponent(typeof(Interactable))]
 public class TankFan : MonoBehaviour, IInteraction
 {
-    public PropaneTank tank;
-    public Transform stall;
+    public Transform awayFrom;
+    [FormerlySerializedAs("stall")] public Transform aimAt;
+    public string aimName = "hot dog stand";             // "Turn the fan toward the ..."
+    public bool countsAsStep = true;
+    public Mischief.Task task = Mischief.Task.AimFan;     // ticked off when it's turned (if countsAsStep)
+    public bool mascotGuards;                              // the mascot keeps people off it while he's around
 
     public bool Aimed { get; private set; }
     // Which way it blows, along the ground.
@@ -14,7 +21,7 @@ public class TankFan : MonoBehaviour, IInteraction
     {
         get
         {
-            Vector3 d = Aimed ? stall.position - transform.position : transform.position - tank.transform.position;
+            Vector3 d = Aimed ? aimAt.position - transform.position : transform.position - awayFrom.position;
             d.y = 0f;
             return d.normalized;
         }
@@ -22,6 +29,7 @@ public class TankFan : MonoBehaviour, IInteraction
 
     SpriteRenderer art;
     float nextGust;
+    bool thoughtGuarded;
 
     void Start()
     {
@@ -48,17 +56,26 @@ public class TankFan : MonoBehaviour, IInteraction
         bit.life = 0.6f;
     }
 
-    public string Prompt(Visitor host) => "Turn the fan toward the hot dog stand";
+    public string Prompt(Visitor host) => $"Turn the fan toward the {aimName}";
 
     public string Blocked(Visitor host) => Aimed ? GameText.FanAimed : null;
 
     public void Interact(Visitor host)
     {
+        var guard = mascotGuards ? Mascot.GuardNear(transform.position) : null;
+        if (guard != null)
+        {
+            GameHud.Shout(guard.transform, GameText.MascotGuard, 2f);
+            GameHud.Refuse(transform, GameText.MascotGuards);
+            if (!thoughtGuarded) GameHud.Think(GameText.ThinkMascot);
+            thoughtGuarded = true;
+            return;
+        }
         Aim();
         Sfx.Play(Sfx.HitWood, 0.6f, 1.2f);
-        GameHud.Say(GameText.TurnedFan);
+        GameHud.Say(GameText.TurnedFan(aimName));
         GameHud.Think(GameText.ThinkFanAimed);
-        Mischief.Complete(Mischief.Task.AimFan);
+        if (countsAsStep) Mischief.Complete(task);
     }
 
     void Aim()
@@ -67,9 +84,9 @@ public class TankFan : MonoBehaviour, IInteraction
         Face();
     }
 
-    // Loading a save (SaveGame).
+    // Loading a save (SaveGame). A fan that isn't a step of its own is turned once the step after it is done.
     public void Restore()
     {
-        if (Mischief.IsDone(Mischief.Task.AimFan)) Aim();
+        if (countsAsStep ? Mischief.IsDone(task) : Mischief.IsDone(Mischief.Task.SmellMascot)) Aim();
     }
 }

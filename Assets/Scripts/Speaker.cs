@@ -7,7 +7,7 @@ using UnityEngine;
 public class Speaker : MonoBehaviour
 {
     public static readonly List<Speaker> All = new();
-    public const int MaxListeners = 15; // across all speakers: their crowds stand together
+    public const int MaxListeners = 8;  // across all speakers: their crowds stand together
 
     public Vector3 crowdOffset = new(0f, 0f, -1.6f); // where the crowd stands, relative to the speaker
     public float crowdRadius = 1.6f;

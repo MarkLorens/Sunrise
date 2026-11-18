@@ -76,6 +76,7 @@ public class ElectricalBox : MonoBehaviour, IInteraction
         wheel.CutPower();
         GameHud.Say(GameText.CutPower);
         Mischief.Complete(Mischief.Task.CutPower);
+        Aftermath.Add(wheel.transform.position + Vector3.back * 3f, 3f, 90f); // the crowd stares up at the stuck cabins
     }
 
     // The mechanic, if the cutscene hasn't played yet and he's behind the staff door (out and about, you can see him).

@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// A leaky drinking fountain dripping into a puddle. Every press of its button (E, in anyone's body) makes the leak
+// A leaky drinking fountain dripping into a puddle. Every press of its button (K, in anyone's body) makes the leak
 // worse: the puddle starts small right under it and, press by press, slowly spreads out towards puddleOffset. Dip a live cable in it (LiveCable) and everyone standing in it is electrocuted. Enough
 // of a scene and the mechanic comes out to fix the fountain; either way the Reset Agents come to mop up. Once fixed
 // it stops leaking for good.
@@ -173,6 +173,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
             shout = "Clean-up on the fountain! Everybody out of the way!",
             done = Mop,
         });
+        Aftermath.Add(PuddleCenter, Radius + 1f, 90f); // another agent guards its edge
 
         if (mechanicCalled) return;
         if (victims < victimsToCallMechanic) return; // not much of a scene: nobody's coming to fix it yet

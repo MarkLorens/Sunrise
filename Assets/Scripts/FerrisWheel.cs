@@ -7,6 +7,8 @@ using UnityEngine;
 // to a stop with whoever's riding stuck up in their cabins.
 // Started again (ElectricalBox) after its leg hinge was loosened (WheelHinge), it runs wobbly: lurching side to side and
 // speeding up and slowing down, the cabins rocking all the way round.
+// Turned up to max speed like that (ControlPanel), it spins faster and faster until it tears off its hinge, flings
+// its cabins, and rolls away across the park flattening everyone in its path, then topples over.
 // When the scene starts it marks out its staff-only closed area (StaffArea) and puts the electrical box just outside
 // it. Scale the whole object to resize the ride: radii, part offsets and the closed area are all in unscaled units
 // and grow with it.
@@ -14,7 +16,7 @@ public class FerrisWheel : MonoBehaviour
 {
     public static readonly List<FerrisWheel> All = new();
 
-    public enum State { Running, Unpowered }
+    public enum State { Running, Unpowered, Overdrive, Breaking, Rolling, Wrecked }
 
     public Transform wheel;
     public Sprite cabinSprite;
@@ -33,9 +35,17 @@ public class FerrisWheel : MonoBehaviour
     public int screamingCabins = 4;   // cabins shouting in turns (GameText.CabinScreams, or CabinScreamsWobbly) in a payoff
     public float cabinShake = 4f;     // degrees the stuck cabins rock
     public float wobble = 0.08f;      // how far the wheel lurches side to side once the hinge is loose (wheel units)
+    public float overdriveSpeed = 140f; // degrees per second at max speed
+    public float spinUpTime = 6f;     // seconds to get there
+    public float holdTime = 2f;       // seconds the loose hinge holds at max speed
+    public float breakDelay = 1.5f;   // seconds of shuddering before it tears off
+    public float rollSpeed = 6f;
+    public float rollDistance = 22f;
+    public Vector3 rollDirection = new(1f, 0f, -0.6f); // across the ground; it has to go mostly sideways to read as rolling
 
     public State Current { get; private set; }
-    public bool Powered => Current == State.Running;
+    public bool Powered => Current != State.Unpowered;
+    public bool Broken => Current >= State.Breaking;
     public bool Wobbly { get; private set; }
     public StaffArea Area { get; private set; }
     public IReadOnlyList<Transform> Cabins => cabins;
@@ -46,6 +56,8 @@ public class FerrisWheel : MonoBehaviour
     float speed;
     float shakeUntil;
     Vector3 wheelHome;
+    float stateTime, rolled;
+    readonly List<Vector3> cabinVelocity = new();
 
     void OnEnable() => All.Add(this);
     void OnDisable() => All.Remove(this);
@@ -233,22 +245,180 @@ public class FerrisWheel : MonoBehaviour
         return area;
     }
 
+    // ---------------------------------------------------------------- max speed (ControlPanel)
+
+    public void MaxSpeed()
+    {
+        if (Current != State.Running) return;
+        Set(State.Overdrive);
+        StartCoroutine(MaxSpeedPayoff());
+    }
+
+    void Set(State s)
+    {
+        Current = s;
+        stateTime = 0f;
+    }
+
+    // The camera stays on the wheel the whole way: spinning up, tearing off, rolling, toppling. Then back to the player.
+    IEnumerator MaxSpeedPayoff()
+    {
+        Possession.InputBlocked = true;
+        CameraRig.Spotlight(wheel, 999f, (wheelRadius + 1f) * Scale, payoffPullBack);
+        ScreamIn(GameText.CabinScreamsWobbly);
+        while (Current != State.Wrecked) yield return null;
+        yield return new WaitForSeconds(2f);
+        CameraRig.EndSpotlight();
+        yield return new WaitForSeconds(1f); // the camera easing back
+        Possession.InputBlocked = false;
+        Mischief.Complete(Mischief.Task.WheelRolled);
+        Aftermath.Add(new Vector3(wheel.position.x, 0f, wheel.position.z), 13f, 9999f); // just outside the wreck's panic zone
+        GameHud.Think(GameText.ThinkRolled);
+    }
+
     void Update()
     {
-        float target = !Powered ? 0f : Wobbly ? normalSpeed * (1f + 0.35f * Mathf.Sin(Time.time * 1.7f)) : normalSpeed; // lurching
-        if (Wobbly) wheel.localPosition = wheelHome + new Vector3(Mathf.Sin(Time.time * 2.3f) * wobble, Mathf.Abs(Mathf.Sin(Time.time * 4.6f)) * wobble * 0.3f, 0f);
-        speed = Mathf.MoveTowards(speed, target, normalSpeed / windDownTime * Time.deltaTime);
+        stateTime += Time.deltaTime;
+        switch (Current)
+        {
+            case State.Overdrive:
+                speed = Mathf.MoveTowards(speed, overdriveSpeed, overdriveSpeed / spinUpTime * Time.deltaTime);
+                float k = speed / overdriveSpeed;
+                Spin(Lurch(1f + 3f * k));
+                if (speed < overdriveSpeed * 0.95f) stateTime = 0f; // the hinge holds `holdTime` once it's flat out
+                else if (stateTime >= holdTime)
+                {
+                    Set(State.Breaking);
+                    Fx.Shake(0.25f, breakDelay);
+                    Sfx.Play(Sfx.HitWood, 1f, 0.5f); // *CREAK*
+                }
+                break;
+
+            case State.Breaking:
+                Spin(wheelHome + (Vector3)(Random.insideUnitCircle * 0.25f));
+                if (stateTime >= breakDelay) Detach();
+                break;
+
+            case State.Rolling:
+                Roll();
+                break;
+
+            case State.Wrecked:
+                break;
+
+            default:
+                float target = !Powered ? 0f : Wobbly ? normalSpeed * (1f + 0.35f * Mathf.Sin(Time.time * 1.7f)) : normalSpeed; // lurching
+                speed = Mathf.MoveTowards(speed, target, normalSpeed / windDownTime * Time.deltaTime);
+                Spin(Wobbly ? Lurch(1f) : wheel.localPosition);
+                break;
+        }
+        UpdateCabins();
+    }
+
+    // Side to side on a loose hinge, `amount` times as far as a plain wobble.
+    Vector3 Lurch(float amount) =>
+        wheelHome + new Vector3(Mathf.Sin(Time.time * 2.3f * amount) * wobble * amount, Mathf.Abs(Mathf.Sin(Time.time * 4.6f)) * wobble * 0.3f * amount, 0f);
+
+    void Spin(Vector3 at)
+    {
+        wheel.localPosition = at;
         angle += speed * Time.deltaTime;
         wheel.localRotation = Quaternion.Euler(0, 0, angle);
+    }
 
-        // Hang upright from evenly spaced points on the spinning rim.
+    void UpdateCabins()
+    {
+        if (Current < State.Rolling)
+        {
+            // Hang upright from evenly spaced points on the spinning rim.
+            for (int i = 0; i < cabins.Count; i++)
+            {
+                float a = (angle + i * 360f / cabins.Count) * Mathf.Deg2Rad;
+                cabins[i].position = wheel.position + new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0) * cabinRadius * Scale + new Vector3(0, 0, -0.05f);
+                // Stuck cabins rock, each to its own rhythm, settling as the payoff ends.
+                float rock = Wobbly ? cabinShake : Mathf.Clamp01((shakeUntil - Time.time) / 1.5f) * cabinShake;
+                cabins[i].localRotation = Quaternion.Euler(0, 0, (Mathf.PerlinNoise(Time.time * 3f, i * 1.7f) * 2f - 1f) * rock);
+            }
+            return;
+        }
+
+        // Flung cabins fall until they hit the ground.
         for (int i = 0; i < cabins.Count; i++)
         {
-            float a = (angle + i * 360f / cabins.Count) * Mathf.Deg2Rad;
-            cabins[i].position = wheel.position + new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0) * cabinRadius * Scale + new Vector3(0, 0, -0.05f);
-            // Stuck cabins rock, each to its own rhythm, settling as the payoff ends.
-            float rock = Wobbly ? cabinShake : Mathf.Clamp01((shakeUntil - Time.time) / 1.5f) * cabinShake;
-            cabins[i].localRotation = Quaternion.Euler(0, 0, (Mathf.PerlinNoise(Time.time * 3f, i * 1.7f) * 2f - 1f) * rock);
+            if (cabins[i].position.y <= 0.9f * Scale && cabinVelocity[i].y <= 0) continue; // landed (a cabin hangs from its top)
+            cabinVelocity[i] += Vector3.down * 15f * Time.deltaTime;
+            Vector3 p = cabins[i].position + cabinVelocity[i] * Time.deltaTime;
+            p.y = Mathf.Max(p.y, 0.9f * Scale);
+            cabins[i].position = p;
+            cabins[i].rotation = Quaternion.Euler(0, 0, cabinVelocity[i].x * -4f);
+        }
+    }
+
+    // Off the hinge: the wheel comes loose, the cabins and their riders go flying.
+    void Detach()
+    {
+        Set(State.Rolling);
+        wheel.SetParent(null, true);
+        foreach (var c in cabins)
+        {
+            c.SetParent(null, true);
+            cabinVelocity.Add(new Vector3(Random.Range(-4f, 4f), Random.Range(3f, 7f), Random.Range(-1.5f, 0.5f)));
+        }
+        if (queue != null) queue.ThrowOutRiders(transform.position + Vector3.back * 1.5f, 3f);
+        Fx.Shake(0.45f, 1f);
+        Sfx.Play(Sfx.Crash);
+        Sfx.Play(Sfx.Thud, 1f, 0.6f);
+        ParkChaos.Add(transform.position, 12f, 9999f);
+    }
+
+    // Down to the ground, then along rollDirection, flattening people; then it tips over flat.
+    void Roll()
+    {
+        Vector3 dir = new Vector3(rollDirection.x, 0f, rollDirection.z).normalized;
+        float radius = wheelRadius * Scale;
+        Vector3 p = wheel.position;
+        p.y = Mathf.MoveTowards(p.y, radius, 9f * Time.deltaTime);
+
+        if (rolled < rollDistance)
+        {
+            float step = rollSpeed * Time.deltaTime;
+            p += dir * step;
+            rolled += step;
+            angle -= Mathf.Sign(dir.x) * step / radius * Mathf.Rad2Deg; // rolling without slipping
+            wheel.rotation = Quaternion.Euler(0, 0, angle);
+            Flatten(p, dir, radius);
+            ParkChaos.Add(p, 10f, 8f);
+        }
+        else
+        {
+            // Topple: tip back until it lies on the ground.
+            var flat = Quaternion.Euler(90f, 0f, angle);
+            wheel.rotation = Quaternion.RotateTowards(wheel.rotation, flat, 120f * Time.deltaTime);
+            p.y = Mathf.MoveTowards(p.y, 0.05f, radius * 1.4f * Time.deltaTime); // lands as it finishes tipping
+            if (Quaternion.Angle(wheel.rotation, flat) < 0.5f && p.y <= 0.06f)
+            {
+                Set(State.Wrecked);
+                Fx.Shake(0.4f, 0.8f);
+                Sfx.Play(Sfx.Crash, 0.9f, 0.7f);
+                Fx.Burst("Fx/puff", p, 30, new Color(0.7f, 0.65f, 0.6f), 6f, 1.2f, 1.2f);
+                ParkChaos.Add(p, 12f, 9999f);
+            }
+        }
+        wheel.position = p;
+    }
+
+    // Anyone in the wheel's path, under the rim (it's edge-on to its direction of travel, so: a thin band across it).
+    static void Flatten(Vector3 center, Vector3 dir, float radius)
+    {
+        Vector3 side = new(-dir.z, 0f, dir.x);
+        foreach (var v in Visitor.All)
+        {
+            if (v.Current is Visitor.State.Down or Visitor.State.Riding || !v.Look.Visible) continue;
+            Vector3 d = v.transform.position - center;
+            d.y = 0f;
+            if (Mathf.Abs(Vector3.Dot(d, dir)) > 0.8f || Mathf.Abs(Vector3.Dot(d, side)) > radius * 0.3f) continue;
+            v.KnockDown();
+            Sfx.Play(Sfx.Crash, 0.6f, Random.Range(0.9f, 1.2f));
         }
     }
 }

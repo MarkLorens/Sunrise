@@ -219,7 +219,7 @@ public class CharacterSprite : MonoBehaviour
             if (mcEyes[1] == null) return;
             possessedFace = new GameObject("Possessed Face").AddComponent<SpriteRenderer>();
             possessedFace.transform.SetParent(head, false);
-            possessedFace.sharedMaterial = body.sharedMaterial;
+            possessedFace.sharedMaterial = ParkArt.FaceMaterial; // faces don't wobble, only bodies
             ParkArt.CastShadows(possessedFace);
             // Centre the spirit's drawing on the visitor's face drawing (both tight meshes), at a fixed width.
             Rect mine = DrawnRect(faceOpen), theirs = DrawnRect(mcEyes[1]);
@@ -240,7 +240,7 @@ public class CharacterSprite : MonoBehaviour
                 possessedMouth.transform.SetParent(possessedFace.transform, false);
                 possessedMouth.transform.localPosition = new Vector3(0f, 0f, -0.001f); // over the eyes
                 possessedMouth.sprite = mcMouth;
-                possessedMouth.sharedMaterial = body.sharedMaterial;
+                possessedMouth.sharedMaterial = ParkArt.FaceMaterial;
                 ParkArt.CastShadows(possessedMouth);
             }
             ApplyTint();
@@ -266,7 +266,7 @@ public class CharacterSprite : MonoBehaviour
         r.transform.SetParent(head, false);
         r.transform.localPosition = new Vector3(0f, 0f, z);
         r.sprite = sprite;
-        r.sharedMaterial = body.sharedMaterial;
+        r.sharedMaterial = ParkArt.FaceMaterial; // the head (face, hair) holds still: only the body wobbles
         ParkArt.CastShadows(r);
         headParts.Add((r, color));
         return r;

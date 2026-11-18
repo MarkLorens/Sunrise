@@ -15,6 +15,8 @@ public static class Mischief
         RatsOut, StallFanOff, LeakPropane, AimFan, GasCloud, Explode, WakeTechnician,
         PossessTechnician, OpenPlatform, LoosenHinge, RestartWheel,
         TutorialPossess, TutorialSign, TutorialValve, TutorialLeave, TutorialToilet,
+        SmellMascot, LeakLockerGas, AimLockerFan, LockerGasCloud, SparkLocker, LockerFire,
+        PossessOperator, OpenBooth, MaxSpeed, WheelRolled,
     }
 
     // The tutorial's steps: done for you when it's skipped, or when a saved game is loaded.
@@ -62,6 +64,22 @@ public static class Mischief
             (Task.OpenPlatform, "Open the wheel's platform with his fingerprint"),
             (Task.LoosenHinge, "Loosen the leg hinge with his screwdriver"),
             (Task.RestartWheel, "Start the Ferris wheel again at the electrical box"),
+        }),
+        ("5. Burn the locker room", new[]
+        {
+            (Task.SmellMascot, "Open the smelly gutter and blow its stink at the mascot"),
+            (Task.LeakLockerGas, "Loosen the propane tank's valve by the locker room"),
+            (Task.AimLockerFan, "Turn its fan toward the locker room"),
+            (Task.LockerGasCloud, "Let the propane cloud up around the locker room"),
+            (Task.SparkLocker, "Spark the locker room's broken cable (the mechanic has the keys)"),
+            (Task.LockerFire, "The locker room burns, and the operator runs to help"),
+        }),
+        ("6. Max speed", new[]
+        {
+            (Task.PossessOperator, "Possess the ride operator"),
+            (Task.OpenBooth, "Open his booth with his fingerprint"),
+            (Task.MaxSpeed, "Turn the Ferris wheel up to max speed"),
+            (Task.WheelRolled, "The wheel breaks off its hinge..."),
         }),
     };
 

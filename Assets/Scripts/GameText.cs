@@ -1,7 +1,7 @@
 // Every line the player reads about what they did, in one place, so the wording can be changed here without
 // hunting through the rest of the code:
 //   Pop-up (bottom left): one line for each thing the player does, and one for each step of the level done.
-//   Refusals: why pressing E didn't work, shown over whatever said no.
+//   Refusals: why pressing K didn't work, shown over whatever said no.
 // To reword a line, change the text between the quotes. Words in {curly brackets} are filled in by the game:
 //   {who}  someone's name as the game knows them ("Visitor", "Mechanic", "Cable Man"...)
 //   {what} a thing ("drink", "keys", "water bottle")
@@ -21,7 +21,6 @@ public static class GameText
     public const string Saved = "Game saved";
     public const string CantSave = "Can't save right now";
     public static string Bought(string what) => $"You bought a {what}";
-    public static string ToldToMoveAlong(string who) => $"You told {Someone(who)} to move along";
     public const string PressedFountain = "The fountain leaks even more";
     public const string DippedCable = "You dipped the cable in the puddle";
     public const string UnlockedBox = "You unlocked the electrical box";
@@ -29,10 +28,13 @@ public static class GameText
     public const string LiftedLid = "You lifted the gutter lid";
     public const string OpenedValve = "You loosened the propane valve";
     public const string SwitchedOffFan = "You switched off the hot dog man's fan";
-    public const string TurnedFan = "You turned the fan toward the hot dog stand";
+    public static string TurnedFan(string at) => $"You turned the fan toward the {at}";
     public const string ScannedFinger = "Fingerprint accepted";
     public const string LoosenedHinge = "You loosened the hinge";
     public const string RestartedWheel = "You started the Ferris wheel";
+    public const string OpenedGutter = "You opened the gutter";
+    public const string SparkedCable = "You sparked the broken cable";
+    public const string MaxedSpeed = "You turned the Ferris wheel up to max speed";
 
     // "a visitor", "the mechanic", "the cable man" (staff go by their job; numbers like "Reset Agent 2" are dropped).
     static string Someone(string who)
@@ -68,6 +70,16 @@ public static class GameText
         Mischief.Task.OpenPlatform => "Platform unlocked",
         Mischief.Task.LoosenHinge => "Hinge loosened",
         Mischief.Task.RestartWheel => "Ferris wheel running... sort of",
+        Mischief.Task.SmellMascot => "Mascot stunk out",
+        Mischief.Task.LeakLockerGas => "Propane leaking",
+        Mischief.Task.AimLockerFan => "Fan turned",
+        Mischief.Task.LockerGasCloud => "Locker room gassed up",
+        Mischief.Task.SparkLocker => "Spark!",
+        Mischief.Task.LockerFire => "Locker room on fire",
+        Mischief.Task.PossessOperator => "Operator possessed",
+        Mischief.Task.OpenBooth => "Booth unlocked",
+        Mischief.Task.MaxSpeed => "MAX SPEED",
+        Mischief.Task.WheelRolled => "The Ferris wheel is loose!",
         Mischief.Task.TutorialPossess => "Visitor possessed",
         Mischief.Task.TutorialSign => "Out of Order sign gone",
         Mischief.Task.TutorialValve => "Water pressure: MAX",
@@ -76,7 +88,7 @@ public static class GameText
         _ => t.ToString(),
     };
 
-    // ---------------------------------------------------------------- refusals: why E didn't work
+    // ---------------------------------------------------------------- refusals: why K didn't work
 
     // Possessing someone
     public static string CantBePossessed(string who) => $"{who} can't be possessed";
@@ -86,7 +98,6 @@ public static class GameText
     // Touching things
     public const string NeedBody = "You need a body to touch things";
     public const string HandsFull = "Your hands are full";
-    public static string Busy(string who) => $"{who} is busy";
 
     // The drinking fountain
     public const string FountainFixed = "Fixed. Not a drop";
@@ -125,6 +136,15 @@ public static class GameText
     public const string HingeLoose = "Loose enough. Any looser and it falls off";
     public const string HingeFirst = "Not yet: that hinge first";
     public const string WheelWobbly = "It's running. Barely";
+    public const string OperatorFingerOnly = "Fingerprint lock: operator only";
+    public const string GutterOpen = "It's open. The smell's out";
+    public const string MascotGuards = "The mascot won't let you near the fan";
+    public const string CableSparks = "Pretty sparks. Nothing here to burn yet";
+    public const string NeedKeys = "Locked. The mechanic has the keys";
+    public const string AlreadyBurning = "It's already burning";
+    public const string PanelNotYet = "The technician has to start the ride first";
+    public const string PanelFromBooth = "You have to be in the booth to reach it";
+    public const string AlreadyMaxed = "It's already flat out";
     public const string TechnicianStarts = "Only the technician can restart the wheel";
 
     // ---------------------------------------------------------------- speech bubble: what the spirit thinks
@@ -170,6 +190,55 @@ public static class GameText
         "What are they doing down there?!", "HELP!", "*Prayer Noise*", "I'm gonna throw up!",
     };
 
+    // Burn the locker room
+    public const string ThinkMascot = "Who's the big fuzzy idiot guarding the fan?";                // the mascot refuses you
+    public const string ThinkStinkGone = "The fuzzball is just as smelly, to be honest.";           // the mascot runs off
+    public const string ThinkLockerCloud = "Locker room's full of gas. Now, the mechanic and that cable..."; // the cloud is full
+    public const string ThinkFire = "Shoddy Construction, really. Now's my chance with the operator"; // after the fire payoff
+    public const string ThinkBooth = "His own finger. How trusting";                                  // scanning as the operator
+    public const string ThinkMaxSpeed = "Faster... FASTER!";                                          // maxing the wheel
+    public const string ThinkRolled = "Fare-thee-wheel... Hehehe";                                    // after the wheel's rolled
+
+    // Out loud
+    public const string MascotGuard = "*angry mascot noises* (Don't touch the fan!)";
+    public const string MascotStink = "*gagging mascot noises*";
+    public const string PAFire = "ATTENTION! FIRE AT THE LOCKER ROOM! ALL STAFF TO THE LOCKER ROOM, NOW!";
+    public const string OperatorFire = "FIRE?! Not the lockers, my lunch is in there!";
+
+    // Reset Agents standing guard at a scene, in turns (Aftermath, ResetAgent)
+    public static readonly string[] MoveAlong =
+    {
+        "Move along!", "Nothing to see here, folks!", "Keep it moving!", "Please step back!",
+    };
+
+    // Visitors gossiping after each event, at random near the player (VisitorSpawner). Once an event's happened, its
+    // lines join the pool for the rest of the game.
+    public static readonly (Mischief.Task after, string[] lines)[] Gossip =
+    {
+        (Mischief.Task.Electrocute, new[]
+        {
+            "Did you see what happened at the dance spot?", "Don't go near the drinking fountains.",
+            "Those people were just dancing...", "I'm not standing in any puddles today.",
+        }),
+        (Mischief.Task.CutPower, new[]
+        {
+            "The Ferris wheel just stopped with people on it!", "I can hear them screaming up there.",
+            "Glad I skipped the Ferris wheel.",
+        }),
+        (Mischief.Task.Explode, new[]
+        {
+            "The hot dog stand EXPLODED!", "I'm never eating a hot dog again.", "Was that a gas leak?",
+        }),
+        (Mischief.Task.LockerFire, new[]
+        {
+            "The locker room's on fire!", "Is this park cursed or something?", "Where's the fire department?",
+        }),
+        (Mischief.Task.WheelRolled, new[]
+        {
+            "THE WHEEL JUST ROLLED AWAY!", "I want my money back!", "We need to get out of here!",
+        }),
+    };
+
     // The hot dog man, out loud
     public const string HotDogGuard = "Hey! Hands off my fan!";
     public const string HotDogRats = "RATS! RAAATS!";
@@ -185,7 +254,7 @@ public static class GameText
 
     // ---------------------------------------------------------------- tutorial (new game only)
     // Each step: what the spirit says (speech bubble) and the instruction card at the bottom. [Key] shows that key
-    // as a keycap that lights up while it's held; [Arrows] shows the four arrow keys.
+    // as a keycap that lights up while it's held, on a line of its own under the sentence; [WASD] shows W A S D.
 
     // 1. The spirit
     public const string TutorialMeSays = "I'm so ready to have fun!";
@@ -194,29 +263,29 @@ public static class GameText
     public const string TutorialGoalSays = "Ah! This is what I should do!";
     public const string TutorialGoal = "Your mischief to-do list lives up here.";
     // 3. Moving
-    public const string TutorialMove = "Float around with [Arrows]";
-    public const string TutorialMoveAlso = "or W A S D";
+    public const string TutorialMove = "Float around with [WASD]";
     // 4. Someone to possess
     public const string TutorialVisitorSays = "I want to possess someone.";
     public const string TutorialVisitor = "Float over to that visitor.";
     // 5. Possessing
-    public const string TutorialPossess = "Press [E] to possess them!";
+    public const string TutorialPossess = "Press [J] to possess them!";
     // 6. An objective
     public const string TutorialObjective = "Let's complete an objective!";
     // 7. To the toilet
     public const string TutorialWalk = "Walk your new body to the toilet.";
     // 8. The sign
     public const string TutorialSignSays = "Hihihi, let's remove this.";
-    public const string TutorialSign = "Press [E] to take down the sign.";
+    public const string TutorialSign = "Press [K] to take down the sign.";
     // 9. The valve
     public const string TutorialValveSays = "Now, crank up this valve.";
-    public const string TutorialValve = "Press [E] until the pressure is maxed out.";
+    public const string TutorialValve = "Press [K] until the pressure is maxed out.";
     // 10. Leaving the body
     public const string TutorialLeaveSays = "Alright, this guy is useless to me now.";
-    public const string TutorialLeave = "Press [Q] to leave the body.";
+    public const string TutorialLeave = "Press [J] to leave the body.";
     // 11. The payoff
     public const string TutorialWatch = "Now sit back and watch...";
     public const string TutorialLaughSays = "MWAHAHAHA!";
+    public const string TutorialGottaGo = "Gotta go, gotta go, GOTTA GO!";                       // the visitor running in
     public const string TutorialSoaked = "AAAH! IT'S EVERYWHERE!";                                  // the soaked visitor
     // 12. The pop-up (bottom left)
     public const string TutorialEvent = "Everything you pull off shows up down here. Have fun!";

@@ -1,38 +1,59 @@
 using System.Collections;
 using UnityEngine;
 
-// The propane tank that feeds the park's stands. Loosen its valve (E, in anyone's body) and gas hisses out. Its fan
-// (TankFan) blows it away to nothing, until someone turns the fan round to blow it at the hot dog stand. The stand's
-// own fan (StallFan) blows it straight back out again until it's switched off; with that off, a cloud builds up
-// around the stand (propane's invisible, so it's drawn as a faint green haze). Once it's thick enough, the
-// hot dog man lighting his stove (HotDogMan) sets it off: the stand goes up in a fireball, the crowd runs, and the bang
-// wakes the ride technician (RideTechnician.Wake).
+// A propane tank feeding the park's stands. Loosen its valve (E, in anyone's body) and gas hisses out. Its fan
+// (TankFan) blows it away to nothing, until someone turns the fan round to blow it at `target`. Anything else blowing
+// there (`blowers`: the hot dog stand's own StallFan) blows it straight back out until it's switched off; with those
+// off, a cloud builds up round the target (propane's invisible, so it's drawn as a faint green haze). Once it's thick
+// enough, a spark sets it off:
+//   - at the hot dog stand, the hot dog man lighting his stove (HotDogMan): the stand goes up in a fireball, the crowd
+//     runs, and the bang wakes the ride technician (RideTechnician.Wake);
+//   - at the locker room, its broken cable (LockerBox): the building catches fire (LockerRoom.Burn).
 [RequireComponent(typeof(Interactable))]
 public class PropaneTank : MonoBehaviour, IInteraction
 {
     public TankFan fan;
-    public Transform stall;          // where the cloud gathers
-    public float fillTime = 12f;     // seconds of fan-blown gas to fill the cloud
+    [UnityEngine.Serialization.FormerlySerializedAs("stall")]
+    public Transform target;           // where the cloud gathers
+    public StallFan[] blowers = new StallFan[0];
+    public LockerRoom burns;           // set: the locker room's tank (it burns); empty: the hot dog stand's (wakes the technician)
+    public Mischief.Task leakTask = Mischief.Task.LeakPropane;
+    public Mischief.Task cloudTask = Mischief.Task.GasCloud;
+    public Mischief.Task boomTask = Mischief.Task.Explode;
+    public float fillTime = 12f;       // seconds of fan-blown gas to fill the cloud
     public float cloudRadius = 2.6f;
     public int cloudPuffs = 14;
-    public float payoffTime = 2.5f;  // the camera on the fireball
-    public float wakeShot = 3.5f;    // then on the technician waking up
-
-    // The tank whose cloud is full and waiting for a spark, if any.
-    public static PropaneTank CloudReady { get; private set; }
+    public float payoffTime = 2.5f;    // the camera on the fireball
+    public float wakeShot = 4.5f;      // then on the technician waking up (and coming out, if the wheel's down)
 
     static readonly Color Gas = new(0.7f, 0.95f, 0.55f);
+
+    public bool Ready => level >= 1f && !spent;
+    bool HotDogStand => burns == null;
 
     bool leaking, spent, thoughtBlown;
     float level, nextWisp;
     SpriteRenderer[] puffs;
     Vector3[] puffSpots;
 
-    Vector3 Center => new(stall.position.x, 0f, stall.position.z);
+    Vector3 Center => new(target.position.x, 0f, target.position.z);
 
-    void OnDisable()
+    // A full cloud waiting for a spark within `range` of `p`, if any.
+    public static PropaneTank ReadyNear(Vector3 p, float range)
     {
-        if (CloudReady == this) CloudReady = null;
+        foreach (var t in FindObjectsByType<PropaneTank>())
+        {
+            Vector3 d = t.Center - p;
+            if (t.Ready && new Vector2(d.x, d.z).magnitude <= range + t.cloudRadius) return t;
+        }
+        return null;
+    }
+
+    bool Blowing()
+    {
+        foreach (var b in blowers)
+            if (b != null && b.On) return true;
+        return false;
     }
 
     void Start()
@@ -53,9 +74,9 @@ public class PropaneTank : MonoBehaviour, IInteraction
     {
         if (!leaking || spent) return;
         bool aimed = fan != null && fan.Aimed;
-        if (aimed && level < 1f && StallFan.Blowing)
+        if (aimed && level < 1f && Blowing())
         {
-            // The stall's fan scatters it as fast as it comes.
+            // Another fan scatters it as fast as it comes.
             level = Mathf.Max(0f, level - Time.deltaTime / fillTime);
             if (!thoughtBlown && Possession.PlayerNear(Center, cloudRadius + 4f))
             {
@@ -68,20 +89,19 @@ public class PropaneTank : MonoBehaviour, IInteraction
             level = Mathf.Min(1f, level + Time.deltaTime / fillTime);
             if (level >= 1f)
             {
-                CloudReady = this;
-                Mischief.Complete(Mischief.Task.GasCloud);
-                GameHud.Think(GameText.ThinkCloud);
+                Mischief.Complete(cloudTask);
+                GameHud.Think(HotDogStand ? GameText.ThinkCloud : GameText.ThinkLockerCloud);
             }
         }
 
-        // The haze around the stand, breathing a little.
+        // The haze round the target, breathing a little.
         for (int i = 0; i < puffs.Length; i++)
         {
             puffs[i].color = new Color(Gas.r, Gas.g, Gas.b, level * 0.22f);
             puffs[i].transform.position = puffSpots[i] + new Vector3(Mathf.Sin(Time.time * 0.7f + i), Mathf.Sin(Time.time * 0.5f + i * 2f) * 0.3f, 0f) * 0.25f;
         }
 
-        // Gas wisps off the valve, carried along by the fan: at the stand, or off to nowhere.
+        // Gas wisps off the valve, carried along by the fan: at the target, or off to nowhere.
         if (Time.time < nextWisp) return;
         nextWisp = Time.time + 0.25f;
         Vector3 wind = fan != null ? fan.Wind : Vector3.up * 0.3f;
@@ -104,18 +124,18 @@ public class PropaneTank : MonoBehaviour, IInteraction
         Sfx.Play(Sfx.HitWood, 0.5f, 1.8f);
         GameHud.Say(GameText.OpenedValve);
         GameHud.Think(GameText.ThinkValve);
-        Mischief.Complete(Mischief.Task.LeakPropane);
+        Mischief.Complete(leakTask);
     }
 
     // ---------------------------------------------------------------- the spark
 
-    public void Explode(HotDogMan cook)
+    public void Explode()
     {
         if (spent) return;
         spent = true;
-        CloudReady = null;
-        cook.Char();
         foreach (var p in puffs) p.enabled = false;
+        if (HotDogStand)
+            foreach (var h in HotDogMan.All) h.Char();
         StartCoroutine(Payoff());
     }
 
@@ -129,7 +149,8 @@ public class PropaneTank : MonoBehaviour, IInteraction
         Fx.Burst("Fx/sparkle", Center + Vector3.up, 30, new Color(1f, 0.9f, 0.4f), 9f, 0.4f, 0.8f);
         Fx.Shake(0.5f, 1.5f);
         ParkChaos.Add(Center, 10f, 20f, ParkChaos.Terrifying); // nobody's hurt, everybody runs
-        Mischief.Complete(Mischief.Task.Explode);
+        Mischief.Complete(boomTask);
+        Aftermath.Add(Center, cloudRadius + 1.5f, 120f);
 
         var shot = new GameObject("Boom Payoff").transform;
         shot.position = Center + Vector3.up;
@@ -140,6 +161,16 @@ public class PropaneTank : MonoBehaviour, IInteraction
             yield return new WaitForSeconds(0.3f);
         }
         Destroy(shot.gameObject);
+
+        if (!HotDogStand)
+        {
+            yield return burns.Burn(); // the fire, the PA, the operator running over
+            CameraRig.EndSpotlight();
+            yield return new WaitForSeconds(1f);
+            Possession.InputBlocked = false;
+            GameHud.Think(GameText.ThinkFire);
+            yield break;
+        }
 
         // Across the park, someone's nap is over.
         foreach (var t in RideTechnician.All)
@@ -159,11 +190,10 @@ public class PropaneTank : MonoBehaviour, IInteraction
     // Loading a save (SaveGame).
     public void Restore()
     {
-        spent = Mischief.IsDone(Mischief.Task.Explode);
-        leaking = Mischief.IsDone(Mischief.Task.LeakPropane);
-        level = !spent && Mischief.IsDone(Mischief.Task.GasCloud) ? 1f : 0f;
-        CloudReady = level >= 1f ? this : null;
-        foreach (var h in HotDogMan.All)
-            if (spent) h.Char();
+        spent = Mischief.IsDone(boomTask);
+        leaking = Mischief.IsDone(leakTask);
+        level = !spent && Mischief.IsDone(cloudTask) ? 1f : 0f;
+        if (spent && HotDogStand)
+            foreach (var h in HotDogMan.All) h.Char();
     }
 }

@@ -10,7 +10,7 @@ public static class ParkArt
     public const int OverheadOrder = 5; // bubbles, bars and markers drawn over people
 
     static readonly Dictionary<string, Sprite> sprites = new();
-    static Material material, litMaterial, characterMaterial;
+    static Material material, litMaterial, characterMaterial, spiritMaterial, faceMaterial;
     static Font font;
 
     // Same shader as Palletes/Shaders/SpriteLit2.5 (lit, alpha clip, casts shadows, tinted by SpriteRenderer.color).
@@ -42,6 +42,26 @@ public static class ParkArt
         }
     }
     static readonly int SeeThroughCutId = Shader.PropertyToID("_SeeThroughCut");
+
+    // The spirit's own copy of CharacterMaterial, so its doodle wobble can be set apart from everyone else's
+    // (DoodleSettings).
+    public static Material SpiritMaterial => spiritMaterial != null ? spiritMaterial : spiritMaterial = new Material(CharacterMaterial) { name = "Park Spirit Sprite" };
+
+    // Faces and heads: the spirit's eyes and grin, a visitor's face and hair (and the spirit's face on someone it's
+    // in). Never wobbles, whatever DoodleSettings says: only bodies get the doodle.
+    public static Material FaceMaterial
+    {
+        get
+        {
+            if (faceMaterial == null)
+            {
+                faceMaterial = new Material(CharacterMaterial) { name = "Park Face" };
+                faceMaterial.SetFloat(DoodleStrengthId, 0f);
+            }
+            return faceMaterial;
+        }
+    }
+    static readonly int DoodleStrengthId = Shader.PropertyToID("_DoodleStrength");
 
     // A standing sprite: lit, casts and receives shadows.
     public static SpriteRenderer Lit(SpriteRenderer r)
