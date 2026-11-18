@@ -8,6 +8,13 @@ public class Item : MonoBehaviour
 {
     const float Size = 0.5f;     // lying on the ground or falling
     const float HeldSize = 0.3f; // in a hand: about one and a half hands tall
+
+    // How big it is in a hand: HeldSize, give or take for things that read too small at that size.
+    float Held => kind switch
+    {
+        VisitorItem.WaterBottle => HeldSize * 1.3f,
+        _ => HeldSize,
+    };
     const float HeldTilt = 15f;  // degrees a held thing leans in toward the holder's body
     const float Gravity = 18f;
 
@@ -71,12 +78,13 @@ public class Item : MonoBehaviour
         var shadowHolder = shadow.transform.parent;
         if (Holder != null)
         {
-            // In the hand, drawn in front of it (and of the whole body), sticking up out of the fist and tipped a little
-            // in toward the body, so it reads as held. It swings with the hand on every walk frame (hidden while the
-            // holder rides).
-            transform.localScale = Vector3.one * (HeldSize / Size);
+            // In the hand, drawn in front of it (and of the whole body), centred on the hand and tipped a little in
+            // toward the body, so it reads as held. It swings with the hand on every walk frame (hidden while the
+            // holder rides). (Lifting it by 0.3 x its size, to stick up out of the fist, sat it above the hand.)
+            float held = Held;
+            transform.localScale = Vector3.one * (held / Size);
             var tilt = Quaternion.Euler(0f, 0f, Holder.Look.FacingLeft ? HeldTilt : -HeldTilt);
-            transform.SetPositionAndRotation(Holder.CarryPoint + tilt * Vector3.up * (HeldSize * 0.3f) - Holder.transform.forward * 0.02f, tilt);
+            transform.SetPositionAndRotation(Holder.CarryPoint - Holder.transform.forward * 0.02f, tilt);
             sprite.enabled = Holder.Look.Visible;
             shadow.enabled = false;
             return;

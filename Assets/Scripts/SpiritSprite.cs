@@ -33,8 +33,11 @@ public class SpiritSprite : MonoBehaviour
     [Header("Pose (as drawn, facing left; mirrored with it)")]
     [Tooltip("The body's lean in degrees: negative tips it forward, so the flame streams out behind.")]
     public float bodyAngle = -25f;
-    [Tooltip("Where the eyes and mouth sit on the leaning body, in units of the drawing (1 = 100 px).")]
+    [Tooltip("Where the mouth sits on the leaning body, in units of the drawing (1 = 100 px).")]
     public Vector2 faceOffset = new(-0.15f, 0.35f);
+    [Tooltip("Where the eyes sit on the leaning body, in units of the drawing (1 = 100 px). Further forward than the " +
+             "mouth, so the front eye pokes just past the face's outline.")]
+    public Vector2 eyesOffset = new(-0.38f, 0.35f);
     [Tooltip("Where both hands sit, in units of the drawing (1 = 100 px).")]
     public Vector2 handsOffset = new(-0.5f, -0.1f);
     [Tooltip("The hands' tilt in degrees.")]
@@ -123,7 +126,7 @@ public class SpiritSprite : MonoBehaviour
         // Everything bobs together on one wave: the hands by handBobPixels, the body and its face by bodyBobPixels.
         float wave = Mathf.Sin(Time.time * handBobSpeed) / PixelsPerUnit;
         Place(body, 0, bodyBobPixels * wave, step, Vector2.zero, bodyAngle);
-        Place(eyes, 1, bodyBobPixels * wave, step, faceOffset, 0f);
+        Place(eyes, 1, bodyBobPixels * wave, step, eyesOffset, 0f);
         Place(mouth, 2, bodyBobPixels * wave, step, faceOffset, 0f);
         Place(hands, 3, handBobPixels * wave, step, handsOffset, handsAngle);
     }

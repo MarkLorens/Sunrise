@@ -1,29 +1,32 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Animates a flat character sprite (walk / run / idle, cheering with arms up, or a held pose), gives it a soft
-// shadow, a tiny hop on every step while walking, and knows where its hand is on every frame (HandPoint), so what
-// it carries stays in its hand.
-// Frames come from Resources/Visitors/<character>/character_<character>_<pose>.png, or for the new lineart bodies
-// (character = "body_<variant>") from Resources/ArtLineartTorso/body_<variant>_idle / _walk1..4. If a body has white fill
-// layers (body_<variant>_<pose>_skin/top/bottom/shoes, made by Tools > Split Coloured Body Art) they're stacked behind
-// the line, follow its frame, and each gets a random colour from its palette. Bodies also get a random face and hair
-// from Resources/ArtLineartHead (face_<n>[_open/_closed], hair_<n> + _hair/_hat fills), pinned to the head of
-// whatever frame the body shows; faces with a _closed frame blink.
+// Draws a flat character sprite (standing, cheering with arms up, or a held pose), gives it a soft shadow, and knows
+// where its hand is (HandPoint), so what it carries stays in its hand. There's no walk cycle: people waddle, rocking
+// from side to side round their feet as they go (Waddle, in LateUpdate).
+// Art comes from Resources/Visitors/<character>/character_<character>_<pose>.png, or for the lineart bodies
+// (character = "body_<variant>") from Resources/ArtLineartTorso/body_<variant>_idle. If a body has white fill layers
+// (body_<variant>_idle_skin/top/bottom/shoes, made by Tools > Split Coloured Body Art) they're stacked behind the
+// line and each gets a random colour from its palette. Bodies also get a random face and hair from
+// Resources/ArtLineartHead (face_<n>[_open/_closed], hair_<n> + _hair/_hat fills), drawn on canvases that line up
+// with the body's; faces with a _closed frame blink.
 [RequireComponent(typeof(SpriteRenderer))]
 public class CharacterSprite : MonoBehaviour
 {
     public string character = "malePerson";
-    public float walkFps = 10f;
-    public float stepBounce = 0.04f; // how much they stretch up between footfalls (0.04 = 4% taller); half again when running
+    [Tooltip("How far they lean to each side as they waddle, in degrees (wider when running).")]
+    public float waddleAngle = 7f;
+    [Tooltip("Rocks per second at a standstill's pace; each unit/second of speed adds waddlePerSpeed.")]
+    public float waddleRate = 0.6f, waddlePerSpeed = 0.5f;
+    public float stepBounce = 0.04f; // how much they stretch up passing upright mid-waddle (0.04 = 4% taller); half again when running
 
     [HideInInspector] public Sprite idle, think, interact, fallDown;
-    [HideInInspector] public Sprite[] walk, run, cheer;
+    [HideInInspector] public Sprite[] cheer;
 
     // Held pose that overrides walking/idle (e.g. confused, knocked down). Null = automatic.
     [HideInInspector] public Sprite pose;
     [HideInInspector] public bool running;
-    // True while the walk/run cycle is playing (moving, visible, not held in a pose): Footsteps plays while this is on.
+    // True while they're walking (moving, visible, not held in a pose): Footsteps plays while this is on.
     public bool Stepping { get; private set; }
 
     public bool Visible => body.enabled;
@@ -45,7 +48,6 @@ public class CharacterSprite : MonoBehaviour
     static readonly Color[] HatPalette = Hex("#E74C3C", "#3498DB", "#2ECC71", "#F1C40F", "#F4F4F4", "#2B2B2B");
     static Dictionary<string, Sprite> headArt;
     static readonly List<string> faceIds = new(), hairIds = new();
-    static readonly Dictionary<Sprite, Vector3> headAnchors = new();
     static readonly Dictionary<Sprite, Vector3> handAnchors = new();
     Transform head;
     SpriteRenderer face;
@@ -55,12 +57,12 @@ public class CharacterSprite : MonoBehaviour
 
     // While possessed the face is the spirit's (Resources/MC: MC_face_eyes *, glancing left -> center -> right like
     // SpiritSprite's, over its MC_face_mouth grin). Its drawing (eyes + grin) is PossessedFaceWidth pixels of the head
-    // art wide on everyone (the faces are ~160 px; not measured per face, since face_5's glasses make it 247), centred
+    // art wide on everyone (the faces are ~265 px; not measured per face, since face_6's glasses make it 384), centred
     // on their own face. The spirit's pieces are drawn on one shared canvas, so eyes and grin line up as they are.
     static Sprite[] mcEyes;
     static Sprite mcMouth;
     SpriteRenderer possessedMouth;
-    const float PossessedFaceWidth = 250f;
+    const float PossessedFaceWidth = 400f;
     SpriteRenderer possessedFace;
     bool possessed;
     int eyeStep;
@@ -73,9 +75,9 @@ public class CharacterSprite : MonoBehaviour
     Rigidbody rb;
     Sprite gesture;
     float gestureUntil, cheerUntil, twitchUntil;
-    float animOffset;
+    float waddle;    // where they are in their side-to-side rock (radians; random start, so crowds don't rock in step)
     Vector3 baseScale;
-    float stride;    // 0..1: eases the step hop in when they set off and out when they stop
+    float stride;    // 0..1: eases the waddle in when they set off and out when they stop
     bool loaded;
     bool facingLeft, drawnFacingLeft; // Kenney art faces right, the lineart faces left
     static readonly int TintId = Shader.PropertyToID("_Tint");
@@ -93,17 +95,14 @@ public class CharacterSprite : MonoBehaviour
         ParkArt.CastShadows(body);
         rb = GetComponent<Rigidbody>();
         if (!TryGetComponent<Footsteps>(out _)) gameObject.AddComponent<Footsteps>();
-        animOffset = Random.value * 10f;
+        waddle = Random.value * Mathf.PI * 2f;
         baseScale = transform.localScale;
 
         if (character.StartsWith("body_"))
         {
-            // Lineart bodies only have idle + a 4-frame walk so far; the other poses borrow those until they're drawn.
+            // Lineart bodies only have the idle pose so far; the other poses borrow it until they're drawn.
             string line = $"ArtLineartTorso/{character}_";
             idle = Resources.Load<Sprite>(line + "idle");
-            walk = new Sprite[4];
-            for (int i = 0; i < 4; i++) walk[i] = Resources.Load<Sprite>(line + "walk" + (i + 1));
-            run = walk;
             think = interact = fallDown = idle;
             cheer = new[] { idle, idle };
             drawnFacingLeft = true;
@@ -118,8 +117,6 @@ public class CharacterSprite : MonoBehaviour
             think = Resources.Load<Sprite>(path + "think");
             interact = Resources.Load<Sprite>(path + "interact");
             fallDown = Resources.Load<Sprite>(path + "fallDown");
-            walk = Frames(path + "walk", 8);
-            run = Frames(path + "run", 3);
             cheer = Frames(path + "cheer", 2);
             if (cheer[0] == null) cheer = new[] { interact, interact };
         }
@@ -132,7 +129,6 @@ public class CharacterSprite : MonoBehaviour
     void LoadFills(string line)
     {
         var poses = new List<(string name, Sprite sprite)> { ("idle", idle) };
-        for (int i = 0; i < walk.Length; i++) poses.Add(("walk" + (i + 1), walk[i]));
 
         for (int k = 0; k < FillLayers.Length; k++)
         {
@@ -272,36 +268,24 @@ public class CharacterSprite : MonoBehaviour
         return r;
     }
 
-    // Head pieces pivot on the head's top-left corner; find that corner on a body frame from its tight mesh, which
-    // hugs the drawing ~3 px outside it. Same head drawing in every body, so it's the same spot up to the bob.
-    static Vector3 HeadAnchor(Sprite s)
-    {
-        if (headAnchors.TryGetValue(s, out var a)) return a;
-        var v = s.vertices;
-        float top = float.MinValue, left = float.MaxValue, pad = 3f / s.pixelsPerUnit;
-        foreach (var p in v) top = Mathf.Max(top, p.y);
-        foreach (var p in v) if (p.y > top - 200f / s.pixelsPerUnit) left = Mathf.Min(left, p.x); // the head's rows
-        return headAnchors[s] = new Vector3(left + pad, top - pad, 0f);
-    }
-
     // Where a held item goes: the hand nearer the camera, which is the back hand as drawn (the lineart faces left, so
-    // its right-hand one; Kenney art faces right, so its left-hand one). It's the outermost point of the frame's tight
-    // mesh on that side between 20% and 50% of the way up (below the sleeves, above the feet), moved in by HandInset. Measured on every lineart frame, it lands on that hand while walking too. Poses that move the arms
-    // (cheering, falling, reaching) keep the idle frame's spot.
+    // its right-hand one; Kenney art faces right, so its left-hand one). It's the outermost point of the idle frame's
+    // tight mesh on that side between 20% and 50% of the way up (below the sleeves, above the feet), moved in by
+    // HandInset. Poses that move the arms (cheering, falling, reaching) keep the idle frame's spot. Through the
+    // transform, so it leans with the waddle.
     public Vector3 HandPoint
     {
         get
         {
             Load();
-            var s = body.sprite;
-            bool armsDown = s == idle || System.Array.IndexOf(walk, s) >= 0 || System.Array.IndexOf(run, s) >= 0;
-            return transform.TransformPoint(HandAnchor(armsDown ? s : idle, drawnFacingLeft));
+            return transform.TransformPoint(HandAnchor(idle, drawnFacingLeft));
         }
     }
 
     // How far in from the hand's outer edge its middle is, as a fraction of the body's height (measured on the
-    // lineart: hands are ~0.14 of the height wide, their middle ~0.075 in, plus the tight mesh's few pixels of margin).
-    const float HandInset = 0.08f;
+    // body_standard lineart: hands are ~0.17 of the height wide from wrist to fingertips, their middle ~0.09 in, plus
+    // the tight mesh's margin past the fingertips). 0.08 left held things out at the fingertips.
+    const float HandInset = 0.12f;
 
     static Vector3 HandAnchor(Sprite s, bool rightSide)
     {
@@ -326,12 +310,11 @@ public class CharacterSprite : MonoBehaviour
         return handAnchors[s] = new Vector3(hand.x, hand.y, 0f);
     }
 
-    // Fills show the frame that matches whatever the line is showing; the head follows its bob.
+    // Fills show the frame that matches whatever the line is showing; the face blinks.
     void SyncFills()
     {
         if (head != null)
         {
-            head.localPosition = HeadAnchor(body.sprite);
             if (faceClosed != null)
             {
                 if (Time.time > nextBlink) { blinkUntil = Time.time + 0.12f; nextBlink = Time.time + Random.Range(2f, 5f); }
@@ -427,32 +410,32 @@ public class CharacterSprite : MonoBehaviour
     void LateUpdate()
     {
         Vector3 v = rb ? rb.linearVelocity : Vector3.zero;
-        bool moving = new Vector2(v.x, v.z).sqrMagnitude > 0.01f;
+        float speed = new Vector2(v.x, v.z).magnitude;
+        bool moving = speed > 0.1f;
         if (Mathf.Abs(v.x) > 0.05f) facingLeft = v.x < 0;
 
-        Sprite[] cycle = running ? run : walk;
-        float frame = (Time.time + animOffset) * walkFps;
         bool stepping = false;
         bool twitching = Time.time < twitchUntil;
         if (twitching) body.sprite = (int)(Time.time * 14f) % 2 == 0 ? cheer[0] : idle;
         else if (Time.time < gestureUntil) body.sprite = gesture;
         else if (Time.time < cheerUntil) body.sprite = cheer[(int)(Time.time * 6f) % 2];
         else if (pose != null) body.sprite = pose;
-        else if (moving)
+        else
         {
-            body.sprite = cycle[(int)frame % cycle.Length];
-            stepping = true;
+            body.sprite = idle;
+            stepping = moving;
         }
-        else body.sprite = idle;
         SyncFills();
         Stepping = stepping && body.enabled;
 
-        // Squash and stretch (the feet stay put: the sprite's pivot is at its feet).
-        // Walking: two steps per cycle, footfalls on frames 0 and 4 - a slight squash as the foot lands, a slight
-        // stretch as the legs pass. A tiny hop that says "moving" without anyone noticing it as an effect.
-        stride = Mathf.MoveTowards(stride, stepping ? 1f : 0f, Time.deltaTime * 6f);
-        float hop = (Mathf.Abs(Mathf.Sin(frame / cycle.Length * 2f * Mathf.PI)) - 0.3f) * stepBounce * (running ? 1.5f : 1f) * stride;
-        float sx = 1f - hop * 0.5f, sy = 1f + hop;
+        // The waddle: they rock from foot to foot round their feet (the sprite's pivot), a step to each side per rock,
+        // stretching up a touch as they pass upright and settling a touch at each lean. Quicker the faster they go and
+        // wider when running; it eases in as they set off and back to standing straight when they stop.
+        stride = Mathf.MoveTowards(stride, stepping ? 1f : 0f, Time.deltaTime * 5f);
+        waddle = (waddle + Time.deltaTime * (waddleRate + speed * waddlePerSpeed) * Mathf.PI * 2f) % (Mathf.PI * 2f);
+        float lean = Mathf.Sin(waddle) * waddleAngle * (running ? 1.4f : 1f) * stride;
+        float lift = (Mathf.Abs(Mathf.Cos(waddle)) - 0.5f) * stepBounce * (running ? 1.5f : 1f) * stride;
+        float sx = 1f - lift * 0.5f, sy = 1f + lift;
         if (twitching)
         {
             sx = Random.Range(0.85f, 1.15f);
@@ -463,5 +446,10 @@ public class CharacterSprite : MonoBehaviour
         float flip = facingLeft != drawnFacingLeft ? -1f : 1f;
         var scale = new Vector3(baseScale.x * flip * sx, baseScale.y * sy, baseScale.z);
         if (transform.localScale != scale) transform.localScale = scale;
+        var tilt = Quaternion.Euler(0f, 0f, lean);
+        if (transform.localRotation != tilt) transform.localRotation = tilt;
+        // The shadow stays flat on the ground: it leans back the other way (the other way again when they're
+        // mirrored, since the flip turns the lean round).
+        shadow.transform.parent.localRotation = Quaternion.Euler(0f, 0f, -lean * flip);
     }
 }
