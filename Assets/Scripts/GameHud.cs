@@ -18,20 +18,21 @@ public class GameHud : MonoBehaviour
     static readonly Color PanelDark = new(0.12f, 0.08f, 0.12f, 0.8f);
     static readonly Color Ink = new(0.17f, 0.1f, 0.13f);
     static readonly Color Soft = new(0.96f, 0.92f, 0.88f);
-    static readonly Color Brush = new(0.1f, 0.07f, 0.1f, 0.9f);
-    static readonly Color StepInk = new(0.97f, 0.93f, 0.86f);
     static readonly List<string> pending = new();
     static Font handFont;
     static Font HandFont => handFont != null ? handFont : handFont = Resources.Load<Font>("Park/Fonts/LoveYaLikeASister");
 
     // A step in the objectives list. age < 0 until it's done; then a line is drawn through it and it stays put.
+    // A long step wraps onto more lines (StepChars at most per line), each struck through on its own.
     class StepRow
     {
         public Mischief.Task task;
         public LayoutElement slot;
-        public RectTransform body, strike;
+        public RectTransform body;
+        public RectTransform[] strikes; // one per line
+        public float[] widths;          // each line's width
         public CanvasGroup group;
-        public float width, age = -1f, appear;
+        public float age = -1f, appear;
     }
 
     Possession spirit;
@@ -39,7 +40,21 @@ public class GameHud : MonoBehaviour
     RectTransform canvas;
     CanvasGroup objectives;
     Text objectiveTitle;
-    RectTransform stepList;
+    RectTransform objectiveBanner, stepList;
+    LayoutElement bannerSize; // the title's width follows its text
+    VerticalLayoutGroup objectivesColumn;
+    // The steps drop down from under the title: click the title or press Tab to open or close them.
+    LayoutElement stepsDrop;
+    CanvasGroup stepsGroup;
+    bool stepsOpen = true;
+    float stepsShown = 1f, bannerPop = 1f;
+    const float DropTime = 0.3f;
+    // How far the open steps panel tucks up under the title, so the two sit together with no gap between their drawn
+    // edges (both pictures have a see-through margin round the outline).
+    const float StepsTuck = 28f;
+    const int StepChars = 30;      // a step longer than this wraps onto the next line
+    const float WrapStep = 30f;    // how far down each wrapped line sits from the one above
+    const float TitlePadLeft = 46f, TitlePadRight = 50f, TitleMinWidth = 220f, StepsMinWidth = 240f;
     readonly List<StepRow> stepRows = new();
     int shownPart = -2; // index into Mischief.Parts, -1 when every step is done
     RectTransform doneBody;
@@ -253,6 +268,7 @@ public class GameHud : MonoBehaviour
         int part = ActivePart();
         if (part != shownPart && stepRows.TrueForAll(r => r.age >= PartHold)) ShowPart(part);
         objectives.alpha = Mathf.MoveTowards(objectives.alpha, shownPart >= 0 ? 1f : 0f, dt * 3f);
+        UpdateDrop(dt);
 
         foreach (var r in stepRows)
         {
@@ -267,22 +283,47 @@ public class GameHud : MonoBehaviour
                 r.group.alpha = 1f;
                 r.body.anchoredPosition = Vector2.zero;
             }
-            // Done: a line is drawn through it, and it stays on the list.
+            // Done: a line is drawn through it (through every line of it), and it stays on the list.
             r.age += dt;
             float strike = 1f - Mathf.Pow(1f - Mathf.Clamp01(r.age / 0.35f), 3f);
-            r.strike.sizeDelta = new Vector2(r.width * strike, 3f);
+            for (int i = 0; i < r.strikes.Length; i++) r.strikes[i].sizeDelta = new Vector2(r.widths[i] * strike, 3f);
         }
+    }
+
+    // Click the title (or press Tab) and the steps slide down out from under it, or back up. The title gives a
+    // little squash as it's pressed.
+    void UpdateDrop(float dt)
+    {
+        var kb = Keyboard.current;
+        var mouse = Mouse.current;
+        bool clicked = mouse != null && mouse.leftButton.wasPressedThisFrame
+                       && RectTransformUtility.RectangleContainsScreenPoint(objectiveBanner, mouse.position.ReadValue(), null);
+        if (objectives.alpha > 0.5f && !PauseMenu.Paused && (clicked || (kb != null && kb.tabKey.wasPressedThisFrame)))
+        {
+            stepsOpen = !stepsOpen;
+            bannerPop = 0f;
+        }
+        stepsShown = Mathf.MoveTowards(stepsShown, stepsOpen ? 1f : 0f, dt / DropTime);
+        float eased = stepsShown * stepsShown * (3f - 2f * stepsShown);
+        stepsDrop.preferredWidth = LayoutUtility.GetPreferredWidth(stepList);
+        stepsDrop.preferredHeight = LayoutUtility.GetPreferredHeight(stepList) * eased;
+        stepsGroup.alpha = eased;
+        objectivesColumn.spacing = -StepsTuck * eased; // closed, nothing tucks under the title
+        bannerPop = Mathf.Min(1f, bannerPop + dt / 0.25f);
+        objectiveBanner.localScale = Vector3.one * (1f - 0.06f * Mathf.Sin(bannerPop * Mathf.PI));
     }
 
     void ShowPart(int part)
     {
         shownPart = part;
         if (part < 0) return; // all done: the panel fades away, last list and all
+        stepsOpen = true; // a new part's steps always drop down, even if the last ones were closed
         foreach (var r in stepRows) Destroy(r.slot.gameObject);
         stepRows.Clear();
         var (title, steps) = Mischief.Parts[part];
         int dot = title.IndexOf(". ");
         objectiveTitle.text = dot >= 0 && dot < 3 ? title[(dot + 2)..] : title; // "1. A-leak-tricity" -> "A-leak-tricity"
+        bannerSize.preferredWidth = Mathf.Max(TitleMinWidth, TitlePadLeft + objectiveTitle.preferredWidth + TitlePadRight);
         foreach (var (task, label) in steps)
         {
             var slot = Ui(task.ToString(), stepList);
@@ -290,17 +331,65 @@ public class GameHud : MonoBehaviour
             Stretch(body);
             var group = body.gameObject.AddComponent<CanvasGroup>();
             group.alpha = 0f;
-            var text = Txt(body, "› " + label, 26, StepInk);
-            text.font = HandFont;
-            var strike = Ui("Strike", body);
-            Place(strike, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(0f, -1f), new Vector2(0f, 3f));
-            Img(strike, null, StepInk);
+
+            // One line each, StepChars at most; the lines after the first line up under its text, past the "› ".
+            var lines = Wrap(label, StepChars);
+            var strikes = new RectTransform[lines.Count];
+            var widths = new float[lines.Count];
+            float indent = 0f, widest = 0f;
+            for (int i = 0; i < lines.Count; i++)
+            {
+                var line = Ui("Line " + (i + 1), body);
+                var text = Txt(line, i == 0 ? "› " + lines[i] : lines[i], 26, Ink);
+                text.font = HandFont;
+                if (i == 0 && lines.Count > 1) indent = Measure(text, "› " + lines[1][0]) - Measure(text, lines[1][0].ToString());
+                float x = i == 0 ? 0f : indent;
+                Place(line, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(x, -i * WrapStep), new Vector2(text.preferredWidth, StepHeight));
+                var strike = Ui("Strike", line);
+                Place(strike, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(0f, -1f), new Vector2(0f, 3f));
+                Img(strike, null, Ink);
+                strikes[i] = strike;
+                widths[i] = text.preferredWidth;
+                widest = Mathf.Max(widest, x + text.preferredWidth);
+            }
+
             var element = slot.gameObject.AddComponent<LayoutElement>();
-            element.preferredWidth = text.preferredWidth;
-            element.preferredHeight = StepHeight;
-            stepRows.Add(new StepRow { task = task, slot = element, body = body, strike = strike, group = group, width = text.preferredWidth });
+            element.preferredWidth = widest;
+            element.preferredHeight = StepHeight + (lines.Count - 1) * WrapStep;
+            stepRows.Add(new StepRow { task = task, slot = element, body = body, strikes = strikes, widths = widths, group = group });
         }
     }
+
+    // Breaks `s` into lines of at most `max` characters, between words (a word longer than that is cut).
+    static List<string> Wrap(string s, int max)
+    {
+        var lines = new List<string>();
+        string line = "";
+        foreach (var word in s.Split(' ', System.StringSplitOptions.RemoveEmptyEntries))
+        {
+            string w = word;
+            while (w.Length > max)
+            {
+                if (line.Length > 0) lines.Add(line);
+                lines.Add(w[..max]);
+                line = "";
+                w = w[max..];
+            }
+            if (line.Length == 0) line = w;
+            else if (line.Length + 1 + w.Length <= max) line += " " + w;
+            else
+            {
+                lines.Add(line);
+                line = w;
+            }
+        }
+        if (line.Length > 0 || lines.Count == 0) lines.Add(line);
+        return lines;
+    }
+
+    // How wide `s` comes out in `t`'s font and size, in HUD units.
+    static float Measure(Text t, string s) =>
+        t.cachedTextGeneratorForLayout.GetPreferredWidth(s, t.GetGenerationSettings(Vector2.zero)) / t.pixelsPerUnit;
 
     void UpdateStepPopup()
     {
@@ -439,7 +528,9 @@ public class GameHud : MonoBehaviour
         bubbleText.font = HandFont;
     }
 
-    // Top left: a brush-stroke title (the part you're on) over a dim panel of its steps.
+    // Top left: a hand-drawn title (the part you're on, UI/Buttons/objective_main) with a yellow panel of its steps
+    // (UI/Buttons/objective_steps) that drops down from under it. Both are sliced, so their drawn edges keep their
+    // shape whatever size the text makes them.
     void BuildObjectives()
     {
         var column = Ui("Objectives", canvas);
@@ -448,25 +539,46 @@ public class GameHud : MonoBehaviour
         Fit(column);
 
         var panel = Ui("Panel", column);
-        Column(panel, 0f, new RectOffset());
+        // The steps tuck up under the title (negative spacing, see UpdateDrop), so the title has to draw over them: it's
+        // the last child, and the column lays its children out last to first to keep it on top of the list.
+        objectivesColumn = Column(panel, 0f, new RectOffset());
+        objectivesColumn.reverseArrangement = true;
         objectives = panel.gameObject.AddComponent<CanvasGroup>();
         objectives.alpha = 0f;
 
         var banner = Ui("Title", panel);
-        Img(banner, "UI/objective_banner", Brush);
-        var size = banner.gameObject.AddComponent<LayoutElement>();
-        size.preferredWidth = 560f;
-        size.preferredHeight = 75f;
+        Img(banner, "UI/Buttons/objective_main", Color.white).pixelsPerUnitMultiplier = 3.2f; // edges drawn ~50 wide
+        bannerSize = banner.gameObject.AddComponent<LayoutElement>();
+        bannerSize.preferredWidth = TitleMinWidth; // fitted to the title's text in ShowPart
+        bannerSize.preferredHeight = 92f;
         var title = Ui("Label", banner);
         Stretch(title);
-        title.offsetMin = new Vector2(36f, 0f);
-        objectiveTitle = Txt(title, "", 38, Color.white, TextAnchor.MiddleLeft, true);
+        title.offsetMin = new Vector2(TitlePadLeft, 4f);
+        objectiveTitle = Txt(title, "", 38, Ink, TextAnchor.MiddleLeft, true);
         objectiveTitle.font = HandFont;
+        objectiveBanner = banner;
 
-        stepList = Ui("Steps", panel);
-        Img(stepList, null, new Color(0.1f, 0.07f, 0.1f, 0.35f));
-        Column(stepList, 4f, new RectOffset(36, 30, 12, 14));
-        stepList.gameObject.AddComponent<LayoutElement>().minWidth = 520f;
+        // The steps hang from the bottom of a box that grows and shrinks (and clips them), so they slide out from
+        // under the title.
+        var drop = Ui("Drop", panel);
+        drop.gameObject.AddComponent<RectMask2D>();
+        stepsDrop = drop.gameObject.AddComponent<LayoutElement>();
+        stepList = Ui("Steps", drop);
+        stepList.anchorMin = Vector2.zero;
+        stepList.anchorMax = new Vector2(1f, 0f);
+        stepList.pivot = new Vector2(0.5f, 0f);
+        stepList.anchoredPosition = stepList.sizeDelta = Vector2.zero;
+        // The picture on a child the layout skips: as the list's own Image it would ask for its full drawn size.
+        var art = Ui("Art", stepList);
+        Stretch(art);
+        art.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+        Img(art, "UI/Buttons/objective_steps", Color.white).pixelsPerUnitMultiplier = 5f; // corners ~56 wide
+        // A little more room at the top than at the bottom: its top StepsTuck hides under the title.
+        Column(stepList, 4f, new RectOffset(48, 44, 36, 34));
+        stepList.gameObject.AddComponent<LayoutElement>().minWidth = StepsMinWidth; // otherwise as wide as its steps
+        stepList.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        stepsGroup = stepList.gameObject.AddComponent<CanvasGroup>();
+        banner.SetAsLastSibling(); // drawn over the steps tucked under it (laid out first all the same, see above)
 
         // "Too weak to possess", under the objectives (only while possessing is on cooldown).
         var grip = Ui("Grip", column);

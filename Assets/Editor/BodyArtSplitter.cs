@@ -4,6 +4,8 @@ using UnityEngine;
 
 // Turns the artist's colour-keyed art (one flat key colour per region, plus the lines) into a line layer and white
 // fill layers that CharacterSprite tints: select the files, then Tools > Split Coloured Body Art.
+// (The artist's files are named visitor_body_standard_<n> / visitor_face_<n>_open / visitor_hair_<n>: drop the
+// "visitor_" and name bodies body_standard_<n>_idle first.)
 //   body_<variant>_<pose>  -> Resources/ArtLineartTorso/<name>.PNG (line) + <name>_skin/top/bottom/shoes.png
 //   hair_<n>               -> Resources/ArtLineartHead/<name>.PNG (line) + <name>_hair/hat.png
 //   face_<n>[_open/closed] -> Resources/ArtLineartHead/<name>.PNG (line only)
@@ -31,9 +33,11 @@ public static class BodyArtSplitter
     const int TuckUnderLine = 4; // px each fill grows under the line, so no gap shows at anti-aliased edges
 
     static readonly Vector2 BodyPivot = new(0.5f, 0.045f);
-    // Face/hair canvases are the top-left 442x360 of the idle body canvas; the pivot is the head's top-left corner
-    // there (x 67, y 309 from the bottom), which CharacterSprite pins to the head of whatever frame the body shows.
-    public static readonly Vector2 HeadPivot = new(67f / 442f, 280f / 360f);
+    // Face/hair canvases (690x569) are as wide as the body's (690x822) and sit with their top 120 px above it (found by
+    // laying them over the bodies: the faces land in the middle of the head, the hair on top). So their pivot is the
+    // body's pivot measured on the head canvas, and CharacterSprite puts the head at the body's origin.
+    const float HeadHeight = 569f, BodyHeight = 822f, HeadAbove = 120f;
+    public static readonly Vector2 HeadPivot = new(0.5f, (BodyPivot.y * BodyHeight - (BodyHeight + HeadAbove - HeadHeight)) / HeadHeight);
 
     [MenuItem("Tools/Split Coloured Body Art")]
     static void SplitSelected()
@@ -70,6 +74,12 @@ public static class BodyArtSplitter
         {
             layer[i] = -2; // transparent
             if (px[i].a < 128) continue;
+            // White shine (on hair, in eyes) stays as drawn, on the line layer, instead of taking the fill's colour.
+            if (px[i].r > 200 && px[i].g > 200 && px[i].b > 200)
+            {
+                layer[i] = -1;
+                continue;
+            }
             int best = -1, bestDist = Dist(px[i], Line);
             for (int k = 0; k < keys.Length; k++)
             {

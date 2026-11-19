@@ -7,7 +7,8 @@ using UnityEngine.Tilemaps;
 // carrying a drink or a water bottle. Plus the staff: the mechanic (keys in hand) and the Reset Agents behind the
 // staff door, the cable man by the speaker, the ride technician asleep in his booth (screwdriver in hand) and the
 // hot dog man behind his stand.
-// Visitors use the lineart bodies in Resources/ArtLineartTorso; staff still use Resources/Visitors/<character>/
+// Visitors use the lineart bodies in Resources/ArtLineartTorso (body_standard_1..8, each with a random face, hair and
+// colours); staff still use Resources/Visitors/<character>/
 // (Kenney Toon Characters 1, CC0). Nobody has a personal name: visitors are all "Visitor", staff go by their job.
 public class VisitorSpawner : MonoBehaviour
 {
@@ -25,7 +26,11 @@ public class VisitorSpawner : MonoBehaviour
     public RideQueue queue;
     public int startInQueue = 5;
 
-    public string[] characters = { "body_kaos" };
+    public string[] characters =
+    {
+        "body_standard_1", "body_standard_2", "body_standard_3", "body_standard_4",
+        "body_standard_5", "body_standard_6", "body_standard_7", "body_standard_8",
+    };
     public Transform[] pointsOfInterest = new Transform[0];
     public string mechanicCharacter = "mechanic";
     public string mechanicName = "Mechanic";

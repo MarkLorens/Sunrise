@@ -392,7 +392,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0.00000008940697, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 11.5, y: 0.0000007748604, z: -6.500001}
-  m_LocalScale: {x: 1.5, y: 1.5, z: 1.5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1635370990}
@@ -558,7 +558,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0.00000008940697, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -16.5, y: 0.000000059604645, z: -0.50000006}
-  m_LocalScale: {x: 1.5, y: 1.5, z: 1.5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1158181820}
@@ -2166,7 +2166,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: -0.92387956, z: 0, w: 0.38268343}
   m_LocalPosition: {x: -12.82, y: 2.5, z: -15.19}
-  m_LocalScale: {x: 0.6999999, y: 0.6999999, z: 0.6999999}
+  m_LocalScale: {x: 1.1, y: 1.1, z: 1.1}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
@@ -2866,14 +2866,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterSprite
   character: operator
-  walkFps: 10
+  waddleAngle: 7
+  waddleRate: 0.6
+  waddlePerSpeed: 0.5
   stepBounce: 0.04
   idle: {fileID: 0}
   think: {fileID: 0}
   interact: {fileID: 0}
   fallDown: {fileID: 0}
-  walk: []
-  run: []
   cheer: []
   pose: {fileID: 0}
   running: 0
@@ -3338,7 +3338,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: -0.38268343, z: 0, w: 0.92387956}
   m_LocalPosition: {x: 12.82, y: 2.5, z: -15.19}
-  m_LocalScale: {x: 0.6999999, y: 0.6999999, z: 0.6999999}
+  m_LocalScale: {x: 1.1, y: 1.1, z: 1.1}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
@@ -3757,8 +3757,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 2.811111, y: 3.9, z: 0.1}
-  m_Center: {x: 0.109999955, y: 1.95, z: -0.25}
+  m_Size: {x: 3.9355555, y: 5.46, z: 0.14}
+  m_Center: {x: 0.15399994, y: 2.73, z: -0.35}
 --- !u!212 &1158181822
 SpriteRenderer:
   serializedVersion: 3
@@ -4809,7 +4809,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: -0.38268343, z: 0, w: 0.92387956}
   m_LocalPosition: {x: -12.82, y: 2.5, z: 2.27}
-  m_LocalScale: {x: 0.6999999, y: 0.6999999, z: 0.6999999}
+  m_LocalScale: {x: 1.1, y: 1.1, z: 1.1}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
@@ -5029,7 +5029,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0.38268343, z: 0, w: 0.92387956}
   m_LocalPosition: {x: 12.82, y: 2.5, z: 2.27}
-  m_LocalScale: {x: 0.6999999, y: 0.6999999, z: 0.6999999}
+  m_LocalScale: {x: 1.1, y: 1.1, z: 1.1}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
@@ -5591,8 +5591,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 2.811111, y: 3.9, z: 0.1}
-  m_Center: {x: 0.109999955, y: 1.95, z: -0.25}
+  m_Size: {x: 3.9355555, y: 5.46, z: 0.14}
+  m_Center: {x: 0.15399994, y: 2.73, z: -0.35}
 --- !u!212 &1635370992
 SpriteRenderer:
   serializedVersion: 3
@@ -5880,7 +5880,7 @@ TilemapRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_ChunkSize: {x: 32, y: 32, z: 32}
-  m_ChunkCullingBounds: {x: 1.4633334, y: 3.4177778, z: 0}
+  m_ChunkCullingBounds: {x: 2.6553571, y: 4.6035714, z: 0}
   m_MaxChunkCount: 16
   m_MaxFrameAge: 16
   m_SortOrder: 0
@@ -8039,12 +8039,14 @@ MonoBehaviour:
   queue: {fileID: 700000134}
   startInQueue: 5
   characters:
-  - body_kaos
-  - body_polo
-  - body_cardigan
-  - body_croptop
-  - body_hoodie
-  - body_tanktop
+  - body_standard_1
+  - body_standard_2
+  - body_standard_3
+  - body_standard_4
+  - body_standard_5
+  - body_standard_6
+  - body_standard_7
+  - body_standard_8
   pointsOfInterest:
   - {fileID: 390777313}
   - {fileID: 1918106217}

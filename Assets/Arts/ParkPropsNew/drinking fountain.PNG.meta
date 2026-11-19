@@ -102,10 +102,10 @@ TextureImporter:
       name: drinking_fountain
       rect:
         serializedVersion: 2
-        x: 657
-        y: 29
-        width: 505
-        height: 640
+        x: 789
+        y: 10
+        width: 532
+        height: 595
       alignment: 7
       pivot: {x: 0.5, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

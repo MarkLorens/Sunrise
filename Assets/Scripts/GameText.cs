@@ -291,7 +291,7 @@ public static class GameText
     public const string TutorialEvent = "Everything you pull off shows up down here. Have fun!";
 
     public const string TutorialNext = "Next";        // beside the [Space] keycap, on steps you just read
-    public const string TutorialSkip = "Hold [Tab] to skip tutorial";
+    public const string TutorialSkip = "Hold [Space] to skip tutorial";
 
     // The toilet's sign and valve
     public const string SignPrompt = "Take down the Out of Order sign";

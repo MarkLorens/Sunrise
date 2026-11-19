@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// Footsteps that follow a character around: heard while their walk cycle is stepping, silent when they stand still.
+// Footsteps that follow a character around: heard while they walk (waddle), silent when they stand still.
 // Visitors and staff use FMODEvents.npcFootsteps; the body the player is possessing uses FMODEvents.hostFootsteps.
 // Added automatically by CharacterSprite.
 [RequireComponent(typeof(CharacterSprite))]

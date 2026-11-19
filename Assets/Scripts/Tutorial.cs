@@ -27,7 +27,7 @@ public class Tutorial : MonoBehaviour
     // How dark the park gets around who or what's lit. The shade is blended in linear colour, so it looks lighter than
     // the number says: 0.82 left the park bright and purple, 0.95 was too dark.
     const float WorldDim = 0.9f;
-    const float SkipHold = 1.2f;   // seconds to hold Tab to skip
+    const float SkipHold = 1.2f;   // seconds to hold Space to skip (a tap is Next; Tab opens the objectives)
     const float FadeSpeed = 3.5f;  // the dark fades in or out over 1 / FadeSpeed seconds
     const float Corner = 63f;      // the spotlight's soft corner radius, in HUD units
     const float SpiritZoom = 0.55f; // step 1's close-up on the spirit: lower = closer (0.55 = about 1.8x bigger)
@@ -385,9 +385,9 @@ public class Tutorial : MonoBehaviour
         if (!Active && !ending) return;
         float dt = Time.unscaledDeltaTime;
 
-        // Hold Tab to skip.
+        // Hold Space to skip.
         var kb = Keyboard.current;
-        bool holding = Active && !PauseMenu.Paused && kb != null && kb.tabKey.isPressed;
+        bool holding = Active && !PauseMenu.Paused && kb != null && kb.spaceKey.isPressed;
         skipHeld = holding ? skipHeld + dt : Mathf.MoveTowards(skipHeld, 0f, dt * 3f);
         skipFill.fillAmount = skipHeld / SkipHold;
         skip.alpha = Mathf.MoveTowards(skip.alpha, Active ? 1f : 0f, dt * 4f);
@@ -678,12 +678,26 @@ public class Tutorial : MonoBehaviour
         column.childAlignment = TextAnchor.MiddleCenter;
         column.childControlWidth = column.childControlHeight = true;
         column.childForceExpandWidth = column.childForceExpandHeight = false;
-        var top = Row(Ui("Top", block), 4f);
-        var bottom = Row(Ui("Bottom", block), 4f);
-        KeyCap(top, "W", new[] { Key.W }, 46f);
-        KeyCap(bottom, "A", new[] { Key.A }, 46f);
-        KeyCap(bottom, "S", new[] { Key.S }, 46f);
-        KeyCap(bottom, "D", new[] { Key.D }, 46f);
+        var top = Row(Ui("Top", block), 2f);
+        var bottom = Row(Ui("Bottom", block), 2f);
+        KeyArt(top, "W", Key.W, 54f);
+        KeyArt(bottom, "A", Key.A, 54f);
+        KeyArt(bottom, "S", Key.S, 54f);
+        KeyArt(bottom, "D", Key.D, 54f);
+    }
+
+    // A key drawn with its letter (UI/Buttons/key_w...), lighting up while it's held like the other keycaps.
+    static RectTransform KeyArt(RectTransform parent, string name, Key key, float height)
+    {
+        var cap = Ui("Key " + name, parent);
+        var img = Img(cap, "UI/Buttons/key_" + name.ToLowerInvariant(), Color.white);
+        img.preserveAspect = true;
+        var element = cap.gameObject.AddComponent<LayoutElement>();
+        Vector2 size = img.sprite != null ? img.sprite.rect.size : Vector2.one;
+        element.preferredWidth = height * size.x / size.y;
+        element.preferredHeight = height;
+        cap.gameObject.AddComponent<KeyHint>().keys = new[] { key };
+        return cap;
     }
 
     // ---------------------------------------------------------------- the speech bubble
