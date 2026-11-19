@@ -60,8 +60,12 @@ public class VisitorSpawner : MonoBehaviour
         if (Time.time < nextGossip || Possession.Instance == null) return;
         nextGossip = Time.time + Random.Range(gossipEvery.x, gossipEvery.y);
         heard.Clear();
+        var prank = FindAnyObjectByType<ToiletPrank>();
         foreach (var (after, lines) in GameText.Gossip)
-            if (Mischief.IsDone(after)) heard.AddRange(lines);
+            // The tutorial's steps also count as done when it's skipped or a game's loaded: only gossip about a geyser
+            // someone saw.
+            if (Mischief.IsDone(after) && (after != Mischief.Task.TutorialToilet || prank != null && prank.Erupted))
+                heard.AddRange(lines);
         if (heard.Count == 0) return;
 
         var near = new List<Visitor>();

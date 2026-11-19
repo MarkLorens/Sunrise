@@ -526,6 +526,7 @@ public class GameHud : MonoBehaviour
 
     void UpdateBanners()
     {
+        if (intro == null) return; // the intro banner's switched off (BuildIntro)
         float dt = Time.unscaledDeltaTime;
         introAge += dt;
         if (spirit.Host != null && introAge < 9f) introAge = 9f; // got the idea

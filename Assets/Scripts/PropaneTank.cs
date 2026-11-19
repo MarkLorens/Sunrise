@@ -27,7 +27,6 @@ public class PropaneTank : MonoBehaviour, IInteraction
     public float cloudRadius = 2.6f;
     public int cloudPuffs = 14;
     public float payoffTime = 2.5f;    // the camera on the fireball
-    public float wakeShot = 4.5f;      // then on the technician waking up (and coming out, if the wheel's down)
 
     static readonly Color Gas = new(0.7f, 0.95f, 0.55f);
 
@@ -217,14 +216,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
         }
 
         // Across the park, someone's nap is over.
-        foreach (var t in RideTechnician.All)
-        {
-            CameraRig.Spotlight(t.transform, 999f, 1.5f);
-            yield return new WaitForSeconds(1f);
-            t.Wake();
-            yield return new WaitForSeconds(wakeShot);
-            break;
-        }
+        if (RideTechnician.All.Count > 0) yield return RideTechnician.All[0].WakeUp();
         CameraRig.EndSpotlight();
         yield return new WaitForSeconds(1f); // the camera easing back
         Possession.InputBlocked = false;

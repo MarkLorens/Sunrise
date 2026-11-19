@@ -135,6 +135,7 @@ public static class GameText
     public const string WheelWobbly = "It's running. Barely";
     public const string OperatorFingerOnly = "Fingerprint lock: operator only";
     public const string GutterOpen = "It's open. The smell's out";
+    public const string SignBackShout = "Who took this sign down?! That toilet is OUT OF ORDER!";
     public const string MascotGuards = "The mascot won't let you near the fan";
     public const string CableSparks = "Pretty sparks. Nothing here to burn yet";
     public const string NeedKeys = "Locked. The mechanic has the keys";
@@ -211,6 +212,11 @@ public static class GameText
     // lines join the pool for the rest of the game.
     public static readonly (Mischief.Task after, string[] lines)[] Gossip =
     {
+        (Mischief.Task.TutorialToilet, new[]
+        {
+            "Did you see the toilet EXPLODE?!", "That poor guy... covered head to toe.",
+            "I'm holding it till I get home.", "Who turned the water pressure up that high?",
+        }),
         (Mischief.Task.Electrocute, new[]
         {
             "Did you see what happened at the dance spot?", "Don't go near the drinking fountains.",
@@ -243,6 +249,7 @@ public static class GameText
     public const string PhoneRing = "*Ring ring*";     // the technician's phone, over his booth
     public const string TechnicianSnore = "zzz...";    // sleeping through it
     public const string TechnicianWake = "WHA- WHAT WAS THAT?!";
+    public const string TechnicianStaysIn = "...Ugh. Not my ride, not my problem. If it's important, they'll call.";
     public const string TechnicianCall = "Hello? The wheel's out? Yeah, yeah, on my way...";
 
     // After the first electrocution, one after the other

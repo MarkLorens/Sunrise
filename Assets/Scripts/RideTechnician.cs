@@ -84,18 +84,61 @@ public class RideTechnician : MonoBehaviour
     }
 
     // Something blew up. He yells from inside his booth; if the wheel's already down he takes the call he slept through.
+    // Awake (WakeUp shows it; quiet: loading a save). If the wheel's already down, he takes the call he slept through.
     public void Wake(bool quiet = false)
     {
         if (IsAwake) return;
         IsAwake = true;
         zzz.GetComponent<TextMesh>().text = ""; // still marks where his voice comes from
         Mischief.Complete(Mischief.Task.WakeTechnician);
-        if (!quiet) GameHud.Shout(zzz, GameText.TechnicianWake, 1.6f);
         foreach (var w in FerrisWheel.All)
-            if (!w.Powered) Answer(quiet);
+            if (!w.Powered) Answer(true); // WakeUp has already said his lines by now
     }
 
     // The power-cut payoff (FerrisWheel): the camera on his booth while his phone rings, and he snores on.
+    // The hot dog stand's payoff (PropaneTank): the camera on his booth while he's still snoring, the bang jolts him
+    // awake, and he yells from inside. He only comes out if there's a call about the wheel to take; otherwise he grumbles
+    // and stays in his booth, out of reach.
+    public System.Collections.IEnumerator WakeUp()
+    {
+        CameraRig.Spotlight(zzz, 999f, 2f);
+        yield return new WaitForSeconds(1.2f); // the camera getting there: still snoring
+        Fx.Burst("Fx/puff", zzz.position + Vector3.up * 0.3f, 8, Color.white, 2f, 0.35f, 0.5f);
+        zzz.GetComponent<TextMesh>().text = "";
+        Sfx.Play(Sfx.Huh, 0.8f);
+        GameHud.Shout(zzz, "!!", 0.8f);
+        yield return Jolt(0.6f);
+        GameHud.Shout(zzz, GameText.TechnicianWake, 1.8f);
+        yield return new WaitForSeconds(2f);
+        bool call = false;
+        foreach (var w in FerrisWheel.All) call |= !w.Powered;
+        if (!call)
+        {
+            Wake(true); // awake, staying put until someone calls
+            GameHud.Shout(zzz, GameText.TechnicianStaysIn, 2.5f);
+            yield return new WaitForSeconds(2.7f);
+            yield break;
+        }
+        SayOnMyWay(); // the call he slept through
+        yield return new WaitForSeconds(2.7f);
+        Wake(true); // takes it: out he comes
+        yield return new WaitForSeconds(1.5f);
+    }
+
+    // His booth (the Technician Post's picture) rattles, him tumbling out of bed inside.
+    System.Collections.IEnumerator Jolt(float seconds)
+    {
+        var spawner = FindAnyObjectByType<VisitorSpawner>();
+        var post = spawner != null ? spawner.technicianPost : null;
+        Vector3 home = post != null ? post.position : Vector3.zero;
+        for (float t = 0f; t < seconds; t += Time.deltaTime)
+        {
+            if (post != null) post.position = home + new Vector3(Random.Range(-0.06f, 0.06f), 0f, 0f);
+            yield return null;
+        }
+        if (post != null) post.position = home;
+    }
+
     public System.Collections.IEnumerator SleepThroughCall()
     {
         CameraRig.Spotlight(zzz, 999f, 2f);

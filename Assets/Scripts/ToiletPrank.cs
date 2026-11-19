@@ -4,7 +4,8 @@ using UnityEngine.Tilemaps;
 
 // The tutorial's prank, at the park's toilet block (the "bathroom" tile): an Out of Order sign in front of the door,
 // and a water valve on a pipe beside it. In a body (K): take the sign down (ToiletSign), crank the valve all the way
-// up (ToiletValve), and the next visitor who goes in comes back out in a geyser. Made by Tutorial, on a new game only.
+// up (ToiletValve), and the next visitor who goes in comes back out in a geyser, sending everyone nearby running.
+// Afterwards a Reset Agent comes and puts the sign back up, for good. Made by Tutorial, on a new game only.
 // ponytail: placeholder blocks until there's art at Resources/Park/Props/toilet_sign.png and toilet_valve.png.
 public class ToiletPrank : MonoBehaviour
 {
@@ -24,6 +25,9 @@ public class ToiletPrank : MonoBehaviour
     public Transform Middle { get; private set; }      // its middle, for the camera
     public Transform Picture { get; private set; }     // a copy of its tile that never draws, for the tutorial's light
     public bool SignDown { get; private set; }
+    public bool Erupted { get; private set; }          // the geyser went off (not just skipped past: gossip's about it)
+    public float panicRadius = 8f;                     // everyone this close runs from the geyser
+    public float panicTime = 6f;
     public int Pressure { get; private set; }
     public bool Maxed => Pressure >= Turns;
 
@@ -229,6 +233,11 @@ public class ToiletPrank : MonoBehaviour
             Fx.Burst("Fx/puff", up, 10, new Color(c.r, c.g, c.b, 0.45f), 3f, 2.6f, 1.8f);  // the blur
             Fx.Burst("Fx/puff", up, 16, c, 4.5f, 1.2f, 1.5f);
             Fx.Burst("Fx/puff", Door + Vector3.up * 0.4f, 8, Poop[(i + 1) % Poop.Length], 4f, 0.7f, 1.2f); // splats
+            if (i == 3)
+            {
+                Erupted = true;
+                ParkChaos.Add(Door, panicRadius, panicTime); // everybody nearby runs
+            }
             if (i == 3 && victim != null)
             {
                 victim.Look.SetVisible(true);
@@ -238,7 +247,25 @@ public class ToiletPrank : MonoBehaviour
             }
             yield return new WaitForSeconds(0.35f);
         }
-        ParkChaos.Add(Door, 3.5f, 3f, ParkChaos.Scary);
         Mischief.Complete(Mischief.Task.TutorialToilet);
+
+        // Clean-up comes to put the sign back.
+        ResetAgent.Call(new StaffWorker.Job
+        {
+            spot = Door + new Vector3(0.8f, 0f, -0.6f),
+            at = Sign.position,
+            seconds = 2f,
+            shout = GameText.SignBackShout,
+            done = PutSignBack,
+        });
+    }
+
+    // Out of order again, and nobody's taking it down this time.
+    void PutSignBack()
+    {
+        Sign.gameObject.SetActive(true);
+        Sign.GetComponent<Interactable>().enabled = false;
+        Sfx.Play(Sfx.HitWood, 0.6f, 1.1f);
+        Fx.Burst("Fx/puff", Sign.position + Vector3.up * 0.6f, 8, Color.white, 2f, 0.35f, 0.5f);
     }
 }
