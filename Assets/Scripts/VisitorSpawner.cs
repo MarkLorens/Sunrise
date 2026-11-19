@@ -4,7 +4,7 @@ using UnityEngine.Tilemaps;
 
 // Fills the park with people on random ground tiles around this object when the scene starts.
 // Some visitors start out lined up for the ride; the rest roam (and may wander over to the line later), many of them
-// carrying a drink or a water bottle. Plus the staff: the mechanic (keys in hand) and the Reset Agents behind the
+// carrying a drink or a water bottle, some of them in groups of friends (VisitorGroup). Plus the staff: the mechanic (keys in hand) and the Reset Agents behind the
 // staff door, the ride technician asleep in his booth (screwdriver in hand) and the
 // hot dog man behind his stand.
 // Visitors use the lineart bodies in Resources/ArtLineartTorso (body_standard_1..8, each with a random face, hair and
@@ -22,6 +22,9 @@ public class VisitorSpawner : MonoBehaviour
     public VisitorItem[] guaranteedItems = { VisitorItem.Drink, VisitorItem.Drink, VisitorItem.WaterBottle, VisitorItem.WaterBottle };
     [Range(0, 1)] public float carryChance = 0.4f; // everyone else: chance of one of `carryItems` in hand
     public VisitorItem[] carryItems = { VisitorItem.Drink, VisitorItem.WaterBottle };
+
+    [Range(0, 1)] public float groupChance = 0.35f; // per roaming visitor, chance they start a group with the next few
+    public Vector2Int groupSize = new(2, 4);         // smallest and biggest group (VisitorGroup)
 
     public RideQueue queue;
     public int startInQueue = 5;
@@ -82,6 +85,7 @@ public class VisitorSpawner : MonoBehaviour
 
     void Start()
     {
+        var roaming = new List<Visitor>();
         for (int i = 0; i < count; i++)
         {
             int queued = i - guaranteedItems.Length;
@@ -100,8 +104,44 @@ public class VisitorSpawner : MonoBehaviour
                 : Random.value < carryChance ? carryItems[Random.Range(0, carryItems.Length)]
                 : VisitorItem.None;
             if (item != VisitorItem.None) visitor.GrabItem(Item.Create(item, visitor.CarryPoint), true);
+            roaming.Add(visitor);
         }
+        MakeGroups(roaming);
         SpawnStaff();
+    }
+
+    // Some of the roaming visitors came with friends: 2-4 of them, standing together, walking at the leader's pace.
+    void MakeGroups(List<Visitor> roaming)
+    {
+        for (int i = 0; i < roaming.Count;)
+        {
+            int size = Mathf.Min(Random.Range(groupSize.x, groupSize.y + 1), roaming.Count - i);
+            if (size < 2 || Random.value >= groupChance)
+            {
+                i++;
+                continue;
+            }
+            var group = new VisitorGroup();
+            var lead = roaming[i];
+            var walker = lead.GetComponent<GroundWalker>();
+            group.Add(lead);
+            for (int k = 1; k < size; k++)
+            {
+                var v = roaming[i + k];
+                v.wanderSpeed = lead.wanderSpeed;
+                for (int tries = 0; tries < 8; tries++)
+                {
+                    Vector2 r = Random.insideUnitCircle * 1.2f;
+                    Vector3 spot = lead.transform.position + new Vector3(r.x, 0f, r.y);
+                    if (!walker.IsWalkable(spot)) continue;
+                    v.transform.position = spot;
+                    v.GetComponent<Rigidbody>().position = spot;
+                    break;
+                }
+                group.Add(v);
+            }
+            i += size;
+        }
     }
 
     void SpawnStaff()
