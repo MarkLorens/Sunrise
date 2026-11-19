@@ -85,6 +85,7 @@ public static class GameText
         Mischief.Task.TutorialValve => "Water pressure: MAX",
         Mischief.Task.TutorialLeave => "Left the body",
         Mischief.Task.TutorialToilet => "Toilet geyser!",
+        Mischief.Task.ReachBox => "Found the electrical box",
         _ => t.ToString(),
     };
 
@@ -292,6 +293,10 @@ public static class GameText
 
     public const string TutorialNext = "Next";        // beside the [Space] keycap, on steps you just read
     public const string TutorialSkip = "Hold [Space] to skip tutorial";
+
+    // After the tutorial: the park tour (ParkTour), and the banner when a part of the objectives is done
+    public const string TourSays = "Let's get the show started with that ferris wheel";
+    public const string ObjectiveCompleted = "Objective Completed!";
 
     // The toilet's sign and valve
     public const string SignPrompt = "Take down the Out of Order sign";
