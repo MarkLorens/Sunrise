@@ -467,8 +467,74 @@ Transform:
   - {fileID: 1983405299}
   - {fileID: 1910860605}
   - {fileID: 1513031350}
+  - {fileID: 252202691}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &252202690
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 252202691}
+  - component: {fileID: 252202693}
+  - component: {fileID: 252202692}
+  m_Layer: 0
+  m_Name: Locker Inbetween Fan
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &252202691
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 252202690}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 7.48, y: 0, z: -6.43}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 220372967}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &252202692
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 252202690}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 08f0398b11fce4f78951aea556cfab19, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TankFan
+  facing: 1
+  guardedBy: 2
+--- !u!114 &252202693
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 252202690}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f5ff4daa78d69425e8fdd1d8f034d8e8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Interactable
+  range: 2
+  prompt: Interact
+  needsBody: 1
+  onInteract:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &263909958
 GameObject:
   m_ObjectHideFlags: 0
@@ -928,7 +994,7 @@ Transform:
   m_GameObject: {fileID: 388151175}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -9.8, y: 0, z: -5.62}
+  m_LocalPosition: {x: 8.02, y: 0, z: -4.09}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1309,7 +1375,6 @@ GameObject:
   - component: {fileID: 418091358}
   - component: {fileID: 418091361}
   - component: {fileID: 418091360}
-  - component: {fileID: 418091359}
   m_Layer: 0
   m_Name: Gutter
   m_TagString: Untagged
@@ -1332,24 +1397,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1477515359}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &418091359
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 418091357}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f5ff4daa78d69425e8fdd1d8f034d8e8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Interactable
-  range: 1.6
-  prompt: Interact
-  needsBody: 1
-  onInteract:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!114 &418091360
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1932,6 +1979,71 @@ Transform:
   - {fileID: 1252492556}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
+--- !u!1 &588142120
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 588142121}
+  - component: {fileID: 588142123}
+  - component: {fileID: 588142122}
+  m_Layer: 0
+  m_Name: Hot Dog Inbetween Fan
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &588142121
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 588142120}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -12.76, y: 0, z: -0.5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1477515359}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &588142122
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 588142120}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 08f0398b11fce4f78951aea556cfab19, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TankFan
+  facing: 2
+  guardedBy: 0
+--- !u!114 &588142123
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 588142120}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f5ff4daa78d69425e8fdd1d8f034d8e8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Interactable
+  range: 2
+  prompt: Interact
+  needsBody: 1
+  onInteract:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &592029277
 GameObject:
   m_ObjectHideFlags: 0
@@ -1943,7 +2055,6 @@ GameObject:
   - component: {fileID: 592029278}
   - component: {fileID: 592029281}
   - component: {fileID: 592029280}
-  - component: {fileID: 592029279}
   m_Layer: 0
   m_Name: Locker Room Electrical Box
   m_TagString: Untagged
@@ -1960,30 +2071,12 @@ Transform:
   m_GameObject: {fileID: 592029277}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -18.508, y: 0, z: -8.52}
+  m_LocalPosition: {x: 7.64, y: 0, z: -10.43}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 220372967}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &592029279
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 592029277}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f5ff4daa78d69425e8fdd1d8f034d8e8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Interactable
-  range: 1.6
-  prompt: Interact
-  needsBody: 1
-  onInteract:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!114 &592029280
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2970,7 +3063,6 @@ GameObject:
   - component: {fileID: 756386109}
   - component: {fileID: 756386112}
   - component: {fileID: 756386111}
-  - component: {fileID: 756386110}
   m_Layer: 0
   m_Name: Wheel Hinge
   m_TagString: Untagged
@@ -2993,24 +3085,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1999856292}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &756386110
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 756386108}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f5ff4daa78d69425e8fdd1d8f034d8e8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Interactable
-  range: 1.3
-  prompt: Interact
-  needsBody: 1
-  onInteract:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!114 &756386111
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3413,7 +3487,6 @@ GameObject:
   - component: {fileID: 878400013}
   - component: {fileID: 878400016}
   - component: {fileID: 878400015}
-  - component: {fileID: 878400014}
   m_Layer: 0
   m_Name: Fingerprint Scanner
   m_TagString: Untagged
@@ -3436,24 +3509,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1999856292}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &878400014
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 878400012}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f5ff4daa78d69425e8fdd1d8f034d8e8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Interactable
-  range: 1.4
-  prompt: Interact
-  needsBody: 1
-  onInteract:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!114 &878400015
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4246,7 +4301,6 @@ GameObject:
   - component: {fileID: 1304725900}
   - component: {fileID: 1304725899}
   - component: {fileID: 1304725897}
-  - component: {fileID: 1304725898}
   m_Layer: 0
   m_Name: Locker Fan
   m_TagString: Untagged
@@ -4266,30 +4320,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 08f0398b11fce4f78951aea556cfab19, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TankFan
-  awayFrom: {fileID: 1870405758}
-  aimAt: {fileID: 1870405758}
-  aimName: locker room
-  countsAsStep: 1
-  task: 27
-  mascotGuards: 1
---- !u!114 &1304725898
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1304725896}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f5ff4daa78d69425e8fdd1d8f034d8e8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Interactable
-  range: 2
-  prompt: Interact
-  needsBody: 1
-  onInteract:
-    m_PersistentCalls:
-      m_Calls: []
+  facing: 1
+  guardedBy: 0
 --- !u!114 &1304725899
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4317,7 +4349,7 @@ Transform:
   m_GameObject: {fileID: 1304725896}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -12.2, y: 0, z: -10.8}
+  m_LocalPosition: {x: 18.49, y: 0, z: -6.42}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4480,7 +4512,6 @@ GameObject:
   - component: {fileID: 1428148188}
   - component: {fileID: 1428148191}
   - component: {fileID: 1428148190}
-  - component: {fileID: 1428148189}
   m_Layer: 0
   m_Name: Operator Booth Scanner
   m_TagString: Untagged
@@ -4503,24 +4534,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 143391270}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1428148189
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1428148187}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f5ff4daa78d69425e8fdd1d8f034d8e8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Interactable
-  range: 1.4
-  prompt: Interact
-  needsBody: 1
-  onInteract:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!114 &1428148190
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4771,6 +4784,7 @@ Transform:
   - {fileID: 1984853678}
   - {fileID: 1498166794}
   - {fileID: 1559468482}
+  - {fileID: 588142121}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1494336509
@@ -4876,7 +4890,6 @@ GameObject:
   - component: {fileID: 1498166794}
   - component: {fileID: 1498166797}
   - component: {fileID: 1498166796}
-  - component: {fileID: 1498166795}
   m_Layer: 0
   m_Name: Tank Fan
   m_TagString: Untagged
@@ -4899,24 +4912,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1477515359}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1498166795
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1498166793}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f5ff4daa78d69425e8fdd1d8f034d8e8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Interactable
-  range: 2
-  prompt: Interact
-  needsBody: 1
-  onInteract:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!114 &1498166796
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4929,12 +4924,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 08f0398b11fce4f78951aea556cfab19, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TankFan
-  awayFrom: {fileID: 1984853678}
-  aimAt: {fileID: 719843469}
-  aimName: hot dog stand
-  countsAsStep: 1
-  task: 12
-  mascotGuards: 0
+  facing: 1
+  guardedBy: 0
 --- !u!114 &1498166797
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4964,7 +4955,6 @@ GameObject:
   - component: {fileID: 1513031350}
   - component: {fileID: 1513031353}
   - component: {fileID: 1513031352}
-  - component: {fileID: 1513031351}
   m_Layer: 0
   m_Name: Gutter Fan
   m_TagString: Untagged
@@ -4981,30 +4971,12 @@ Transform:
   m_GameObject: {fileID: 1513031349}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -13.35, y: 0, z: -5.22}
+  m_LocalPosition: {x: 6.97, y: 0, z: -0.37}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 220372967}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1513031351
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1513031349}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f5ff4daa78d69425e8fdd1d8f034d8e8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Interactable
-  range: 2
-  prompt: Interact
-  needsBody: 1
-  onInteract:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!114 &1513031352
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5017,12 +4989,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 08f0398b11fce4f78951aea556cfab19, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TankFan
-  awayFrom: {fileID: 388151176}
-  aimAt: {fileID: 388151176}
-  aimName: mascot
-  countsAsStep: 0
-  task: 12
-  mascotGuards: 0
+  facing: 0
+  guardedBy: 0
 --- !u!114 &1513031353
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5266,8 +5234,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1559468482}
   - component: {fileID: 1559468485}
-  - component: {fileID: 1559468484}
-  - component: {fileID: 1559468483}
+  - component: {fileID: 1559468486}
   m_Layer: 0
   m_Name: Stall Fan
   m_TagString: Untagged
@@ -5284,43 +5251,12 @@ Transform:
   m_GameObject: {fileID: 1559468481}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -18.76, y: 0, z: -0.43}
+  m_LocalPosition: {x: -18.76, y: 0, z: -0.69}
   m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 1477515359}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1559468483
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1559468481}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f5ff4daa78d69425e8fdd1d8f034d8e8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Interactable
-  range: 2
-  prompt: Interact
-  needsBody: 1
-  onInteract:
-    m_PersistentCalls:
-      m_Calls: []
---- !u!114 &1559468484
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1559468481}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 18b53a9bc85124027b12f99102724ba4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::StallFan
-  blow: {x: 0, y: 0, z: -1}
 --- !u!114 &1559468485
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5339,6 +5275,20 @@ MonoBehaviour:
   onInteract:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &1559468486
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1559468481}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 08f0398b11fce4f78951aea556cfab19, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TankFan
+  facing: 2
+  guardedBy: 1
 --- !u!1 &1625246198
 GameObject:
   m_ObjectHideFlags: 0
@@ -6325,16 +6275,6 @@ Tilemap:
       m_TileObjectToInstantiateIndex: 65535
       dummyAlignment: 0
       m_AllTileFlags: 1
-  - first: {x: 7, y: -7, z: 0}
-    second:
-      serializedVersion: 2
-      m_TileIndex: 15
-      m_TileSpriteIndex: 14
-      m_TileMatrixIndex: 0
-      m_TileColorIndex: 0
-      m_TileObjectToInstantiateIndex: 65535
-      dummyAlignment: 0
-      m_AllTileFlags: 1073741825
   - first: {x: 11, y: -7, z: 0}
     second:
       serializedVersion: 2
@@ -6345,26 +6285,6 @@ Tilemap:
       m_TileObjectToInstantiateIndex: 65535
       dummyAlignment: 0
       m_AllTileFlags: 1
-  - first: {x: 16, y: -7, z: 0}
-    second:
-      serializedVersion: 2
-      m_TileIndex: 15
-      m_TileSpriteIndex: 14
-      m_TileMatrixIndex: 0
-      m_TileColorIndex: 0
-      m_TileObjectToInstantiateIndex: 65535
-      dummyAlignment: 0
-      m_AllTileFlags: 1073741825
-  - first: {x: 18, y: -7, z: 0}
-    second:
-      serializedVersion: 2
-      m_TileIndex: 12
-      m_TileSpriteIndex: 9
-      m_TileMatrixIndex: 0
-      m_TileColorIndex: 0
-      m_TileObjectToInstantiateIndex: 65535
-      dummyAlignment: 0
-      m_AllTileFlags: 1073741825
   - first: {x: -24, y: -6, z: 0}
     second:
       serializedVersion: 2
@@ -6565,16 +6485,6 @@ Tilemap:
       m_TileObjectToInstantiateIndex: 65535
       dummyAlignment: 0
       m_AllTileFlags: 1
-  - first: {x: -13, y: -1, z: 0}
-    second:
-      serializedVersion: 2
-      m_TileIndex: 15
-      m_TileSpriteIndex: 14
-      m_TileMatrixIndex: 0
-      m_TileColorIndex: 0
-      m_TileObjectToInstantiateIndex: 65535
-      dummyAlignment: 0
-      m_AllTileFlags: 1073741825
   - first: {x: -6, y: -1, z: 0}
     second:
       serializedVersion: 2
@@ -6635,16 +6545,6 @@ Tilemap:
       m_TileObjectToInstantiateIndex: 65535
       dummyAlignment: 0
       m_AllTileFlags: 1
-  - first: {x: 7, y: -1, z: 0}
-    second:
-      serializedVersion: 2
-      m_TileIndex: 15
-      m_TileSpriteIndex: 14
-      m_TileMatrixIndex: 0
-      m_TileColorIndex: 0
-      m_TileObjectToInstantiateIndex: 65535
-      dummyAlignment: 0
-      m_AllTileFlags: 1073741825
   - first: {x: 10, y: -1, z: 0}
     second:
       serializedVersion: 2
@@ -7294,7 +7194,7 @@ Tilemap:
     m_RefCount: 15
     m_Data: {fileID: 11400000, guid: d88dfe73b09b54c3291e94681d0f0ce7, type: 2}
   - serializedVersion: 2
-    m_RefCount: 1
+    m_RefCount: 0
     m_Data: {fileID: 11400000, guid: 15c7b753928b94f49bf3668f95aee9c4, type: 2}
   - serializedVersion: 2
     m_RefCount: 1
@@ -7303,7 +7203,7 @@ Tilemap:
     m_RefCount: 2
     m_Data: {fileID: 11400000, guid: 8021a00a5a39645aa98d1414a26ba611, type: 2}
   - serializedVersion: 2
-    m_RefCount: 5
+    m_RefCount: 1
     m_Data: {fileID: 11400000, guid: a8a4364b0b1bf42eba7f051bb2f43cd6, type: 2}
   - serializedVersion: 2
     m_RefCount: 1
@@ -7349,7 +7249,7 @@ Tilemap:
     m_RefCount: 14
     m_Data: {fileID: 5281997702118322174, guid: ef3b2517816b1447c9f9e2471dd5a4d0, type: 3}
   - serializedVersion: 2
-    m_RefCount: 1
+    m_RefCount: 0
     m_Data: {fileID: 21300000, guid: 2581f89ea2035479bbaa5e0d5934e045, type: 3}
   - serializedVersion: 2
     m_RefCount: 0
@@ -7364,7 +7264,7 @@ Tilemap:
     m_RefCount: 10
     m_Data: {fileID: -6248551648451248771, guid: 9bab52cfcceaf4e25a858c4728651390, type: 3}
   - serializedVersion: 2
-    m_RefCount: 5
+    m_RefCount: 1
     m_Data: {fileID: 21300000, guid: 007017ff461004468a7397409f02a638, type: 3}
   - serializedVersion: 2
     m_RefCount: 1
@@ -7383,7 +7283,7 @@ Tilemap:
     m_Data: {fileID: 21300000, guid: 91a3761dd97e740c181043e92cb074c7, type: 3}
   m_TileMatrixArray:
   - serializedVersion: 2
-    m_RefCount: 165
+    m_RefCount: 160
     m_Data:
       e00: 1
       e01: 0
@@ -7422,7 +7322,7 @@ Tilemap:
       e33: 1
   m_TileColorArray:
   - serializedVersion: 2
-    m_RefCount: 165
+    m_RefCount: 160
     m_Data: {r: 1, g: 1, b: 1, a: 1}
   m_TileObjectToInstantiateArray: []
   m_AnimationFrameRate: 1
@@ -8006,7 +7906,6 @@ GameObject:
   - component: {fileID: 1910860605}
   - component: {fileID: 1910860608}
   - component: {fileID: 1910860607}
-  - component: {fileID: 1910860606}
   m_Layer: 0
   m_Name: Smelly Gutter
   m_TagString: Untagged
@@ -8023,30 +7922,12 @@ Transform:
   m_GameObject: {fileID: 1910860604}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -12.22, y: 0, z: -5.26}
+  m_LocalPosition: {x: 8.38, y: 0, z: -0.52}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 220372967}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1910860606
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1910860604}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f5ff4daa78d69425e8fdd1d8f034d8e8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Interactable
-  range: 1.6
-  prompt: Interact
-  needsBody: 1
-  onInteract:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!114 &1910860607
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8377,7 +8258,6 @@ GameObject:
   - component: {fileID: 1983405299}
   - component: {fileID: 1983405302}
   - component: {fileID: 1983405301}
-  - component: {fileID: 1983405300}
   m_Layer: 0
   m_Name: Locker Propane Tank
   m_TagString: Untagged
@@ -8394,30 +8274,12 @@ Transform:
   m_GameObject: {fileID: 1983405298}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -10.4, y: 0, z: -10.8}
+  m_LocalPosition: {x: 16.05, y: 0, z: -6.41}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 220372967}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1983405300
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1983405298}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f5ff4daa78d69425e8fdd1d8f034d8e8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Interactable
-  range: 2
-  prompt: Interact
-  needsBody: 1
-  onInteract:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!114 &1983405301
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8432,13 +8294,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PropaneTank
   fan: {fileID: 1304725897}
   target: {fileID: 1870405758}
-  blowers: []
+  fanReach: 12
+  fanLane: 1.5
+  aimTask: 27
   burns: {fileID: 1870405757}
   leakTask: 26
   cloudTask: 28
   boomTask: 29
   fillTime: 12
-  cloudRadius: 2.6
+  cloudRadius: 3
   cloudPuffs: 14
   payoffTime: 2.5
   wakeShot: 3.5
@@ -8471,7 +8335,6 @@ GameObject:
   - component: {fileID: 1984853678}
   - component: {fileID: 1984853677}
   - component: {fileID: 1984853675}
-  - component: {fileID: 1984853676}
   m_Layer: 0
   m_Name: Propane Tank
   m_TagString: Untagged
@@ -8493,8 +8356,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PropaneTank
   fan: {fileID: 1498166796}
   target: {fileID: 719843469}
-  blowers:
-  - {fileID: 1559468484}
+  fanReach: 10
+  fanLane: 1.5
+  aimTask: 12
   burns: {fileID: 0}
   leakTask: 11
   cloudTask: 13
@@ -8504,24 +8368,6 @@ MonoBehaviour:
   cloudPuffs: 14
   payoffTime: 2.5
   wakeShot: 3.5
---- !u!114 &1984853676
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1984853674}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f5ff4daa78d69425e8fdd1d8f034d8e8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Interactable
-  range: 2
-  prompt: Interact
-  needsBody: 1
-  onInteract:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!114 &1984853677
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8742,7 +8588,7 @@ TilemapRenderer:
   m_SortingOrder: -50
   m_MaskInteraction: 0
   m_ChunkSize: {x: 32, y: 32, z: 32}
-  m_ChunkCullingBounds: {x: 0.5, y: 0.5, z: 0}
+  m_ChunkCullingBounds: {x: 0, y: 0, z: 0}
   m_MaxChunkCount: 16
   m_MaxFrameAge: 16
   m_SortOrder: 0
@@ -51630,8 +51476,8 @@ Tilemap:
   - first: {x: 8, y: -1, z: 0}
     second:
       serializedVersion: 2
-      m_TileIndex: 27
-      m_TileSpriteIndex: 37
+      m_TileIndex: 22
+      m_TileSpriteIndex: 34
       m_TileMatrixIndex: 0
       m_TileColorIndex: 0
       m_TileObjectToInstantiateIndex: 65535
@@ -95306,7 +95152,7 @@ Tilemap:
     m_RefCount: 237
     m_Data: {fileID: 11400000, guid: 412f56cf151b84c5aa150a31386c1644, type: 2}
   - serializedVersion: 2
-    m_RefCount: 261
+    m_RefCount: 262
     m_Data: {fileID: 11400000, guid: 4157b385e3ae7478bb10cb6162c97b60, type: 2}
   - serializedVersion: 2
     m_RefCount: 251
@@ -95321,7 +95167,7 @@ Tilemap:
     m_RefCount: 9
     m_Data: {fileID: 11400000, guid: 063434a0aab37492b86ff0060ca01da0, type: 2}
   - serializedVersion: 2
-    m_RefCount: 1
+    m_RefCount: 0
     m_Data: {fileID: 11400000, guid: c965e415ad0354ea08cdbda781281219, type: 2}
   - serializedVersion: 2
     m_RefCount: 0
@@ -95460,7 +95306,7 @@ Tilemap:
     m_RefCount: 237
     m_Data: {fileID: -4058513039503459337, guid: b3da22fed19f544a5b26a5572bbac8c6, type: 3}
   - serializedVersion: 2
-    m_RefCount: 261
+    m_RefCount: 262
     m_Data: {fileID: -1849216716282285141, guid: b3da22fed19f544a5b26a5572bbac8c6, type: 3}
   - serializedVersion: 2
     m_RefCount: 9
@@ -95469,7 +95315,7 @@ Tilemap:
     m_RefCount: 9
     m_Data: {fileID: -7822716746392877166, guid: 13ac3920f665244a78bf3d81c576082a, type: 3}
   - serializedVersion: 2
-    m_RefCount: 1
+    m_RefCount: 0
     m_Data: {fileID: 21300000, guid: b8f7ff0e72911413ebffc32194a0a1c1, type: 3}
   - serializedVersion: 2
     m_RefCount: 0

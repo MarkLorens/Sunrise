@@ -70,7 +70,7 @@ public class Mascot : MonoBehaviour
     bool Smelly()
     {
         foreach (var g in FindObjectsByType<Gutter>())
-            if (g.Stinking && g.fan != null && g.fan.Aimed && Vector3.Dot(g.fan.Wind, transform.position - g.fan.transform.position) > 0f)
+            if (g.Stinking && g.fan != null && g.fan.Blows(transform.position, 1.5f, 12f))
                 return true;
         return false;
     }

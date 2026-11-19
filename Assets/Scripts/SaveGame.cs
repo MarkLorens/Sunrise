@@ -31,6 +31,14 @@ public static class SaveGame
         public int presses;
         public bool mechanicCalled, fountainFixed, shownMechanic;
         public List<Body> dead = new();
+        public List<Fan> fans = new();  // which way every fan faces
+    }
+
+    [System.Serializable]
+    class Fan
+    {
+        public string name;
+        public TankFan.Dir facing;
     }
 
     const string VisitorName = "Visitor";
@@ -73,6 +81,7 @@ public static class SaveGame
             fountainFixed = fountain != null && fountain.Fixed,
             shownMechanic = box != null && box.ShownMechanic,
         };
+        foreach (var f in TankFan.All) data.fans.Add(new Fan { name = f.name, facing = f.facing });
         foreach (var v in Visitor.All)
             if (v.Current == Visitor.State.Down)
                 data.dead.Add(new Body { name = v.name, at = v.transform.position });
@@ -105,8 +114,9 @@ public static class SaveGame
         // Flaming hot dogs and the hinge: all of it follows from the steps done.
         foreach (var t in RideTechnician.All) t.Restore();
         foreach (var t in Object.FindObjectsByType<PropaneTank>()) t.Restore();
-        foreach (var f in Object.FindObjectsByType<TankFan>()) f.Restore();
-        foreach (var f in Object.FindObjectsByType<StallFan>()) f.Restore();
+        foreach (var saved in data.fans)
+            foreach (var f in TankFan.All)
+                if (f.name == saved.name) f.Restore(saved.facing);
         foreach (var s in Object.FindObjectsByType<FingerprintScanner>()) s.Restore();
         foreach (var h in Object.FindObjectsByType<WheelHinge>()) h.Restore();
         foreach (var g in Object.FindObjectsByType<Gutter>()) g.Restore();

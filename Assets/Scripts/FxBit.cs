@@ -5,6 +5,7 @@ public class FxBit : MonoBehaviour
 {
     public Vector3 velocity;
     public float life = 0.5f;
+    public float drag = 3f; // how fast it slows (0: drifts on at the same speed, like gas carried by a fan)
 
     SpriteRenderer r;
     Vector3 scale;
@@ -29,7 +30,7 @@ public class FxBit : MonoBehaviour
             return;
         }
         float k = age / life;
-        velocity *= 1f - Mathf.Min(1f, 3f * Time.deltaTime);
+        velocity *= 1f - Mathf.Min(1f, drag * Time.deltaTime);
         transform.position += velocity * Time.deltaTime;
         transform.localScale = scale * (1f - k * 0.6f);
         transform.Rotate(0f, 0f, spin * Time.deltaTime);

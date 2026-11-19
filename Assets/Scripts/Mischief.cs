@@ -13,7 +13,7 @@ public static class Mischief
     public enum Task
     {
         Possess, FloodPuddle, PossessCableMan /* unused: the cable man's gone */, Electrocute, LureMechanic, PossessMechanic, UnlockBox, CutPower, CallTechnician,
-        RatsOut, StallFanOff, LeakPropane, AimFan, GasCloud, Explode, WakeTechnician,
+        RatsOut, StallFanOff /* unused: the stall fan turns now */, LeakPropane, AimFan, GasCloud, Explode, WakeTechnician,
         PossessTechnician, OpenPlatform, LoosenHinge, RestartWheel,
         TutorialPossess, TutorialSign, TutorialValve, TutorialLeave, TutorialToilet,
         SmellMascot, LeakLockerGas, AimLockerFan, LockerGasCloud, SparkLocker, LockerFire,

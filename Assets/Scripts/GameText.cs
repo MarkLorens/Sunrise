@@ -28,7 +28,7 @@ public static class GameText
     public const string LiftedLid = "You lifted the gutter lid";
     public const string OpenedValve = "You loosened the propane valve";
     public const string SwitchedOffFan = "You switched off the hot dog man's fan";
-    public static string TurnedFan(string at) => $"You turned the fan toward the {at}";
+    public static string TurnedFan(string way) => $"You turned the fan to face {way}";
     public const string ScannedFinger = "Fingerprint accepted";
     public const string LoosenedHinge = "You loosened the hinge";
     public const string RestartedWheel = "You started the Ferris wheel";
@@ -123,8 +123,6 @@ public static class GameText
     public const string ValveOpen = "It's hissing away already";
     public const string ValveSpent = "Nothing left in it";
     public const string FanGuarded = "The hot dog man won't let you touch his fan";
-    public const string FanAimed = "It's blowing at the stand already";
-    public const string FanOff = "It's off";
 
     // The technician's platform and the hinge
     public const string TechnicianOnly = "Fingerprint lock: technician only";
@@ -175,7 +173,6 @@ public static class GameText
     public const string ThinkFanGuarded = "He's guarding that fan like it's his firstborn";        // refused by the hot dog man
     public const string ThinkValve = "Smells like... opportunity";                                   // opening the valve
     public const string ThinkFanAimed = "I mean, why'd they even put this here.";                                          // turning the tank's fan
-    public const string ThinkStallFanOff = "Nice and still. Perfect for a gas leak";                 // switching off the stall's fan
     public const string ThinkGasBlownAway = "His fan keeps blowing the gas away. That has to go";   // gas reaching the stand with its fan on
     public const string ThinkCloud = "And now. We wait...";            // the cloud is full
     public const string ThinkBoom = "Well, THAT woke someone up";                                    // after the explosion
