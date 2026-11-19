@@ -10,6 +10,8 @@ using UnityEngine;
 // line and each gets a random colour from its palette. Bodies also get a random face and hair from
 // Resources/ArtLineartHead (face_<n>[_open/_closed], hair_<n> + _hair/_hat fills), drawn on canvases that line up
 // with the body's; faces with a _closed frame blink.
+// Staff can be workers (character = "worker_<role>"): Resources/Workers/worker_<role>_body with its own
+// worker_<role>_face on the same canvas, and Expression() swaps in worker_face_<name> (surprised_1, surprised_2).
 [RequireComponent(typeof(SpriteRenderer))]
 public class CharacterSprite : MonoBehaviour
 {
@@ -110,6 +112,23 @@ public class CharacterSprite : MonoBehaviour
             LoadHead();
             ApplyTint();
         }
+        else if (character.StartsWith("worker_"))
+        {
+            // One drawn pose so far, like the lineart bodies; the face is theirs, drawn on the same canvas.
+            idle = Resources.Load<Sprite>($"Workers/{character}_body");
+            think = interact = fallDown = idle;
+            cheer = new[] { idle, idle };
+            drawnFacingLeft = true;
+            var own = Resources.Load<Sprite>($"Workers/{character}_face");
+            if (own != null)
+            {
+                head = new GameObject("Head").transform;
+                head.SetParent(transform, false);
+                faceOpen = own;
+                face = HeadPart("Face", own, -0.002f, Color.white);
+            }
+            ApplyTint();
+        }
         else
         {
             string path = $"Visitors/{character}/character_{character}_";
@@ -208,9 +227,19 @@ public class CharacterSprite : MonoBehaviour
         {
             if (mcEyes == null)
             {
-                var center = Resources.Load<Sprite>("MC/MC_face_eyes center");
-                mcEyes = new[] { Resources.Load<Sprite>("MC/MC_face_eyes left"), center, Resources.Load<Sprite>("MC/MC_face_eyes right"), center };
-                mcMouth = Resources.Load<Sprite>("MC/MC_face_mouth grin");
+                // The ruckus face (red eyes and grin in one drawing, on the visitors' face canvas); else the spirit's own.
+                var ruckus = Resources.Load<Sprite>("Ruckus/ruckus_center");
+                if (ruckus != null)
+                {
+                    mcEyes = new[] { Resources.Load<Sprite>("Ruckus/ruckus_left"), ruckus, Resources.Load<Sprite>("Ruckus/ruckus_right"), ruckus };
+                    mcMouth = null;
+                }
+                else
+                {
+                    var center = Resources.Load<Sprite>("MC/MC_face_eyes center");
+                    mcEyes = new[] { Resources.Load<Sprite>("MC/MC_face_eyes left"), center, Resources.Load<Sprite>("MC/MC_face_eyes right"), center };
+                    mcMouth = Resources.Load<Sprite>("MC/MC_face_mouth grin");
+                }
             }
             if (mcEyes[1] == null) return;
             possessedFace = new GameObject("Possessed Face").AddComponent<SpriteRenderer>();
@@ -225,8 +254,12 @@ public class CharacterSprite : MonoBehaviour
                 theirs = Rect.MinMaxRect(Mathf.Min(theirs.xMin, grin.xMin), Mathf.Min(theirs.yMin, grin.yMin),
                     Mathf.Max(theirs.xMax, grin.xMax), Mathf.Max(theirs.yMax, grin.yMax));
             }
-            float scale = PossessedFaceWidth / faceOpen.pixelsPerUnit / theirs.width;
-            Vector2 at = mine.center - theirs.center * scale;
+            // Drawn on the same canvas as their face (the ruckus face on a visitor): it goes exactly where it was drawn.
+            // Otherwise it's fitted over their face: a fixed width on visitors, a bit wider than a worker's own face.
+            bool sameCanvas = faceOpen.rect.size == mcEyes[1].rect.size && Mathf.Approximately(faceOpen.pixelsPerUnit, mcEyes[1].pixelsPerUnit);
+            float width = character.StartsWith("worker_") ? mine.width * 1.5f : PossessedFaceWidth / faceOpen.pixelsPerUnit;
+            float scale = sameCanvas ? 1f : width / theirs.width;
+            Vector2 at = sameCanvas ? Vector2.zero : mine.center - theirs.center * scale;
             possessedFace.transform.localPosition = new Vector3(at.x, at.y, -0.002f);
             possessedFace.transform.localScale = Vector3.one * scale;
             possessedFace.sprite = mcEyes[0];
@@ -247,6 +280,18 @@ public class CharacterSprite : MonoBehaviour
         if (possessedFace != null) possessedFace.sprite = mcEyes[0];
         SetVisible(body.enabled);
     }
+
+    // A worker pulls a face (Resources/Workers/worker_face_<name>: surprised_1, surprised_2) for `seconds`; 0 = for good.
+    public void Expression(string name, float seconds)
+    {
+        Load();
+        if (face == null || !character.StartsWith("worker_")) return; // drawn on the workers' canvas only
+        expression = Resources.Load<Sprite>("Workers/worker_face_" + name);
+        expressionUntil = seconds > 0f ? Time.time + seconds : float.MaxValue;
+    }
+
+    Sprite expression;
+    float expressionUntil;
 
     static Rect DrawnRect(Sprite s)
     {
@@ -319,6 +364,11 @@ public class CharacterSprite : MonoBehaviour
             {
                 if (Time.time > nextBlink) { blinkUntil = Time.time + 0.12f; nextBlink = Time.time + Random.Range(2f, 5f); }
                 face.sprite = Time.time < blinkUntil ? faceClosed : faceOpen;
+            }
+            if (expression != null)
+            {
+                face.sprite = Time.time < expressionUntil ? expression : faceOpen;
+                if (Time.time >= expressionUntil) expression = null;
             }
             if (possessed && Time.time >= eyeUntil)
             {

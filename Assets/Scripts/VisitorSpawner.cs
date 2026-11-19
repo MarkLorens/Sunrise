@@ -17,6 +17,7 @@ public class VisitorSpawner : MonoBehaviour
     public int count = 16;
     public float spawnRadius = 12f;
     public float personScale = 1.35f; // people at a believable size next to the rides and stalls
+    public float workerScale = 2f;  // staff drawn as workers ("worker_..." characters) stand a little taller
 
     // Each entry goes to a different roaming visitor, so the puzzle items are always somewhere in the park.
     public VisitorItem[] guaranteedItems = { VisitorItem.Drink, VisitorItem.Drink, VisitorItem.WaterBottle, VisitorItem.WaterBottle };
@@ -35,17 +36,24 @@ public class VisitorSpawner : MonoBehaviour
         "body_standard_5", "body_standard_6", "body_standard_7", "body_standard_8",
     };
     public Transform[] pointsOfInterest = new Transform[0];
-    public string mechanicCharacter = "mechanic";
+    public string mechanicCharacter = "worker_mechanic";
     public string mechanicName = "Mechanic";
     public Transform mechanicPost; // the staff door: the mechanic and Reset Agents wait behind it; empty = a random spot
     public int resetAgents = 2;
-    public string resetAgentCharacter = "malePersonTeal";
-    public string technicianCharacter = "malePersonRed";
+    public string resetAgentCharacter = "worker_construction_{n}"; // {n}: 1-3 in turn
+    public string technicianCharacter = "worker_ride_technician";
     public string technicianName = "Technician";
     public Transform technicianPost; // empty = no technician (his booth goes here)
-    public string hotDogManCharacter = "malePerson";
+    public string hotDogManCharacter = "worker_hot_dog";
     public string hotDogManName = "Hot Dog Man";
     public Transform hotDogManPost;  // behind the hot dog stand; empty = no hot dog man
+    // Stand sellers, one per stand tile on the Objects tilemap (no scene objects: paint a stand, it gets a seller).
+    public string iceCreamCharacter = "worker_ice_cream";
+    public Vector3 iceCreamSlot = new(0f, 0f, 0.25f);   // where the seller stands, from the tile's cell centre: in the gap
+    public Vector3 iceCreamBackOffset = new(-0.83f, 0f, 0.4f); // the back layer, from the front tile (like the hot dog stall's GlizzyBG)
+    public string balloonCharacter = "worker_balloon";
+    public Vector3 balloonSpot = new(1.4f, 0f, -0.7f);  // beside the balloon stand, a little in front (mirrored if blocked)
+
     public string mascotCharacter = "femalePersonPink";
     public string mascotName = "Mascot";
     public Transform mascotPost;     // in front of the locker room's propane fan; empty = no mascot
@@ -152,7 +160,9 @@ public class VisitorSpawner : MonoBehaviour
 
         var body = Staff<Mechanic>(mechanicName, door, mechanicCharacter);
         body.GrabItem(Item.Create(VisitorItem.Keys, body.CarryPoint), true);
-        for (int i = 0; i < resetAgents; i++) Staff<ResetAgent>($"Reset Agent {i + 1}", door, resetAgentCharacter);
+        // "{n}" in the character picks one of the construction workers in turn (1-3).
+        for (int i = 0; i < resetAgents; i++)
+            Staff<ResetAgent>($"Reset Agent {i + 1}", door, resetAgentCharacter.Replace("{n}", (i % 3 + 1).ToString()));
         if (technicianPost != null)
         {
             var tech = Staff<RideTechnician>(technicianName, technicianPost.position, technicianCharacter);
@@ -160,11 +170,65 @@ public class VisitorSpawner : MonoBehaviour
         }
         if (hotDogManPost != null) Staff<HotDogMan>(hotDogManName, hotDogManPost.position, hotDogManCharacter);
         if (mascotPost != null) Staff<Mascot>(mascotName, mascotPost.position, mascotCharacter);
+        SpawnVendors();
+    }
+
+    // Every ice cream stand tile gets its back layer and a seller inside; every balloon stand tile, a seller beside it.
+    void SpawnVendors()
+    {
+        var map = ground.transform.parent.Find("Objects")?.GetComponent<Tilemap>();
+        if (map == null) return;
+        var back = ParkArt.Get("Props/ice_cream_back");
+        foreach (var cell in map.cellBounds.allPositionsWithin)
+        {
+            var s = map.GetSprite(cell);
+            if (s == null) continue;
+            Vector3 feet = map.GetCellCenterWorld(cell);
+            if (s.name.StartsWith("ice_cream_stand"))
+            {
+                if (back != null) BackLayer(map, cell, back);
+                Staff<Vendor>("Ice Cream Seller", feet + iceCreamSlot, iceCreamCharacter, v => v.inside = true);
+            }
+            else if (s.name.StartsWith("balloon_stand"))
+            {
+                Vector3 at = feet + balloonSpot;
+                var probe = new Vector3(feet.x - balloonSpot.x, 0f, feet.z + balloonSpot.z);
+                if (GroundWalker.NearObstacle(at, 0.35f) && !GroundWalker.NearObstacle(probe, 0.35f)) at = probe;
+                Staff<Vendor>("Balloon Seller", at, balloonCharacter, _ => { });
+            }
+        }
+    }
+
+    // The stand's back: the tile's cut and scale, where the tile is, moved by iceCreamBackOffset.
+    void BackLayer(Tilemap map, Vector3Int cell, Sprite art)
+    {
+        Matrix4x4 m = map.transform.localToWorldMatrix
+                      * Matrix4x4.Translate(map.CellToLocalInterpolated(cell + map.tileAnchor))
+                      * map.orientationMatrix * map.GetTransformMatrix(cell);
+        var r = new GameObject("Stand Back").AddComponent<SpriteRenderer>();
+        r.transform.SetParent(transform, true);
+        r.transform.SetPositionAndRotation((Vector3)m.GetColumn(3) + iceCreamBackOffset, m.rotation);
+        r.transform.localScale = m.lossyScale;
+        r.sprite = art;
+        var tr = map.GetComponent<TilemapRenderer>();
+        r.sharedMaterial = tr.sharedMaterial;
+        r.sortingLayerID = tr.sortingLayerID;
+        r.sortingOrder = tr.sortingOrder;
+        r.shadowCastingMode = tr.shadowCastingMode;
+        r.receiveShadows = tr.receiveShadows;
+    }
+
+    Visitor Staff<T>(string name, Vector3 pos, string character, System.Action<T> setup) where T : MonoBehaviour
+    {
+        var go = Body(name, pos, character, character.StartsWith("worker_") ? workerScale : personScale);
+        setup(go.AddComponent<T>());
+        go.SetActive(true);
+        return go.GetComponent<Visitor>();
     }
 
     Visitor Staff<T>(string name, Vector3 pos, string character) where T : MonoBehaviour
     {
-        var go = Body(name, pos, character, personScale);
+        var go = Body(name, pos, character, character.StartsWith("worker_") ? workerScale : personScale);
         go.AddComponent<T>();
         go.SetActive(true);
         return go.GetComponent<Visitor>();

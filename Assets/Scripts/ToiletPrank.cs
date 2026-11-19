@@ -5,7 +5,8 @@ using UnityEngine.Tilemaps;
 // The tutorial's prank, at the park's toilet block (the "bathroom" tile): an Out of Order sign in front of the door,
 // and a water valve on a pipe beside it. In a body (K): take the sign down (ToiletSign), crank the valve all the way
 // up (ToiletValve), and the next visitor who goes in comes back out in a geyser, sending everyone nearby running.
-// Afterwards a Reset Agent comes and puts the sign back up, for good. Made by Tutorial, on a new game only.
+// The block's left broken (Props/toilet_broken), and a Reset Agent comes and puts up a caution sign
+// (Props/toilet_sign_caution), for good. Made by Tutorial, on a new game only.
 // ponytail: placeholder blocks until there's art at Resources/Park/Props/toilet_sign.png and toilet_valve.png.
 public class ToiletPrank : MonoBehaviour
 {
@@ -25,7 +26,8 @@ public class ToiletPrank : MonoBehaviour
     public Transform Middle { get; private set; }      // its middle, for the camera
     public Transform Picture { get; private set; }     // a copy of its tile that never draws, for the tutorial's light
     public bool SignDown { get; private set; }
-    public bool Erupted { get; private set; }          // the geyser went off (not just skipped past: gossip's about it)
+    public bool Erupted { get; private set; }
+    public float geyserHeight = 6f;                    // the drawn geyser (Fx/poop_geyser_1, _2), out of the roof          // the geyser went off (not just skipped past: gossip's about it)
     public float panicRadius = 8f;                     // everyone this close runs from the geyser
     public float panicTime = 6f;
     public int Pressure { get; private set; }
@@ -150,7 +152,22 @@ public class ToiletPrank : MonoBehaviour
 
     void OnDestroy()
     {
-        if (Picture != null) Settle(); // skipped mid-rumble: the toilet comes back
+        if (Picture != null && !broken) Settle(); // skipped mid-rumble: the toilet comes back
+    }
+
+    // Blown open: the copy stays in the tile's place, showing the broken block, for good.
+    bool broken;
+
+    void Break()
+    {
+        var art = ParkArt.Get("Props/toilet_broken");
+        if (art == null || Picture == null) return;
+        broken = true;
+        var r = Picture.GetComponent<SpriteRenderer>();
+        r.sprite = art; // cut and imported like the tile's own picture, so it lands right where the tile was
+        r.forceRenderingOff = false;
+        Picture.localPosition = pictureAt;
+        if (tiles != null) tiles.SetTile(cell, null);
     }
 
     // Something you use with K, standing on the floor at `at`.
@@ -226,8 +243,21 @@ public class ToiletPrank : MonoBehaviour
         Fx.Shake(0.45f, 0.6f);
         // Out of the roof and up, in front of the block's picture (level with it, the puffs would hide behind it).
         Vector3 roof = new(Block.center.x, Block.max.y, Door.z);
+        var frames = new[] { ParkArt.Get("Fx/poop_geyser_1"), ParkArt.Get("Fx/poop_geyser_2") };
+        SpriteRenderer spout = null;
+        if (frames[0] != null)
+        {
+            spout = ParkArt.Make("Geyser", null, "Fx/poop_geyser_1", geyserHeight, Color.white, ParkArt.OverheadOrder - 1);
+            spout.transform.position = roof - Vector3.up * 0.6f; // its foot down in the roof
+        }
+        Break();
         for (int i = 0; i < 10; i++)
         {
+            if (spout != null)
+            {
+                spout.sprite = frames[i % 2] ?? frames[0];
+                ParkArt.Fit(spout, geyserHeight * Mathf.Min(1f, 0.4f + i * 0.2f)); // shoots up, then gushes
+            }
             Vector3 up = roof + Vector3.up * (i % 7 * 0.55f);
             var c = Poop[i % Poop.Length];
             Fx.Burst("Fx/puff", up, 10, new Color(c.r, c.g, c.b, 0.45f), 3f, 2.6f, 1.8f);  // the blur
@@ -247,6 +277,7 @@ public class ToiletPrank : MonoBehaviour
             }
             yield return new WaitForSeconds(0.35f);
         }
+        if (spout != null) Destroy(spout.gameObject);
         Mischief.Complete(Mischief.Task.TutorialToilet);
 
         // Clean-up comes to put the sign back.
@@ -263,6 +294,13 @@ public class ToiletPrank : MonoBehaviour
     // Out of order again, and nobody's taking it down this time.
     void PutSignBack()
     {
+        var caution = ParkArt.Get("Props/toilet_sign_caution");
+        var picture = Sign.GetComponentInChildren<SpriteRenderer>(true);
+        if (caution != null && picture != null)
+        {
+            picture.sprite = caution;
+            ParkArt.Fit(picture, 1.1f);
+        }
         Sign.gameObject.SetActive(true);
         Sign.GetComponent<Interactable>().enabled = false;
         Sfx.Play(Sfx.HitWood, 0.6f, 1.1f);

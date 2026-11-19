@@ -177,6 +177,7 @@ public class RideTechnician : MonoBehaviour
         var rb = GetComponent<Rigidbody>();
         rb.position = transform.position = new Vector3(door.x, transform.position.y, door.z);
         look.SetVisible(true);
+        look.Expression("surprised_1", 2.5f); // still rattled from the bang
     }
 
     // Loading a save (SaveGame).
