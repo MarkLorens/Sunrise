@@ -28,6 +28,10 @@ public class ElectricalBox : MonoBehaviour, IInteraction
     // The spirit floats up to it for the first time: it works out what this is for.
     void Update()
     {
+        // Getting here (in a body or not) is Ferris Wheel Chaos's step, once the tutorial and the park tour are over.
+        if (!Mischief.IsDone(Mischief.Task.ReachBox) && !Tutorial.Active && !Possession.InputBlocked
+            && Possession.PlayerNear(transform.position, GetComponent<Interactable>().range))
+            Mischief.Complete(Mischief.Task.ReachBox);
         if (thoughtAsSpirit || Unlocked || !wheel.Powered || Possession.Instance == null) return;
         if (Possession.Instance.State != Possession.Mode.Spirit || !Possession.PlayerNear(transform.position, GetComponent<Interactable>().range)) return;
         thoughtAsSpirit = true;
