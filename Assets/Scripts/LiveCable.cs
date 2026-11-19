@@ -1,7 +1,7 @@
 using UnityEngine;
 
-// The live plug sticking out of the speaker's sprite, sparking. Only the cable man knows how to handle it: in his
-// body, pull it out and dip it in the drinking fountain's puddle if it reaches (a cord is drawn while it's in).
+// The live plug sticking out of the speaker's sprite, sparking. In anyone's body, pull it out and dip it in the
+// drinking fountain's puddle if it reaches (a cord is drawn while it's in).
 [RequireComponent(typeof(Interactable))]
 public class LiveCable : MonoBehaviour, IInteraction
 {
@@ -58,13 +58,10 @@ public class LiveCable : MonoBehaviour, IInteraction
         Fx.Burst("Fx/sparkle", end + Vector3.up * 0.15f, dipped ? 6 : 3, Spark, 1.5f, 0.2f, 0.3f);
     }
 
-    static bool IsCableMan(Visitor host) => host != null && host.brain is CableMan;
-
-    public string Prompt(Visitor host) => IsCableMan(host) ? "Dip the live cable in the puddle" : "Broken speaker cable";
+    public string Prompt(Visitor host) => "Dip the live cable in the puddle";
 
     public string Blocked(Visitor host)
     {
-        if (!IsCableMan(host)) return GameText.CableLive;
         if (Time.time < readyAt) return GameText.CableCrackling;
         if (!Reaches) return GameText.CableTooFar;
         return null;

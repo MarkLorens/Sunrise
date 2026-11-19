@@ -3,7 +3,7 @@
 //   Pop-up (bottom left): one line for each thing the player does, and one for each step of the level done.
 //   Refusals: why pressing K didn't work, shown over whatever said no.
 // To reword a line, change the text between the quotes. Words in {curly brackets} are filled in by the game:
-//   {who}  someone's name as the game knows them ("Visitor", "Mechanic", "Cable Man"...)
+//   {who}  someone's name as the game knows them ("Visitor", "Mechanic", "Technician"...)
 //   {what} a thing ("drink", "keys", "water bottle")
 //   {s}    seconds
 // Plain C# strings, so nothing is loaded or read at runtime; a broken line shows up as a compile error.
@@ -28,7 +28,7 @@ public static class GameText
     public const string LiftedLid = "You lifted the gutter lid";
     public const string OpenedValve = "You loosened the propane valve";
     public const string SwitchedOffFan = "You switched off the hot dog man's fan";
-    public static string TurnedFan(string at) => $"You turned the fan toward the {at}";
+    public static string TurnedFan(string way) => $"You turned the fan to face {way}";
     public const string ScannedFinger = "Fingerprint accepted";
     public const string LoosenedHinge = "You loosened the hinge";
     public const string RestartedWheel = "You started the Ferris wheel";
@@ -36,7 +36,7 @@ public static class GameText
     public const string SparkedCable = "You sparked the broken cable";
     public const string MaxedSpeed = "You turned the Ferris wheel up to max speed";
 
-    // "a visitor", "the mechanic", "the cable man" (staff go by their job; numbers like "Reset Agent 2" are dropped).
+    // "a visitor", "the mechanic", "the technician" (staff go by their job; numbers like "Reset Agent 2" are dropped).
     static string Someone(string who)
     {
         who = who.TrimEnd(' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9').ToLowerInvariant();
@@ -52,7 +52,6 @@ public static class GameText
     {
         Mischief.Task.Possess => "Visitor possessed",
         Mischief.Task.FloodPuddle => "Water fountain leaked",
-        Mischief.Task.PossessCableMan => "Cable man possessed",
         Mischief.Task.Electrocute => "Visitors electrocuted",
         Mischief.Task.LureMechanic => "Mechanic arrived",
         Mischief.Task.PossessMechanic => "Mechanic possessed",
@@ -106,7 +105,6 @@ public static class GameText
     public const string PuddleFull = "The puddle won't spread any further";
 
     // The live cable
-    public const string CableLive = "It's live! Only the cable man knows how to handle it";
     public const string CableCrackling = "Still crackling from the last zap";
     public const string CableTooFar = "The puddle's too far away for the cable to reach";
 
@@ -125,8 +123,6 @@ public static class GameText
     public const string ValveOpen = "It's hissing away already";
     public const string ValveSpent = "Nothing left in it";
     public const string FanGuarded = "The hot dog man won't let you touch his fan";
-    public const string FanAimed = "It's blowing at the stand already";
-    public const string FanOff = "It's off";
 
     // The technician's platform and the hinge
     public const string TechnicianOnly = "Fingerprint lock: technician only";
@@ -139,6 +135,7 @@ public static class GameText
     public const string WheelWobbly = "It's running. Barely";
     public const string OperatorFingerOnly = "Fingerprint lock: operator only";
     public const string GutterOpen = "It's open. The smell's out";
+    public const string SignBackShout = "Who took this sign down?! That toilet is OUT OF ORDER!";
     public const string MascotGuards = "The mascot won't let you near the fan";
     public const string CableSparks = "Pretty sparks. Nothing here to burn yet";
     public const string NeedKeys = "Locked. The mechanic has the keys";
@@ -177,7 +174,6 @@ public static class GameText
     public const string ThinkFanGuarded = "He's guarding that fan like it's his firstborn";        // refused by the hot dog man
     public const string ThinkValve = "Smells like... opportunity";                                   // opening the valve
     public const string ThinkFanAimed = "I mean, why'd they even put this here.";                                          // turning the tank's fan
-    public const string ThinkStallFanOff = "Nice and still. Perfect for a gas leak";                 // switching off the stall's fan
     public const string ThinkGasBlownAway = "His fan keeps blowing the gas away. That has to go";   // gas reaching the stand with its fan on
     public const string ThinkCloud = "And now. We wait...";            // the cloud is full
     public const string ThinkBoom = "Well, THAT woke someone up";                                    // after the explosion
@@ -216,6 +212,11 @@ public static class GameText
     // lines join the pool for the rest of the game.
     public static readonly (Mischief.Task after, string[] lines)[] Gossip =
     {
+        (Mischief.Task.TutorialToilet, new[]
+        {
+            "Did you see the toilet EXPLODE?!", "That poor guy... covered head to toe.",
+            "I'm holding it till I get home.", "Who turned the water pressure up that high?",
+        }),
         (Mischief.Task.Electrocute, new[]
         {
             "Did you see what happened at the dance spot?", "Don't go near the drinking fountains.",
@@ -248,6 +249,7 @@ public static class GameText
     public const string PhoneRing = "*Ring ring*";     // the technician's phone, over his booth
     public const string TechnicianSnore = "zzz...";    // sleeping through it
     public const string TechnicianWake = "WHA- WHAT WAS THAT?!";
+    public const string TechnicianStaysIn = "...Ugh. Not my ride, not my problem. If it's important, they'll call.";
     public const string TechnicianCall = "Hello? The wheel's out? Yeah, yeah, on my way...";
 
     // After the first electrocution, one after the other

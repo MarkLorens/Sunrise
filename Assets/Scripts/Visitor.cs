@@ -46,6 +46,8 @@ public class Visitor : MonoBehaviour
     public float sendAwayDistance = 7f; // how far a Reset Agent shoos people (MoveAlong)
 
     public State Current { get; private set; }
+    public VisitorGroup Group { get; set; } // came with friends (VisitorGroup); null: on their own
+    bool Following => Group != null && Group.Leader != this;
 
     // Taken over by a script for a moment (the tutorial): standing still, or walking to scriptedSpot. Free() hands
     // them back. Possessing them frees them.
@@ -109,6 +111,13 @@ public class Visitor : MonoBehaviour
             if (Current != State.Confused && LookForPossessed()) return;
         }
 
+        // With friends: they go where the leader goes (panicking, staring and the rest they still do on their own).
+        if (Following && Current is State.Idle or State.Wander)
+        {
+            Follow();
+            return;
+        }
+
         switch (Current)
         {
             case State.Idle:
@@ -143,6 +152,7 @@ public class Visitor : MonoBehaviour
 
     public void Hold()
     {
+        Group?.Leave(this); // a cutscene's taken them
         scripted = true;
         scriptedSpot = null;
         Idle();
@@ -151,6 +161,7 @@ public class Visitor : MonoBehaviour
     // run: in a hurry (running speed and legs), like someone who really has to go.
     public void SendTo(Vector3 spot, bool run = false)
     {
+        Group?.Leave(this);
         LeaveQueue();
         scripted = true;
         scriptedSpot = spot;
@@ -179,8 +190,9 @@ public class Visitor : MonoBehaviour
 
     void Decide()
     {
+        // Groups never queue for rides or go to the speakers (VisitorGroup).
         var q = RideQueue.All.Count > 0 ? RideQueue.All[Random.Range(0, RideQueue.All.Count)] : null;
-        if (q != null && Random.value < queueChance && q.Join(this))
+        if (q != null && Group == null && Random.value < queueChance && q.Join(this))
         {
             EnterQueue(q);
             return;
@@ -191,7 +203,7 @@ public class Visitor : MonoBehaviour
             if (Head(stall.ServePoint + new Vector3(Random.Range(-0.4f, 0.4f), 0f, 0f))) return;
         }
         if (Random.value < gawkChance && HeadToGawk()) return;
-        var speaker = Speaker.Wanting();
+        var speaker = Group == null ? Speaker.Wanting() : null;
         if (speaker != null && Random.value < listenChance && Head(speaker.ListenSpot())) return;
         PickTarget();
     }
@@ -300,6 +312,26 @@ public class Visitor : MonoBehaviour
         return true;
     }
 
+    // ---------------------------------------------------------------- with friends (VisitorGroup)
+
+    // To their slot by the leader, hurrying if they've fallen behind; there, they stand facing the way it faces.
+    void Follow()
+    {
+        var lead = Group.Leader;
+        Vector3 slot = Group.Slot(this);
+        Vector3 d = slot - transform.position;
+        d.y = 0f;
+        if (d.magnitude > 0.5f)
+        {
+            if (Current != State.Wander) SetState(State.Wander);
+            walker.speed = lead.wanderSpeed * (d.magnitude > 2f ? 1.6f : 1.1f);
+            if (WalkTo(slot)) return;
+        }
+        if (Current != State.Idle) SetState(State.Idle);
+        walker.move = Vector2.zero;
+        Look.Face(transform.position + (lead.Look.FacingLeft ? Vector3.left : Vector3.right));
+    }
+
     // ---------------------------------------------------------------- gawking (Aftermath)
 
     // Off to a spot on the ring round a scene nearby, keeping its distance, on the side they're coming from.
@@ -334,6 +366,11 @@ public class Visitor : MonoBehaviour
     // A Reset Agent telling the crowd to move along (ResetAgent): off they go, away from them.
     public void MoveAlong(Component by)
     {
+        if (Following)
+        {
+            Group.Leader.MoveAlong(by); // the whole group goes
+            return;
+        }
         if (brain != null || Current is State.Possessed or State.Riding or State.Down or State.Queueing) return;
         SendAway(by);
     }
@@ -385,6 +422,7 @@ public class Visitor : MonoBehaviour
     // Frozen on the spot at once; with a twitch, they stand still for `wait`, jolt for `twitch` seconds, then drop.
     public void Die(float wait = 0f, float twitch = 0f)
     {
+        Group?.Leave(this);
         if (Current == State.Down) return;
         if (brain != null) brain.enabled = false;
         LeaveQueue();
@@ -452,6 +490,7 @@ public class Visitor : MonoBehaviour
 
     public void BeginPossession()
     {
+        Group?.Leave(this); // their friends carry on without them (and stare: LookForPossessed)
         scripted = false;
         scriptedSpot = null;
         LeaveQueue();
