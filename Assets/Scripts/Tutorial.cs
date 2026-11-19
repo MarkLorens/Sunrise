@@ -129,7 +129,7 @@ public class Tutorial : MonoBehaviour
         ShowGuide(false);
         CameraRig.EndSpotlight();
         CameraRig.EndZoom(); // skipped on step 1
-        ParkTour.Play(); // played through or skipped, the park tour comes next (it isn't part of the tutorial)
+        // ParkTour.Play(); // off for now; uncomment to show the Ferris wheel after the tutorial (played through or skipped)
     }
 
     void Skip()

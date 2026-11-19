@@ -35,7 +35,7 @@ public static class Mischief
             (Task.TutorialLeave, "Leave the body"),
             (Task.TutorialToilet, "Wait for someone to use the toilet..."),
         }),
-        // After the park tour (ParkTour). Done by getting to the box (ElectricalBox), which starts the puzzle.
+        // After the tutorial. Done by getting to the box (ElectricalBox), which starts the puzzle.
         ("0. Ferris Wheel Chaos", new[]
         {
             (Task.ReachBox, "Go to the Ferris Wheel and open the electrical box"),
