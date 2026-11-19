@@ -5,7 +5,7 @@ using UnityEngine.Tilemaps;
 // Fills the park with people on random ground tiles around this object when the scene starts.
 // Some visitors start out lined up for the ride; the rest roam (and may wander over to the line later), many of them
 // carrying a drink or a water bottle. Plus the staff: the mechanic (keys in hand) and the Reset Agents behind the
-// staff door, the cable man by the speaker, the ride technician asleep in his booth (screwdriver in hand) and the
+// staff door, the ride technician asleep in his booth (screwdriver in hand) and the
 // hot dog man behind his stand.
 // Visitors use the lineart bodies in Resources/ArtLineartTorso (body_standard_1..8, each with a random face, hair and
 // colours); staff still use Resources/Visitors/<character>/
@@ -37,9 +37,6 @@ public class VisitorSpawner : MonoBehaviour
     public Transform mechanicPost; // the staff door: the mechanic and Reset Agents wait behind it; empty = a random spot
     public int resetAgents = 2;
     public string resetAgentCharacter = "malePersonTeal";
-    public string cableManCharacter = "maleAdventurer";
-    public string cableManName = "Cable Man";
-    public Transform cableManPost;  // empty = no cable man
     public string technicianCharacter = "malePersonRed";
     public string technicianName = "Technician";
     public Transform technicianPost; // empty = no technician (his booth goes here)
@@ -112,7 +109,6 @@ public class VisitorSpawner : MonoBehaviour
         var body = Staff<Mechanic>(mechanicName, door, mechanicCharacter);
         body.GrabItem(Item.Create(VisitorItem.Keys, body.CarryPoint), true);
         for (int i = 0; i < resetAgents; i++) Staff<ResetAgent>($"Reset Agent {i + 1}", door, resetAgentCharacter);
-        if (cableManPost != null) Staff<CableMan>(cableManName, cableManPost.position, cableManCharacter);
         if (technicianPost != null)
         {
             var tech = Staff<RideTechnician>(technicianName, technicianPost.position, technicianCharacter);

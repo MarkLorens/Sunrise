@@ -6,13 +6,13 @@ using System.Collections.Generic;
 // Each part is a list of steps; GameHud lists the part you're on (top left) and
 // ticks them off as the behaviours that make them happen report in. Nothing here drives the
 // order: the world's own rules do. The list keeps it short: a step names the task that finishes it, and the tasks
-// on the way there (possessing the cable man, unlocking the box...) still count, they're just not listed.
+// on the way there (possessing the mechanic, unlocking the box...) still count, they're just not listed.
 public static class Mischief
 {
     // New ones go at the end: saves keep these as numbers.
     public enum Task
     {
-        Possess, FloodPuddle, PossessCableMan, Electrocute, LureMechanic, PossessMechanic, UnlockBox, CutPower, CallTechnician,
+        Possess, FloodPuddle, PossessCableMan /* unused: the cable man's gone */, Electrocute, LureMechanic, PossessMechanic, UnlockBox, CutPower, CallTechnician,
         RatsOut, StallFanOff, LeakPropane, AimFan, GasCloud, Explode, WakeTechnician,
         PossessTechnician, OpenPlatform, LoosenHinge, RestartWheel,
         TutorialPossess, TutorialSign, TutorialValve, TutorialLeave, TutorialToilet,

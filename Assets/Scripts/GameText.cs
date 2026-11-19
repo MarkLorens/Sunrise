@@ -3,7 +3,7 @@
 //   Pop-up (bottom left): one line for each thing the player does, and one for each step of the level done.
 //   Refusals: why pressing K didn't work, shown over whatever said no.
 // To reword a line, change the text between the quotes. Words in {curly brackets} are filled in by the game:
-//   {who}  someone's name as the game knows them ("Visitor", "Mechanic", "Cable Man"...)
+//   {who}  someone's name as the game knows them ("Visitor", "Mechanic", "Technician"...)
 //   {what} a thing ("drink", "keys", "water bottle")
 //   {s}    seconds
 // Plain C# strings, so nothing is loaded or read at runtime; a broken line shows up as a compile error.
@@ -36,7 +36,7 @@ public static class GameText
     public const string SparkedCable = "You sparked the broken cable";
     public const string MaxedSpeed = "You turned the Ferris wheel up to max speed";
 
-    // "a visitor", "the mechanic", "the cable man" (staff go by their job; numbers like "Reset Agent 2" are dropped).
+    // "a visitor", "the mechanic", "the technician" (staff go by their job; numbers like "Reset Agent 2" are dropped).
     static string Someone(string who)
     {
         who = who.TrimEnd(' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9').ToLowerInvariant();
@@ -52,7 +52,6 @@ public static class GameText
     {
         Mischief.Task.Possess => "Visitor possessed",
         Mischief.Task.FloodPuddle => "Water fountain leaked",
-        Mischief.Task.PossessCableMan => "Cable man possessed",
         Mischief.Task.Electrocute => "Visitors electrocuted",
         Mischief.Task.LureMechanic => "Mechanic arrived",
         Mischief.Task.PossessMechanic => "Mechanic possessed",
@@ -106,7 +105,6 @@ public static class GameText
     public const string PuddleFull = "The puddle won't spread any further";
 
     // The live cable
-    public const string CableLive = "It's live! Only the cable man knows how to handle it";
     public const string CableCrackling = "Still crackling from the last zap";
     public const string CableTooFar = "The puddle's too far away for the cable to reach";
 
