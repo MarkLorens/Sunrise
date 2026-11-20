@@ -74,7 +74,7 @@ public class TankFan : MonoBehaviour, IInteraction
         Aim();
         Sfx.Play(Sfx.HitWood, 0.6f, 1.2f);
         GameHud.Say(GameText.TurnedFan(aimName));
-        GameHud.Think(GameText.ThinkFanAimed);
+        GameHud.Think(GameText.PickFanAimed(this));
         if (countsAsStep) Mischief.Complete(task);
     }
 

@@ -15,7 +15,6 @@ public class StallFan : MonoBehaviour, IInteraction
 
     SpriteRenderer art;
     float nextGust;
-    bool thoughtGuarded;
 
     void OnEnable() => All.Add(this);
     void OnDisable() => All.Remove(this);
@@ -53,8 +52,7 @@ public class StallFan : MonoBehaviour, IInteraction
         {
             GameHud.Shout(guard.transform, GameText.HotDogGuard, 2f);
             GameHud.Refuse(transform, GameText.FanGuarded);
-            if (!thoughtGuarded) GameHud.Think(GameText.ThinkFanGuarded);
-            thoughtGuarded = true;
+            GameHud.Think(GameText.PickFanGuarded()); // randomized pool: each refuse
             return;
         }
         On = false;

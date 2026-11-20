@@ -15,24 +15,32 @@ public class LiveCable : MonoBehaviour, IInteraction
     LineRenderer line;
     Vector3 dippedAt;
     float dipUntil, readyAt, nextSpark;
-    bool thoughtDry, thoughtWet;
+    bool nearCable, thoughtWet;
 
     bool Reaches => fountain.Radius > 0f && fountain.Gap(transform.position) <= reach;
 
-    // Coming up to it (in any form): a hint while the puddle's too far, glee once it reaches. Each said once.
+    // Coming up to it (in any form): a random dry hint each visit while the puddle's too far; glee once it reaches.
     void Think()
     {
-        if (thoughtWet || !Possession.PlayerNear(transform.position, GetComponent<Interactable>().range)) return;
+        bool inRange = Possession.PlayerNear(transform.position, GetComponent<Interactable>().range);
+        if (!inRange)
+        {
+            nearCable = false;
+            return;
+        }
         if (Reaches)
         {
-            thoughtWet = true;
-            GameHud.Think(GameText.ThinkCableWet);
+            if (!thoughtWet)
+            {
+                thoughtWet = true;
+                GameHud.Think(GameText.ThinkCableWet);
+            }
         }
-        else if (!thoughtDry)
+        else if (!nearCable)
         {
-            thoughtDry = true;
-            GameHud.Think(GameText.ThinkCableDry);
+            GameHud.Think(GameText.PickCableDry());
         }
+        nearCable = true;
     }
 
     void Start()

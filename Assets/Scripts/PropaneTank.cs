@@ -123,7 +123,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
         leaking = true;
         Sfx.Play(Sfx.HitWood, 0.5f, 1.8f);
         GameHud.Say(GameText.OpenedValve);
-        GameHud.Think(GameText.ThinkValve);
+        GameHud.Think(GameText.PickValve());
         Mischief.Complete(leakTask);
     }
 
