@@ -1,6 +1,6 @@
 // Every line the player reads about what they did, in one place, so the wording can be changed here without
 // hunting through the rest of the code:
-//   Pop-up (bottom left): one line for each thing the player does, and one for each step of the level done.
+//   Events (top right): one line for each thing the player does, and one for each step of the level done.
 //   Refusals: why pressing K didn't work, shown over whatever said no.
 // To reword a line, change the text between the quotes. Words in {curly brackets} are filled in by the game:
 //   {who}  someone's name as the game knows them ("Visitor", "Mechanic", "Technician"...)
@@ -18,7 +18,7 @@ public static class GameText
     public const string LeftBody = "You left the body";
 
     // The pause menu's Save Game
-    public const string Saved = "Game saved";
+    public const string Saving = "Saving...";
     public const string CantSave = "Can't save right now";
     public static string Bought(string what) => $"You bought a {what}";
     public const string PressedFountain = "The fountain leaks even more";
@@ -290,8 +290,8 @@ public static class GameText
     public const string TutorialLaughSays = "MWAHAHAHA!";
     public const string TutorialGottaGo = "Gotta go, gotta go, GOTTA GO!";                       // the visitor running in
     public const string TutorialSoaked = "AAAH! IT'S EVERYWHERE!";                                  // the soaked visitor
-    // 12. The pop-up (bottom left)
-    public const string TutorialEvent = "Everything you pull off shows up down here. Have fun!";
+    // 12. The events (top right)
+    public const string TutorialEvent = "Everything you pull off shows up here. Have fun!";
 
     public const string TutorialNext = "Next";        // beside the [Space] keycap, on steps you just read
     public const string TutorialSkip = "Hold [Space] to skip tutorial";

@@ -3,10 +3,11 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-// The HUD, built at runtime in the style of My project's: the objectives (top left: the part of the level you're on
-// and its steps; a step that gets done is struck through and stays on the list), a pop-up line for each thing the
-// player does and each step done (bottom left; the wording is all in GameText), a prompt floating over whatever you
-// can possess / use (and why not, when E is refused), and the intro banner.
+// The HUD, built at runtime: the objectives (top left: the part of the level you're on on a yellow strip, and its
+// steps as bullets on the pink panel under it; a step that gets done is struck through and stays on the list), the
+// events (top right: a line for each thing the player does and each step done, the wording all in GameText), a
+// prompt floating over whatever you can possess / use (and why not, when E is refused), the intro banner, and
+// "Saving..." (bottom right) after Save Game. Titles are in Atma (ParkArt.TitleFont), the rest in Arvo.
 // It also gives the main camera its rig and the spirit its outline of what it can act on.
 public class GameHud : MonoBehaviour
 {
@@ -17,14 +18,13 @@ public class GameHud : MonoBehaviour
     public Sprite spiritIcon; // the intro banner's icon (falls back to UI/spirit)
 
     static readonly Color PanelDark = new(0.12f, 0.08f, 0.12f, 0.8f);
-    static readonly Color Ink = new(0.17f, 0.1f, 0.13f);
+    static readonly Color Ink = Color.black; // as in the design
     static readonly Color Soft = new(0.96f, 0.92f, 0.88f);
     static readonly List<string> pending = new();
-    static Font handFont;
-    static Font HandFont => handFont != null ? handFont : handFont = Resources.Load<Font>("Park/Fonts/LoveYaLikeASister");
 
     // A step in the objectives list. age < 0 until it's done; then a line is drawn through it and it stays put.
-    // A long step wraps onto more lines (StepChars at most per line), each struck through on its own.
+    // A long step wraps onto more lines (StepWrap wide at most, so it stays inside the panel), each struck
+    // through on its own.
     class StepRow
     {
         public Mischief.Task task;
@@ -42,7 +42,7 @@ public class GameHud : MonoBehaviour
     CanvasGroup objectives;
     Text objectiveTitle;
     RectTransform objectiveBanner, stepList;
-    LayoutElement bannerSize; // the title's width follows its text
+    LayoutElement bannerSize, stepsSize; // both ObjectiveWidth, or wider for a long title
     VerticalLayoutGroup objectivesColumn;
     // The steps drop down from under the title: click the title or press Tab to open or close them.
     LayoutElement stepsDrop;
@@ -52,19 +52,34 @@ public class GameHud : MonoBehaviour
     const float DropTime = 0.3f;
     // How far the open steps panel tucks up under the title, so the two sit together with no gap between their drawn
     // edges (both pictures have a see-through margin round the outline).
-    const float StepsTuck = 28f;
-    const int StepChars = 30;      // a step longer than this wraps onto the next line
-    const float WrapStep = 30f;    // how far down each wrapped line sits from the one above
-    const float TitlePadLeft = 46f, TitlePadRight = 50f, TitleMinWidth = 220f, StepsMinWidth = 240f;
+    // Sizes measured off the design: the title strip 540 x 104, the steps panel under it 11 narrower and 4 in from the
+    // left, its text 24 (the title's 29), a line every 36, wrapping before StepWrap (from the bullet).
+    const float StepsTuck = 11f;
+    const float StepWrap = 438f;   // a line of a step (bullet and all) is no wider than this
+    const float WrapStep = 36f;    // how far down each wrapped line sits from the one above
+    const float ObjectiveWidth = 540f, TitleHeight = 104f, TitlePad = 34f, StepsNarrower = 11f, StepsInset = 4f;
+    const int TitleSize = 29, StepSize = 24;
     readonly List<StepRow> stepRows = new();
     int shownPart = -2; // index into Mischief.Parts, -1 when every step is done
-    RectTransform doneBody;
-    CanvasGroup doneGroup;
-    Text doneText;
-    float doneAge = DoneTime, doneShow = DoneTime;
-    readonly List<string> doneQueue = new();
-    int actionFrame = -1; // the frame the last line in doneQueue was queued by Say (a step done then takes its place)
-    const float DoneTime = 3.6f, DoneMin = 1.4f, DoneFade = 0.4f, StepHeight = 38f;
+    const float StepHeight = 36f;
+    // The events, top right: newest at the bottom, each up EventTime seconds, MaxEvents at most (the oldest goes).
+    class Event
+    {
+        public Text text;
+        public CanvasGroup group;
+        public float age;
+        public int frame;
+    }
+    readonly List<Event> events = new();
+    RectTransform eventList;
+    int actionFrame = -1; // the frame the last event was added by Say (a step done then takes its place)
+    const float EventTime = 10f, EventFade = 0.5f;
+    const int MaxEvents = 3;
+    // "Saving..." bottom right, on its own canvas over the pause menu.
+    CanvasGroup saving;
+    RectTransform savingSpinner;
+    float savingAge = SavingTime;
+    const float SavingTime = 1.6f;
     const float PartHold = 1.5f; // seconds the finished part's struck-through list stays up before the next part
     // Between parts: "Objective Completed!" pops up in the middle of the screen, then the next part's list comes in.
     RectTransform puzzleBanner;
@@ -96,6 +111,7 @@ public class GameHud : MonoBehaviour
         spirit = GetComponent<Possession>();
         interactor = GetComponent<PlayerInteractor>();
         Mischief.Reset();
+        SaveGame.AutoSave = false;
         ParkChaos.Reset();
         Aftermath.Reset();
 
@@ -106,7 +122,7 @@ public class GameHud : MonoBehaviour
         if (GetComponent<PauseMenu>() == null) gameObject.AddComponent<PauseMenu>();
         if (GetComponent<Tutorial>() == null) gameObject.AddComponent<Tutorial>();
         Build();
-        doneQueue.AddRange(pending);
+        foreach (var line in pending) AddEvent(line);
         pending.Clear();
     }
 
@@ -115,19 +131,18 @@ public class GameHud : MonoBehaviour
         if (Instance == this) Instance = null;
     }
 
-    // For the tutorial to point at: the objectives (top left) and the pop-up line (bottom left).
+    // For the tutorial to point at: the objectives (top left) and the events (top right).
     public RectTransform ObjectivesPanel => (RectTransform)objectives.transform;
-    public RectTransform PopUp => doneBody;
+    public RectTransform PopUp => eventList;
 
-    // Keeps `line` up in the pop-up while it's the one showing (the tutorial, while you read about it).
+    // Keeps `line` up in the events while it's there (the tutorial, while you read about it).
     public void KeepPopUp(string line)
     {
-        if (doneText.text != line || doneQueue.Count > 0) return;
-        doneAge = Mathf.Min(doneAge, 0.5f);
-        doneShow = DoneTime;
+        foreach (var e in events)
+            if (e.text.text == line) e.age = Mathf.Min(e.age, 0.5f);
     }
 
-    // A line in the bottom-left pop-up for something the player just did. One at a time: later ones wait their turn.
+    // An event (top right) for something the player just did.
     public static void Say(string text)
     {
         if (Instance == null)
@@ -135,12 +150,12 @@ public class GameHud : MonoBehaviour
             pending.Add(text);
             return;
         }
-        Instance.doneQueue.Add(text);
+        Instance.AddEvent(text);
         Instance.actionFrame = Time.frameCount;
     }
 
-    // The pop-up line for a step that just got done. If what the player did this very frame is what did it, this
-    // line takes the place of that one: one thing happened, one line.
+    // The event for a step that just got done. If what the player did this very frame is what did it, this line
+    // takes the place of that one: one thing happened, one line.
     public static void StepDone(string text)
     {
         if (Instance == null)
@@ -148,10 +163,16 @@ public class GameHud : MonoBehaviour
             pending.Add(text);
             return;
         }
-        var q = Instance.doneQueue;
-        if (Instance.actionFrame == Time.frameCount && q.Count > 0) q[q.Count - 1] = text;
-        else q.Add(text);
+        var list = Instance.events;
+        if (Instance.actionFrame == Time.frameCount && list.Count > 0 && list[^1].frame == Time.frameCount) list[^1].text.text = text;
+        else Instance.AddEvent(text);
         Instance.actionFrame = -1;
+    }
+
+    // "Saving..." bottom right for a moment (the pause menu's Save Game, once it's saved).
+    public static void Saving()
+    {
+        if (Instance != null) Instance.savingAge = 0f;
     }
 
     // Why pressing E didn't work, floated over whatever said no for a moment (person: someone you tried to possess).
@@ -171,12 +192,13 @@ public class GameHud : MonoBehaviour
     }
 
     // Someone (or something) shouting: a speech bubble over `over` for `seconds`. Any number at once.
-    public static void Shout(Transform over, string line, float seconds)
+    // ambient: background chatter (gossip, "move along") that "Objective Completed!" doesn't wait for.
+    public static void Shout(Transform over, string line, float seconds, bool ambient = false)
     {
         if (Instance == null || over == null) return;
         var b = Instantiate(Instance.bubble.gameObject, Instance.canvas).GetComponent<RectTransform>();
         b.GetComponentInChildren<Text>().text = line;
-        Instance.shouts.Add(new Shouted { bubble = b, group = b.GetComponent<CanvasGroup>(), over = over, life = seconds, until = Time.unscaledTime + seconds });
+        Instance.shouts.Add(new Shouted { bubble = b, group = b.GetComponent<CanvasGroup>(), over = over, life = seconds, until = Time.unscaledTime + seconds, ambient = ambient });
     }
 
     class Shouted
@@ -185,7 +207,16 @@ public class GameHud : MonoBehaviour
         public CanvasGroup group;
         public Transform over;
         public float life, until;
+        public bool ambient;
     }
+
+    // Someone's still talking: the spirit's thoughts (shown or waiting), or a shout that isn't background chatter.
+    bool Talking => thoughts.Count > 0 || bubbleGroup.alpha > 0f || shouts.Exists(s => !s.ambient);
+
+    // How long everything's been quiet: no cutscene, no tour, the camera back on the player, nobody talking. The next
+    // part (and "Objective Completed!") waits for SettleTime of it.
+    float calm;
+    const float SettleTime = 0.6f;
 
     readonly List<Shouted> shouts = new();
 
@@ -194,7 +225,9 @@ public class GameHud : MonoBehaviour
     void Update()
     {
         UpdateObjectives();
-        UpdateStepPopup();
+        UpdateEvents();
+        UpdateAutoSave();
+        UpdateSaving();
         UpdateGrip();
         UpdateBanners();
     }
@@ -272,14 +305,17 @@ public class GameHud : MonoBehaviour
     {
         float dt = Time.unscaledDeltaTime;
         // Move on to the next part once every step of this one has been struck through and stayed up a moment, and
-        // any cutscene is over (the player can move) and the park tour too. After a numbered part (0 on) the list goes,
+        // everything has settled (calm): the cutscene and the park tour over, the camera back from its zooms and shots,
+        // the dialog done. After a numbered part (0 on) the list goes,
         // "Objective Completed!" pops up, then the next part's list comes in; otherwise (and for the first list, or a
         // loaded game's) the next one just comes in.
         int part = ActivePart();
+        bool quiet = !Possession.InputBlocked && !HideObjectives && !CameraRig.Busy && !Talking;
+        calm = quiet ? calm + dt : 0f;
         if (part != shownPart && puzzleAge < 0f && stepRows.TrueForAll(r => r.age >= PartHold))
         {
             if (shownPart < 0) ShowPart(part);
-            else if (!Possession.InputBlocked && !HideObjectives)
+            else if (calm >= SettleTime)
             {
                 if (IsPuzzle(shownPart)) puzzleAge = 0f;
                 else ShowPart(part);
@@ -340,18 +376,17 @@ public class GameHud : MonoBehaviour
     // little squash as it's pressed.
     void UpdateDrop(float dt)
     {
-        var kb = Keyboard.current;
         var mouse = Mouse.current;
         bool clicked = mouse != null && mouse.leftButton.wasPressedThisFrame
                        && RectTransformUtility.RectangleContainsScreenPoint(objectiveBanner, mouse.position.ReadValue(), null);
-        if (objectives.alpha > 0.5f && !PauseMenu.Paused && (clicked || (kb != null && kb.tabKey.wasPressedThisFrame)))
+        if (objectives.alpha > 0.5f && !PauseMenu.Paused && (clicked || Controls.Objectives)) // Tab
         {
             stepsOpen = !stepsOpen;
             bannerPop = 0f;
         }
         stepsShown = Mathf.MoveTowards(stepsShown, stepsOpen ? 1f : 0f, dt / DropTime);
         float eased = stepsShown * stepsShown * (3f - 2f * stepsShown);
-        stepsDrop.preferredWidth = LayoutUtility.GetPreferredWidth(stepList);
+        stepsDrop.preferredWidth = StepsInset + LayoutUtility.GetPreferredWidth(stepList);
         stepsDrop.preferredHeight = LayoutUtility.GetPreferredHeight(stepList) * eased;
         stepsGroup.alpha = eased;
         objectivesColumn.spacing = -StepsTuck * eased; // closed, nothing tucks under the title
@@ -369,7 +404,8 @@ public class GameHud : MonoBehaviour
         var (title, steps) = Mischief.Parts[part];
         int dot = title.IndexOf(". ");
         objectiveTitle.text = dot >= 0 && dot < 3 ? title[(dot + 2)..] : title; // "1. A-leak-tricity" -> "A-leak-tricity"
-        bannerSize.preferredWidth = Mathf.Max(TitleMinWidth, TitlePadLeft + objectiveTitle.preferredWidth + TitlePadRight);
+        bannerSize.preferredWidth = Mathf.Max(ObjectiveWidth, 2f * TitlePad + objectiveTitle.preferredWidth);
+        stepsSize.minWidth = bannerSize.preferredWidth - StepsNarrower;
         foreach (var (task, label) in steps)
         {
             var slot = Ui(task.ToString(), stepList);
@@ -378,17 +414,16 @@ public class GameHud : MonoBehaviour
             var group = body.gameObject.AddComponent<CanvasGroup>();
             group.alpha = 0f;
 
-            // One line each, StepChars at most; the lines after the first line up under its text, past the "› ".
-            var lines = Wrap(label, StepChars);
+            // One line each, StepWrap wide at most; the lines after the first line up under its text, past the "• ".
+            var lines = Wrap(label, StepWrap - TextWidth("• ", StepSize));
             var strikes = new RectTransform[lines.Count];
             var widths = new float[lines.Count];
             float indent = 0f, widest = 0f;
             for (int i = 0; i < lines.Count; i++)
             {
                 var line = Ui("Line " + (i + 1), body);
-                var text = Txt(line, i == 0 ? "› " + lines[i] : lines[i], 26, Ink);
-                text.font = HandFont;
-                if (i == 0 && lines.Count > 1) indent = Measure(text, "› " + lines[1][0]) - Measure(text, lines[1][0].ToString());
+                var text = Txt(line, i == 0 ? "• " + lines[i] : lines[i], StepSize, Ink);
+                if (i == 0 && lines.Count > 1) indent = Measure(text, "• " + lines[1][0]) - Measure(text, lines[1][0].ToString());
                 float x = i == 0 ? 0f : indent;
                 Place(line, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(x, -i * WrapStep), new Vector2(text.preferredWidth, StepHeight));
                 var strike = Ui("Strike", line);
@@ -406,53 +441,113 @@ public class GameHud : MonoBehaviour
         }
     }
 
-    // Breaks `s` into lines of at most `max` characters, between words (a word longer than that is cut).
-    static List<string> Wrap(string s, int max)
+    // Breaks `s` into lines no wider than `max` (in the steps' font and size), between words.
+    static List<string> Wrap(string s, float max)
     {
         var lines = new List<string>();
         string line = "";
         foreach (var word in s.Split(' ', System.StringSplitOptions.RemoveEmptyEntries))
         {
-            string w = word;
-            while (w.Length > max)
-            {
-                if (line.Length > 0) lines.Add(line);
-                lines.Add(w[..max]);
-                line = "";
-                w = w[max..];
-            }
-            if (line.Length == 0) line = w;
-            else if (line.Length + 1 + w.Length <= max) line += " " + w;
+            if (line.Length == 0) line = word;
+            else if (TextWidth(line + " " + word, StepSize) <= max) line += " " + word;
             else
             {
                 lines.Add(line);
-                line = w;
+                line = word;
             }
         }
         if (line.Length > 0 || lines.Count == 0) lines.Add(line);
         return lines;
     }
 
+    static readonly TextGenerator measurer = new();
+
+    // How wide `s` comes out in the ordinary font (Arvo) at `size`, in HUD units.
+    static float TextWidth(string s, int size) => measurer.GetPreferredWidth(s, new TextGenerationSettings
+    {
+        font = ParkArt.Font,
+        fontSize = size,
+        scaleFactor = 1f,
+        horizontalOverflow = HorizontalWrapMode.Overflow,
+        verticalOverflow = VerticalWrapMode.Overflow,
+        generationExtents = new Vector2(5000f, 500f),
+        pivot = Vector2.zero,
+        color = Color.white,
+        lineSpacing = 1f,
+        richText = false,
+        textAnchor = TextAnchor.UpperLeft,
+    });
+
     // How wide `s` comes out in `t`'s font and size, in HUD units.
     static float Measure(Text t, string s) =>
         t.cachedTextGeneratorForLayout.GetPreferredWidth(s, t.GetGenerationSettings(Vector2.zero)) / t.pixelsPerUnit;
 
-    void UpdateStepPopup()
+    void AddEvent(string line)
     {
-        doneAge += Time.unscaledDeltaTime;
-        // More lines waiting: the one up now gives way sooner, once it's been up long enough to read.
-        if (doneQueue.Count > 0) doneShow = Mathf.Min(doneShow, Mathf.Max(doneAge + DoneFade, DoneMin));
-        if (doneAge >= doneShow && doneQueue.Count > 0)
+        if (events.Count >= MaxEvents)
         {
-            doneText.text = doneQueue[0];
-            doneQueue.RemoveAt(0);
-            doneAge = 0f;
-            doneShow = DoneTime;
+            Destroy(events[0].group.gameObject);
+            events.RemoveAt(0);
         }
-        // Slides in, stays a few seconds, fades.
-        float fadeIn = Mathf.Clamp01(doneAge / 0.15f);
-        doneGroup.alpha = Mathf.Min(fadeIn, Mathf.Clamp01((doneShow - doneAge) / DoneFade));
-        doneBody.anchoredPosition = new Vector2((fadeIn - 1f) * 60f, 0f);
+        var row = Ui("Event", eventList);
+        var group = row.gameObject.AddComponent<CanvasGroup>();
+        group.alpha = 0f;
+        var text = Txt(row, line, 24, Color.white, TextAnchor.MiddleRight);
+        var shadow = row.gameObject.AddComponent<Shadow>();
+        shadow.effectColor = new Color(0f, 0f, 0f, 0.7f);
+        shadow.effectDistance = new Vector2(1.5f, -1.5f);
+        events.Add(new Event { text = text, group = group, frame = Time.frameCount });
+    }
+
+    // Each fades in, stays EventTime seconds, fades out and goes.
+    void UpdateEvents()
+    {
+        for (int i = events.Count - 1; i >= 0; i--)
+        {
+            var e = events[i];
+            e.age += Time.unscaledDeltaTime;
+            e.group.alpha = Mathf.Min(Mathf.Clamp01(e.age / 0.2f), Mathf.Clamp01((EventTime - e.age) / EventFade));
+            if (e.age < EventTime) continue;
+            Destroy(e.group.gameObject);
+            events.RemoveAt(i);
+        }
+    }
+
+    // A step's been crossed off: save once nothing's in the way, with a picture of the park (no HUD) for its card.
+    void UpdateAutoSave()
+    {
+        if (!SaveGame.AutoSave || SaveGame.Loading || !SaveGame.CanSave || Tutorial.Active || PauseMenu.Paused || Possession.InputBlocked) return;
+        var shot = ParkShot();
+        if (SaveGame.Save(shot)) Saving();
+        if (shot != null) Destroy(shot);
+    }
+
+    // What the main camera sees, without the HUD.
+    static Texture2D ParkShot()
+    {
+        var cam = Camera.main;
+        if (cam == null) return null;
+        const int w = 960, h = 540;
+        var rt = RenderTexture.GetTemporary(w, h, 24);
+        var old = cam.targetTexture;
+        cam.targetTexture = rt;
+        cam.Render();
+        cam.targetTexture = old;
+        var was = RenderTexture.active;
+        RenderTexture.active = rt;
+        var tex = new Texture2D(w, h, TextureFormat.RGB24, false);
+        tex.ReadPixels(new Rect(0, 0, w, h), 0, 0);
+        tex.Apply();
+        RenderTexture.active = was;
+        RenderTexture.ReleaseTemporary(rt);
+        return tex;
+    }
+
+    void UpdateSaving()
+    {
+        savingAge += Time.unscaledDeltaTime;
+        saving.alpha = Mathf.Min(Mathf.Clamp01(savingAge / 0.15f), Mathf.Clamp01((SavingTime - savingAge) / 0.3f));
+        if (saving.alpha > 0f) savingSpinner.localRotation = Quaternion.Euler(0f, 0f, -Time.unscaledTime * 400f);
     }
 
     void UpdateGrip()
@@ -549,7 +644,8 @@ public class GameHud : MonoBehaviour
         scaler.matchWidthOrHeight = 0.5f;
 
         BuildObjectives();
-        BuildStepPopup();
+        BuildEvents();
+        BuildSaving();
         BuildPrompt();
         BuildIntro();
         BuildBubble();
@@ -560,12 +656,12 @@ public class GameHud : MonoBehaviour
     void BuildPuzzleBanner()
     {
         puzzleBanner = Ui("Objective Completed", canvas);
-        Img(puzzleBanner, "UI/Buttons/objective_main", Color.white).pixelsPerUnitMultiplier = 2f;
+        Img(puzzleBanner, "UI/Menu/main_objective", Color.white).pixelsPerUnitMultiplier = 0.7f;
         var label = Ui("Label", puzzleBanner);
         Stretch(label);
         label.offsetMin = new Vector2(0f, 6f);
-        var text = Txt(label, GameText.ObjectiveCompleted, 64, Ink, TextAnchor.MiddleCenter, true);
-        text.font = HandFont;
+        var text = Txt(label, GameText.ObjectiveCompleted, 64, Ink, TextAnchor.MiddleCenter);
+        text.font = ParkArt.TitleFont;
         Place(puzzleBanner, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 200f), new Vector2(text.preferredWidth + 2f * 90f, 150f));
         puzzleGroup = puzzleBanner.gameObject.AddComponent<CanvasGroup>();
         puzzleGroup.alpha = 0f;
@@ -588,16 +684,15 @@ public class GameHud : MonoBehaviour
         Row(body, 0f, new RectOffset(26, 26, 10, 12));
         Fit(body);
         bubbleText = Txt(Ui("Label", body), "", 30, Ink, TextAnchor.MiddleCenter);
-        bubbleText.font = HandFont;
     }
 
-    // Top left: a hand-drawn title (the part you're on, UI/Buttons/objective_main) with a yellow panel of its steps
-    // (UI/Buttons/objective_steps) that drops down from under it. Both are sliced, so their drawn edges keep their
-    // shape whatever size the text makes them.
+    // Top left: a hand-drawn yellow title strip (the part you're on, UI/Menu/main_objective) with a pink panel of its
+    // steps (UI/Menu/side_objective) that drops down from under it, both ObjectiveWidth wide. Both are sliced, so their
+    // drawn edges keep their shape whatever size the text makes them.
     void BuildObjectives()
     {
         var column = Ui("Objectives", canvas);
-        Place(column, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, -40f), Vector2.zero);
+        Place(column, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(36f, -36f), Vector2.zero);
         Column(column, 0f, new RectOffset());
         Fit(column);
 
@@ -610,15 +705,16 @@ public class GameHud : MonoBehaviour
         objectives.alpha = 0f;
 
         var banner = Ui("Title", panel);
-        Img(banner, "UI/Buttons/objective_main", Color.white).pixelsPerUnitMultiplier = 3.2f; // edges drawn ~50 wide
+        Img(banner, "UI/Menu/main_objective", Color.white).pixelsPerUnitMultiplier = 1f;
         bannerSize = banner.gameObject.AddComponent<LayoutElement>();
-        bannerSize.preferredWidth = TitleMinWidth; // fitted to the title's text in ShowPart
-        bannerSize.preferredHeight = 92f;
+        bannerSize.preferredWidth = ObjectiveWidth; // wider for a long title (ShowPart)
+        bannerSize.preferredHeight = TitleHeight;
         var title = Ui("Label", banner);
         Stretch(title);
-        title.offsetMin = new Vector2(TitlePadLeft, 4f);
-        objectiveTitle = Txt(title, "", 38, Ink, TextAnchor.MiddleLeft, true);
-        objectiveTitle.font = HandFont;
+        title.offsetMin = new Vector2(TitlePad, 0f);
+        title.offsetMax = new Vector2(-TitlePad, -6f); // a touch below the middle, as drawn
+        objectiveTitle = Txt(title, "", TitleSize, Ink, TextAnchor.MiddleCenter);
+        objectiveTitle.font = ParkArt.TitleFont;
         objectiveBanner = banner;
 
         // The steps hang from the bottom of a box that grows and shrinks (and clips them), so they slide out from
@@ -631,14 +727,16 @@ public class GameHud : MonoBehaviour
         stepList.anchorMax = new Vector2(1f, 0f);
         stepList.pivot = new Vector2(0.5f, 0f);
         stepList.anchoredPosition = stepList.sizeDelta = Vector2.zero;
+        stepList.offsetMin = new Vector2(StepsInset, 0f); // a little in from the title's left edge
         // The picture on a child the layout skips: as the list's own Image it would ask for its full drawn size.
         var art = Ui("Art", stepList);
         Stretch(art);
         art.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
-        Img(art, "UI/Buttons/objective_steps", Color.white).pixelsPerUnitMultiplier = 5f; // corners ~56 wide
+        Img(art, "UI/Menu/side_objective", Color.white).pixelsPerUnitMultiplier = 1f;
         // A little more room at the top than at the bottom: its top StepsTuck hides under the title.
-        Column(stepList, 4f, new RectOffset(48, 44, 36, 34));
-        stepList.gameObject.AddComponent<LayoutElement>().minWidth = StepsMinWidth; // otherwise as wide as its steps
+        Column(stepList, 0f, new RectOffset(52, 30, 32, 30));
+        stepsSize = stepList.gameObject.AddComponent<LayoutElement>();
+        stepsSize.minWidth = ObjectiveWidth - StepsNarrower; // a bit narrower than the title (ShowPart), not just its steps
         stepList.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         stepsGroup = stepList.gameObject.AddComponent<CanvasGroup>();
         banner.SetAsLastSibling(); // drawn over the steps tucked under it (laid out first all the same, see above)
@@ -653,25 +751,58 @@ public class GameHud : MonoBehaviour
         gripRow = grip.gameObject;
     }
 
-    // Bottom left: a dim strip with one line, shown when a step gets done.
-    void BuildStepPopup()
+    // Top right: the events, right-aligned white lines stacking down (UpdateEvents).
+    void BuildEvents()
     {
-        var popup = Ui("Step Done", canvas);
-        Place(popup, Vector2.zero, Vector2.zero, new Vector2(0f, 120f), new Vector2(560f, 58f));
-        doneGroup = popup.gameObject.AddComponent<CanvasGroup>();
-        doneGroup.alpha = 0f;
-        doneBody = Ui("Body", popup);
-        doneBody.anchorMin = Vector2.zero;
-        doneBody.anchorMax = new Vector2(0f, 1f);
-        doneBody.pivot = new Vector2(0f, 0.5f);
-        doneBody.anchoredPosition = Vector2.zero;
-        doneBody.sizeDelta = Vector2.zero;
-        Img(doneBody, null, new Color(0.1f, 0.07f, 0.1f, 0.55f));
-        Row(doneBody, 0f, new RectOffset(36, 44, 8, 8)).childAlignment = TextAnchor.MiddleLeft;
-        doneBody.gameObject.AddComponent<ContentSizeFitter>().horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-        doneText = Txt(Ui("Label", doneBody), "", 28, Color.white);
-        doneText.font = HandFont;
-        doneText.gameObject.AddComponent<LayoutElement>().minWidth = 440f;
+        eventList = Ui("Events", canvas);
+        Place(eventList, Vector2.one, Vector2.one, new Vector2(-60f, -50f), Vector2.zero);
+        var column = Column(eventList, 2f, new RectOffset());
+        column.childAlignment = TextAnchor.UpperRight;
+        Fit(eventList);
+    }
+
+    // Bottom right, over the pause menu: a turning ring and "Saving...".
+    void BuildSaving()
+    {
+        var go = new GameObject("Saving", typeof(RectTransform));
+        go.transform.SetParent(canvas, false);
+        var c = go.AddComponent<Canvas>();
+        c.overrideSorting = true;
+        c.sortingOrder = 30;
+        Stretch((RectTransform)go.transform);
+        saving = go.AddComponent<CanvasGroup>();
+        saving.alpha = 0f;
+        var row = Ui("Row", (RectTransform)go.transform);
+        Place(row, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-60f, 50f), Vector2.zero);
+        Row(row, 14f);
+        Fit(row);
+        savingSpinner = Ui("Spinner", row);
+        var ring = savingSpinner.gameObject.AddComponent<RawImage>();
+        ring.texture = Ring(64);
+        ring.raycastTarget = false;
+        var le = savingSpinner.gameObject.AddComponent<LayoutElement>();
+        le.preferredWidth = le.preferredHeight = 30f;
+        var text = Txt(Ui("Label", row), GameText.Saving, 26, Color.white);
+        text.gameObject.AddComponent<Shadow>().effectColor = new Color(0f, 0f, 0f, 0.7f);
+    }
+
+    // A white ring with a gap in it, `size` px.
+    static Texture2D Ring(int size)
+    {
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        var px = new Color32[size * size];
+        float r = size * 0.5f;
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                Vector2 p = new(x + 0.5f - r, y + 0.5f - r);
+                float d = p.magnitude, angle = Mathf.Atan2(p.y, p.x) * Mathf.Rad2Deg;
+                float a = Mathf.Clamp01(Mathf.Min(r - 1f - d, d - (r - 8f))) * (angle > 20f && angle < 70f ? 0f : 1f);
+                px[y * size + x] = new Color32(255, 255, 255, (byte)(a * 255f));
+            }
+        tex.SetPixels32(px);
+        tex.Apply();
+        return tex;
     }
 
     void BuildPrompt()

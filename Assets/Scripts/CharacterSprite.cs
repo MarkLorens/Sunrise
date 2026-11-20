@@ -12,6 +12,9 @@ using UnityEngine;
 // with the body's; faces with a _closed frame blink.
 // Staff can be workers (character = "worker_<role>"): Resources/Workers/worker_<role>_body with its own
 // worker_<role>_face on the same canvas, and Expression() swaps in worker_face_<name> (surprised_1, surprised_2).
+// Scared (panicFace / panicBody): lineart bodies switch to body_<variant>_panic (arms up, with its own fills) and the
+// face to one of Resources/ArtLineartHeadPanic/face_panic_<n> (each visitor has their own).
+// The mascot (character = "mascot"): Resources/Mascot/mascot_idle, mascot_pose_1/2 (poses) and mascot_panic.
 [RequireComponent(typeof(SpriteRenderer))]
 public class CharacterSprite : MonoBehaviour
 {
@@ -28,6 +31,12 @@ public class CharacterSprite : MonoBehaviour
     // Held pose that overrides walking/idle (e.g. confused, knocked down). Null = automatic.
     [HideInInspector] public Sprite pose;
     [HideInInspector] public bool running;
+    // Scared: the panic face (gawking at a scene) and the panic body (running from it). Null art = no change.
+    [HideInInspector] public Sprite panic;
+    [HideInInspector] public Sprite[] poses = new Sprite[0]; // the mascot's show-off poses
+    [HideInInspector] public bool panicFace, panicBody;
+    // Rocking from side to side on the spot, as if walking (the mascot showing off in a pose).
+    [HideInInspector] public bool dance;
     // True while they're walking (moving, visible, not held in a pose): Footsteps plays while this is on.
     public bool Stepping { get; private set; }
 
@@ -53,7 +62,8 @@ public class CharacterSprite : MonoBehaviour
     static readonly Dictionary<Sprite, Vector3> handAnchors = new();
     Transform head;
     SpriteRenderer face;
-    Sprite faceOpen, faceClosed;
+    Sprite faceOpen, faceClosed, facePanic;
+    static Sprite[] panicFaces;
     float nextBlink, blinkUntil;
     readonly List<(SpriteRenderer r, Color c)> headParts = new();
 
@@ -105,6 +115,7 @@ public class CharacterSprite : MonoBehaviour
             // Lineart bodies only have the idle pose so far; the other poses borrow it until they're drawn.
             string line = $"ArtLineartTorso/{character}_";
             idle = Resources.Load<Sprite>(line + "idle");
+            panic = Resources.Load<Sprite>(line + "panic");
             think = interact = fallDown = idle;
             cheer = new[] { idle, idle };
             drawnFacingLeft = true;
@@ -129,6 +140,14 @@ public class CharacterSprite : MonoBehaviour
             }
             ApplyTint();
         }
+        else if (character == "mascot")
+        {
+            idle = Resources.Load<Sprite>("Mascot/mascot_idle");
+            panic = Resources.Load<Sprite>("Mascot/mascot_panic");
+            poses = new[] { Resources.Load<Sprite>("Mascot/mascot_pose_1"), Resources.Load<Sprite>("Mascot/mascot_pose_2") };
+            think = interact = fallDown = idle;
+            cheer = new[] { idle, idle };
+        }
         else
         {
             string path = $"Visitors/{character}/character_{character}_";
@@ -148,6 +167,7 @@ public class CharacterSprite : MonoBehaviour
     void LoadFills(string line)
     {
         var poses = new List<(string name, Sprite sprite)> { ("idle", idle) };
+        if (panic != null) poses.Add(("panic", panic));
 
         for (int k = 0; k < FillLayers.Length; k++)
         {
@@ -206,6 +226,9 @@ public class CharacterSprite : MonoBehaviour
             faceClosed = HeadArt(id + "_closed");
             face = HeadPart("Face", faceOpen, -0.002f, Color.white);
             nextBlink = Time.time + Random.Range(1f, 4f);
+            // A random panic face of their own, kept for good.
+            panicFaces ??= Resources.LoadAll<Sprite>("ArtLineartHeadPanic");
+            if (panicFaces.Length > 0) facePanic = panicFaces[Random.Range(0, panicFaces.Length)];
         }
         if (hairIds.Count > 0)
         {
@@ -365,6 +388,9 @@ public class CharacterSprite : MonoBehaviour
                 if (Time.time > nextBlink) { blinkUntil = Time.time + 0.12f; nextBlink = Time.time + Random.Range(2f, 5f); }
                 face.sprite = Time.time < blinkUntil ? faceClosed : faceOpen;
             }
+            // Scared: the panic face, no blinking.
+            if (facePanic != null && (panicFace || panicBody)) face.sprite = facePanic;
+            else if (facePanic != null && face.sprite == facePanic) face.sprite = faceOpen;
             if (expression != null)
             {
                 face.sprite = Time.time < expressionUntil ? expression : faceOpen;
@@ -466,13 +492,19 @@ public class CharacterSprite : MonoBehaviour
 
         bool stepping = false;
         bool twitching = Time.time < twitchUntil;
-        if (twitching) body.sprite = (int)(Time.time * 14f) % 2 == 0 ? cheer[0] : idle;
+        // Scared, the panic body stands in for the idle one (lineart cheering borrows idle too).
+        Sprite standing = panicBody && panic != null ? panic : idle;
+        if (twitching)
+        {
+            var jolt = (int)(Time.time * 14f) % 2 == 0 ? cheer[0] : idle;
+            body.sprite = jolt == idle ? standing : jolt;
+        }
         else if (Time.time < gestureUntil) body.sprite = gesture;
-        else if (Time.time < cheerUntil) body.sprite = cheer[(int)(Time.time * 6f) % 2];
+        else if (Time.time < cheerUntil) body.sprite = cheer[(int)(Time.time * 6f) % 2] == idle ? standing : cheer[(int)(Time.time * 6f) % 2];
         else if (pose != null) body.sprite = pose;
         else
         {
-            body.sprite = idle;
+            body.sprite = standing;
             stepping = moving;
         }
         SyncFills();
@@ -481,8 +513,11 @@ public class CharacterSprite : MonoBehaviour
         // The waddle: they rock from foot to foot round their feet (the sprite's pivot), a step to each side per rock,
         // stretching up a touch as they pass upright and settling a touch at each lean. Quicker the faster they go and
         // wider when running; it eases in as they set off and back to standing straight when they stop.
-        stride = Mathf.MoveTowards(stride, stepping ? 1f : 0f, Time.deltaTime * 5f);
-        waddle = (waddle + Time.deltaTime * (waddleRate + speed * waddlePerSpeed) * Mathf.PI * 2f) % (Mathf.PI * 2f);
+        // Dancing on the spot, they rock as if walking at an easy pace (2 units/second) without going anywhere.
+        bool dancing = dance && body.enabled;
+        stride = Mathf.MoveTowards(stride, stepping || dancing ? 1f : 0f, Time.deltaTime * 5f);
+        float pace = dancing && !moving ? 2f : speed;
+        waddle = (waddle + Time.deltaTime * (waddleRate + pace * waddlePerSpeed) * Mathf.PI * 2f) % (Mathf.PI * 2f);
         float lean = Mathf.Sin(waddle) * waddleAngle * (running ? 1.4f : 1f) * stride;
         float lift = (Mathf.Abs(Mathf.Cos(waddle)) - 0.5f) * stepBounce * (running ? 1.5f : 1f) * stride;
         float sx = 1f - lift * 0.5f, sy = 1f + lift;

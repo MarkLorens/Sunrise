@@ -87,7 +87,10 @@ public static class ParkArt
         }
     }
 
-    public static Font Font => font != null ? font : font = Resources.Load<Font>("Park/Fonts/Fredoka");
+    // Ordinary text is Arvo; titles (menus, the objective's name, banners) are Atma.
+    public static Font Font => font != null ? font : font = Resources.Load<Font>("Park/Fonts/Arvo-Regular");
+    public static Font TitleFont => titleFont != null ? titleFont : titleFont = Resources.Load<Font>("Park/Fonts/Atma-Bold");
+    static Font titleFont;
 
     // Resources/Park/<path>, or Resources/<path> for the older icons.
     public static Sprite Get(string path)

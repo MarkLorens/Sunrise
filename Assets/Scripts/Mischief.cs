@@ -109,6 +109,16 @@ public static class Mischief
     {
         if (!done.Add(t)) return;
         Sfx.Play(Sfx.TaskDone, 0.7f);
-        GameHud.StepDone(GameText.StepDone(t)); // the pop-up at the bottom left
+        GameHud.StepDone(GameText.StepDone(t)); // the events, top right
+        if (Listed(t)) SaveGame.AutoSave = true; // a step crossed off the objectives: save (GameHud does, when it can)
+    }
+
+    // On the objectives list (Parts), not one of the hidden steps in between.
+    static bool Listed(Task t)
+    {
+        foreach (var (_, steps) in Parts)
+            foreach (var (task, _) in steps)
+                if (task == t) return true;
+        return false;
     }
 }

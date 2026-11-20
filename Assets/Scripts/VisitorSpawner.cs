@@ -55,7 +55,7 @@ public class VisitorSpawner : MonoBehaviour
     public string balloonCharacter = "worker_balloon";
     public Vector3 balloonSpot = new(1.4f, 0f, -0.7f);  // beside the balloon stand, a little in front (mirrored if blocked)
 
-    public string mascotCharacter = "femalePersonPink";
+    public string mascotCharacter = "mascot";
     public string mascotName = "Mascot";
     public Transform mascotPost;     // in front of the locker room's propane fan; empty = no mascot
 
@@ -89,7 +89,7 @@ public class VisitorSpawner : MonoBehaviour
                 && new Vector2(d.x, d.z).magnitude <= gossipRange)
                 near.Add(v);
         }
-        if (near.Count > 0) GameHud.Shout(near[Random.Range(0, near.Count)].transform, heard[Random.Range(0, heard.Count)], 2.5f);
+        if (near.Count > 0) GameHud.Shout(near[Random.Range(0, near.Count)].transform, heard[Random.Range(0, heard.Count)], 2.5f, true);
     }
 
     void Start()

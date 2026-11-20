@@ -1,17 +1,19 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
 // In-game pause: Esc (or a gamepad's Start) opens and closes it. The park freezes (time stops, sound pauses, the
-// player's keys do nothing) behind a dimmed screen with the same buttons as the main menu (MainMenu's builders).
-// GameHud puts it on the player.
+// player's keys do nothing) behind "PAUSED" and the same kind of menu as the main menu's (MainMenu's builders), over
+// the park blurred and dimmed (ScreenBlur). Save Game asks which slot (SaveSlotMenu) and saves with the blur's sharp
+// shot of the park for the Load Game card; GameHud shows "Saving...". GameHud puts it on the player.
 public class PauseMenu : MonoBehaviour
 {
     public static bool Paused { get; private set; }
 
     GameObject screen;
-    UnityEngine.UI.Button settingsButton;
-    int settingsClosedFrame = -1;
+    ScreenBlur blur;
+    RectTransform column;
+    UnityEngine.UI.Button settingsButton, saveButton;
+    int menuClosedFrame = -1; // a screen on top of this one (settings, save slots) closed: its Esc isn't this one's
 
     void Awake()
     {
@@ -19,13 +21,14 @@ public class PauseMenu : MonoBehaviour
         var canvas = MainMenu.Screen("Pause Menu", 20); // over the HUD
         var dim = MainMenu.Ui("Dim", canvas);
         MainMenu.Stretch(dim);
-        MainMenu.Img(dim, null, new Color(0.02f, 0.01f, 0.05f, 0.6f)); // also stops clicks reaching the HUD
-        var column = MainMenu.Column(canvas);
-        MainMenu.Title(column, "Paused", 560f, 64);
+        MainMenu.Img(dim, null, MainMenu.PauseShade).raycastTarget = true; // also stops clicks reaching the HUD
+        blur = ScreenBlur.Add(canvas, Color.white);
+        column = MainMenu.Column(canvas);
+        MainMenu.Title(column, "PAUSED", 560f, 80);
         MainMenu.Button(column, "Continue", () => SetPaused(false));
-        MainMenu.Button(column, "Save Game", () => GameHud.Say(SaveGame.Save() ? GameText.Saved : GameText.CantSave));
-        settingsButton = MainMenu.Button(column, "Settings", OpenSettings);
-        MainMenu.Button(column, "Back to Main Menu", BackToMainMenu);
+        saveButton = MainMenu.Button(column, "Save Game", Save);
+        settingsButton = MainMenu.Button(column, "Options", OpenSettings);
+        MainMenu.Button(column, "Exit to Main Menu", BackToMainMenu);
         screen = canvas.gameObject;
         screen.SetActive(false);
     }
@@ -39,11 +42,28 @@ public class PauseMenu : MonoBehaviour
 
     void Update()
     {
-        // Esc in the settings screen goes back to this one, not out of the pause.
-        if (SettingsMenu.IsOpen || Time.frameCount == settingsClosedFrame) return;
-        bool toggle = (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
-                      || (Gamepad.current != null && Gamepad.current.startButton.wasPressedThisFrame);
-        if (toggle) SetPaused(!Paused);
+        // Esc in the settings or the save slots goes back to this one, not out of the pause.
+        if (SettingsMenu.IsOpen || SaveSlotMenu.IsOpen || ConfirmDialog.IsOpen || Time.frameCount == menuClosedFrame) return;
+        if (Controls.Pause) SetPaused(!Paused); // Esc, or a gamepad's Start
+    }
+
+    // The slots pop up in place of the menu (the park stays blurred behind).
+    void Save()
+    {
+        if (!SaveGame.CanSave)
+        {
+            GameHud.Say(GameText.CantSave);
+            return;
+        }
+        column.gameObject.SetActive(false);
+        SaveSlotMenu.Open(21, blur.Shot, saved =>
+        {
+            menuClosedFrame = Time.frameCount;
+            column.gameObject.SetActive(true);
+            MainMenu.Select(saveButton);
+            if (saved == true) GameHud.Saving();
+            else if (saved == false) GameHud.Say(GameText.CantSave);
+        });
     }
 
     // The settings screen takes the pause menu's place until Back.
@@ -52,7 +72,7 @@ public class PauseMenu : MonoBehaviour
         screen.SetActive(false);
         SettingsMenu.Open(20, () =>
         {
-            settingsClosedFrame = Time.frameCount;
+            menuClosedFrame = Time.frameCount;
             screen.SetActive(true);
             MainMenu.Select(settingsButton);
         });

@@ -12,7 +12,7 @@ using UnityEngine.UI;
 //    3 float around with W A S D                                9 the valve: K cranks it up, three times
 //    4 a visitor is held still and lit up                      10 J leaves the body
 //    5 J possesses them                                        11 a visitor goes in: geyser, evil laugh
-//    6 "Let's complete an objective!"                          12 the pop-up (bottom left) is lit up
+//    6 "Let's complete an objective!"                          12 the events (top right) are lit up
 // While a step points at something, the park goes dark except for it: someone or something in the park is lit in its
 // own shape, with a soft glow of light round it (TutorialSpotlight); a piece of the HUD gets a soft rounded spotlight
 // and breathes a little. A card at the bottom says what to do, and under it, on a line of their own, the keys to
@@ -43,8 +43,6 @@ public class Tutorial : MonoBehaviour
     static readonly Color CardFaint = new(0.17f, 0.1f, 0.13f, 0.55f);
     static readonly Color CardShadow = new(0f, 0f, 0f, 0.35f);
 
-    static Font hand;
-    static Font HandFont => hand != null ? hand : hand = Resources.Load<Font>("Park/Fonts/LoveYaLikeASister") ?? ParkArt.Font;
 
     Possession spirit;
     ToiletPrank prank;
@@ -298,8 +296,7 @@ public class Tutorial : MonoBehaviour
         while (true)
         {
             meanwhile?.Invoke();
-            var kb = Keyboard.current;
-            if (kb != null && !PauseMenu.Paused && (kb.spaceKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame)) yield break;
+            if (!PauseMenu.Paused && Controls.Skip) yield break; // Space or Enter
             yield return null;
         }
     }
@@ -387,8 +384,7 @@ public class Tutorial : MonoBehaviour
         float dt = Time.unscaledDeltaTime;
 
         // Hold Space to skip.
-        var kb = Keyboard.current;
-        bool holding = Active && !PauseMenu.Paused && kb != null && kb.spaceKey.isPressed;
+        bool holding = Active && !PauseMenu.Paused && Controls.SkipHeld;
         skipHeld = holding ? skipHeld + dt : Mathf.MoveTowards(skipHeld, 0f, dt * 3f);
         skipFill.fillAmount = skipHeld / SkipHold;
         skip.alpha = Mathf.MoveTowards(skip.alpha, Active ? 1f : 0f, dt * 4f);
@@ -834,7 +830,7 @@ public class Tutorial : MonoBehaviour
         Row(body, 0f, new RectOffset(26, 26, 10, 12));
         Fit(body);
         bubbleText = Txt(Ui("Label", body), "", 30, Ink, TextAnchor.MiddleCenter);
-        bubbleText.font = HandFont;
+        bubbleText.font = ParkArt.Font;
         // Keep its size steady while the line types out: the full line sizes it, invisibly.
         body.gameObject.AddComponent<BubbleSizer>().Init(bubbleText, () => bubbleLine);
         bubble.SetAsFirstSibling(); // under the dark overlay: what's lit stays the brightest thing
@@ -945,7 +941,7 @@ public class Tutorial : MonoBehaviour
     static Text Txt(RectTransform rt, string text, int size, Color color, TextAnchor align = TextAnchor.MiddleLeft)
     {
         var t = rt.gameObject.AddComponent<Text>();
-        t.font = HandFont;
+        t.font = ParkArt.Font;
         t.fontSize = size;
         t.color = color;
         t.alignment = align;
