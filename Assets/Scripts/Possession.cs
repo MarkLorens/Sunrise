@@ -237,6 +237,8 @@ public class Possession : MonoBehaviour
         {
             Release();
             GameHud.Say(GameText.LeftBody);
+            // Tutorial already says a leave line in its own bubble; don't stack a second one.
+            if (!Tutorial.Active) GameHud.Think(GameText.PickLeaveBody());
         }
     }
 

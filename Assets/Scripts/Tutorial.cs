@@ -238,7 +238,7 @@ public class Tutorial : MonoBehaviour
         var host = spirit.Host;
         var lastBody = host; // not the one who goes in next
         if (host != null) FocusOn(host.transform);
-        Say(GameText.TutorialLeaveSays);
+        Say(GameText.PickLeaveBody());
         Card(GameText.TutorialLeave);
         while (spirit.Host != null) yield return null;
         Mischief.Complete(Mischief.Task.TutorialLeave);
