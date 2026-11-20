@@ -209,7 +209,7 @@ public class GroundWalker : MonoBehaviour
                 right = Mathf.Max(right, p.x);
             }
             if (left > right) (left, right) = (s.bounds.min.x, s.bounds.max.x);
-            Vector3 c = map.GetCellCenterWorld(cell);
+            Vector3 c = map.GetCellCenterWorld(cell) + Vector3.forward * map.GetTransformMatrix(cell).m23; // a tile nudged off its cell
             footprints.Add(Rect.MinMaxRect(c.x + left, c.z - ObjectFront, c.x + right, c.z - ObjectFront));
         }
     }
