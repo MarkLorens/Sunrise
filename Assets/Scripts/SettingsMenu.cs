@@ -1,10 +1,9 @@
 using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-// The settings screen, opened from the pause menu. One row per setting (Settings): left/right arrow keys, a gamepad
+// The settings screen (Options), opened from the main menu or the pause menu. One row per setting (Settings): left/right arrow keys, a gamepad
 // stick, or clicking the row's left or right half steps it down or up; Enter steps it up. Back (or Esc) closes it.
 // Changes apply and are kept straight away.
 public class SettingsMenu : MonoBehaviour
@@ -25,11 +24,14 @@ public class SettingsMenu : MonoBehaviour
 
     void Build(RectTransform canvas)
     {
+        // Over the main menu: the dark blue. In the park: the park, blurred and dimmed like the pause menu.
         var dim = MainMenu.Ui("Dim", canvas);
         MainMenu.Stretch(dim);
-        MainMenu.Img(dim, null, new Color(0.02f, 0.01f, 0.05f, 0.6f));
+        bool inPark = Possession.Instance != null;
+        MainMenu.Img(dim, null, inPark ? MainMenu.PauseShade : MainMenu.Night).raycastTarget = true;
+        if (inPark) ScreenBlur.Add(canvas, Color.white);
         var column = MainMenu.Column(canvas);
-        MainMenu.Title(column, "Settings", 560f, 64);
+        MainMenu.Title(column, "OPTIONS", 560f, 80);
 
         var resolutions = Settings.Resolutions();
         var first = Row(column, "Master volume", () => $"{Mathf.RoundToInt(Settings.Volume * 100f)}%",
@@ -62,9 +64,7 @@ public class SettingsMenu : MonoBehaviour
 
     void Update()
     {
-        bool back = (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
-                    || (Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame);
-        if (back) Close();
+        if (Controls.Back) Close(); // Esc, or a gamepad's B
     }
 
     void Close()

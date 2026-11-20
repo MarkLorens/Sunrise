@@ -1,13 +1,12 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.Tilemaps;
 
 // Walks on the X/Z floor, but only onto cells that have a tile on the ground tilemap, not into anything on the
 // Objects tilemap (trees, lamps, benches, fences: things you bump into; walk-over decor like flowers and bushes
 // lives on its own Decor tilemap) or into a prop with a Box Collider (the stalls), and, for visitors, not into a
 // staff-only area: StaffArea, nor onto ground behind a fingerprint lock: FingerprintArea.
-// Driven by WASD/arrows when readKeyboard is on, otherwise by whatever sets `move`: the visitor and staff AI call
+// Driven by Player/Move (WASD/arrows, Controls) when readKeyboard is on, otherwise by whatever sets `move`: the visitor and staff AI call
 // WalkTo, which finds a way around whatever's in the way (NavGrid).
 // Gravity + the ground's collider keep it standing on the floor.
 [RequireComponent(typeof(Rigidbody))]
@@ -68,14 +67,8 @@ public class GroundWalker : MonoBehaviour
         rb.linearVelocity = new Vector3(v.x, rb.linearVelocity.y, v.y);
     }
 
-    static Vector2 KeyboardInput()
-    {
-        var kb = Keyboard.current;
-        if (kb == null || Possession.InputBlocked) return Vector2.zero;
-        return new Vector2(
-            (kb.dKey.isPressed || kb.rightArrowKey.isPressed ? 1 : 0) - (kb.aKey.isPressed || kb.leftArrowKey.isPressed ? 1 : 0),
-            (kb.wKey.isPressed || kb.upArrowKey.isPressed ? 1 : 0) - (kb.sKey.isPressed || kb.downArrowKey.isPressed ? 1 : 0)).normalized;
-    }
+    // Player/Move in the project's input actions (Controls).
+    static Vector2 KeyboardInput() => Possession.InputBlocked ? Vector2.zero : Controls.Move;
 
     public bool IsWalkable(Vector3 worldPos)
     {

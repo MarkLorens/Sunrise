@@ -96,6 +96,19 @@ public class CameraRig : MonoBehaviour
 
     public static void EndZoom() => Zoom(1f);
 
+    // Something else has the shot (a spotlight, a zoom) or the camera's still easing back to the player after one.
+    public static bool Busy
+    {
+        get
+        {
+            var rig = Instance;
+            if (rig == null) return false;
+            if (rig.spot != null || rig.zoomTarget != 1f || rig.zoom != 1f) return true;
+            int me = rig.target != null ? rig.group.FindMember(rig.target) : -1;
+            return me >= 0 && rig.group.Targets[me].Weight < 1f;
+        }
+    }
+
     void Awake()
     {
         Instance = this;

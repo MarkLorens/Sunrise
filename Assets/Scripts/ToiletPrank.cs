@@ -18,6 +18,9 @@ public class ToiletPrank : MonoBehaviour
     static readonly Color[] Poop = { new(0.78f, 0.52f, 0.26f), new(0.62f, 0.4f, 0.18f), new(0.88f, 0.66f, 0.38f), new(0.5f, 0.3f, 0.12f) };
     static readonly Color SignRed = new(0.85f, 0.28f, 0.24f);
     static readonly Color PipeGrey = new(0.55f, 0.6f, 0.68f);
+    // The middle of the hole in the broken roof (Props/toilet_broken), as a share of the picture's width and height
+    // from its bottom middle (where its feet are): the geyser comes out here.
+    static readonly Vector2 RoofHole = new(0.09f, 0.68f);
 
     public Transform Sign { get; private set; }
     public Transform Valve { get; private set; }
@@ -241,14 +244,18 @@ public class ToiletPrank : MonoBehaviour
         Settle();
         Sfx.Play(Sfx.Crash, 1f, 0.9f);
         Fx.Shake(0.45f, 0.6f);
-        // Out of the roof and up, in front of the block's picture (level with it, the puffs would hide behind it).
-        Vector3 roof = new(Block.center.x, Block.max.y, Door.z);
+        // Out of the hole in the broken roof and up. In front of the block's picture (level with it, the puffs would
+        // hide behind it), but slid straight toward the camera so on screen it still comes out of the hole.
+        Vector3 hole = transform.position + new Vector3(RoofHole.x * Block.size.x, RoofHole.y * Block.size.y, 0f);
+        var cam = Camera.main;
+        Vector3 toCam = cam != null ? (cam.transform.position - hole).normalized : Vector3.back;
+        Vector3 roof = hole + toCam * 1f;
         var frames = new[] { ParkArt.Get("Fx/poop_geyser_1"), ParkArt.Get("Fx/poop_geyser_2") };
         SpriteRenderer spout = null;
         if (frames[0] != null)
         {
             spout = ParkArt.Make("Geyser", null, "Fx/poop_geyser_1", geyserHeight, Color.white, ParkArt.OverheadOrder - 1);
-            spout.transform.position = roof - Vector3.up * 0.6f; // its foot down in the roof
+            spout.transform.position = roof; // its foot in the hole
         }
         Break();
         for (int i = 0; i < 10; i++)

@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 // The player: an evil spirit floating around the park, possessing visitors.
 //   Spirit:     WASD float anywhere in the park - J possess whoever you touch.
@@ -72,9 +71,8 @@ public class Possession : MonoBehaviour
 
     void Update()
     {
-        var kb = Keyboard.current;
-        bool live = !InputBlocked && kb != null;
-        bool j = live && kb.jKey.wasPressedThisFrame; // J: in when you're out, out when you're in
+        bool live = !InputBlocked;
+        bool j = live && Controls.Possess; // J: in when you're out, out when you're in
 
         switch (State)
         {

@@ -2907,6 +2907,11 @@ MonoBehaviour:
   cheer: []
   pose: {fileID: 0}
   running: 0
+  panic: {fileID: 0}
+  poses: []
+  panicFace: 0
+  panicBody: 0
+  dance: 0
 --- !u!114 &700000126
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7754,7 +7759,7 @@ MonoBehaviour:
   iceCreamBackOffset: {x: -0.83, y: 0, z: 0.4}
   balloonCharacter: worker_balloon
   balloonSpot: {x: 1.4, y: 0, z: -0.7}
-  mascotCharacter: femalePersonPink
+  mascotCharacter: mascot
   mascotName: Mascot
   mascotPost: {fileID: 388151176}
   gossipEvery: {x: 5, y: 10}
