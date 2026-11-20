@@ -353,10 +353,11 @@ public class FerrisWheel : MonoBehaviour
         // Flung cabins fall until they hit the ground.
         for (int i = 0; i < cabins.Count; i++)
         {
-            if (cabins[i].position.y <= 0.9f * Scale && cabinVelocity[i].y <= 0) continue; // landed (a cabin hangs from its top)
+            float landed = RaisedFloor.Height(cabins[i].position) + 0.9f * Scale; // a cabin hangs from its top
+            if (cabins[i].position.y <= landed && cabinVelocity[i].y <= 0) continue;
             cabinVelocity[i] += Vector3.down * 15f * Time.deltaTime;
             Vector3 p = cabins[i].position + cabinVelocity[i] * Time.deltaTime;
-            p.y = Mathf.Max(p.y, 0.9f * Scale);
+            p.y = Mathf.Max(p.y, landed);
             cabins[i].position = p;
             cabins[i].rotation = Quaternion.Euler(0, 0, cabinVelocity[i].x * -4f);
         }
@@ -385,7 +386,8 @@ public class FerrisWheel : MonoBehaviour
         Vector3 dir = new Vector3(rollDirection.x, 0f, rollDirection.z).normalized;
         float radius = wheelRadius * Scale;
         Vector3 p = wheel.position;
-        p.y = Mathf.MoveTowards(p.y, radius, 9f * Time.deltaTime);
+        float floor = RaisedFloor.Height(p); // the platform, or the ground once it's rolled off
+        p.y = Mathf.MoveTowards(p.y, floor + radius, 9f * Time.deltaTime);
 
         if (rolled < rollDistance)
         {
@@ -402,8 +404,8 @@ public class FerrisWheel : MonoBehaviour
             // Topple: tip back until it lies on the ground.
             var flat = Quaternion.Euler(90f, 0f, angle);
             wheel.rotation = Quaternion.RotateTowards(wheel.rotation, flat, 120f * Time.deltaTime);
-            p.y = Mathf.MoveTowards(p.y, 0.05f, radius * 1.4f * Time.deltaTime); // lands as it finishes tipping
-            if (Quaternion.Angle(wheel.rotation, flat) < 0.5f && p.y <= 0.06f)
+            p.y = Mathf.MoveTowards(p.y, floor + 0.05f, radius * 1.4f * Time.deltaTime); // lands as it finishes tipping
+            if (Quaternion.Angle(wheel.rotation, flat) < 0.5f && p.y <= floor + 0.06f)
             {
                 Set(State.Wrecked);
                 Fx.Shake(0.4f, 0.8f);

@@ -265,7 +265,7 @@ public class VisitorSpawner : MonoBehaviour
         // People don't collide with anything: they float on the floor plane and only the tile check limits them.
         var rb = go.AddComponent<Rigidbody>();
         rb.useGravity = false;
-        rb.constraints = RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotation;
+        rb.constraints = RigidbodyConstraints.FreezeRotation; // not Y: GroundWalker places the height (stairs)
         rb.interpolation = RigidbodyInterpolation.Interpolate;
 
         var walker = go.AddComponent<GroundWalker>();
