@@ -72,6 +72,7 @@ public class FerrisWheel : MonoBehaviour
         wheelHome = wheel.localPosition;
         if (!TryGetComponent(out FerrisWheelAudio _)) gameObject.AddComponent<FerrisWheelAudio>();
         var box = Part<ElectricalBox>("Electrical Box", electricalBoxOffset, "Props/electrical_box", 1.3f, electricalBoxArt, electricalBoxAt);
+        box.gameObject.AddComponent<ZapFx>(); // live electrics, always buzzing
         box.wheel = this;
         var mat = wheel.GetComponent<SpriteRenderer>().sharedMaterial;
         for (int i = 0; i < cabinCount; i++)

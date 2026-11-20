@@ -46,7 +46,7 @@ Material:
     - _DoodleStrength: 0
     - _QueueControl: 0
     - _QueueOffset: 0
-    - _SeeThroughCut: 1
+    - _SeeThroughCut: 0
     - _SwayScale: 0
     - _SwaySpeed: 0
     - _SwayStrength: 0

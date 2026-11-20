@@ -177,9 +177,8 @@ public class VisitorSpawner : MonoBehaviour
     // Every ice cream stand tile gets its back layer and a seller inside; every balloon stand tile, a seller beside it.
     void SpawnVendors()
     {
-        var map = ground.transform.parent.Find("Objects")?.GetComponent<Tilemap>();
-        if (map == null) return;
         var back = ParkArt.Get("Props/hot_dog_stand_back");
+        foreach (var map in GroundWalker.SolidMaps(ground)) // the stands are on See Through, as buildings
         foreach (var cell in map.cellBounds.allPositionsWithin)
         {
             var s = map.GetSprite(cell);
