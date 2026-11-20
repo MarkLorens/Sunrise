@@ -6,7 +6,7 @@ using UnityEngine.UI;
 // The HUD, built at runtime: the objectives (top left: the part of the level you're on on a yellow strip, and its
 // steps as bullets on the pink panel under it; a step that gets done is struck through and stays on the list), the
 // events (top right: a line for each thing the player does and each step done, the wording all in GameText), a
-// prompt floating over whatever you can possess / use (and why not, when E is refused), the intro banner, and
+// prompt floating over whatever you can possess / use (and why not, when E is refused), and
 // "Saving..." (bottom right) after Save Game. Titles are in Atma (ParkArt.TitleFont), the rest in Arvo.
 // It also gives the main camera its rig and the spirit its outline of what it can act on.
 public class GameHud : MonoBehaviour
@@ -14,8 +14,6 @@ public class GameHud : MonoBehaviour
     public static GameHud Instance { get; private set; }
     public static bool HideObjectives; // the objectives (top left) stay out of the way (the park tour, ParkTour)
 
-    public string objective = "Cut the Ferris wheel's power";
-    public Sprite spiritIcon; // the intro banner's icon (falls back to UI/spirit)
 
     static readonly Color PanelDark = new(0.12f, 0.08f, 0.12f, 0.8f);
     static readonly Color Ink = Color.black; // as in the design
@@ -96,8 +94,6 @@ public class GameHud : MonoBehaviour
     string refusal;
     float refusedAt = -10f;
     const float RefusalTime = 1.6f;
-    CanvasGroup intro;
-    float introAge;
     RectTransform bubble;
     CanvasGroup bubbleGroup;
     Text bubbleText;
@@ -229,7 +225,6 @@ public class GameHud : MonoBehaviour
         UpdateAutoSave();
         UpdateSaving();
         UpdateGrip();
-        UpdateBanners();
     }
 
     // Anything pinned over something in the world waits for the camera to move this frame: placed in Update it used
@@ -271,6 +266,13 @@ public class GameHud : MonoBehaviour
 
     void UpdateBubble()
     {
+        if (Tutorial.CardShowing) // the tutorial's card is talking: the spirit keeps its thoughts to itself
+        {
+            thoughts.Clear();
+            thoughtAge = thoughtShow;
+            bubbleGroup.alpha = 0f;
+            return;
+        }
         thoughtAge += Time.unscaledDeltaTime;
         if (thoughtAge >= thoughtShow && thoughts.Count > 0)
         {
@@ -619,16 +621,6 @@ public class GameHud : MonoBehaviour
         return r != null ? new Vector3(t.position.x, r.bounds.max.y + 0.4f, t.position.z) : t.position + Vector3.up * 2f;
     }
 
-    void UpdateBanners()
-    {
-        if (intro == null) return; // the intro banner's switched off (BuildIntro)
-        float dt = Time.unscaledDeltaTime;
-        introAge += dt;
-        if (spirit.Host != null && introAge < 9f) introAge = 9f; // got the idea
-        if (Tutorial.Active) introAge = 0f; // the intro banner waits for the tutorial, then plays
-        intro.alpha = Mathf.Min(Mathf.Clamp01((introAge - 0.5f) * 2f), Mathf.Clamp01((10f - introAge) * 2f));
-    }
-
     // ---------------------------------------------------------------- building the canvas
 
     void Build()
@@ -647,7 +639,6 @@ public class GameHud : MonoBehaviour
         BuildEvents();
         BuildSaving();
         BuildPrompt();
-        BuildIntro();
         BuildBubble();
         BuildPuzzleBanner();
     }
@@ -667,23 +658,43 @@ public class GameHud : MonoBehaviour
         puzzleGroup.alpha = 0f;
     }
 
-    // A light speech bubble with a little tail, its point at `bubble`'s position.
+    // The hand-drawn speech bubble (thoughts, shouts), its tail's tip at `bubble`'s position.
     void BuildBubble()
     {
         bubble = Ui("Speech Bubble", canvas);
         Place(bubble, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0f), Vector2.zero, new Vector2(10f, 10f));
         bubbleGroup = bubble.gameObject.AddComponent<CanvasGroup>();
         bubbleGroup.alpha = 0f;
-        var tail = Ui("Tail", bubble);
-        Place(tail, new Vector2(0.5f, 0f), new Vector2(0.5f, 0.5f), new Vector2(0f, 14f), new Vector2(18f, 18f));
-        tail.localRotation = Quaternion.Euler(0f, 0f, 45f);
-        Img(tail, null, Soft);
         var body = Ui("Body", bubble);
-        Place(body, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 18f), Vector2.zero);
-        Img(body, "UI/pill", Soft);
-        Row(body, 0f, new RectOffset(26, 26, 10, 12));
+        Place(body, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), Vector2.zero, Vector2.zero);
+        BubbleArt(body);
+        Row(body, 0f, new RectOffset(BubblePad.left, BubblePad.right, BubblePad.top, BubblePad.bottom));
         Fit(body);
         bubbleText = Txt(Ui("Label", body), "", 30, Ink, TextAnchor.MiddleCenter);
+    }
+
+    // The speech bubble's art (UI/Bubble/dialog_box_left and _right, cut from the artist's dialog box down the middle
+    // of its tail): two sliced halves side by side, so the tail keeps its shape however wide the line makes the bubble.
+    // The tip is at the bottom middle of `body`; `up`: the artist's other one (dialog_box_up_*), its tail on top.
+    // BubblePad / BubblePadUp: room round the words, inside the drawn line (and clear of the tail). Shared with the
+    // tutorial's card.
+    public static RectOffset BubblePad => new(30, 30, 22, 36); // made when asked: Unity won't build one in a static initializer
+    public static RectOffset BubblePadUp => new(30, 30, 36, 22);
+    const float BubbleArtScale = 3f; // the art is drawn big: a third of its pixels on screen
+
+    public static void BubbleArt(RectTransform body, bool up = false)
+    {
+        string art = up ? "UI/Bubble/dialog_box_up_" : "UI/Bubble/dialog_box_";
+        for (int i = 1; i >= 0; i--)
+        {
+            var half = Ui(i == 0 ? "Left" : "Right", body);
+            half.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+            half.anchorMin = new Vector2(i * 0.5f, 0f);
+            half.anchorMax = new Vector2(0.5f + i * 0.5f, 1f);
+            half.offsetMin = half.offsetMax = Vector2.zero;
+            Img(half, art + (i == 0 ? "left" : "right"), Color.white).pixelsPerUnitMultiplier = BubbleArtScale;
+            half.SetAsFirstSibling(); // behind the words
+        }
     }
 
     // Top left: a hand-drawn yellow title strip (the part you're on, UI/Menu/main_objective) with a pink panel of its
@@ -819,20 +830,6 @@ public class GameHud : MonoBehaviour
         promptCap = cap.gameObject;
         promptKey = cap.GetComponentInChildren<Text>();
         promptText = Txt(Ui("Label", body), "", 26, Color.white);
-    }
-
-    void BuildIntro()
-    {
-        var banner = Ui("Intro", canvas);
-        Place(banner, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -30f), Vector2.zero);
-        Img(banner, "UI/pill", PanelDark);
-        Row(banner, 14f, new RectOffset(26, 34, 10, 10));
-        Fit(banner);
-        intro = banner.gameObject.AddComponent<CanvasGroup>();
-        intro.alpha = 0f;
-        var icon = Icon(banner, "UI/spirit", 46f);
-        if (spiritIcon != null) icon.sprite = spiritIcon;
-        Txt(Ui("Text", banner), $"You are an evil spirit loose in a theme park. <b>{objective}</b>.", 26, new Color(0.98f, 0.9f, 1f));
     }
 
     // ---------------------------------------------------------------- UI helpers

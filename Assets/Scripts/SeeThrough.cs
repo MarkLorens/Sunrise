@@ -1,6 +1,8 @@
 using UnityEngine;
 
-// Keeps whoever you control visible when a tree, lamp or stall stands between them and the camera.
+// Keeps whoever you control visible when a building or a tree stands between them and the camera. Only those open up:
+// the See Through tilemap and sprites on Palletes/Shaders/SpriteLit2.5 SeeThrough (the Ferris wheel, the hot dog
+// stand, the statue, the info booth). Everything else (lamps, benches, bushes, people...) is drawn whole.
 // This half only measures: every frame it tells all shaders (as global values) where the player is and how big
 // the see-through hole should be. The sprite shader (SpriteLit3D, via Palletes/Shaders/SeeThrough.hlsl) reads
 // these and dithers away the pixels of anything in front of the player inside that circle.

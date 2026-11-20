@@ -102,10 +102,10 @@ TextureImporter:
       name: speaker_2
       rect:
         serializedVersion: 2
-        x: 597
-        y: 36
-        width: 880
-        height: 865
+        x: 661
+        y: 44
+        width: 967
+        height: 807
       alignment: 7
       pivot: {x: 0.5, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

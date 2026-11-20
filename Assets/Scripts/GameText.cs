@@ -281,6 +281,7 @@ public static class GameText
     public const string TutorialSign = "Press [K] to take down the sign.";
     // 9. The valve
     public const string TutorialValveSays = "Now, crank up this valve.";
+    public const string TutorialWalkValve = "Walk over to the water valve.";
     public const string TutorialValve = "Press [K] until the pressure is maxed out.";
     // 10. Leaving the body
     public const string TutorialLeaveSays = "Alright, this guy is useless to me now.";
