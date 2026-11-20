@@ -50,7 +50,8 @@ public class VisitorSpawner : MonoBehaviour
     // Stand sellers, one per stand tile on the Objects tilemap (no scene objects: paint a stand, it gets a seller).
     public string iceCreamCharacter = "worker_ice_cream";
     public Vector3 iceCreamSlot = new(0f, 0f, 0.25f);   // where the seller stands, from the tile's cell centre: in the gap
-    public Vector3 iceCreamBackOffset = new(-0.83f, 0f, 0.4f); // the back layer, from the front tile (like the hot dog stall's GlizzyBG)
+    public Vector3 iceCreamBackOffset = new(0f, 0f, 0.4f); // the back layer, from the front tile (like the hot dog stall's GlizzyBG)
+    public float iceCreamBackScale = 1.4f; // the back's drawing is narrower than the window: grown from its bottom middle to cover it
     public string balloonCharacter = "worker_balloon";
     public Vector3 balloonSpot = new(1.4f, 0f, -0.7f);  // beside the balloon stand, a little in front (mirrored if blocked)
 
@@ -178,7 +179,7 @@ public class VisitorSpawner : MonoBehaviour
     {
         var map = ground.transform.parent.Find("Objects")?.GetComponent<Tilemap>();
         if (map == null) return;
-        var back = ParkArt.Get("Props/ice_cream_back");
+        var back = ParkArt.Get("Props/hot_dog_stand_back");
         foreach (var cell in map.cellBounds.allPositionsWithin)
         {
             var s = map.GetSprite(cell);
@@ -199,7 +200,7 @@ public class VisitorSpawner : MonoBehaviour
         }
     }
 
-    // The stand's back: the tile's cut and scale, where the tile is, moved by iceCreamBackOffset.
+    // The stand's back: the tile's cut, where the tile is, moved by iceCreamBackOffset and grown by iceCreamBackScale.
     void BackLayer(Tilemap map, Vector3Int cell, Sprite art)
     {
         Matrix4x4 m = map.transform.localToWorldMatrix
@@ -208,7 +209,7 @@ public class VisitorSpawner : MonoBehaviour
         var r = new GameObject("Stand Back").AddComponent<SpriteRenderer>();
         r.transform.SetParent(transform, true);
         r.transform.SetPositionAndRotation((Vector3)m.GetColumn(3) + iceCreamBackOffset, m.rotation);
-        r.transform.localScale = m.lossyScale;
+        r.transform.localScale = m.lossyScale * iceCreamBackScale;
         r.sprite = art;
         var tr = map.GetComponent<TilemapRenderer>();
         r.sharedMaterial = tr.sharedMaterial;

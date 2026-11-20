@@ -223,7 +223,7 @@ public class Tutorial : MonoBehaviour
         yield return new WaitForSeconds(0.6f);
 
         // 9. The valve.
-        FocusOn(prank.Valve);
+        FocusOn(prank.Picture); // the valve's drawn on the block, so light the block
         Say(GameText.TutorialValveSays);
         while (!prank.Maxed)
         {

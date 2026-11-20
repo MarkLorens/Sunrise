@@ -7,7 +7,7 @@ using UnityEngine.Tilemaps;
 // up (ToiletValve), and the next visitor who goes in comes back out in a geyser, sending everyone nearby running.
 // The block's left broken (Props/toilet_broken), and a Reset Agent comes and puts up a caution sign
 // (Props/toilet_sign_caution), for good. Made by Tutorial, on a new game only.
-// ponytail: placeholder blocks until there's art at Resources/Park/Props/toilet_sign.png and toilet_valve.png.
+// The valve is drawn into the block's own tile (its left side), so the valve part is just an invisible spot to press K.
 public class ToiletPrank : MonoBehaviour
 {
     public const int Turns = 3; // cranks to max the pressure
@@ -17,7 +17,6 @@ public class ToiletPrank : MonoBehaviour
     // Light enough to read at night (the puff picture is soft and see-through, so it comes out darker than this).
     static readonly Color[] Poop = { new(0.78f, 0.52f, 0.26f), new(0.62f, 0.4f, 0.18f), new(0.88f, 0.66f, 0.38f), new(0.5f, 0.3f, 0.12f) };
     static readonly Color SignRed = new(0.85f, 0.28f, 0.24f);
-    static readonly Color PipeGrey = new(0.55f, 0.6f, 0.68f);
     // The middle of the hole in the broken roof (Props/toilet_broken), as a share of the picture's width and height
     // from its bottom middle (where its feet are): the geyser comes out here.
     static readonly Vector2 RoofHole = new(0.09f, 0.68f);
@@ -36,8 +35,7 @@ public class ToiletPrank : MonoBehaviour
     public int Pressure { get; private set; }
     public bool Maxed => Pressure >= Turns;
 
-    Transform wheel;
-    float wheelAngle, wheelShown;
+    Vector3 handle; // the drawn valve's handle, where the crank's splashes come out
     // The block's tile, put back after the copy has stood in for it while it rumbles.
     Tilemap tiles;
     Vector3Int cell;
@@ -72,21 +70,12 @@ public class ToiletPrank : MonoBehaviour
         // Just in front of the block's door (people bump into its front edge), and the sign right in their way.
         Door = feet + new Vector3(0f, 0f, -0.85f);
 
-        Sign = Part<ToiletSign>("Out Of Order Sign", Door + new Vector3(0f, 0f, 0.1f), "Props/toilet_sign", 1.1f, SignRed).transform;
+        Sign = Part<ToiletSign>("Out Of Order Sign", Door + new Vector3(0.35f, 1f, 0.8f), "Props/toilet_sign", 1.1f, SignRed).transform;
         if (ParkArt.Get("Props/toilet_sign") == null) Label(Sign, "OUT OF\nORDER", 1.1f);
 
-        Valve = Part<ToiletValve>("Water Valve", feet + new Vector3(size.x * 0.5f + 0.45f, 0f, -0.5f), "Props/toilet_valve", 1f, PipeGrey).transform;
-        if (ParkArt.Get("Props/toilet_valve") == null)
-        {
-            // A red handwheel on top of the pipe, with a spoke so you can see it turn.
-            wheel = new GameObject("Wheel").transform;
-            wheel.SetParent(Valve, false);
-            wheel.localPosition = new Vector3(0f, 1.05f, -0.06f);
-            ParkArt.Make("Rim", wheel, "Markers/ring", 0.5f, SignRed, 1);
-            var spoke = ParkArt.Make("Spoke", wheel, "Markers/white", 0.42f, SignRed, 1);
-            Vector3 s = spoke.sprite.bounds.size;
-            spoke.transform.localScale = new Vector3(0.07f / s.x, 0.42f / s.y, 1f);
-        }
+        // The pipe and valve drawn at the tile's left, ~15% in from its edge, handle ~23% up (bathroom.PNG).
+        Valve = Part<ToiletValve>("Water Valve", feet + new Vector3(-size.x * 0.35f, 0f, -0.5f), null, 0f, default).transform;
+        handle = new Vector3(Valve.position.x, feet.y + size.y * 0.23f, feet.z - 0.1f);
     }
 
     // The toilet block is a tile, drawn with the rest of its tilemap: this copy sits exactly where the tile is drawn, so
@@ -173,14 +162,14 @@ public class ToiletPrank : MonoBehaviour
         if (tiles != null) tiles.SetTile(cell, null);
     }
 
-    // Something you use with K, standing on the floor at `at`.
+    // Something you use with K, standing on the floor at `at`. No sprite: just the spot (it's drawn in the tile).
     T Part<T>(string name, Vector3 at, string sprite, float height, Color standIn) where T : MonoBehaviour
     {
         var go = new GameObject(name);
         go.SetActive(false); // so Interactable's Awake finds the rules component
         go.transform.SetParent(transform, true);
         go.transform.position = at;
-        ParkArt.Solid(go.transform, sprite, height, standIn);
+        if (sprite != null) ParkArt.Solid(go.transform, sprite, height, standIn);
         var part = go.AddComponent<T>();
         go.AddComponent<Interactable>().range = 1.8f;
         go.SetActive(true);
@@ -207,13 +196,6 @@ public class ToiletPrank : MonoBehaviour
         r.sortingOrder = 2;
     }
 
-    void Update()
-    {
-        if (wheel == null) return;
-        wheelShown = Mathf.MoveTowards(wheelShown, wheelAngle, 400f * Time.deltaTime);
-        wheel.localRotation = Quaternion.Euler(0f, 0f, -wheelShown);
-    }
-
     public void TakeDownSign()
     {
         if (SignDown) return;
@@ -228,12 +210,11 @@ public class ToiletPrank : MonoBehaviour
     {
         if (Maxed) return;
         Pressure++;
-        wheelAngle += 120f;
         Sfx.Play(Sfx.HitWood, 0.6f, 1f + 0.15f * Pressure);
-        Fx.Burst("Fx/sparkle", Valve.position + Vector3.up * 1.1f, 3 + Pressure * 2, Water, 1.5f + Pressure * 0.5f, 0.2f, 0.4f);
+        Fx.Burst("Fx/sparkle", handle, 3 + Pressure * 2, Water, 1.5f + Pressure * 0.5f, 0.2f, 0.4f);
         Fx.Shake(0.04f * Pressure);
         if (!Maxed) return;
-        Fx.Burst("Fx/puff", Valve.position + Vector3.up * 1.1f, 10, Water, 3f, 0.4f, 0.6f);
+        Fx.Burst("Fx/puff", handle, 10, Water, 3f, 0.4f, 0.6f);
         Mischief.Complete(Mischief.Task.TutorialValve);
     }
 
