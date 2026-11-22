@@ -37,13 +37,11 @@ public class Tutorial : MonoBehaviour
     const float SpiritZoom = 0.55f; // step 1's close-up on the spirit: lower = closer (0.55 = about 1.8x bigger)
     static readonly Color Shade = Color.black;
     static readonly Color Lilac = new(0.85f, 0.72f, 1f);  // the spirit's colour, like the outline's glow
-    static readonly Color PanelDark = new(0.12f, 0.08f, 0.12f, 0.9f);
     static readonly Color Ink = new(0.17f, 0.1f, 0.13f);
     static readonly Color Soft = new(0.96f, 0.92f, 0.88f);
     static readonly Color Faint = new(0.96f, 0.92f, 0.88f, 0.6f);
     // The instruction card: light, like the speech bubbles, so it stands out on the dark.
     static readonly Color CardInk = new(0.17f, 0.1f, 0.13f);
-    static readonly Color CardFaint = new(0.17f, 0.1f, 0.13f, 0.55f);
 
     Possession spirit;
     ToiletPrank prank;
@@ -70,13 +68,14 @@ public class Tutorial : MonoBehaviour
     Rect box;
     bool hasLit;
 
-    RectTransform card, cardContent, cardBubbleUp, cardBubbleDown;
+    RectTransform card, cardContent, cardCorner, cardBubbleUp, cardBubbleDown;
     Image cardBox;
     HorizontalLayoutGroup cardLayout;
     int cardArt; // 0: the plain box; +1: the bubble with its tail up (the card's under what's lit); -1: tail down
     Transform guideTo; // where the ring's arrow points (the toilet, then the valve)
     const float ValveNear = 1.5f; // close enough to crank the valve (its reach is 1.8)
     static RectOffset BoxPad => new(44, 44, 28, 28); // inside the box's drawn line
+    static readonly Vector2 CornerAt = new(-16f, 10f); // the corner keys' right edge and middle, from the card's corner
     Vector2 cardAt;
     bool cardPlaced;
     CanvasGroup cardGroup;
@@ -89,7 +88,7 @@ public class Tutorial : MonoBehaviour
     float bubbleAge;
     Graphic[] bubbleParts;
     CanvasGroup skip;
-    Image skipFill;
+    Image skipIcon;
     float skipHeld;
     Transform guide, guideArrow;
 
@@ -405,7 +404,8 @@ public class Tutorial : MonoBehaviour
         // Hold Space to skip.
         bool holding = Active && !PauseMenu.Paused && Controls.SkipHeld;
         skipHeld = holding ? skipHeld + dt : Mathf.MoveTowards(skipHeld, 0f, dt * 3f);
-        skipFill.fillAmount = skipHeld / SkipHold;
+        int frame = 1 + Mathf.Clamp(Mathf.FloorToInt(skipHeld / SkipHold * 14f), 0, 13);
+        if (skipIcon != null) skipIcon.sprite = UiArt.Get("SpaceIcon/SpaceIcon_" + frame);
         skip.alpha = Mathf.MoveTowards(skip.alpha, Active ? 1f : 0f, dt * 4f);
         if (Active && skipHeld >= SkipHold) Skip();
 
@@ -551,9 +551,10 @@ public class Tutorial : MonoBehaviour
 
     // ---------------------------------------------------------------- the card
 
-    // What to do, at the bottom: the sentence, then the keys to press on a line of their own. [WASD], [J], [K]...
-    // in the sentence show there as keycaps that light up while they're held (and as plain bold letters in the
-    // sentence); `next` adds [Space] Next for steps you only read.
+    // What to do. [J], [K], [Tab]... in the sentence are the player's own keys (KeyBindings.Token: [J] is whatever
+    // possesses now), drawn right there in the sentence as keycaps ("Press [X] until..."). [WASD] is written out in
+    // bold, its four keys on a line of their own under the sentence. `next`, for steps you only read or can skip, puts
+    // the Next key (Skip's, Space) on the card's bottom right corner, half over its line, clicking itself on a beat.
     void Card(string line, bool next = false)
     {
         string key = line + "|" + next;
@@ -561,31 +562,124 @@ public class Tutorial : MonoBehaviour
         cardShown = key;
         cardAge = 0f;
         foreach (Transform child in cardContent) Destroy(child.gameObject);
+        foreach (Transform child in cardCorner) Destroy(child.gameObject);
 
-        var sentence = new List<string>();
-        var keys = new List<string>();
-        foreach (var (text, isKey) in Split(line))
+        // The sentence in pieces: each word (a [WASD]'s words in bold count as one) and each key's cap, and whether a
+        // space comes before it ("[K]." has none).
+        var items = new List<(string words, KeyCap cap, bool gap)>();
+        Key[] moving = null;
+        bool pending = false; // a space since the last piece
+        var word = new System.Text.StringBuilder();
+        bool wordGap = false;
+        foreach (var (text, isKey) in Pieces(line))
         {
-            if (!isKey)
+            if (isKey)
             {
-                if (text.Length > 0) sentence.Add(text);
+                var (words, pressed) = KeyBindings.Token(text);
+                if (text.ToUpperInvariant() == "WASD")
+                {
+                    items.Add(($"<b>{words}</b>", null, pending));
+                    moving = pressed;
+                }
+                else items.Add((null, KeyCap.Make(cardContent, pressed.Length > 0 ? KeyBindings.Name(pressed[0]) : text, pressed, 42f), pending));
+                pending = false;
                 continue;
             }
-            keys.Add(text);
-            sentence.Add($"<b>{text}</b>");
+            foreach (char c in text)
+            {
+                if (c == ' ')
+                {
+                    if (word.Length > 0)
+                    {
+                        items.Add((word.ToString(), null, wordGap));
+                        word.Clear();
+                    }
+                    pending = true;
+                    continue;
+                }
+                if (word.Length == 0) wordGap = pending;
+                word.Append(c);
+                pending = false;
+            }
+            if (word.Length > 0)
+            {
+                items.Add((word.ToString(), null, wordGap));
+                word.Clear();
+            }
         }
-        Words(cardContent, string.Join(" ", sentence), 34, CardInk);
 
-        if (keys.Count == 0 && !next) return;
-        var row = Row(Ui("Keys", cardContent), 12f);
-        foreach (var k in keys)
+        // Too long for one line: as many lines as it needs, about as long as each other, each centred.
+        float space = Measure("a a") - Measure("aa");
+        var widths = new float[items.Count];
+        float total = 0f;
+        for (int i = 0; i < items.Count; i++)
         {
-            if (k == "WASD") Wasd(row);
-            else KeyCap(row, k, Keys(k), 52f);
+            widths[i] = items[i].cap != null ? items[i].cap.GetComponent<LayoutElement>().preferredWidth : Measure(items[i].words);
+            total += widths[i] + (i > 0 && items[i].gap ? space : 0f);
         }
-        if (!next) return;
-        KeyCap(row, "Space", new[] { Key.Space, Key.Enter, Key.NumpadEnter }, 44f);
-        Words(row, GameText.TutorialNext + " ›", 28, CardFaint);
+        int lineCount = Mathf.Max(1, Mathf.CeilToInt(total / MaxLine));
+        float target = total / lineCount;
+        var lines = Ui("Sentence", cardContent);
+        var stack = lines.gameObject.AddComponent<VerticalLayoutGroup>();
+        stack.spacing = 2f;
+        stack.childAlignment = TextAnchor.MiddleCenter;
+        stack.childControlWidth = stack.childControlHeight = true;
+        stack.childForceExpandWidth = stack.childForceExpandHeight = false;
+        RectTransform lineRow = null;
+        var run = new System.Text.StringBuilder();
+        float used = 0f;
+        for (int i = 0; i < items.Count; i++)
+        {
+            var (words, cap, gap) = items[i];
+            float w = widths[i] + (used > 0f && gap ? space : 0f);
+            if (lineRow == null || (used > 0f && used + w > target + space && lines.childCount < lineCount))
+            {
+                if (lineRow != null) FlushWords(lineRow, run);
+                lineRow = Row(Ui("Line", lines), 0f);
+                used = 0f;
+                w = widths[i];
+                gap = false;
+            }
+            used += w;
+            if (cap == null)
+            {
+                if (run.Length == 0 && gap && lineRow.childCount > 0) Gap(lineRow); // after a cap
+                if (run.Length > 0 && gap) run.Append(' ');
+                run.Append(words);
+                continue;
+            }
+            FlushWords(lineRow, run);
+            if (gap && lineRow.childCount > 0) Gap(lineRow);
+            cap.transform.SetParent(lineRow, false);
+        }
+        if (lineRow != null) FlushWords(lineRow, run);
+        if (moving != null) Wasd(Row(Ui("Keys", cardContent), 12f), moving);
+
+        cornerKeys = next;
+        if (next)
+        {
+            var skipKey = KeyBindings.Get(KeyBindings.Bind.Skip);
+            var cap = KeyCap.Make(cardCorner, KeyBindings.Name(skipKey), new[] { skipKey, Key.Enter, Key.NumpadEnter }, 44f);
+            cap.GetComponent<KeyHint>().blink = true;
+        }
+        cardLayout.padding = CardPad(cardArt);
+        LayoutRebuilder.MarkLayoutForRebuild(card);
+    }
+
+    bool cornerKeys; // the card has keys on its corner
+
+    // Inside the card's drawn line; with keys on the corner, more room round the words so the keys sit under them.
+    RectOffset CardPad(int pointer)
+    {
+        var p = pointer == 0 ? BoxPad : pointer > 0 ? GameHud.BubblePadUp : GameHud.BubblePad;
+        if (cornerKeys)
+        {
+            p.left += 28;
+            p.right += 28;
+            p.top += 10;
+            p.bottom += 26;
+        }
+        return p;
     }
 
     // The card sits by whatever's lit (under it, or over it when there's no room below), its little pointer aimed at
@@ -634,7 +728,7 @@ public class Tutorial : MonoBehaviour
         cardBox.enabled = pointer == 0;
         cardBubbleUp.gameObject.SetActive(pointer > 0);
         cardBubbleDown.gameObject.SetActive(pointer < 0);
-        cardLayout.padding = pointer == 0 ? BoxPad : pointer > 0 ? GameHud.BubblePadUp : GameHud.BubblePad;
+        cardLayout.padding = CardPad(pointer);
         LayoutRebuilder.MarkLayoutForRebuild(card);
     }
 
@@ -682,7 +776,32 @@ public class Tutorial : MonoBehaviour
         return Rect.MinMaxRect(r2.xMin / s - half.x, r2.yMin / s - half.y, r2.xMax / s - half.x, r2.yMax / s - half.y);
     }
 
-    static IEnumerable<(string text, bool isKey)> Split(string line)
+    const float MaxLine = 520f; // the longest a line of the card's sentence gets before the rest goes on a new line
+
+    static void FlushWords(RectTransform line, System.Text.StringBuilder run)
+    {
+        if (run.Length > 0) Words(line, run.ToString(), Figma.Type.ArvoSubtitle, CardInk);
+        run.Clear();
+    }
+
+    // How wide some of the sentence's words are, in the card's units.
+    Text measure;
+    float Measure(string text)
+    {
+        if (measure == null)
+        {
+            var rt = Ui("Measure", card);
+            rt.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+            measure = Txt(rt, "", Figma.Type.ArvoSubtitle, Color.clear);
+        }
+        return measure.cachedTextGeneratorForLayout.GetPreferredWidth(text, measure.GetGenerationSettings(Vector2.zero)) / measure.pixelsPerUnit;
+    }
+
+    // A space's width between words and a keycap.
+    static void Gap(RectTransform parent) => Ui("Gap", parent).gameObject.AddComponent<LayoutElement>().preferredWidth = 9f;
+
+    // The line in pieces as written (spaces kept): words, and the [key] tokens without their brackets.
+    static IEnumerable<(string text, bool isKey)> Pieces(string line)
     {
         int at = 0;
         while (at < line.Length)
@@ -691,26 +810,18 @@ public class Tutorial : MonoBehaviour
             int close = open >= 0 ? line.IndexOf(']', open) : -1;
             if (open < 0 || close < 0)
             {
-                yield return (line[at..].Trim(), false);
+                yield return (line[at..], false);
                 yield break;
             }
-            if (open > at) yield return (line[at..open].Trim(), false);
+            if (open > at) yield return (line[at..open], false);
             yield return (line[(open + 1)..close], true);
             at = close + 1;
         }
     }
 
-    static Key[] Keys(string name) => name switch
-    {
-        "J" => new[] { Key.J },
-        "K" => new[] { Key.K },
-        "Tab" => new[] { Key.Tab },
-        "Space" => new[] { Key.Space },
-        _ => Enum.TryParse(name, true, out Key k) ? new[] { k } : new Key[0],
-    };
-
-    // W A S D as on a keyboard (W over A, S, D), each lighting up while it's held.
-    void Wasd(RectTransform parent)
+    // The four moving keys as on a keyboard (up over left, down, right: W over A S D, or the arrows), each lighting
+    // up while it's held. `keys`: up, left, down, right (KeyBindings.Token("WASD")).
+    void Wasd(RectTransform parent, Key[] keys)
     {
         var block = Ui("WASD", parent);
         var column = block.gameObject.AddComponent<VerticalLayoutGroup>();
@@ -720,24 +831,8 @@ public class Tutorial : MonoBehaviour
         column.childForceExpandWidth = column.childForceExpandHeight = false;
         var top = Row(Ui("Top", block), 2f);
         var bottom = Row(Ui("Bottom", block), 2f);
-        KeyArt(top, "W", Key.W, 54f);
-        KeyArt(bottom, "A", Key.A, 54f);
-        KeyArt(bottom, "S", Key.S, 54f);
-        KeyArt(bottom, "D", Key.D, 54f);
-    }
-
-    // A key drawn with its letter (UI/Buttons/key_w...), lighting up while it's held like the other keycaps.
-    static RectTransform KeyArt(RectTransform parent, string name, Key key, float height)
-    {
-        var cap = Ui("Key " + name, parent);
-        var img = Img(cap, "UI/Buttons/key_" + name.ToLowerInvariant(), Color.white);
-        img.preserveAspect = true;
-        var element = cap.gameObject.AddComponent<LayoutElement>();
-        Vector2 size = img.sprite != null ? img.sprite.rect.size : Vector2.one;
-        element.preferredWidth = height * size.x / size.y;
-        element.preferredHeight = height;
-        cap.gameObject.AddComponent<KeyHint>().keys = new[] { key };
-        return cap;
+        KeyCap.Make(top, KeyBindings.Name(keys[0]), new[] { keys[0] }, 50f);
+        for (int i = 1; i < 4; i++) KeyCap.Make(bottom, KeyBindings.Name(keys[i]), new[] { keys[i] }, 50f);
     }
 
     // ---------------------------------------------------------------- the speech bubble
@@ -853,6 +948,19 @@ public class Tutorial : MonoBehaviour
         lines.childAlignment = TextAnchor.MiddleCenter;
         lines.childControlWidth = lines.childControlHeight = true;
         lines.childForceExpandWidth = lines.childForceExpandHeight = false;
+        // The keys on the card's bottom right corner (Card), out of the layout, half over the box's line.
+        cardCorner = Ui("Corner Keys", face);
+        cardCorner.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+        cardCorner.anchorMin = cardCorner.anchorMax = new Vector2(1f, 0f);
+        cardCorner.pivot = new Vector2(1f, 0.5f);
+        cardCorner.anchoredPosition = CornerAt;
+        var cornerRow = cardCorner.gameObject.AddComponent<HorizontalLayoutGroup>();
+        cornerRow.spacing = 8f;
+        cornerRow.childAlignment = TextAnchor.MiddleRight;
+        cornerRow.childControlWidth = cornerRow.childControlHeight = true;
+        cornerRow.childForceExpandWidth = cornerRow.childForceExpandHeight = false;
+        var cornerFit = cardCorner.gameObject.AddComponent<ContentSizeFitter>();
+        cornerFit.horizontalFit = cornerFit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
         // The speech bubble, like the HUD's.
         bubble = Ui("Speech Bubble", canvas);
@@ -865,7 +973,7 @@ public class Tutorial : MonoBehaviour
         var pad = GameHud.BubblePad;
         Row(body, 0f, new RectOffset(pad.left, pad.right, pad.top, pad.bottom));
         Fit(body);
-        bubbleText = Txt(Ui("Label", body), "", 30, Ink, TextAnchor.MiddleCenter);
+        bubbleText = Txt(Ui("Label", body), "", Figma.Type.ArvoSubtitle, Ink, TextAnchor.MiddleCenter);
         bubbleText.font = ParkArt.Font;
         // Keep its size steady while the line types out: the full line sizes it, invisibly.
         body.gameObject.AddComponent<BubbleSizer>().Init(bubbleText, () => bubbleLine);
@@ -876,20 +984,30 @@ public class Tutorial : MonoBehaviour
         Place(skipRoot, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-36f, 36f), Vector2.zero);
         skip = skipRoot.gameObject.AddComponent<CanvasGroup>();
         skip.alpha = 0f;
-        Img(skipRoot, "UI/pill", PanelDark);
         Row(skipRoot, 10f, new RectOffset(18, 24, 8, 8));
         Fit(skipRoot);
         var (before, keyName, after) = SplitOne(GameText.TutorialSkip);
-        if (before.Length > 0) Words(skipRoot, before, 22, Faint);
-        var cap = KeyCap(skipRoot, keyName, Keys(keyName), 38f);
-        var fill = Ui("Hold", cap);
-        Stretch(fill);
-        skipFill = Img(fill, "UI/key", new Color(1f, 0.55f, 0.7f, 0.85f));
-        skipFill.type = Image.Type.Filled;
-        skipFill.fillMethod = Image.FillMethod.Horizontal;
-        skipFill.fillAmount = 0f;
-        fill.SetAsFirstSibling();
-        if (after.Length > 0) Words(skipRoot, after, 22, Faint);
+        if (before.Length > 0) Words(skipRoot, before, Figma.Type.ArvoBody, Faint);
+        var skipKey = KeyBindings.Get(KeyBindings.Bind.Skip);
+        if (skipKey != Key.Space) KeyCap.Make(skipRoot, KeyBindings.Name(skipKey), new[] { skipKey }, 38f); // changed: a plain keycap
+        else
+        {
+            // The artist's SPACE tag, its blue edge drawing round it as you hold (UI Asset/SpaceIcon/SpaceIcon_1..14).
+            // The layout holds the drawn tag (161 x 81 of its 270 px picture), 38 tall; the picture spills round it.
+            var tag = Ui("Hold " + keyName, skipRoot);
+            var tagSize = tag.gameObject.AddComponent<LayoutElement>();
+            float k = 38f / 81f;
+            tagSize.preferredWidth = 161f * k;
+            tagSize.preferredHeight = 38f;
+            var pic = Ui("Art", tag);
+            pic.anchorMin = pic.anchorMax = new Vector2(0.5f, 0.5f);
+            pic.sizeDelta = new Vector2(270f, 270f) * k;
+            pic.anchoredPosition = new Vector2(8f, -7f) * k; // the drawn tag sits up and left of the picture's middle
+            skipIcon = pic.gameObject.AddComponent<Image>();
+            skipIcon.sprite = UiArt.Get("SpaceIcon/SpaceIcon_1");
+            skipIcon.raycastTarget = false;
+        }
+        if (after.Length > 0) Words(skipRoot, after, Figma.Type.ArvoBody, Faint);
     }
 
     static (string before, string key, string after) SplitOne(string line)
@@ -1010,28 +1128,6 @@ public class Tutorial : MonoBehaviour
     {
         var fit = rt.gameObject.AddComponent<ContentSizeFitter>();
         fit.horizontalFit = fit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-    }
-
-    // A keycap (the HUD's key art) that lights up while one of its keys is held.
-    static RectTransform KeyCap(RectTransform parent, string text, Key[] keys, float height)
-    {
-        var cap = Ui("Key " + text, parent);
-        var img = Img(cap, "UI/key", Color.white);
-        img.pixelsPerUnitMultiplier = 1f;
-        var element = cap.gameObject.AddComponent<LayoutElement>();
-        element.preferredWidth = Mathf.Max(height, text.Length * 15f + 26f);
-        element.preferredHeight = height;
-        cap.gameObject.AddComponent<KeyHint>().keys = keys;
-        if (text.Length > 0)
-        {
-            var label = Ui("Label", cap);
-            Stretch(label);
-            label.offsetMin = new Vector2(0f, 6f);
-            var t = Txt(label, text, Mathf.RoundToInt(height * 0.45f), Ink, TextAnchor.MiddleCenter);
-            t.font = ParkArt.Font;
-            t.fontStyle = FontStyle.Bold;
-        }
-        return cap;
     }
 
     // Sizes the speech bubble to its whole line from the first letter, so it doesn't grow as the line types out.

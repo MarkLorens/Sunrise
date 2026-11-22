@@ -28,7 +28,8 @@ public class Footsteps : MonoBehaviour
 
         var possession = Possession.Instance;
         bool possessed = visitor != null && possession != null && possession.Host == visitor;
-        steps.Play(possessed ? events.hostFootsteps : events.npcFootsteps);
+        var sound = possessed ? events.hostFootsteps : events.npcFootsteps;
+        steps.Play(sound);
         steps.SetParameter("Pace", look.running ? 1f : 0f);
     }
 

@@ -33,6 +33,7 @@ public static class SaveGame
         public float puddle;
         public int presses;
         public bool mechanicCalled, fountainFixed, shownMechanic;
+        public bool mascotWarned;       // he's told the spirit off (Mascot.Tease) and ignores it now
         public List<Body> dead = new();
         public List<string> gone = new(); // carried off by the clean-up crew (Visitor.CarryOff): not coming back
         public List<Fan> fans = new();  // which way every fan faces
@@ -162,6 +163,7 @@ public static class SaveGame
             mechanicCalled = fountain != null && fountain.MechanicCalled,
             fountainFixed = fountain != null && fountain.Fixed,
             shownMechanic = box != null && box.ShownMechanic,
+            mascotWarned = Mascot.All.Exists(m => m.Warned),
             title = ObjectiveTitle(),
             played = System.DateTime.Now.ToString("o"),
         };
@@ -225,7 +227,7 @@ public static class SaveGame
         if (!Has(slot)) return;
         Slot = slot;
         pending = JsonUtility.FromJson<Data>(File.ReadAllText(PathOf(slot)));
-        SceneManager.LoadScene(pending.scene);
+        LoadingScreen.Load(pending.scene);
     }
 
     public static void ApplyPending()
@@ -251,7 +253,7 @@ public static class SaveGame
         foreach (var s in Object.FindObjectsByType<FingerprintScanner>()) s.Restore();
         foreach (var h in Object.FindObjectsByType<WheelHinge>()) h.Restore();
         foreach (var g in Object.FindObjectsByType<Gutter>()) g.Restore();
-        foreach (var m in Mascot.All) m.Restore();
+        foreach (var m in Mascot.All) m.Restore(data.mascotWarned);
         foreach (var r in Object.FindObjectsByType<LockerRoom>()) r.Restore();
         // ponytail: a save after the wheel has rolled loads it standing, wobbly. Nothing comes after it yet.
 

@@ -164,7 +164,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
     public void Interact(Visitor host)
     {
         leaking = true;
-        Sfx.Play(Sfx.HitWood, 0.5f, 1.8f);
+        Sfx.Play(Sfx.HitWood, 0.5f, 1.8f, Captions.GasLeak);
         GameHud.Say(GameText.OpenedValve);
         GameHud.Think(GameHud.ThoughtPriority.Action, GameText.PickValve());
         Mischief.Complete(leakTask);
@@ -185,7 +185,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
     IEnumerator Payoff()
     {
         Possession.InputBlocked = true;
-        Sfx.Play(Sfx.Crash, 1f, 0.6f);
+        Sfx.Play(Sfx.Crash, 1f, 0.6f, Captions.Explosion);
         Sfx.Play(Sfx.Thud, 1f, 0.5f);
         Fx.Burst("Fx/puff", Center + Vector3.up, 40, new Color(1f, 0.55f, 0.15f), 8f, 1.2f, 0.9f);
         Fx.Burst("Fx/puff", Center + Vector3.up, 25, new Color(1f, 0.85f, 0.3f), 5f, 0.9f, 0.6f);

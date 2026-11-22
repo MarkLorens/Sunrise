@@ -41,6 +41,7 @@ public class CharacterSprite : MonoBehaviour
     public bool Stepping { get; private set; }
 
     public bool Visible => body.enabled;
+    public Bounds Bounds => body.bounds; // the drawn body, wherever the waddle has it
     public bool FacingLeft => facingLeft;
     public float HeadHeight => idle.bounds.size.y * transform.lossyScale.y;
 
@@ -88,7 +89,10 @@ public class CharacterSprite : MonoBehaviour
     Sprite gesture;
     float gestureUntil, cheerUntil, twitchUntil;
     float waddle;    // where they are in their side-to-side rock (radians; random start, so crowds don't rock in step)
-    Vector3 baseScale;
+    // The drawn character (body, fills, head) hangs off this child, and the waddle leans and flips it, never the
+    // root: the root carries the Rigidbody, and any script move of an interpolated body's transform stops its
+    // interpolation until the next physics step, so walking people (and the camera on them) stuttered at 50Hz.
+    Transform drawn;
     float stride;    // 0..1: eases the waddle in when they set off and out when they stop
     bool loaded;
     bool facingLeft, drawnFacingLeft; // Kenney art faces right, the lineart faces left
@@ -100,7 +104,15 @@ public class CharacterSprite : MonoBehaviour
     {
         if (loaded) return;
         loaded = true;
-        body = GetComponent<SpriteRenderer>();
+        // The root keeps its renderer (RequireComponent) but switched off and empty; the one that draws is on Pose.
+        var root = GetComponent<SpriteRenderer>();
+        drawn = new GameObject("Pose").transform;
+        drawn.SetParent(transform, false);
+        body = drawn.gameObject.AddComponent<SpriteRenderer>();
+        body.sortingLayerID = root.sortingLayerID;
+        body.sortingOrder = root.sortingOrder;
+        root.sprite = null;
+        root.enabled = false;
         // Characters whose renderer was auto-added (e.g. the Mechanic) start on Unity's default sprite material.
         // People never get a see-through hole cut into them (their fill layers copy this material below).
         body.sharedMaterial = ParkArt.CharacterMaterial;
@@ -108,7 +120,6 @@ public class CharacterSprite : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         if (!TryGetComponent<Footsteps>(out _)) gameObject.AddComponent<Footsteps>();
         waddle = Random.value * Mathf.PI * 2f;
-        baseScale = transform.localScale;
 
         if (character.StartsWith("body_"))
         {
@@ -134,7 +145,7 @@ public class CharacterSprite : MonoBehaviour
             if (own != null)
             {
                 head = new GameObject("Head").transform;
-                head.SetParent(transform, false);
+                head.SetParent(drawn, false);
                 faceOpen = own;
                 face = HeadPart("Face", own, -0.002f, Color.white);
             }
@@ -181,7 +192,7 @@ public class CharacterSprite : MonoBehaviour
             if (!any) continue;
 
             var r = new GameObject(FillLayers[k]).AddComponent<SpriteRenderer>();
-            r.transform.SetParent(transform, false);
+            r.transform.SetParent(drawn, false);
             // Behind the line: the lit shader writes depth, so layers are spaced in z rather than sorted.
             r.transform.localPosition = new Vector3(0f, 0f, 0.002f + 0.0005f * fills.Count);
             r.sharedMaterial = body.sharedMaterial;
@@ -217,7 +228,7 @@ public class CharacterSprite : MonoBehaviour
         if (faceIds.Count == 0 && hairIds.Count == 0) return;
 
         head = new GameObject("Head").transform;
-        head.SetParent(transform, false);
+        head.SetParent(drawn, false);
         // In front of the body line (lower z is nearer the camera): face, then hair fills, then the hair line.
         if (faceIds.Count > 0)
         {
@@ -346,7 +357,7 @@ public class CharacterSprite : MonoBehaviour
         get
         {
             Load();
-            return transform.TransformPoint(HandAnchor(idle, drawnFacingLeft));
+            return drawn.TransformPoint(HandAnchor(idle, drawnFacingLeft));
         }
     }
 
@@ -529,12 +540,7 @@ public class CharacterSprite : MonoBehaviour
         }
         // Facing is a negative x scale, not flipX: the lit shader draws flipped asymmetric sprites washed out.
         float flip = facingLeft != drawnFacingLeft ? -1f : 1f;
-        var scale = new Vector3(baseScale.x * flip * sx, baseScale.y * sy, baseScale.z);
-        if (transform.localScale != scale) transform.localScale = scale;
-        var tilt = Quaternion.Euler(0f, 0f, lean);
-        if (transform.localRotation != tilt) transform.localRotation = tilt;
-        // The shadow stays flat on the ground: it leans back the other way (the other way again when they're
-        // mirrored, since the flip turns the lean round).
-        shadow.transform.parent.localRotation = Quaternion.Euler(0f, 0f, -lean * flip);
+        drawn.localScale = new Vector3(flip * sx, sy, 1f);
+        drawn.localRotation = Quaternion.Euler(0f, 0f, lean); // the shadow's on the root: it stays flat on the ground
     }
 }
