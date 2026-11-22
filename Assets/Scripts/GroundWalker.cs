@@ -153,8 +153,22 @@ public class GroundWalker : MonoBehaviour
     // The base of a tile's object as a line on the floor (x from the bottom of its sprite, z just in front of its cell).
     public static Rect FootprintOf(Tilemap map, Vector3Int cell)
     {
-        Sprite s = map.GetSprite(cell);
-        // The outline's lowest 15% is the part touching the ground.
+        var (left, right) = Base(map.GetSprite(cell));
+        Vector3 c = map.GetCellCenterWorld(cell) + Vector3.forward * map.GetTransformMatrix(cell).m23; // a tile nudged off its cell
+        return Rect.MinMaxRect(c.x + left, c.z - ObjectFront, c.x + right, c.z - ObjectFront);
+    }
+
+    // How far a drawn prop reaches in world x where it touches the ground (its legs, not an awning overhead).
+    public static (float left, float right) BaseOf(SpriteRenderer r)
+    {
+        var (left, right) = Base(r.sprite);
+        float x = r.transform.position.x, scale = r.transform.lossyScale.x;
+        return (Mathf.Min(x + left * scale, x + right * scale), Mathf.Max(x + left * scale, x + right * scale));
+    }
+
+    // The outline's lowest 15% is the part touching the ground: how far it reaches either side of the pivot.
+    static (float left, float right) Base(Sprite s)
+    {
         float bottom = s.bounds.min.y + s.bounds.size.y * 0.15f;
         float left = float.MaxValue, right = float.MinValue;
         foreach (Vector2 p in s.vertices)
@@ -163,9 +177,7 @@ public class GroundWalker : MonoBehaviour
             left = Mathf.Min(left, p.x);
             right = Mathf.Max(right, p.x);
         }
-        if (left > right) (left, right) = (s.bounds.min.x, s.bounds.max.x);
-        Vector3 c = map.GetCellCenterWorld(cell) + Vector3.forward * map.GetTransformMatrix(cell).m23; // a tile nudged off its cell
-        return Rect.MinMaxRect(c.x + left, c.z - ObjectFront, c.x + right, c.z - ObjectFront);
+        return left > right ? (s.bounds.min.x, s.bounds.max.x) : (left, right);
     }
 
     // Is there an object or a prop where someone `radius` wide standing at `p` would touch it? (NavGrid maps with this.)

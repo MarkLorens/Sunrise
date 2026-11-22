@@ -59,22 +59,27 @@ public class HotDogMan : MonoBehaviour
         BlockStand();
     }
 
-    // The counter and back wall are separate thin colliders with a gap between them (his spot): fill it in, one box
-    // over both, so nobody walks in at the ends.
+    // The counter and back wall are separate thin colliders with a gap between them (his spot): one box stands in for
+    // both, counter to back wall, so nobody walks in at the ends. Only as wide as the stand's legs where they meet the
+    // ground: the colliders span the whole picture, awning overhang and all, which walled off the ground beside it.
     void BlockStand()
     {
-        Bounds? stand = null;
+        float front = float.MaxValue, back = float.MinValue, left = float.MaxValue, right = float.MinValue;
         foreach (var c in FindObjectsByType<Collider>())
         {
             if (c.isTrigger || c.attachedRigidbody != null || c.TryGetComponent<UnityEngine.Tilemaps.Tilemap>(out _)) continue; // not the floor
             Bounds b = c.bounds;
             if (b.size.x > 8f) continue; // something far bigger than a stall
             if (post.x < b.min.x || post.x > b.max.x || Mathf.Abs(b.center.z - post.z) > 1.2f) continue; // not his stand
-            if (stand is Bounds s) { s.Encapsulate(b); stand = s; }
-            else stand = b;
+            front = Mathf.Min(front, b.min.z);
+            back = Mathf.Max(back, b.max.z);
+            var art = c.GetComponent<SpriteRenderer>();
+            var (l, r) = art != null && art.sprite != null ? GroundWalker.BaseOf(art) : (b.min.x, b.max.x);
+            left = Mathf.Min(left, l);
+            right = Mathf.Max(right, r);
+            c.enabled = false; // the block stands in for it
         }
-        if (stand is Bounds all)
-            GroundWalker.Block("Hot Dog Stand Block", Rect.MinMaxRect(all.min.x, all.min.z, all.max.x, all.max.z));
+        if (front < back) GroundWalker.Block("Hot Dog Stand Block", Rect.MinMaxRect(left, front, right, back));
     }
 
     // Rats! Off he runs, away from `from`, and stays away for a while.
