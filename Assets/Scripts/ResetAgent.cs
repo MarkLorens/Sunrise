@@ -34,6 +34,18 @@ public class ResetAgent : StaffWorker
         Call(new Job { spot = spot, at = scene, seconds = 0.5f, stay = true });
     }
 
+    // The scene's cleared: whoever's watching it (or still about to) goes back to work or inside.
+    public static void StandDown(Vector3 scene)
+    {
+        scene.y = 0f;
+        for (int i = backlog.Count; i > 0; i--)
+        {
+            var j = backlog.Dequeue();
+            if (!(j.stay && Same(j.at, scene))) backlog.Enqueue(j);
+        }
+        foreach (var a in All) a.LeavePost(scene);
+    }
+
     protected override void Update()
     {
         base.Update();

@@ -26,6 +26,13 @@ public static class Aftermath
         ResetAgent.Guard(center, keepBack);
     }
 
+    // The line comes down (a scene that lasts until its clean-up's done: DrinkingFountain).
+    public static void Remove(Vector3 center)
+    {
+        center.y = 0f;
+        sites.RemoveAll(s => (s.center - center).sqrMagnitude < 0.01f);
+    }
+
     // Can this person step from `from` to `to`? Only visitors going about their day are kept out; stepping out's fine.
     public static bool Allows(Visitor v, Vector3 from, Vector3 to)
     {

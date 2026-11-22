@@ -2278,7 +2278,7 @@ Transform:
   m_GameObject: {fileID: 700000100}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -5.48, y: 0.82, z: 16.19}
+  m_LocalPosition: {x: -5.48, y: 0.82, z: 18.29}
   m_LocalScale: {x: 2.7, y: 2.7, z: 2.7}
   m_ConstrainProportionsScale: 1
   m_Children:
@@ -2537,7 +2537,7 @@ Transform:
   m_GameObject: {fileID: 700000109}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -9.879999, y: 0.94, z: 13.789999}
+  m_LocalPosition: {x: -9.879999, y: 0.94, z: 15.889999}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2755,7 +2755,7 @@ Transform:
   m_GameObject: {fileID: 700000117}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -8.879999, y: 0.94, z: 13.540001}
+  m_LocalPosition: {x: -8.879999, y: 0.94, z: 15.640001}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2791,7 +2791,7 @@ Transform:
   m_GameObject: {fileID: 700000119}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -8.879999, y: 0.94, z: 13.540001}
+  m_LocalPosition: {x: -8.879999, y: 0.94, z: 15.640001}
   m_LocalScale: {x: 1.35, y: 1.35, z: 1.35}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -8185,6 +8185,7 @@ MonoBehaviour:
   victimsToCallMechanic: 3
   fixTime: 12
   mopTime: 8
+  bodyTime: 10
   payoffVictims: 5
   payoffPan: 1
   payoffTwitch: 2

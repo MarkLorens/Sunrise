@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // A leaky drinking fountain dripping into a puddle. Every press of its button (K, in anyone's body) makes the leak
-// worse: the puddle starts small right under it and, press by press, slowly spreads out towards puddleOffset. Dip a live cable in it (LiveCable) and everyone standing in it is electrocuted. Enough
-// of a scene and the mechanic comes out to fix the fountain; either way the Reset Agents come to mop up. Once fixed
-// it stops leaking for good.
+// worse: the puddle starts small right under it and, press by press, slowly spreads out towards puddleOffset. Dip a live cable in it (LiveCable) and everyone standing in it is electrocuted.
+// The scene's taped off (Aftermath) while Reset Agents carry the bodies away one by one and mop up. Enough of a scene
+// and it blows the crowd speakers too: the music stops and the mechanic comes out to fix the speaker. Once every job's
+// done the tape comes down, the music's back on, and it can all happen again.
 [RequireComponent(typeof(Interactable))]
 public class DrinkingFountain : MonoBehaviour, IInteraction
 {
@@ -19,6 +20,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     public int victimsToCallMechanic = 3; // how big a scene it takes before the mechanic bothers
     public float fixTime = 12f;      // how long the mechanic works on it: the window to possess him
     public float mopTime = 8f;
+    public float bodyTime = 10f;     // a Reset Agent's time carrying off each body
     public int payoffVictims = 5;    // more zapped than this and the camera cuts to it (Payoff)
     public float payoffPan = 1f;     // seconds for the camera to get there
     public float payoffTwitch = 2f;  // seconds the victims twitch
@@ -31,14 +33,16 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     public Vector3 PuddleCenter => new Vector3(transform.position.x, 0f, transform.position.z)
         + new Vector3(puddleOffset.x, 0f, puddleOffset.z) * Mathf.InverseLerp(startRadius, maxRadius, Radius);
     public float Radius { get; private set; }
-    public bool Fixed { get; private set; }
+    public bool Fixed { get; private set; } // the speaker, by the mechanic (at least once): he hangs around it after
+    public bool Cleaning => jobsLeft > 0;
 
     static readonly Color Water = new(0.45f, 0.75f, 1f);
 
     SpriteRenderer puddle;
     bool mechanicCalled, thoughtNear, electrocutedOnce;
     float nextDrip, readyAt, target; // target: the radius the water is still spreading to
-    int presses;
+    int presses, jobsLeft;
+    Vector3 scene; // the taped-off puddle being cleaned up
 
     void OnEnable() => All.Add(this);
     void OnDisable() => All.Remove(this);
@@ -65,13 +69,13 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
 
         // The player comes up to it for the first time, as the spirit or in anyone's body, and notices the leak (not
         // once someone has pressed it).
-        if (!thoughtNear && !Fixed && presses == 0 && Possession.PlayerNear(transform.position, GetComponent<Interactable>().range))
+        if (!thoughtNear && presses == 0 && Possession.PlayerNear(transform.position, GetComponent<Interactable>().range))
         {
             thoughtNear = true;
             GameHud.Think(GameText.ThinkFountainNear);
         }
 
-        if (Fixed || Time.time < nextDrip) return;
+        if (Time.time < nextDrip) return;
         nextDrip = Time.time + 1.2f;
         Fx.Burst("Fx/sparkle", transform.position + Vector3.up * 0.9f, 2, Water, 1.2f, 0.18f, 0.5f);
     }
@@ -101,12 +105,11 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
 
     // ---------------------------------------------------------------- the button
 
-    public string Prompt(Visitor host) => Fixed ? "Drinking fountain" : "Press the leaky fountain's button";
+    public string Prompt(Visitor host) => "Press the leaky fountain's button";
 
     public string Blocked(Visitor host)
     {
-        if (Fixed) return GameText.FountainFixed;
-        if (mechanicCalled) return GameText.MechanicOnIt;
+        if (Cleaning) return GameText.CleaningUp;
         if (target >= maxRadius) return GameText.PuddleFull;
         if (Time.time < readyAt) return GameText.FountainBusy;
         return null;
@@ -157,7 +160,22 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
 
         if (victims <= payoffVictims) ThinkElectrocuted(); // a payoff thinks it once it's over
         Mischief.Complete(Mischief.Task.Electrocute);
-        ResetAgent.Call(new StaffWorker.Job
+
+        // Taped off until every job below is done (another agent guards the tape).
+        scene = PuddleCenter;
+        Aftermath.Add(scene, Radius + 1f, float.PositiveInfinity);
+        foreach (var v in zapped)
+        {
+            var body = v;
+            Job(false, new StaffWorker.Job
+            {
+                spot = body.transform.position + Vector3.right * 0.7f,
+                at = body.transform.position,
+                seconds = bodyTime,
+                done = () => CarryOff(body),
+            });
+        }
+        Job(false, new StaffWorker.Job
         {
             spot = PuddleCenter,
             at = PuddleCenter + Vector3.back,
@@ -165,29 +183,57 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
             shout = "Clean-up on the fountain! Everybody out of the way!",
             done = Mop,
         });
-        Aftermath.Add(PuddleCenter, Radius + 1f, 90f); // another agent guards its edge
 
-        if (mechanicCalled) return;
-        if (victims < victimsToCallMechanic) return; // not much of a scene: nobody's coming to fix it yet
+        if (victims < victimsToCallMechanic) return; // not much of a scene: the speakers hold out
+        Speaker.SetPlaying(false);
         CallMechanic(false);
         Mischief.Complete(Mischief.Task.LureMechanic);
     }
 
-    // The mechanic comes out to fix it, and keeps an eye on it from then on. Already fixed (loading a save): he just
-    // comes back to stand by it.
+    // A clean-up job; the last one done takes the tape down and puts the music back on.
+    void Job(bool mechanic, StaffWorker.Job job)
+    {
+        jobsLeft++;
+        var then = job.done;
+        job.done = () =>
+        {
+            then?.Invoke();
+            if (--jobsLeft > 0) return;
+            Aftermath.Remove(scene);
+            ResetAgent.StandDown(scene);
+            Speaker.SetPlaying(true);
+        };
+        if (mechanic) Mechanic.Call(job);
+        else ResetAgent.Call(job);
+    }
+
+    void CarryOff(Visitor body)
+    {
+        if (body == null || body.Current != Visitor.State.Down || Possession.Instance?.Host == body) return; // back up (a save loaded) or already gone
+        Fx.Burst("Fx/puff", body.transform.position + Vector3.up * 0.3f, 8, Color.white, 2f, 0.4f, 0.5f);
+        body.CarryOff();
+    }
+
+    // The mechanic comes out to fix the blown speaker, and keeps an eye on it from then on. Already fixed (loading a
+    // save): he just comes back to stand by it.
     void CallMechanic(bool alreadyFixed)
     {
         mechanicCalled = true;
-        Fixed = alreadyFixed;
-        Mechanic.Call(new StaffWorker.Job
+        if (alreadyFixed) Fixed = true;
+        var speaker = Speaker.All.Find(s => s.fountain == this) ?? (Speaker.All.Count > 0 ? Speaker.All[0] : null);
+        Vector3 at = speaker != null ? speaker.transform.position : transform.position;
+        var job = new StaffWorker.Job
         {
-            spot = transform.position + Vector3.back * 0.9f,
-            at = transform.position,
+            spot = at + Vector3.back * 0.9f,
+            at = at,
             seconds = alreadyFixed ? 0.01f : fixTime,
-            shout = alreadyFixed ? null : "What happened here?! Who let that fountain leak all over the place?",
+            shout = alreadyFixed ? null : "What happened here?! Who blew the speakers?",
             done = alreadyFixed ? null : Fix,
             stay = true,
-        });
+            roam = 2.5f, // pottering round the speaker, keeping an eye on it
+        };
+        if (alreadyFixed) Mechanic.Call(job);
+        else Job(true, job);
     }
 
     // ---------------------------------------------------------------- saving (SaveGame)
@@ -202,7 +248,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
         thoughtNear = pressCount > 0;
         electrocutedOnce = Mischief.IsDone(Mischief.Task.Electrocute);
         SetRadius(target = radius);
-        if (called) CallMechanic(isFixed);
+        if (called) CallMechanic(true); // saved mid clean-up: the speaker's as good as fixed
     }
 
     static readonly Color Spark = new(1f, 0.95f, 0.4f);
@@ -251,7 +297,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
 
     void Mop()
     {
-        SetRadius(target = Fixed ? 0f : startRadius);
+        SetRadius(target = startRadius); // still leaking: it can all start again
         Fx.Burst("Fx/puff", PuddleCenter + Vector3.up * 0.3f, 10, Color.white, 2f, 0.5f, 0.6f);
     }
 
