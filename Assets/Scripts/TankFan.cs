@@ -93,7 +93,7 @@ public class TankFan : MonoBehaviour, IInteraction
             bool mascot = guardedBy == Guard.Mascot;
             GameHud.Shout(guard.transform, mascot ? GameText.MascotGuard : GameText.HotDogGuard, 2f);
             GameHud.Refuse(transform, mascot ? GameText.MascotGuards : GameText.FanGuarded);
-            if (!thoughtGuarded) GameHud.Think(mascot ? GameText.ThinkMascot : GameText.ThinkFanGuarded);
+            if (!thoughtGuarded) GameHud.Think(mascot ? GameText.ThinkMascot : GameText.PickFanGuarded());
             thoughtGuarded = true;
             return;
         }

@@ -30,7 +30,7 @@ public class ControlPanel : MonoBehaviour, IInteraction
         sparks.enabled = true;
         Sfx.Play(Sfx.HitWood, 0.7f, 1.6f);
         GameHud.Say(GameText.MaxedSpeed);
-        GameHud.Think(GameText.ThinkMaxSpeed);
+        GameHud.Think(GameHud.ThoughtPriority.Action, GameText.ThinkMaxSpeed);
         Mischief.Complete(Mischief.Task.MaxSpeed);
         wheel.MaxSpeed();
     }

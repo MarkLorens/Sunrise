@@ -12,7 +12,7 @@ using UnityEngine.SceneManagement;
 // (MainMenu): Load() opens the level, and the level's PauseMenu calls ApplyPending() once everything in it has set
 // itself up. Each slot also keeps what the Load Game card shows: the objective you were on, when, and a round picture
 // of the park (save_<n>.png).
-// Bodies are found again by name: staff by theirs ("Mechanic", "Technician"...), any free visitor for a "Visitor".
+// Bodies are found again by name: staff by theirs ("Electrician", "Technician"...), any free visitor for a "Visitor".
 public static class SaveGame
 {
     [System.Serializable]

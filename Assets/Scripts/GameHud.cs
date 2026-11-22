@@ -97,7 +97,16 @@ public class GameHud : MonoBehaviour
     RectTransform bubble;
     CanvasGroup bubbleGroup;
     Text bubbleText;
-    readonly List<string> thoughts = new();
+    // Spirit thoughts: priority queue (at most one waiting). Critical/Action can interrupt a lower line on screen.
+    public enum ThoughtPriority { Observe = 0, Action = 1, Critical = 2 }
+    struct Thought
+    {
+        public string line;
+        public ThoughtPriority priority;
+    }
+    readonly List<Thought> thoughts = new();
+    ThoughtPriority showingPriority;
+    bool showing;
     float thoughtAge = 10f, thoughtShow;
 
     void Awake()
@@ -181,10 +190,65 @@ public class GameHud : MonoBehaviour
         Instance.refusedAt = Time.unscaledTime;
     }
 
-    // A line the spirit says to itself, in a speech bubble over the player. One at a time: later ones wait their turn.
-    public static void Think(params string[] lines)
+    // A line the spirit says to itself, in a speech bubble over the player. Priority decides interrupt vs queue:
+    // Observe (flavor) never stacks and yields to Action/Critical; Critical/Action can cut in over a lower line.
+    // A single call may pass several lines (e.g. electrocute); those play in order without Observe-style backlog.
+    public static void Think(params string[] lines) => Think(ThoughtPriority.Observe, lines);
+
+    public static void Think(ThoughtPriority priority, params string[] lines)
     {
-        if (Instance != null) Instance.thoughts.AddRange(lines);
+        if (Instance == null || lines == null) return;
+        var batch = new List<string>(lines.Length);
+        foreach (var line in lines)
+            if (!string.IsNullOrEmpty(line)) batch.Add(line);
+        if (batch.Count > 0) Instance.EnqueueThoughts(batch, priority);
+    }
+
+    void EnqueueThoughts(List<string> lines, ThoughtPriority priority)
+    {
+        // Higher than what's on screen: cut in on the first line; keep the rest of this batch waiting.
+        if (showing && priority > showingPriority)
+        {
+            thoughts.Clear();
+            ShowThought(lines[0], priority);
+            for (int i = 1; i < lines.Count; i++)
+                thoughts.Add(new Thought { line = lines[i], priority = priority });
+            return;
+        }
+
+        // Observe: never stack. Newer Observe replaces an older one on screen or waiting; still yields to Action/Critical.
+        if (priority == ThoughtPriority.Observe)
+        {
+            if (showing && showingPriority > ThoughtPriority.Observe) return;
+            if (thoughts.Count > 0 && thoughts[0].priority > ThoughtPriority.Observe) return;
+            if (showing && showingPriority == ThoughtPriority.Observe)
+            {
+                thoughts.Clear();
+                ShowThought(lines[0], priority);
+                return;
+            }
+            thoughts.Clear();
+            thoughts.Add(new Thought { line = lines[0], priority = priority });
+            return;
+        }
+
+        // Action/Critical: never lose to a lower waiting line; on a tie, newer batch replaces waiting.
+        if (thoughts.Count > 0 && priority < thoughts[0].priority) return;
+        thoughts.Clear();
+        foreach (var line in lines)
+            thoughts.Add(new Thought { line = line, priority = priority });
+        // Cap waiting: if something is already on screen, only one slot; if idle, allow the whole short batch (max 2).
+        int cap = showing ? 1 : 2;
+        while (thoughts.Count > cap) thoughts.RemoveAt(thoughts.Count - 1);
+    }
+
+    void ShowThought(string line, ThoughtPriority priority)
+    {
+        bubbleText.text = line;
+        thoughtShow = Mathf.Clamp(1.2f + line.Length * 0.05f, 2.2f, 4.5f);
+        thoughtAge = 0f;
+        showingPriority = priority;
+        showing = true;
     }
 
     // Someone (or something) shouting: a speech bubble over `over` for `seconds`. Any number at once.
@@ -269,24 +333,30 @@ public class GameHud : MonoBehaviour
         if (Tutorial.CardShowing) // the tutorial's card is talking: the spirit keeps its thoughts to itself
         {
             thoughts.Clear();
+            showing = false;
             thoughtAge = thoughtShow;
             bubbleGroup.alpha = 0f;
             return;
         }
         thoughtAge += Time.unscaledDeltaTime;
-        if (thoughtAge >= thoughtShow && thoughts.Count > 0)
+        if (thoughtAge >= thoughtShow)
         {
-            bubbleText.text = thoughts[0];
-            thoughtShow = Mathf.Clamp(1.2f + thoughts[0].Length * 0.05f, 2.2f, 4.5f); // long enough to read
-            thoughts.RemoveAt(0);
-            thoughtAge = 0f;
+            showing = false;
+            if (thoughts.Count > 0)
+            {
+                var next = thoughts[0];
+                thoughts.RemoveAt(0);
+                ShowThought(next.line, next.priority);
+            }
         }
-        bubbleGroup.alpha = Mathf.Min(Mathf.Clamp01(thoughtAge / 0.15f), Mathf.Clamp01((thoughtShow - thoughtAge) / 0.25f));
+        bubbleGroup.alpha = showing
+            ? Mathf.Min(Mathf.Clamp01(thoughtAge / 0.15f), Mathf.Clamp01((thoughtShow - thoughtAge) / 0.25f))
+            : Mathf.MoveTowards(bubbleGroup.alpha, 0f, Time.unscaledDeltaTime / 0.25f);
         if (bubbleGroup.alpha <= 0f) return;
 
         // Over the host's head, or just above the little spirit.
         var host = spirit.Host;
-        Vector3 over = host != null ? PersonTop(host.transform) : spirit.transform.position + Vector3.up * 1.4f;
+        Vector3 over = host != null ? PersonTop(host.transform) : spirit.transform.position + Vector3.up * 0.9f;
         var cam = Camera.main;
         Vector3 screen = cam != null ? cam.WorldToScreenPoint(over) : Vector3.back;
         if (screen.z <= 0f) return;
@@ -613,7 +683,7 @@ public class GameHud : MonoBehaviour
     }
 
     // Where the floating prompt goes: over the head of someone you could possess, or over the top of a thing.
-    static Vector3 PersonTop(Transform t) => t.position + Vector3.up * 2.6f;
+    static Vector3 PersonTop(Transform t) => t.position + Vector3.up * 2f;
 
     static Vector3 ThingTop(Transform t)
     {

@@ -40,7 +40,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     static readonly Color Water = new(0.45f, 0.75f, 1f);
 
     SpriteRenderer puddle;
-    bool mechanicCalled, thoughtNear, electrocutedOnce;
+    bool mechanicCalled, nearLeak, electrocutedOnce;
     float nextDrip, readyAt, target; // target: the radius the water is still spreading to
     int presses, jobsLeft;
     Vector3 scene; // the taped-off puddle being cleaned up
@@ -68,13 +68,11 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
             if (VisitorsInPuddle() >= crowdToFlood) Mischief.Complete(Mischief.Task.FloodPuddle);
         }
 
-        // The player comes up to it for the first time, as the spirit or in anyone's body, and notices the leak (not
-        // once someone has pressed it).
-        if (!thoughtNear && presses == 0 && Possession.PlayerNear(transform.position, GetComponent<Interactable>().range))
-        {
-            thoughtNear = true;
-            GameHud.Think(GameText.ThinkFountainNear);
-        }
+        // Ruckus notices the leak whenever he comes into range, until someone has pressed the button (or it's fixed).
+        // Leave and come back → another line. Standing still → only once per visit.
+        bool inRange = !Fixed && presses == 0 && Possession.PlayerNear(transform.position, GetComponent<Interactable>().range);
+        if (inRange && !nearLeak) GameHud.Think(GameText.PickFountainNear());
+        nearLeak = inRange;
 
         if (Time.time < nextDrip) return;
         nextDrip = Time.time + 1.2f;
@@ -120,7 +118,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     {
         readyAt = Time.time + pressCooldown;
         var lines = GameText.ThinkFountainPress;
-        if (presses < lines.Length) GameHud.Think(lines[presses]);
+        if (presses < lines.Length) GameHud.Think(GameHud.ThoughtPriority.Action, lines[presses]);
         presses++;
         target = Mathf.Min(maxRadius, Mathf.Max(target, startRadius) + (maxRadius - startRadius) / tapsToFull); // Update lets it creep out
         Sfx.Play(Sfx.HitSoft, 0.6f, 1.4f);
@@ -283,7 +281,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     public void Restore(float radius, int pressCount, bool called, bool isFixed)
     {
         presses = pressCount;
-        thoughtNear = pressCount > 0;
+        nearLeak = false; // next Update can notice the leak again if still unpressed
         electrocutedOnce = Mischief.IsDone(Mischief.Task.Electrocute);
         SetRadius(target = radius);
         if (called) CallMechanic(true); // saved mid clean-up: the speaker's as good as fixed
@@ -331,7 +329,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
 
     void ThinkElectrocuted()
     {
-        if (!electrocutedOnce) GameHud.Think(GameText.ThinkElectrocuted);
+        if (!electrocutedOnce) GameHud.Think(GameHud.ThoughtPriority.Critical, GameText.ThinkElectrocuted);
         electrocutedOnce = true;
     }
 

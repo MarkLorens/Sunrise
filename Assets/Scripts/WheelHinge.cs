@@ -34,7 +34,7 @@ public class WheelHinge : MonoBehaviour, IInteraction
         Sfx.Play(Sfx.HitWood, 0.7f, 0.6f);
         Fx.Burst("Fx/sparkle", transform.position + Vector3.up * 0.6f, 6, new Color(0.85f, 0.85f, 0.9f), 2f, 0.15f, 0.3f);
         GameHud.Say(GameText.LoosenedHinge);
-        GameHud.Think(GameText.ThinkHinge);
+        GameHud.Think(GameHud.ThoughtPriority.Action, GameText.ThinkHinge);
         Mischief.Complete(Mischief.Task.LoosenHinge);
     }
 
