@@ -18,6 +18,20 @@ public static class Settings
         set { PlayerPrefs.SetFloat("volume", Mathf.Clamp01(value)); ApplyVolume(); }
     }
 
+    // Background music only (FMOD's Music group), on top of Volume.
+    public static float MusicVolume
+    {
+        get => PlayerPrefs.GetFloat("musicVolume", 1f);
+        set { PlayerPrefs.SetFloat("musicVolume", Mathf.Clamp01(value)); ApplyVolume(); }
+    }
+
+    // Sound effects and menu sounds (FMOD's SFX and UI groups, and the old Sfx clips), on top of Volume.
+    public static float SfxVolume
+    {
+        get => PlayerPrefs.GetFloat("sfxVolume", 1f);
+        set { PlayerPrefs.SetFloat("sfxVolume", Mathf.Clamp01(value)); ApplyVolume(); }
+    }
+
     public static bool Fullscreen
     {
         get => PlayerPrefs.GetInt("fullscreen", 1) == 1;
@@ -65,12 +79,11 @@ public static class Settings
 
     static void ApplyVolume()
     {
-        AudioListener.volume = Volume; // the old Sfx clips
-        try
-        {
-            FMODUnity.RuntimeManager.GetBus("bus:/").setVolume(Volume); // starts FMOD up if it isn't yet
-        }
-        catch (System.Exception) { } // no FMOD banks set up
+        AudioListener.volume = Volume * SfxVolume; // the old Sfx clips
+        AudioBuses.SetVolume(AudioBuses.Master, Volume);
+        AudioBuses.SetVolume(AudioBuses.Music, MusicVolume);
+        AudioBuses.SetVolume(AudioBuses.Sfx, SfxVolume);
+        AudioBuses.SetVolume(AudioBuses.Ui, SfxVolume);
     }
 
     // ---------------------------------------------------------------- screen

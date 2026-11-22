@@ -1,0 +1,374 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1680034631
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1680034632}
+  - component: {fileID: 1680034634}
+  - component: {fileID: 1680034633}
+  m_Layer: 0
+  m_Name: AudioSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1680034632
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1680034631}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 6.39082, y: -0, z: 11.79827}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1680034634
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1680034631}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c9dc06526e454019ae27108960467c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AudioManager
+--- !u!114 &1680034633
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1680034631}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a0fa818a912fc499a97d6d1efe95264a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FMODEvents
+  <lobbyMusic>k__BackingField:
+    Guid:
+      Data1: 719395609
+      Data2: 1076821321
+      Data3: 1067315587
+      Data4: 1722405110
+    Path: event:/Game (G)/G-01 Lobby Music
+  <menuHover>k__BackingField:
+    Guid:
+      Data1: -1230168919
+      Data2: 1166232906
+      Data3: 1813076142
+      Data4: -383059540
+    Path: event:/Game (G)/G-02 Menu Hover
+  <menuClick>k__BackingField:
+    Guid:
+      Data1: -879573874
+      Data2: 1153929844
+      Data3: 2119655812
+      Data4: 1847174146
+    Path: event:/Game (G)/G-03 Click or Confirm
+  <ruckusMusic>k__BackingField:
+    Guid:
+      Data1: -254445501
+      Data2: 1084030894
+      Data3: 1851850398
+      Data4: 922779718
+    Path: event:/Game (G)/G-04 BGM (Ruckus)
+  <possessedMusic>k__BackingField:
+    Guid:
+      Data1: -1970511378
+      Data2: 1163421182
+      Data3: -1494078585
+      Data4: 1274048567
+    Path: event:/Game (G)/G-05 BGM (Possessed)
+  <disabledAction>k__BackingField:
+    Guid:
+      Data1: -1502933957
+      Data2: 1190995022
+      Data3: 1389114300
+      Data4: -1623635216
+    Path: event:/Game (G)/G-06 Disabled Action
+  <puzzleComplete>k__BackingField:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  <volumeUp>k__BackingField:
+    Guid:
+      Data1: 1308126533
+      Data2: 1326446220
+      Data3: 875409854
+      Data4: -891924239
+    Path: event:/Settings (S)/S-01 Volume Up
+  <volumeDown>k__BackingField:
+    Guid:
+      Data1: 1392378202
+      Data2: 1209119062
+      Data3: 1108671890
+      Data4: -956694089
+    Path: event:/Settings (S)/S-02 Volume Down
+  <volumeLimit>k__BackingField:
+    Guid:
+      Data1: -1870530585
+      Data2: 1142403730
+      Data3: 1101497750
+      Data4: 165659999
+    Path: event:/Settings (S)/S-03 Volume Off Limits
+  <toggle>k__BackingField:
+    Guid:
+      Data1: 1854474061
+      Data2: 1149372728
+      Data3: 1933243547
+      Data4: -358867956
+    Path: event:/Settings (S)/S-04 Toggle
+  <pauseMenu>k__BackingField:
+    Guid:
+      Data1: -848820276
+      Data2: 1107235656
+      Data3: 2096818606
+      Data4: -455797410
+    Path: event:/Settings (S)/S-05 Trigger Pause Menu (Esc)
+  <backButton>k__BackingField:
+    Guid:
+      Data1: -613726266
+      Data2: 1092471409
+      Data3: -924904820
+      Data4: 510283221
+    Path: event:/Settings (S)/S-06 Back Button
+  <saveButton>k__BackingField:
+    Guid:
+      Data1: 1046746670
+      Data2: 1214418639
+      Data3: 861094
+      Data4: -210589002
+    Path: event:/Settings (S)/S-07 Save Button
+  <tutorialZoomIn>k__BackingField:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  <skipTutorialHold>k__BackingField:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  <outOfOrderSign>k__BackingField:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  <valveCrank>k__BackingField:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  <closetEnter>k__BackingField:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  <toiletGeyser>k__BackingField:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  <chatBubble>k__BackingField:
+    Guid:
+      Data1: 1116057524
+      Data2: 1250602982
+      Data3: -1792958033
+      Data4: -1456536811
+    Path: event:/Ruckus (RU)/RU-01 Chat Bubble
+  <spiritHover>k__BackingField:
+    Guid:
+      Data1: 427168090
+      Data2: 1183008178
+      Data3: 1468763313
+      Data4: -830343913
+    Path: event:/Ruckus (RU)/RU-02 Float
+  <possess>k__BackingField:
+    Guid:
+      Data1: 1552490166
+      Data2: 1174752788
+      Data3: -684537696
+      Data4: -1571207126
+    Path: event:/Ruckus (RU)/RU-03 Possess
+  <release>k__BackingField:
+    Guid:
+      Data1: -2068667508
+      Data2: 1101811978
+      Data3: 215152575
+      Data4: -2091419114
+    Path: event:/Ruckus (RU)/RU-04 Release
+  <hostFootsteps>k__BackingField:
+    Guid:
+      Data1: 1409630697
+      Data2: 1193589829
+      Data3: 1075666110
+      Data4: -1427162750
+    Path: event:/Ruckus (RU)/RU-05 Walk (NPC)
+  <cableManFootsteps>k__BackingField:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  <mechanicFootsteps>k__BackingField:
+    Guid:
+      Data1: 2141263092
+      Data2: 1178611345
+      Data3: -1394648646
+      Data4: -297851235
+    Path: event:/Ruckus (RU)/RU-06 Walk (Mechanic)
+  <hotDogManFootsteps>k__BackingField:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  <technicianFootsteps>k__BackingField:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  <npcScream>k__BackingField:
+    Guid:
+      Data1: -1926042919
+      Data2: 1330641433
+      Data3: -1179790940
+      Data4: -1786373790
+    Path: event:/NPC/NPC-01 Scream or Panic
+  <npcSurprised>k__BackingField:
+    Guid:
+      Data1: -307967330
+      Data2: 1300597844
+      Data3: -1896065126
+      Data4: -1701636872
+    Path: event:/NPC/NPC-02 Surprised or Bothered
+  <npcCurious>k__BackingField:
+    Guid:
+      Data1: -342564235
+      Data2: 1332852829
+      Data3: -1028834631
+      Data4: -1089941640
+    Path: event:/NPC/NPC-03 Curious
+  <npcFootsteps>k__BackingField:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  <speakerMusic>k__BackingField:
+    Guid:
+      Data1: 1302849983
+      Data2: 1087644890
+      Data3: -336580172
+      Data4: 1671905923
+    Path: event:/A-leak-tricity (AL)/Boom Bass Speakers
+  <fountainPress>k__BackingField:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  <waterLeak>k__BackingField:
+    Guid:
+      Data1: -955011312
+      Data2: 1106976455
+      Data3: -464565367
+      Data4: -493296342
+    Path: event:/A-leak-tricity (AL)/AL-03 Water Leak
+  <moveAlong>k__BackingField:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  <cableDip>k__BackingField:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  <electrocution>k__BackingField:
+    Guid:
+      Data1: 269536171
+      Data2: 1233676029
+      Data3: -1008109921
+      Data4: -690956622
+    Path: event:/A-leak-tricity (AL)/Electric Shock Cartoon
+  <unlockElectricalBox>k__BackingField:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  <cutPower>k__BackingField:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  <ferrisHydraulic>k__BackingField:
+    Guid:
+      Data1: -2033483464
+      Data2: 1100042892
+      Data3: -316655486
+      Data4: 62232473
+    Path: event:/Ferris Wheel/Ferris/Mechanical
+  <ferrisMaxSpeed>k__BackingField:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  <ferrisPowerOff>k__BackingField:
+    Guid:
+      Data1: 1531511369
+      Data2: 1265351733
+      Data3: 484722618
+      Data4: 937276117
+    Path: event:/Ferris Wheel/Ferris/PowerOff
+  <ferrisCabinCreak>k__BackingField:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 

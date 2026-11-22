@@ -108,7 +108,8 @@ public static class Mischief
     public static void Complete(Task t)
     {
         if (!done.Add(t)) return;
-        Sfx.Play(Sfx.TaskDone, 0.7f);
+        // The last step of a part: the puzzle's done (G-07). Any other step, or no G-07 yet: the usual chime.
+        if (!(PartFinished(t) && AudioManager.TryPlay(e => e.puzzleComplete))) Sfx.Play(Sfx.TaskDone, 0.7f);
         GameHud.StepDone(GameText.StepDone(t)); // the events, top right
         if (Listed(t)) SaveGame.AutoSave = true; // a step crossed off the objectives: save (GameHud does, when it can)
     }
@@ -119,6 +120,22 @@ public static class Mischief
         foreach (var (_, steps) in Parts)
             foreach (var (task, _) in steps)
                 if (task == t) return true;
+        return false;
+    }
+
+    // Is every step of t's part done now?
+    static bool PartFinished(Task t)
+    {
+        foreach (var (_, steps) in Parts)
+        {
+            bool inPart = false, all = true;
+            foreach (var (task, _) in steps)
+            {
+                if (task == t) inPart = true;
+                if (!done.Contains(task)) all = false;
+            }
+            if (inPart) return all;
+        }
         return false;
     }
 }

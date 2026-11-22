@@ -34,20 +34,46 @@ public class SettingsMenu : MonoBehaviour
         MainMenu.Title(column, "OPTIONS", 560f, 80);
 
         var resolutions = Settings.Resolutions();
-        var first = Row(column, "Master volume", () => $"{Mathf.RoundToInt(Settings.Volume * 100f)}%",
-            d => Settings.Volume = Mathf.Round(Settings.Volume * 10f + d) / 10f);
-        Row(column, "Fullscreen", () => Settings.Fullscreen ? "On" : "Off", _ => Settings.Fullscreen = !Settings.Fullscreen);
+        var first = Row(column, "Master volume", () => Percent(Settings.Volume),
+            d => Nudge(() => Settings.Volume, v => Settings.Volume = v, d));
+        Row(column, "Music volume", () => Percent(Settings.MusicVolume),
+            d => Nudge(() => Settings.MusicVolume, v => Settings.MusicVolume = v, d));
+        Row(column, "Sound effects volume", () => Percent(Settings.SfxVolume),
+            d => Nudge(() => Settings.SfxVolume, v => Settings.SfxVolume = v, d));
+        Row(column, "Fullscreen", () => Settings.Fullscreen ? "On" : "Off", Changed(_ => Settings.Fullscreen = !Settings.Fullscreen));
         Row(column, "Resolution", () => $"{Settings.CurrentResolution.x} x {Settings.CurrentResolution.y}",
-            d => Settings.Resolution = resolutions[Wrap(Array.IndexOf(resolutions, Settings.CurrentResolution) + d, resolutions.Length)]);
+            Changed(d => Settings.Resolution = resolutions[Wrap(Array.IndexOf(resolutions, Settings.CurrentResolution) + d, resolutions.Length)]));
         Row(column, "Graphics", () => Settings.Graphics.ToString(),
-            d => Settings.Graphics = (Settings.Quality)Wrap((int)Settings.Graphics + d, 3));
-        Row(column, "Screen shake", () => Settings.ShakeNames[Settings.Shake], d => Settings.Shake = Wrap(Settings.Shake + d, 3));
-        Row(column, "Depth of field", () => Settings.DepthOfField ? "On" : "Off", _ => Settings.DepthOfField = !Settings.DepthOfField);
-        MainMenu.Button(column, "Back", Close);
+            Changed(d => Settings.Graphics = (Settings.Quality)Wrap((int)Settings.Graphics + d, 3)));
+        Row(column, "Screen shake", () => Settings.ShakeNames[Settings.Shake], Changed(d => Settings.Shake = Wrap(Settings.Shake + d, 3)));
+        Row(column, "Depth of field", () => Settings.DepthOfField ? "On" : "Off", Changed(_ => Settings.DepthOfField = !Settings.DepthOfField));
+        MainMenu.Button(column, "Back", Close, sound: e => e.backButton); // S-06
         MainMenu.Select(first);
     }
 
     static int Wrap(int i, int n) => ((i % n) + n) % n;
+
+    // Volumes go in tenths.
+    static string Percent(float volume) => $"{Mathf.RoundToInt(volume * 100f)}%";
+
+    // A volume one tenth up or down, with its sound played at the new volume: up (S-01), down (S-02), or already at
+    // 0% or 100% (S-03).
+    static void Nudge(Func<float> get, Action<float> set, int d)
+    {
+        float was = get();
+        set(Mathf.Clamp01(Mathf.Round(was * 10f + d) / 10f));
+        float now = get();
+        if (Mathf.Approximately(now, was)) AudioManager.TryPlay(e => e.volumeLimit);
+        else if (now > was) AudioManager.TryPlay(e => e.volumeUp);
+        else AudioManager.TryPlay(e => e.volumeDown);
+    }
+
+    // Any other setting changing: the toggle sound (S-04).
+    static Action<int> Changed(Action<int> step) => d =>
+    {
+        step(d);
+        AudioManager.TryPlay(e => e.toggle);
+    };
 
     static Button Row(RectTransform column, string name, Func<string> value, Action<int> step)
     {
@@ -64,7 +90,9 @@ public class SettingsMenu : MonoBehaviour
 
     void Update()
     {
-        if (Controls.Back) Close(); // Esc, or a gamepad's B
+        if (!Controls.Back) return; // Esc, or a gamepad's B
+        AudioManager.TryPlay(e => e.backButton); // S-06, as if Back was clicked
+        Close();
     }
 
     void Close()

@@ -26,7 +26,7 @@ public class PauseMenu : MonoBehaviour
         column = MainMenu.Column(canvas);
         MainMenu.Title(column, "PAUSED", 560f, 80);
         MainMenu.Button(column, "Continue", () => SetPaused(false));
-        saveButton = MainMenu.Button(column, "Save Game", Save);
+        saveButton = MainMenu.Button(column, "Save Game", Save, sound: e => e.saveButton); // S-07
         settingsButton = MainMenu.Button(column, "Options", OpenSettings);
         MainMenu.Button(column, "Exit to Main Menu", BackToMainMenu);
         screen = canvas.gameObject;
@@ -44,7 +44,9 @@ public class PauseMenu : MonoBehaviour
     {
         // Esc in the settings or the save slots goes back to this one, not out of the pause.
         if (SettingsMenu.IsOpen || SaveSlotMenu.IsOpen || ConfirmDialog.IsOpen || Time.frameCount == menuClosedFrame) return;
-        if (Controls.Pause) SetPaused(!Paused); // Esc, or a gamepad's Start
+        if (!Controls.Pause) return; // Esc, or a gamepad's Start
+        if (!Paused) AudioManager.TryPlay(e => e.pauseMenu); // S-05 (the menus' own group, so pausing doesn't cut it off)
+        SetPaused(!Paused); // pausing also pauses the music (AudioBuses.PauseGame)
     }
 
     // The slots pop up in place of the menu (the park stays blurred behind).
@@ -84,17 +86,8 @@ public class PauseMenu : MonoBehaviour
         screen.SetActive(on);
         Time.timeScale = on ? 0f : 1f;
         AudioListener.pause = on;
-        PauseFmod(on);
+        AudioBuses.PauseGame(on); // the park's FMOD sounds; the menus' own (the UI group) keep playing
         if (on) MainMenu.Select(screen.GetComponentInChildren<UnityEngine.UI.Button>()); // Continue
-    }
-
-    static void PauseFmod(bool on)
-    {
-        try
-        {
-            if (FMODUnity.RuntimeManager.IsInitialized) FMODUnity.RuntimeManager.GetBus("bus:/").setPaused(on);
-        }
-        catch (System.Exception) { } // no FMOD banks set up: nothing of FMOD's to pause
     }
 
     void BackToMainMenu()

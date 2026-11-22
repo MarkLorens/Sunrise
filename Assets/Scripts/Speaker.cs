@@ -17,22 +17,38 @@ public class Speaker : MonoBehaviour
 
     public Vector3 CrowdCenter => new(transform.position.x + crowdOffset.x, 0f, transform.position.z + crowdOffset.z);
 
-    MusicFx music;
-    public bool Playing => music == null || music.enabled;
+    MusicFx musicFx; // the thumping and floating notes
+    LoopingSound music; // AL-01, from the speaker itself
+    public bool Playing => musicFx == null || musicFx.enabled;
 
     // The crowd speakers' music, off while the live one's broken (DrinkingFountain) and back on once it's fixed.
     public static void SetPlaying(bool on)
     {
         foreach (var s in All)
-            if (s.music != null) s.music.enabled = on;
+            if (s.musicFx != null) s.musicFx.enabled = on;
     }
 
     void OnEnable() => All.Add(this);
-    void OnDisable() => All.Remove(this);
+
+    void OnDisable()
+    {
+        All.Remove(this);
+        music?.Stop();
+    }
+
+    void OnDestroy() => music?.Release();
+
+    void Update()
+    {
+        var events = FMODEvents.instance;
+        if (events != null && Playing) music.Play(events.speakerMusic);
+        else music?.Stop(); // broken (SetPlaying(false)): quiet too
+    }
 
     void Start()
     {
-        music = gameObject.AddComponent<MusicFx>(); // thumping, notes floating off (until SetPlaying(false))
+        musicFx = gameObject.AddComponent<MusicFx>(); // thumping, notes floating off (until SetPlaying(false))
+        music = new LoopingSound(gameObject);
         if (!livePlug) return;
         var end = new GameObject("Live Cable");
         end.SetActive(false); // so Interactable's Awake finds the rules component

@@ -609,9 +609,7 @@ GameObject:
   - component: {fileID: 330585545}
   - component: {fileID: 330585547}
   - component: {fileID: 330585548}
-  - component: {fileID: 330585549}
   - component: {fileID: 330585550}
-  - component: {fileID: 330585551}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -743,37 +741,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnity::FMODUnity.StudioListener
   nonRigidbodyVelocity: 0
   attenuationObject: {fileID: 484566581}
---- !u!114 &330585549
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 330585543}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9a6610d2e704f1648819acc8d7460285, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: FMODUnity::FMODUnity.StudioEventEmitter
-  CollisionTag: 
-  EventReference:
-    Guid:
-      Data1: 673475445
-      Data2: 1285183341
-      Data3: 921665162
-      Data4: -17045619
-    Path: event:/Music2
-  Event: 
-  EventPlayTrigger: 1
-  EventStopTrigger: 2
-  AllowFadeout: 1
-  TriggerOnce: 0
-  Preload: 0
-  NonRigidbodyVelocity: 0
-  Params: []
-  OverrideAttenuation: 1
-  OverrideMinDistance: 40
-  OverrideMaxDistance: 60
 --- !u!81 &330585550
 AudioListener:
   m_ObjectHideFlags: 0
@@ -782,19 +749,6 @@ AudioListener:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 330585543}
   m_Enabled: 1
---- !u!114 &330585551
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 330585543}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 90283fb369afa44fa8bca63165fa03a0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EmitterVolume
-  volume: 0.7
 --- !u!1 &344091409
 GameObject:
   m_ObjectHideFlags: 0
@@ -2151,6 +2105,8 @@ GameObject:
   - component: {fileID: 618812265}
   - component: {fileID: 618812264}
   - component: {fileID: 618812266}
+  - component: {fileID: 618812273}
+  - component: {fileID: 618812274}
   m_Layer: 0
   m_Name: ThemeSongSpeakerBL
   m_TagString: Untagged
@@ -2261,7 +2217,6 @@ GameObject:
   - component: {fileID: 700000101}
   - component: {fileID: 700000102}
   - component: {fileID: 819266736}
-  - component: {fileID: 819266737}
   m_Layer: 0
   m_Name: Ferris Wheel
   m_TagString: Untagged
@@ -3295,6 +3250,8 @@ GameObject:
   - component: {fileID: 760199548}
   - component: {fileID: 760199547}
   - component: {fileID: 760199549}
+  - component: {fileID: 760199556}
+  - component: {fileID: 760199557}
   m_Layer: 0
   m_Name: ThemeSongSpeakerBR
   m_TagString: Untagged
@@ -3416,37 +3373,6 @@ MonoBehaviour:
     Path: event:/Ferris Wheel/Ferris/Mechanical
   Event: 
   EventPlayTrigger: 1
-  EventStopTrigger: 2
-  AllowFadeout: 1
-  TriggerOnce: 0
-  Preload: 0
-  NonRigidbodyVelocity: 0
-  Params: []
-  OverrideAttenuation: 0
-  OverrideMinDistance: 1
-  OverrideMaxDistance: 20
---- !u!114 &819266737
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 700000100}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9a6610d2e704f1648819acc8d7460285, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: FMODUnity::FMODUnity.StudioEventEmitter
-  CollisionTag: 
-  EventReference:
-    Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
-  Event: 
-  EventPlayTrigger: 0
   EventStopTrigger: 2
   AllowFadeout: 1
   TriggerOnce: 0
@@ -4503,6 +4429,8 @@ GameObject:
   - component: {fileID: 1439868131}
   - component: {fileID: 1439868130}
   - component: {fileID: 1439868132}
+  - component: {fileID: 1439868139}
+  - component: {fileID: 1439868140}
   m_Layer: 0
   m_Name: ThemeSongSpeakerTL
   m_TagString: Untagged
@@ -4742,6 +4670,8 @@ GameObject:
   - component: {fileID: 1494336511}
   - component: {fileID: 1494336510}
   - component: {fileID: 1494336512}
+  - component: {fileID: 1494336519}
+  - component: {fileID: 1494336520}
   m_Layer: 0
   m_Name: ThemeSongSpeakerTR
   m_TagString: Untagged
@@ -5282,119 +5212,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1680034631
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1680034632}
-  - component: {fileID: 1680034634}
-  - component: {fileID: 1680034633}
-  m_Layer: 0
-  m_Name: Audio
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1680034632
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1680034631}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 6.39082, y: -0, z: 11.79827}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1680034633
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1680034631}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a0fa818a912fc499a97d6d1efe95264a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::FMODEvents
-  <spiritHover>k__BackingField:
-    Guid:
-      Data1: 427168090
-      Data2: 1183008178
-      Data3: 1468763313
-      Data4: -830343913
-    Path: event:/Player/Hover
-  <hostFootsteps>k__BackingField:
-    Guid:
-      Data1: -175362233
-      Data2: 1078178972
-      Data3: 1324827021
-      Data4: -716905154
-    Path: event:/Player/Walk
-  <possess>k__BackingField:
-    Guid:
-      Data1: 1552490166
-      Data2: 1174752788
-      Data3: -684537696
-      Data4: -1571207126
-    Path: event:/Player/Possess
-  <npcFootsteps>k__BackingField:
-    Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
-  <ferrisHydraulic>k__BackingField:
-    Guid:
-      Data1: -2033483464
-      Data2: 1100042892
-      Data3: -316655486
-      Data4: 62232473
-    Path: event:/Ferris Wheel/Ferris/Mechanical
-  <ferrisPowerOff>k__BackingField:
-    Guid:
-      Data1: 1531511369
-      Data2: 1265351733
-      Data3: 484722618
-      Data4: 937276117
-    Path: event:/Ferris Wheel/Ferris/PowerOff
-  <ferrisCabinCreak>k__BackingField:
-    Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
-  <electrocution>k__BackingField:
-    Guid:
-      Data1: 269536171
-      Data2: 1233676029
-      Data3: -1008109921
-      Data4: -690956622
-    Path: event:/A-leak-tricity/Electric Shock Cartoon
---- !u!114 &1680034634
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1680034631}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7c9dc06526e454019ae27108960467c5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AudioManager
 --- !u!1 &1707651099
 GameObject:
   m_ObjectHideFlags: 0
@@ -95748,7 +95565,6 @@ SceneRoots:
   - {fileID: 1786531568}
   - {fileID: 1218834924}
   - {fileID: 407931831}
-  - {fileID: 1680034632}
   - {fileID: 1439868131}
   - {fileID: 1494336511}
   - {fileID: 618812265}
@@ -95761,3 +95577,179 @@ SceneRoots:
   - {fileID: 874225479}
   - {fileID: 585028157}
   - {fileID: 1740760067}
+--- !u!114 &618812273
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 618812263}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a6610d2e704f1648819acc8d7460285, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: FMODUnity::FMODUnity.StudioEventEmitter
+  CollisionTag: 
+  EventReference:
+    Guid:
+      Data1: -254445501
+      Data2: 1084030894
+      Data3: 1851850398
+      Data4: 922779718
+    Path: event:/Game (G)/G-04 BGM (Ruckus)
+  Event: 
+  EventPlayTrigger: 1
+  EventStopTrigger: 2
+  AllowFadeout: 1
+  TriggerOnce: 0
+  Preload: 0
+  NonRigidbodyVelocity: 0
+  Params: []
+  OverrideAttenuation: 1
+  OverrideMinDistance: 6
+  OverrideMaxDistance: 25
+--- !u!114 &618812274
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 618812263}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 90283fb369afa44fa8bca63165fa03a0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EmitterVolume
+  volume: 0.5
+--- !u!114 &760199556
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 760199546}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a6610d2e704f1648819acc8d7460285, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: FMODUnity::FMODUnity.StudioEventEmitter
+  CollisionTag: 
+  EventReference:
+    Guid:
+      Data1: -254445501
+      Data2: 1084030894
+      Data3: 1851850398
+      Data4: 922779718
+    Path: event:/Game (G)/G-04 BGM (Ruckus)
+  Event: 
+  EventPlayTrigger: 1
+  EventStopTrigger: 2
+  AllowFadeout: 1
+  TriggerOnce: 0
+  Preload: 0
+  NonRigidbodyVelocity: 0
+  Params: []
+  OverrideAttenuation: 1
+  OverrideMinDistance: 6
+  OverrideMaxDistance: 25
+--- !u!114 &760199557
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 760199546}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 90283fb369afa44fa8bca63165fa03a0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EmitterVolume
+  volume: 0.5
+--- !u!114 &1439868139
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1439868129}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a6610d2e704f1648819acc8d7460285, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: FMODUnity::FMODUnity.StudioEventEmitter
+  CollisionTag: 
+  EventReference:
+    Guid:
+      Data1: -254445501
+      Data2: 1084030894
+      Data3: 1851850398
+      Data4: 922779718
+    Path: event:/Game (G)/G-04 BGM (Ruckus)
+  Event: 
+  EventPlayTrigger: 1
+  EventStopTrigger: 2
+  AllowFadeout: 1
+  TriggerOnce: 0
+  Preload: 0
+  NonRigidbodyVelocity: 0
+  Params: []
+  OverrideAttenuation: 1
+  OverrideMinDistance: 6
+  OverrideMaxDistance: 25
+--- !u!114 &1439868140
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1439868129}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 90283fb369afa44fa8bca63165fa03a0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EmitterVolume
+  volume: 0.5
+--- !u!114 &1494336519
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1494336509}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a6610d2e704f1648819acc8d7460285, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: FMODUnity::FMODUnity.StudioEventEmitter
+  CollisionTag: 
+  EventReference:
+    Guid:
+      Data1: -254445501
+      Data2: 1084030894
+      Data3: 1851850398
+      Data4: 922779718
+    Path: event:/Game (G)/G-04 BGM (Ruckus)
+  Event: 
+  EventPlayTrigger: 1
+  EventStopTrigger: 2
+  AllowFadeout: 1
+  TriggerOnce: 0
+  Preload: 0
+  NonRigidbodyVelocity: 0
+  Params: []
+  OverrideAttenuation: 1
+  OverrideMinDistance: 6
+  OverrideMaxDistance: 25
+--- !u!114 &1494336520
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1494336509}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 90283fb369afa44fa8bca63165fa03a0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EmitterVolume
+  volume: 0.5

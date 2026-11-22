@@ -172,8 +172,7 @@ public class Possession : MonoBehaviour
         var v = Touching();
         if (v == null)
         {
-            Sfx.Play(Sfx.Refuse, 0.5f);
-            GameHud.Refuse(Candidate, CandidateBlocked, true);
+            GameHud.Refuse(Candidate, CandidateBlocked, true); // with the "can't" sound
             return true; // E was used up on trying
         }
         State = Mode.Diving;
@@ -260,7 +259,7 @@ public class Possession : MonoBehaviour
         host.EndPossession();
         lockedUntil[host] = Time.time + sameTargetCooldown;
         BackToSpirit(host.transform.position, cooldown);
-        Sfx.Play(Sfx.Leave, 0.6f);
+        if (!AudioManager.TryPlay(e => e.release, host.transform.position)) Sfx.Play(Sfx.Leave, 0.6f); // RU-04
         Fx.Burst("Fx/sparkle", host.HeadPoint, 14, Fx.Spirit, 3f, 0.4f, 0.5f);
     }
 

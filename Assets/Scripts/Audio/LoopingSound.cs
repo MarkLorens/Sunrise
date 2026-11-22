@@ -30,6 +30,7 @@ public class LoopingSound
         {
             instance = AudioManager.instance.CreateInstance(sound);
             loaded = sound.Guid;
+            if (!instance.isValid()) return; // not in the built banks
         }
 
         instance.getPlaybackState(out PLAYBACK_STATE state);

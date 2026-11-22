@@ -45,11 +45,21 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     int presses, jobsLeft;
     Vector3 scene; // the taped-off puddle being cleaned up
 
+    LoopingSound leak; // AL-03, until the mechanic fixes it
+
     void OnEnable() => All.Add(this);
-    void OnDisable() => All.Remove(this);
+
+    void OnDisable()
+    {
+        All.Remove(this);
+        leak?.Stop();
+    }
+
+    void OnDestroy() => leak?.Release();
 
     void Start()
     {
+        leak = new LoopingSound(gameObject);
         puddle = ParkArt.Make("Puddle", null, "Markers/shadow", 1f, new Color(Water.r, Water.g, Water.b, 0.55f), ParkArt.DecalOrder, true);
         if (puddleArt != null)
         {
@@ -62,6 +72,10 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
 
     void Update()
     {
+        var events = FMODEvents.instance;
+        if (Fixed || events == null) leak.Stop();
+        else leak.Play(events.waterLeak);
+
         if (Radius < target)
         {
             SetRadius(Mathf.MoveTowards(Radius, target, spreadSpeed * Time.deltaTime));
@@ -121,7 +135,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
         if (presses < lines.Length) GameHud.Think(GameHud.ThoughtPriority.Action, lines[presses]);
         presses++;
         target = Mathf.Min(maxRadius, Mathf.Max(target, startRadius) + (maxRadius - startRadius) / tapsToFull); // Update lets it creep out
-        Sfx.Play(Sfx.HitSoft, 0.6f, 1.4f);
+        if (!AudioManager.TryPlay(e => e.fountainPress, transform.position)) Sfx.Play(Sfx.HitSoft, 0.6f, 1.4f); // AL-02
         Fx.Burst("Fx/puff", transform.position + Vector3.up * 0.8f, 6, Water, 2f, 0.35f, 0.5f);
         GameHud.Say(GameText.PressedFountain);
     }

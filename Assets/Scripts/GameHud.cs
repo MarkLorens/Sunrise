@@ -184,6 +184,7 @@ public class GameHud : MonoBehaviour
     public static void Refuse(Transform by, string why, bool person = false)
     {
         if (Instance == null || by == null || string.IsNullOrEmpty(why)) return;
+        if (!AudioManager.TryPlay(e => e.disabledAction)) Sfx.Play(Sfx.Refuse, 0.5f); // G-06
         Instance.refusedBy = by;
         Instance.refusedPerson = person;
         Instance.refusal = why;
@@ -249,6 +250,7 @@ public class GameHud : MonoBehaviour
         thoughtAge = 0f;
         showingPriority = priority;
         showing = true;
+        AudioManager.TryPlay(e => e.chatBubble); // RU-01, as each line pops up
     }
 
     // Someone (or something) shouting: a speech bubble over `over` for `seconds`. Any number at once.
