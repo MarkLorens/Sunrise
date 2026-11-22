@@ -21,6 +21,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     public float fixTime = 12f;      // how long the mechanic works on it: the window to possess him
     public float mopTime = 8f;
     public float bodyTime = 10f;     // a Reset Agent's time carrying off each body
+    public float cleanupDelay = 3f;  // after the zap's played out (and the mechanic's shown up), before the clean-up crew comes
     public int payoffVictims = 5;    // more zapped than this and the camera cuts to it (Payoff)
     public float payoffPan = 1f;     // seconds for the camera to get there
     public float payoffTwitch = 2f;  // seconds the victims twitch
@@ -146,22 +147,39 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
                 zapped.Add(v);
         int victims = zapped.Count;
 
-        if (victims > payoffVictims)
-        {
-            foreach (var v in zapped) v.Die(payoffPan, payoffTwitch, true);
-            StartCoroutine(Payoff(from, zapped));
-        }
-        else
-        {
-            foreach (var v in zapped) v.Die(0f, 0f, true);
-            Zap(from, zapped, 0.3f);
-        }
+        // Big enough a scene and the mechanic comes out, but only once the zap's over (MechanicComes).
+        bool big = victims >= victimsToCallMechanic, payoff = victims > payoffVictims;
+        foreach (var v in zapped)
+            if (payoff) v.Die(payoffPan, payoffTwitch, true);
+            else v.Die(0f, 0f, true);
+        if (!payoff) Zap(from, zapped, 0.3f);
         if (victims == 0) return;
 
-        if (victims <= payoffVictims) ThinkElectrocuted(); // a payoff thinks it once it's over
+        if (!payoff) ThinkElectrocuted(); // a payoff thinks it once it's over
         Mischief.Complete(Mischief.Task.Electrocute);
+        jobsLeft++; // the clean-up crew's place, held until they're called: no dipping again meanwhile
+        if (big)
+        {
+            Speaker.SetPlaying(false);
+            jobsLeft++; // the mechanic's job, held open until he's called: the clean-up can't finish without him
+        }
+        StartCoroutine(Aftershock(from, zapped, payoff, big));
+    }
 
-        // Taped off until every job below is done (another agent guards the tape).
+    // The zap plays out (the payoff, or the mechanic coming out after a small one), then a moment later the clean-up
+    // crew arrives.
+    IEnumerator Aftershock(Vector3 from, List<Visitor> zapped, bool payoff, bool big)
+    {
+        if (payoff) yield return Payoff(from, zapped, big);
+        else if (big) yield return AfterZap();
+        yield return new WaitForSeconds(cleanupDelay);
+        jobsLeft--; // the place Electrify held for the crew: their jobs count themselves
+        CleanUp(zapped);
+    }
+
+    // Taped off until every job below is done (another agent guards the tape): each body carried off, the puddle mopped.
+    void CleanUp(List<Visitor> zapped)
+    {
         scene = PuddleCenter;
         Aftermath.Add(scene, Radius + 1f, float.PositiveInfinity);
         foreach (var v in zapped)
@@ -183,15 +201,35 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
             shout = "Clean-up on the fountain! Everybody out of the way!",
             done = Mop,
         });
+    }
 
-        if (victims < victimsToCallMechanic) return; // not much of a scene: the speakers hold out
-        Speaker.SetPlaying(false);
-        CallMechanic(false);
+    // A small zap (no payoff): a beat for it to land, then the mechanic.
+    IEnumerator AfterZap()
+    {
+        Possession.InputBlocked = true;
+        yield return new WaitForSeconds(1f);
+        yield return MechanicComes();
+        CameraRig.EndSpotlight();
+        yield return new WaitForSeconds(1f); // the camera easing back
+        Possession.InputBlocked = false;
+    }
+
+    // Out he comes, the camera following him over to the blown speaker until he gets to work. The caller holds the
+    // player's input and eases the camera back.
+    IEnumerator MechanicComes()
+    {
+        jobsLeft--; // the place Electrify held for him: Job counts it again
+        var m = CallMechanic(false);
         Mischief.Complete(Mischief.Task.LureMechanic);
+        if (m == null) yield break; // busy (or possessed): he'll come when he can
+        CameraRig.Spotlight(m.transform, 999f);
+        float giveUp = Time.time + 10f; // in case something stops him on the way
+        while (m.Current == StaffWorker.State.Going && Time.time < giveUp) yield return null;
+        yield return new WaitForSeconds(1f);
     }
 
     // A clean-up job; the last one done takes the tape down and puts the music back on.
-    void Job(bool mechanic, StaffWorker.Job job)
+    StaffWorker Job(bool mechanic, StaffWorker.Job job)
     {
         jobsLeft++;
         var then = job.done;
@@ -203,8 +241,9 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
             ResetAgent.StandDown(scene);
             Speaker.SetPlaying(true);
         };
-        if (mechanic) Mechanic.Call(job);
-        else ResetAgent.Call(job);
+        if (mechanic) return Mechanic.Call(job);
+        ResetAgent.Call(job);
+        return null;
     }
 
     void CarryOff(Visitor body)
@@ -216,11 +255,11 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
 
     // The mechanic comes out to fix the blown speaker, and keeps an eye on it from then on. Already fixed (loading a
     // save): he just comes back to stand by it.
-    void CallMechanic(bool alreadyFixed)
+    StaffWorker CallMechanic(bool alreadyFixed)
     {
         mechanicCalled = true;
         if (alreadyFixed) Fixed = true;
-        var speaker = Speaker.All.Find(s => s.fountain == this) ?? (Speaker.All.Count > 0 ? Speaker.All[0] : null);
+        var speaker = Speaker.All.Find(s => s.livePlug && s.fountain == this) ?? (Speaker.All.Count > 0 ? Speaker.All[0] : null);
         Vector3 at = speaker != null ? speaker.transform.position : transform.position;
         var job = new StaffWorker.Job
         {
@@ -232,8 +271,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
             stay = true,
             roam = 2.5f, // pottering round the speaker, keeping an eye on it
         };
-        if (alreadyFixed) Mechanic.Call(job);
-        else Job(true, job);
+        return alreadyFixed ? Mechanic.Call(job) : Job(true, job);
     }
 
     // ---------------------------------------------------------------- saving (SaveGame)
@@ -262,8 +300,9 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     }
 
     // A big zap gets its moment: the camera pans to the crowd, it shakes while they twitch (Visitor.Die), they drop,
-    // the survivors run (their collapse sets everyone nearby panicking), then the camera eases back to the player.
-    IEnumerator Payoff(Vector3 from, List<Visitor> zapped)
+    // the survivors run (their collapse sets everyone nearby panicking), then (mechanic) it pans over to the mechanic
+    // coming out, and eases back to the player.
+    IEnumerator Payoff(Vector3 from, List<Visitor> zapped, bool mechanic)
     {
         Possession.InputBlocked = true;
         Vector3 middle = Vector3.zero;
@@ -282,6 +321,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
         }
 
         yield return new WaitForSeconds(1.5f); // they drop, everyone else runs
+        if (mechanic) yield return MechanicComes();
         CameraRig.EndSpotlight();
         yield return new WaitForSeconds(1f); // the camera easing back
         Possession.InputBlocked = false;

@@ -21,6 +21,10 @@ public static class NavGrid
     static int width, height;
     static float originX, originZ;
     static bool[] blocked, staffOnly;
+    // Open, but some of the square is within Clearance of something: a straight line cutting across it could scrape
+    // what the walker bumps into (a centre 0.5 away, a line through the square's edge 0.34 away). Routes still go
+    // through these squares, just not as shortcuts across them (Clear).
+    static bool[] tight;
     static float[] floor; // each square's floor height (RaisedFloor): neighbours more than a stair apart don't connect
 
     // Search scratch, reused so a search allocates nothing; `stamp` tells this search's entries from older ones.
@@ -89,6 +93,7 @@ public static class NavGrid
         int n = width * height;
         blocked = new bool[n];
         staffOnly = new bool[n];
+        tight = new bool[n];
         floor = new float[n];
         cost = new float[n];
         cameFrom = new int[n];
@@ -101,6 +106,7 @@ public static class NavGrid
             Vector3Int cell = ground.WorldToCell(p);
             cell.z = 0;
             blocked[i] = !ground.HasTile(cell) || GroundWalker.NearObstacle(p, Clearance);
+            tight[i] = !blocked[i] && GroundWalker.NearObstacle(p, Clearance + CellSize * 0.5f);
             floor[i] = RaisedFloor.Height(p);
             foreach (var area in StaffArea.All)
                 if (area.Contains(p)) staffOnly[i] = true;
@@ -146,17 +152,17 @@ public static class NavGrid
         return best;
     }
 
-    // Can you walk straight from `a` to `b` without crossing a blocked square? (`a` itself may be in one.)
+    // Can you walk straight from `a` to `b` without crossing a blocked or tight square? (`a` itself may be in one.)
     static bool Clear(Vector3 a, Vector3 b, bool mayUseStaff)
     {
         Vector3 d = b - a;
         d.y = 0;
         int steps = Mathf.CeilToInt(d.magnitude / (CellSize * 0.5f));
-        int prev = ToCell(a);
+        int prev = ToCell(a), first = prev, last = ToCell(b); // the ends' own squares may be tight: you start or stop there
         for (int s = 1; s <= steps; s++)
         {
             int i = ToCell(a + d * (s / (float)steps));
-            if (i < 0 || !Open(i, mayUseStaff) || prev >= 0 && !Step(prev, i)) return false;
+            if (i < 0 || !Open(i, mayUseStaff) || tight[i] && i != first && i != last || prev >= 0 && !Step(prev, i)) return false;
             prev = i;
         }
         return true;

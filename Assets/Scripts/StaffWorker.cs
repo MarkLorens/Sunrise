@@ -46,8 +46,8 @@ public abstract class StaffWorker : MonoBehaviour
     // The crew's own queue of jobs nobody was free to take.
     protected abstract Queue<Job> Backlog { get; }
 
-    // Hand a job to the nearest free member of a crew, or leave it for the next one who's free.
-    protected static bool Dispatch<T>(List<T> crew, Queue<Job> backlog, Job job) where T : StaffWorker
+    // Hand a job to the nearest free member of a crew (who's returned), or leave it for the next one who's free (null).
+    protected static T Dispatch<T>(List<T> crew, Queue<Job> backlog, Job job) where T : StaffWorker
     {
         T best = null;
         foreach (var w in crew)
@@ -56,10 +56,10 @@ public abstract class StaffWorker : MonoBehaviour
         if (best == null)
         {
             backlog.Enqueue(job);
-            return false;
+            return null;
         }
         best.Take(job);
-        return true;
+        return best;
     }
 
     static float Distance(Component c, Vector3 p)

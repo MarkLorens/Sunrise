@@ -20,7 +20,7 @@ public class ResetAgent : StaffWorker
     int nextLine;
 
     // The nearest free agent takes it; with everyone busy it waits for the first one done.
-    public static bool Call(Job job) => Dispatch(All, backlog, job);
+    public static bool Call(Job job) => Dispatch(All, backlog, job) != null;
 
     // Stand watch over a scene from `keepBack` away, on the side facing the middle of the park.
     public static void Guard(Vector3 scene, float keepBack)
