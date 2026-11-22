@@ -245,6 +245,8 @@ public static class GameText
 
     // Out loud
     public const string MascotGuard = "*angry mascot noises* (Don't touch the fan!)";
+    public const string MascotSilent = "...";
+    public static readonly string[] MascotWarnings = { "Leave...", "You do not belong here", "Devil!" };
     public const string MascotStink = "*gagging mascot noises*";
     public const string PAFire = "ATTENTION! FIRE AT THE LOCKER ROOM! ALL STAFF TO THE LOCKER ROOM, NOW!";
     public const string OperatorFire = "FIRE?! Not the lockers, my lunch is in there!";

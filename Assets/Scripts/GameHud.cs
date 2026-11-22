@@ -261,6 +261,18 @@ public class GameHud : MonoBehaviour
         Instance.shouts.Add(new Shouted { bubble = b, group = b.GetComponent<CanvasGroup>(), over = over, life = seconds, until = Time.unscaledTime + seconds, ambient = ambient });
     }
 
+    // Takes down whatever `over` is saying now, so a new line replaces it instead of stacking.
+    public static void Hush(Transform over)
+    {
+        if (Instance == null) return;
+        Instance.shouts.RemoveAll(s =>
+        {
+            if (s.over != over) return false;
+            Destroy(s.bubble.gameObject);
+            return true;
+        });
+    }
+
     class Shouted
     {
         public RectTransform bubble;

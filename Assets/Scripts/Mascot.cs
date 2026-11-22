@@ -168,9 +168,76 @@ public class Mascot : MonoBehaviour
         look.panicBody = true; // mascot_panic
     }
 
-    // Loading a save (SaveGame).
-    public void Restore()
+    // The spirit tries to possess him (Possession.TryPossess): it never works. Usually he just says "...", each new
+    // one replacing the last; now and then (warnChance) he warns it off instead, the camera closing in on the two of
+    // them while he says it, and after that he pays the spirit no more mind.
+    public float warnChance = 0.1f;
+    public float warnTime = 2f;
+    public float warnZoom = 0.5f;
+    public float warnVignette = 0.6f; // how dark the edges get meanwhile
+    bool warned;
+
+    public bool Warned => warned;
+    public bool Teasable => Guarding && !warned;
+
+    public void Tease()
     {
+        if (!Teasable) return;
+        GameHud.Hush(transform);
+        if (Random.value >= warnChance)
+        {
+            GameHud.Shout(transform, GameText.MascotSilent, 1.5f, true);
+            return;
+        }
+        warned = true;
+        GameHud.Shout(transform, GameText.MascotWarnings[Random.Range(0, GameText.MascotWarnings.Length)], warnTime);
+        StartCoroutine(CloseUp());
+    }
+
+    // The camera on the spot between him and the spirit, zoomed in, the screen going dark around them, for as long as
+    // he's talking.
+    System.Collections.IEnumerator CloseUp()
+    {
+        var spirit = Possession.Instance.transform;
+        var between = new GameObject("Mascot Close-Up").transform;
+        between.position = (transform.position + spirit.position) * 0.5f;
+        CameraRig.Spotlight(between, warnTime, 1.5f);
+        CameraRig.Zoom(warnZoom);
+
+        // A dark ring closing in round them, over the night's own vignette (NightLighting, priority 10).
+        var profile = ScriptableObject.CreateInstance<UnityEngine.Rendering.VolumeProfile>();
+        var ring = profile.Add<UnityEngine.Rendering.Universal.Vignette>();
+        ring.intensity.Override(warnVignette);
+        ring.smoothness.Override(0.6f);
+        ring.color.Override(Color.black);
+        var volume = between.gameObject.AddComponent<UnityEngine.Rendering.Volume>();
+        volume.isGlobal = true;
+        volume.priority = 30;
+        volume.sharedProfile = profile;
+        volume.weight = 0f;
+
+        const float fade = 0.35f;
+        var cam = Camera.main;
+        for (float t = 0f; t < warnTime + fade; t += Time.unscaledDeltaTime)
+        {
+            between.position = (transform.position + spirit.position) * 0.5f;
+            if (cam != null) ring.center.Override((Vector2)cam.WorldToViewportPoint(between.position));
+            volume.weight = Mathf.Min(t / fade, (warnTime + fade - t) / fade); // in fast, out as he finishes
+            if (t >= warnTime) CameraRig.EndZoom();
+            yield return null;
+        }
+        CameraRig.EndZoom();
+        CameraRig.EndSpotlight();
+        yield return null; // let the rig let go of it first
+        yield return null;
+        Destroy(profile);
+        Destroy(between.gameObject);
+    }
+
+    // Loading a save (SaveGame).
+    public void Restore(bool warnedSpirit)
+    {
+        warned = warnedSpirit;
         if (Mischief.IsDone(Mischief.Task.SmellMascot)) Leave(true);
     }
 }

@@ -124,12 +124,15 @@ public class Possession : MonoBehaviour
         foreach (var v in Visitor.All)
         {
             if (v.Current is Visitor.State.Down or Visitor.State.Riding || !v.Look.Visible) continue;
+            var mascot = v.brain as Mascot;
+            if (mascot != null && !mascot.Teasable) continue; // he's said his piece
             float d = Flat(v.transform.position - transform.position).magnitude;
             if (d > best) continue;
             best = d;
             Candidate = v.transform;
             CandidateName = v.name;
-            CandidateBlocked = !v.CanBePossessed ? GameText.CantBePossessed(v.name)
+            CandidateBlocked = mascot != null ? null // looks possessable; he just won't have it (Mascot.Tease)
+                : !v.CanBePossessed ? GameText.CantBePossessed(v.name)
                 : IsLocked(v, out float left) ? GameText.StillShaken(v.name, Mathf.CeilToInt(left))
                 : CooldownLeft > 0f ? GameText.TooWeak(Mathf.CeilToInt(CooldownLeft))
                 : null;
@@ -170,6 +173,11 @@ public class Possession : MonoBehaviour
         FindCandidate();
         if (Candidate == null) return false;
         var v = Touching();
+        if (v != null && v.brain is Mascot mascot)
+        {
+            mascot.Tease();
+            return true;
+        }
         if (v == null)
         {
             Sfx.Play(Sfx.Refuse, 0.5f);
