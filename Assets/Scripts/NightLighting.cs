@@ -264,7 +264,7 @@ public class NightLighting : MonoBehaviour
         for (int i = 0; i < w.Cabins.Count; i++)
             ride.glows.Add(Glow("Cabin Glow", w.Cabins[i], new Vector3(0f, -0.52f, -0.03f), 0.9f, Bulb(i), 0.6f)); // in the window
 
-        Vector3 foot = new(w.wheel.position.x, 0f, w.wheel.position.z);
+        Vector3 foot = new(w.wheel.position.x, w.transform.position.y, w.wheel.position.z); // on its platform
         float scale = w.transform.lossyScale.x;
         for (int side = -1; side <= 1; side += 2)
         {

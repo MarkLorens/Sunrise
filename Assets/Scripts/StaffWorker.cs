@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Park staff who wait out of sight behind the staff door until they're called out to a job. They walk over, work on
-// it for a while (a bar over their head shows how long), then take the next job waiting for their crew or go back
+// it for a while (tinkering away: Tinker), then take the next job waiting for their crew or go back
 // inside (or, after a Job.stay one, back to it to hang around). While they're out their Visitor body can be
 // possessed like anyone's (this script is switched off while it is); on release they go back to the job they were on.
 // Each crew (Mechanic, ResetAgent) keeps its own roster and backlog and calls Dispatch to hand out jobs, so a new
@@ -21,10 +21,12 @@ public abstract class StaffWorker : MonoBehaviour
         public string shout;          // said when they set off (null = nothing)
         public System.Action done;
         public bool stay;             // hang around here afterwards instead of going back inside (still takes new jobs)
+        public float roam;            // while hanging around: wander within this far of the spot (0 = stand still)
     }
 
     public float walkSpeed = 2.2f;
     public float runSpeed = 3.6f;
+    public float tinkerBeat = 0.4f;  // seconds between taps while working
 
     public State Current { get; private set; }
     public bool Free => enabled && Current is State.Inside or State.Returning or State.Staying;
@@ -37,14 +39,15 @@ public abstract class StaffWorker : MonoBehaviour
     bool hasJob;
     Job post;     // the job they stayed on at (Job.stay), if any
     bool hasPost;
-    float workEndsAt;
-    WorldBar bar;
+    float workEndsAt, nextTap, roamAt;
+    bool tapDown;
+    Vector3 roamTo;
 
     // The crew's own queue of jobs nobody was free to take.
     protected abstract Queue<Job> Backlog { get; }
 
-    // Hand a job to the nearest free member of a crew, or leave it for the next one who's free.
-    protected static bool Dispatch<T>(List<T> crew, Queue<Job> backlog, Job job) where T : StaffWorker
+    // Hand a job to the nearest free member of a crew (who's returned), or leave it for the next one who's free (null).
+    protected static T Dispatch<T>(List<T> crew, Queue<Job> backlog, Job job) where T : StaffWorker
     {
         T best = null;
         foreach (var w in crew)
@@ -53,10 +56,10 @@ public abstract class StaffWorker : MonoBehaviour
         if (best == null)
         {
             backlog.Enqueue(job);
-            return false;
+            return null;
         }
         best.Take(job);
-        return true;
+        return best;
     }
 
     static float Distance(Component c, Vector3 p)
@@ -73,7 +76,6 @@ public abstract class StaffWorker : MonoBehaviour
         if (!TryGetComponent(out Visitor body)) body = gameObject.AddComponent<Visitor>(); // loads the sprite
         body.brain = this;
         home = transform.position;
-        bar = WorldBar.Create(transform, Vector3.up * (look.HeadHeight / transform.lossyScale.y + 0.45f));
         Set(State.Inside);
     }
 
@@ -91,7 +93,7 @@ public abstract class StaffWorker : MonoBehaviour
         else NextJob();
     }
 
-    protected virtual void OnDisable() => bar.Set(0f, Color.white, false);
+    protected virtual void OnDisable() { }
 
     // Straight to this one, skipping the crew's queue (the electrical box's cutscene).
     public void Take(Job j)
@@ -100,6 +102,17 @@ public abstract class StaffWorker : MonoBehaviour
         hasJob = true;
         Set(State.Going);
     }
+
+    // No more standing watch at `at` (a stay job facing it): off to the next job or back inside.
+    public void LeavePost(Vector3 at)
+    {
+        if (hasJob && job.stay && Same(job.at, at)) job.stay = false;
+        if (!hasPost || !Same(post.at, at)) return;
+        hasPost = false;
+        if (Current == State.Staying) NextJob();
+    }
+
+    protected static bool Same(Vector3 a, Vector3 b) => (a - b).sqrMagnitude < 0.01f;
 
     void NextJob()
     {
@@ -120,10 +133,11 @@ public abstract class StaffWorker : MonoBehaviour
 
             case State.Working:
                 look.Face(job.at);
-                float left = workEndsAt - Time.time;
-                bar.Set(1f - left / job.seconds, new Color(0.6f, 1f, 0.92f), true);
-                if (left > 0f) break;
-                bar.Set(0f, Color.white, false);
+                if (Time.time < workEndsAt)
+                {
+                    Tinker();
+                    break;
+                }
                 hasJob = false;
                 if (job.stay) (post, hasPost) = (job, true);
                 job.done?.Invoke();
@@ -136,7 +150,18 @@ public abstract class StaffWorker : MonoBehaviour
                 break;
 
             case State.Staying:
+                if (post.roam > 0f && walker.WalkTo(roamTo)) break; // strolling round the spot
                 look.Face(post.at);
+                if (post.roam <= 0f || Time.time < roamAt) break;
+                roamAt = Time.time + Random.Range(2f, 5f);
+                for (int i = 0; i < 6; i++)
+                {
+                    Vector2 r = Random.insideUnitCircle * post.roam;
+                    Vector3 p = post.spot + new Vector3(r.x, 0f, r.y);
+                    if (!walker.IsWalkable(p)) continue;
+                    roamTo = p;
+                    break;
+                }
                 break;
         }
     }
@@ -149,6 +174,21 @@ public abstract class StaffWorker : MonoBehaviour
         look.running = false;
         look.pose = null;
         look.SetVisible(s != State.Inside); // behind the staff door
-        if (s != State.Working) bar.Set(0f, Color.white, false);
+        roamTo = transform.position;
+        roamAt = Time.time + Random.Range(1f, 3f);
+    }
+
+    // Hard at it: hands going up and down on the beat, each tap kicking up a little dust (and a clank, if the player's
+    // close enough to hear it) at whatever they're working on.
+    void Tinker()
+    {
+        if (Time.time < nextTap) return;
+        nextTap = Time.time + tinkerBeat * Random.Range(0.8f, 1.2f);
+        tapDown = !tapDown;
+        look.pose = tapDown ? look.interact : look.think;
+        if (!tapDown) return;
+        Vector3 hit = Vector3.Lerp(transform.position, job.at, 0.6f) + Vector3.up * 0.3f;
+        Fx.Burst("Fx/puff", hit, 3, new Color(0.85f, 0.85f, 0.8f, 0.8f), 1.2f, 0.15f, 0.35f);
+        if (Possession.PlayerNear(transform.position, 8f)) Sfx.Play(Sfx.HitSoft, 0.2f, Random.Range(1.2f, 1.6f));
     }
 }

@@ -419,6 +419,15 @@ public class Visitor : MonoBehaviour
         it.Consume();
     }
 
+    // Carried off by the clean-up crew (DrinkingFountain): out of the park for good, saves included (SaveGame).
+    public bool CarriedOff { get; private set; }
+
+    public void CarryOff()
+    {
+        CarriedOff = true;
+        gameObject.SetActive(false);
+    }
+
     // Gone for good: a by-product of the chaos (electrocuted in the puddle, the wheel), never the spirit's own doing.
     // Frozen on the spot at once; with a twitch, they stand still for `wait`, jolt for `twitch` seconds, then drop.
     // zapped: electrocuted (DrinkingFountain): face and body panic at once (arms up while they jolt), and the face
