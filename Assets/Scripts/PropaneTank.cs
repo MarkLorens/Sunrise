@@ -107,7 +107,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
         if (aimed && !Mischief.IsDone(aimTask))
         {
             Mischief.Complete(aimTask);
-            GameHud.Think(GameText.PickFanAimed());
+            GameHud.Think(GameHud.ThoughtPriority.Action, GameText.PickFanAimed());
         }
         if (!aimed && level < 1f)
         {
@@ -126,7 +126,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
             if (level >= 1f)
             {
                 Mischief.Complete(cloudTask);
-                GameHud.Think(HotDogStand ? GameText.ThinkCloud : GameText.ThinkLockerCloud);
+                GameHud.Think(GameHud.ThoughtPriority.Action, HotDogStand ? GameText.ThinkCloud : GameText.ThinkLockerCloud);
             }
         }
 
@@ -166,7 +166,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
         leaking = true;
         Sfx.Play(Sfx.HitWood, 0.5f, 1.8f);
         GameHud.Say(GameText.OpenedValve);
-        GameHud.Think(GameText.PickValve());
+        GameHud.Think(GameHud.ThoughtPriority.Action, GameText.PickValve());
         Mischief.Complete(leakTask);
     }
 
@@ -211,7 +211,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
             CameraRig.EndSpotlight();
             yield return new WaitForSeconds(1f);
             Possession.InputBlocked = false;
-            GameHud.Think(GameText.ThinkFire);
+            GameHud.Think(GameHud.ThoughtPriority.Critical, GameText.ThinkFire);
             yield break;
         }
 
@@ -220,7 +220,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
         CameraRig.EndSpotlight();
         yield return new WaitForSeconds(1f); // the camera easing back
         Possession.InputBlocked = false;
-        GameHud.Think(GameText.ThinkBoom);
+        GameHud.Think(GameHud.ThoughtPriority.Critical, GameText.ThinkBoom);
     }
 
     // Loading a save (SaveGame).

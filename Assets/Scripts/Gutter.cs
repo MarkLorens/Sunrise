@@ -116,7 +116,7 @@ public class Gutter : MonoBehaviour, IInteraction
                     scared = true;
                     man.Scare(transform.position);
                     Mischief.Complete(Mischief.Task.RatsOut);
-                    GameHud.Think(GameText.ThinkRats);
+                    GameHud.Think(GameHud.ThoughtPriority.Action, GameText.ThinkRats);
                     chaseEnds = Time.time + chaseTime;
                 }
             }

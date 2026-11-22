@@ -35,7 +35,7 @@ public class ElectricalBox : MonoBehaviour, IInteraction
         if (thoughtAsSpirit || Unlocked || !wheel.Powered || Possession.Instance == null) return;
         if (Possession.Instance.State != Possession.Mode.Spirit || !Possession.PlayerNear(transform.position, GetComponent<Interactable>().range)) return;
         thoughtAsSpirit = true;
-        GameHud.Think(GameText.ThinkBoxSpirit);
+        GameHud.Think(GameHud.ThoughtPriority.Action, GameText.ThinkBoxSpirit);
     }
 
     public string Prompt(Visitor host) => !wheel.Powered ? "Start the Ferris wheel" : Unlocked ? "Cut the Ferris wheel's power" : "Unlock the electrician's electrical box";
@@ -71,7 +71,7 @@ public class ElectricalBox : MonoBehaviour, IInteraction
         {
             Unlocked = true;
             Sfx.Play(Sfx.HitWood, 0.7f, 1.5f);
-            if (host.brain is Mechanic) GameHud.Think(GameText.ThinkBoxMechanic);
+            if (host.brain is Mechanic) GameHud.Think(GameHud.ThoughtPriority.Action, GameText.ThinkBoxMechanic);
             GameHud.Say(GameText.UnlockedBox);
             Mischief.Complete(Mischief.Task.UnlockBox);
             return;
@@ -119,7 +119,7 @@ public class ElectricalBox : MonoBehaviour, IInteraction
         yield return new WaitForSeconds(1f); // the camera easing back
         Possession.InputBlocked = false;
         GameHud.Refuse(transform, GameText.BoxLocked);
-        GameHud.Think(GameText.ThinkBoxLocked);
+        GameHud.Think(GameHud.ThoughtPriority.Action, GameText.ThinkBoxLocked);
     }
 
     // A clear spot next to the lamp post to stand and work, preferably with nobody in the way.

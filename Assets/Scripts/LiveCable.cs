@@ -38,7 +38,7 @@ public class LiveCable : MonoBehaviour, IInteraction
             if (!thoughtWet)
             {
                 thoughtWet = true;
-                GameHud.Think(GameText.ThinkCableWet);
+                GameHud.Think(GameHud.ThoughtPriority.Action, GameText.ThinkCableWet);
             }
         }
         else if (!nearCable)

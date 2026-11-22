@@ -235,7 +235,9 @@ public class Possession : MonoBehaviour
             Release();
             GameHud.Say(GameText.LeftBody);
             // Tutorial already says a leave line in its own bubble; don't stack a second one.
-            if (!Tutorial.Active) GameHud.Think(GameText.PickLeaveBody());
+            // Observe + chance: leaving is quiet flavor, not guaranteed banter every eject.
+            if (!Tutorial.Active && Random.value < GameText.LeaveBodyThinkChance)
+                GameHud.Think(GameText.PickLeaveBody());
         }
     }
 

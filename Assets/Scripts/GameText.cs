@@ -329,7 +329,8 @@ public static class GameText
     public const string TutorialValveSays = "Now, crank up this valve.";
     public const string TutorialWalkValve = "Walk over to the water valve.";
     public const string TutorialValve = "Press [K] until the pressure is maxed out.";
-    // 10. Leaving the body (and any later exit): pick one at random
+    // 10. Leaving the body (and any later exit): sometimes a line, pick one at random when it does
+    public const float LeaveBodyThinkChance = 0.4f; // how often leaving triggers a thought (0–1)
     public static readonly string[] LeaveBodySays =
     {
         "Thanks for the ride! Keep the trauma!",

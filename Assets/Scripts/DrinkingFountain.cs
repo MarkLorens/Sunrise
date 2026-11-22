@@ -114,7 +114,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     {
         readyAt = Time.time + pressCooldown;
         var lines = GameText.ThinkFountainPress;
-        if (presses < lines.Length) GameHud.Think(lines[presses]);
+        if (presses < lines.Length) GameHud.Think(GameHud.ThoughtPriority.Action, lines[presses]);
         presses++;
         target = Mathf.Min(maxRadius, Mathf.Max(target, startRadius) + (maxRadius - startRadius) / tapsToFull); // Update lets it creep out
         Sfx.Play(Sfx.HitSoft, 0.6f, 1.4f);
@@ -243,7 +243,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
 
     void ThinkElectrocuted()
     {
-        if (!electrocutedOnce) GameHud.Think(GameText.ThinkElectrocuted);
+        if (!electrocutedOnce) GameHud.Think(GameHud.ThoughtPriority.Critical, GameText.ThinkElectrocuted);
         electrocutedOnce = true;
     }
 
