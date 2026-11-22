@@ -155,7 +155,7 @@ public class Mascot : MonoBehaviour
             return;
         }
         GameHud.Shout(transform, GameText.MascotStink, 2f);
-        GameHud.Think(GameText.ThinkStinkGone);
+        GameHud.Think(GameHud.ThoughtPriority.Action, GameText.ThinkStinkGone);
         away = post;
         for (int i = 0; i < 12; i++)
         {

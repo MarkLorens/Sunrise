@@ -255,7 +255,7 @@ public class Tutorial : MonoBehaviour
         var host = spirit.Host;
         var lastBody = host; // not the one who goes in next
         if (host != null) FocusOn(host.transform);
-        Say(GameText.TutorialLeaveSays);
+        Say(GameText.PickLeaveBody());
         Card(GameText.TutorialLeave);
         while (spirit.Host != null) yield return null;
         Mischief.Complete(Mischief.Task.TutorialLeave);
@@ -747,7 +747,7 @@ public class Tutorial : MonoBehaviour
         var cam = Camera.main;
         if (cam == null) return;
         var host = spirit.Host;
-        Vector3 over = host != null ? host.transform.position + Vector3.up * 2.6f : spirit.transform.position + Vector3.up * 1.4f;
+        Vector3 over = host != null ? host.transform.position + Vector3.up * 2f : spirit.transform.position + Vector3.up * 0.9f;
         Vector3 screen = cam.WorldToScreenPoint(over);
         if (screen.z <= 0f) return;
         RectTransformUtility.ScreenPointToLocalPointInRectangle(canvas, screen, null, out Vector2 local);

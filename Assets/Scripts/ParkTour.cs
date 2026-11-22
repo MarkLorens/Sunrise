@@ -39,7 +39,7 @@ public class ParkTour : MonoBehaviour
         // Home, and the spirit has a plan.
         yield return Glide(() => spirit.Focus.position, 0f, 3f);
         CameraRig.EndSpotlight();
-        GameHud.Think(GameText.TourSays);
+        GameHud.Think(GameHud.ThoughtPriority.Action, GameText.TourSays);
         yield return new WaitForSeconds(4.2f); // read to the end before anything else pops up
         Destroy(gameObject); // the player moves again, and the objectives come back
     }
