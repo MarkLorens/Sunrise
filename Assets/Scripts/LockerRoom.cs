@@ -48,7 +48,9 @@ public class LockerRoom : MonoBehaviour
 
         if (paBooth != null)
         {
-            CameraRig.Spotlight(paBooth, 999f, 2f);
+            // The booth's picture is a child, well away from the marker itself: frame the picture.
+            var art = paBooth.GetComponentInChildren<SpriteRenderer>();
+            CameraRig.Spotlight(art != null ? art.transform : paBooth, 999f, 2f);
             yield return new WaitForSeconds(1.2f); // the camera getting there
             Sfx.Play(Sfx.Spotted, 0.8f, 0.7f);
             GameHud.Shout(paBooth, GameText.PAFire, 3.5f);

@@ -318,14 +318,26 @@ public class GameHud : MonoBehaviour
                 shouts.RemoveAt(i);
                 continue;
             }
-            var r = s.over.GetComponent<Renderer>();
-            Vector3 top = r != null ? new Vector3(r.bounds.center.x, r.bounds.max.y, r.bounds.center.z) : s.over.position;
-            Vector3 screen = cam.WorldToScreenPoint(top);
+            Vector3 screen = cam.WorldToScreenPoint(Top(s.over));
             s.group.alpha = screen.z <= 0f ? 0f : Mathf.Min(Mathf.Clamp01(age / 0.08f), Mathf.Clamp01(left / 0.15f));
             s.bubble.localScale = Vector3.one * Mathf.Lerp(0.6f, 1f, age / 0.12f);
             RectTransformUtility.ScreenPointToLocalPointInRectangle(canvas, screen, null, out Vector2 local);
             s.bubble.anchoredPosition = local;
         }
+    }
+
+    // Over the top of whatever's drawn there: everything showing in it and its children (a person's body and head are
+    // on their Pose child, not the root), or head height over an empty marker.
+    static Vector3 Top(Transform t)
+    {
+        Bounds? drawn = null;
+        foreach (var r in t.GetComponentsInChildren<SpriteRenderer>())
+        {
+            if (!r.enabled || r.sprite == null) continue;
+            if (drawn is Bounds b) { b.Encapsulate(r.bounds); drawn = b; }
+            else drawn = r.bounds;
+        }
+        return drawn is Bounds all ? new Vector3(all.center.x, all.max.y, all.center.z) : PersonTop(t);
     }
 
     void UpdateBubble()

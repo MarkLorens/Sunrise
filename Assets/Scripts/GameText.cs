@@ -249,6 +249,12 @@ public static class GameText
     public const string PAFire = "ATTENTION! FIRE AT THE LOCKER ROOM! ALL STAFF TO THE LOCKER ROOM, NOW!";
     public const string OperatorFire = "FIRE?! Not the lockers, my lunch is in there!";
 
+    // Whoever the spirit just left, coming round (Visitor.EndPossession), one at random
+    public static readonly string[] ComingRound =
+    {
+        "H-Huh..?", "How did I get here?", "What just happened?", "Ugh, dizzy…", "Must’ve been the wind",
+    };
+
     // Reset Agents standing guard at a scene, in turns (Aftermath, ResetAgent)
     public static readonly string[] MoveAlong =
     {
