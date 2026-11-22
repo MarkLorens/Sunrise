@@ -122,7 +122,7 @@ public class ElectricalBox : MonoBehaviour, IInteraction
         GameHud.Think(GameText.ThinkBoxLocked);
     }
 
-    // A clear spot next to the lamp post to stand and work, preferably with nobody in the way (the cable man's nearby).
+    // A clear spot next to the lamp post to stand and work, preferably with nobody in the way.
     static bool StandBy(Mechanic m, Vector3 post, out Vector3 spot)
     {
         var walker = m.GetComponent<GroundWalker>();

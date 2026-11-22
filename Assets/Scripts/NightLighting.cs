@@ -41,7 +41,7 @@ public class NightLighting : MonoBehaviour
     public Color[] lampColors =
     {
         new(0.25f, 0.45f, 1f),  // #4073FF blue
-        new(0.6f, 0.25f, 1f),   // #9940FF purple
+        new(0.6f, 0.25f, 1f),   // #d3d3d3 purple
         new(1f, 0.25f, 0.7f),   // #FF40B3 pink
     };
     public float lampIntensity = 1.4f;

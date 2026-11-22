@@ -52,7 +52,7 @@ public class ResetAgent : StaffWorker
         }
         if (!anyone) return;
         var lines = GameText.MoveAlong;
-        GameHud.Shout(transform, lines[nextLine++ % lines.Length], 2f);
+        GameHud.Shout(transform, lines[nextLine++ % lines.Length], 2f, true);
     }
 
     protected override void OnEnable()

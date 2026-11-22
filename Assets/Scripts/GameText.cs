@@ -1,9 +1,9 @@
 // Every line the player reads about what they did, in one place, so the wording can be changed here without
 // hunting through the rest of the code:
-//   Pop-up (bottom left): one line for each thing the player does, and one for each step of the level done.
+//   Events (top right): one line for each thing the player does, and one for each step of the level done.
 //   Refusals: why pressing K didn't work, shown over whatever said no.
 // To reword a line, change the text between the quotes. Words in {curly brackets} are filled in by the game:
-//   {who}  someone's name as the game knows them ("Visitor", "Electrician", "Cable Man"...)
+//   {who}  someone's name as the game knows them ("Visitor", "Electrician", "Technician"...)
 //   {what} a thing ("drink", "keys", "water bottle")
 //   {s}    seconds
 // Plain C# strings, so nothing is loaded or read at runtime; a broken line shows up as a compile error.
@@ -18,7 +18,7 @@ public static class GameText
     public const string LeftBody = "You left the body";
 
     // The pause menu's Save Game
-    public const string Saved = "Game saved";
+    public const string Saving = "Saving...";
     public const string CantSave = "Can't save right now";
     public static string Bought(string what) => $"You bought a {what}";
     public const string PressedFountain = "The fountain leaks even more";
@@ -28,7 +28,7 @@ public static class GameText
     public const string LiftedLid = "You lifted the gutter lid";
     public const string OpenedValve = "You loosened the propane valve";
     public const string SwitchedOffFan = "You switched off the hot dog man's fan";
-    public static string TurnedFan(string at) => $"You turned the fan toward the {at}";
+    public static string TurnedFan(string way) => $"You turned the fan to face {way}";
     public const string ScannedFinger = "Fingerprint accepted";
     public const string LoosenedHinge = "You loosened the hinge";
     public const string RestartedWheel = "You started the Ferris wheel";
@@ -36,7 +36,7 @@ public static class GameText
     public const string SparkedCable = "You sparked the broken cable";
     public const string MaxedSpeed = "You turned the Ferris wheel up to max speed";
 
-    // "a visitor", "the electrician", "the cable man" (staff go by their job; numbers like "Reset Agent 2" are dropped).
+    // "a visitor", "the electrician", "the technician" (staff go by their job; numbers like "Reset Agent 2" are dropped).
     static string Someone(string who)
     {
         who = who.TrimEnd(' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9').ToLowerInvariant();
@@ -52,7 +52,6 @@ public static class GameText
     {
         Mischief.Task.Possess => "Visitor possessed",
         Mischief.Task.FloodPuddle => "Water fountain leaked",
-        Mischief.Task.PossessCableMan => "Cable man possessed",
         Mischief.Task.Electrocute => "Visitors electrocuted",
         Mischief.Task.LureMechanic => "Electrician arrived",
         Mischief.Task.PossessMechanic => "Electrician possessed",
@@ -106,7 +105,6 @@ public static class GameText
     public const string PuddleFull = "The puddle won't spread any further";
 
     // The live cable
-    public const string CableLive = "It's live! Only the cable man knows how to handle it";
     public const string CableCrackling = "Still crackling from the last zap";
     public const string CableTooFar = "The puddle's too far away for the cable to reach";
 
@@ -125,8 +123,6 @@ public static class GameText
     public const string ValveOpen = "It's hissing away already";
     public const string ValveSpent = "Nothing left in it";
     public const string FanGuarded = "The hot dog man won't let you touch his fan";
-    public const string FanAimed = "It's blowing at the stand already";
-    public const string FanOff = "It's off";
 
     // The technician's platform and the hinge
     public const string TechnicianOnly = "Fingerprint lock: technician only";
@@ -139,6 +135,7 @@ public static class GameText
     public const string WheelWobbly = "It's running. Barely";
     public const string OperatorFingerOnly = "Fingerprint lock: operator only";
     public const string GutterOpen = "It's open. The smell's out";
+    public const string SignBackShout = "Who took this sign down?! That toilet is OUT OF ORDER!";
     public const string MascotGuards = "The mascot won't let you near the fan";
     public const string CableSparks = "Pretty sparks. Nothing here to burn yet";
     public const string NeedKeys = "Locked. The electrician has the keys";
@@ -189,7 +186,6 @@ public static class GameText
     // Flaming hot dogs
     // Randomized pool (approach, default state): random line each enter-range while still default
     // (leave + return = another; standing still = once per visit). Same as ThinkFountainNear / ThinkCableDry.
-    // Other randomized pools can fire on refuse or other triggers — same pick-from-array idea.
     public static readonly string[] ThinkGutter =
     {
         "Ugh, that stinks. Something's living down there",
@@ -215,29 +211,15 @@ public static class GameText
         "Perfect. Now we need a spark.",
     };
     public static string PickValve() => ThinkValve[UnityEngine.Random.Range(0, ThinkValve.Length)];
-    // First propane tank-fan aim → ThinkFanAimedFirst; later propane aims → randomized pool.
-    // (Gutter stink fan etc. always use the pool — no propane "Legend" line.)
-    public const string ThinkFanAimedFirst = "Who put a fan next to propane? Legend.";
+    // PropaneTank thinks this once the fan chain first carries the gas all the way.
     public static readonly string[] ThinkFanAimed =
     {
+        "Who put a fan next to propane? Legend.",
         "I mean, why'd they even put this here.",
         "Blow it that way",
         "There. Now it helps me.",
     };
-    static bool PropaneAim(TankFan f) =>
-        f.task == Mischief.Task.AimFan || f.task == Mischief.Task.AimLockerFan;
-    public static string PickFanAimed(TankFan self)
-    {
-        if (!PropaneAim(self))
-            return ThinkFanAimed[UnityEngine.Random.Range(0, ThinkFanAimed.Length)];
-        // Aim() runs before Think, so this fan already counts. One propane aimed = first trigger.
-        int aimed = 0;
-        foreach (var f in UnityEngine.Object.FindObjectsByType<TankFan>())
-            if (f.Aimed && PropaneAim(f)) aimed++;
-        if (aimed <= 1) return ThinkFanAimedFirst;
-        return ThinkFanAimed[UnityEngine.Random.Range(0, ThinkFanAimed.Length)];
-    }
-    public const string ThinkStallFanOff = "Nice and still. Stage set for a leak.";                  // switching off the stall's fan
+    public static string PickFanAimed() => ThinkFanAimed[UnityEngine.Random.Range(0, ThinkFanAimed.Length)];
     public const string ThinkGasBlownAway = "I gotta get that fan off, or no boom.";                // gas reaching the stand with its fan on
     public const string ThinkCloud = "Let's spark that fire now Sausage Boy!"; // the cloud is full
     public const string ThinkBoom = "KABOOM. Good morning!";                                         // after the explosion
@@ -276,6 +258,11 @@ public static class GameText
     // lines join the pool for the rest of the game.
     public static readonly (Mischief.Task after, string[] lines)[] Gossip =
     {
+        (Mischief.Task.TutorialToilet, new[]
+        {
+            "Did you see the toilet EXPLODE?!", "That poor guy... covered head to toe.",
+            "I'm holding it till I get home.", "Who turned the water pressure up that high?",
+        }),
         (Mischief.Task.Electrocute, new[]
         {
             "Did you see what happened at the dance spot?", "Don't go near the drinking fountains.",
@@ -308,6 +295,7 @@ public static class GameText
     public const string PhoneRing = "*Ring ring*";     // the technician's phone, over his booth
     public const string TechnicianSnore = "zzz...";    // sleeping through it
     public const string TechnicianWake = "WHA- WHAT WAS THAT?!";
+    public const string TechnicianStaysIn = "...Ugh. Not my ride, not my problem. If it's important, they'll call.";
     public const string TechnicianCall = "Hello? The wheel's out? Yeah, yeah, on my way...";
 
     // After the first electrocution, one after the other
@@ -339,6 +327,7 @@ public static class GameText
     public const string TutorialSign = "Press [K] to take down the sign.";
     // 9. The valve
     public const string TutorialValveSays = "Now, crank up this valve.";
+    public const string TutorialWalkValve = "Walk over to the water valve.";
     public const string TutorialValve = "Press [K] until the pressure is maxed out.";
     // 10. Leaving the body (and any later exit): pick one at random
     public static readonly string[] LeaveBodySays =
@@ -357,8 +346,8 @@ public static class GameText
     public const string TutorialLaughSays = "A Royal Flush!";
     public const string TutorialGottaGo = "Gotta go, gotta go, GOTTA GO!";                       // the visitor running in
     public const string TutorialSoaked = "AAAH! IT'S EVERYWHERE!";                                  // the soaked visitor
-    // 12. The pop-up (bottom left)
-    public const string TutorialEvent = "Everything you pull off shows up down here. Have fun!";
+    // 12. The events (top right)
+    public const string TutorialEvent = "Everything you pull off shows up here. Have fun!";
 
     public const string TutorialNext = "Next";        // beside the [Space] keycap, on steps you just read
     public const string TutorialSkip = "Hold [Space] to skip tutorial";

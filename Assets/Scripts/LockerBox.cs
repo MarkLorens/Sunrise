@@ -7,7 +7,11 @@ public class LockerBox : MonoBehaviour, IInteraction
 {
     public LockerRoom room;
 
-    void Start() => ParkArt.Solid(transform, "Props/electrical_box", 1.3f, new Color(0.4f, 0.55f, 0.75f));
+    void Start()
+    {
+        ParkArt.Solid(transform, "Props/electrical_box", 1.3f, new Color(0.4f, 0.55f, 0.75f));
+        gameObject.AddComponent<ZapFx>(); // live electrics, always buzzing
+    }
 
     public string Prompt(Visitor host) => "Spark the broken cable";
 

@@ -2,26 +2,13 @@ using System;
 using System.Collections;
 using UnityEngine;
 
-// After the tutorial (played through or skipped; a loaded game has neither): the camera takes in the park a spot at
-// a time (bottom right, top right, top left, bottom left, a few seconds each), then the Ferris wheel and its
-// electrical box, and comes back to the spirit, who says what's next. It isn't part of the tutorial: it can't be
+// OFF FOR NOW: nothing plays it (Tutorial.Finish's call is commented out). Kept in case we want the shot again.
+// After the tutorial (played through or skipped; a loaded game has neither): the camera glides over to the Ferris
+// wheel, holds on it, and comes back to the spirit, who says what's next. It isn't part of the tutorial: it can't be
 // skipped, and the objectives (top left) stay hidden until it's over. The player can't move meanwhile.
 // The camera follows one invisible point (CameraRig.Spotlight) that glides from stop to stop.
 public class ParkTour : MonoBehaviour
 {
-    const float SpotHold = 2.5f;     // seconds the camera rests on each spot
-    const float SpotMove = 2.5f;     // seconds to glide from one stop to the next
-    const float SpotPullBack = 3f;   // how much further back than usual the camera sits on the spots
-
-    // The park's spots, picked out in FerrisWheelLevel (world positions, on the ground), in the order they're shown.
-    static readonly Vector3[] Spots =
-    {
-        new(9.5f, 0f, -11f),   // bottom right: the toilet block and the ice cream stand, the benches between
-        new(12f, 0f, 5.5f),    // top right: the speakers and their crowd
-        new(-16f, 0f, 1f),     // top left: the hot dog stand and the two ice cream stands
-        new(-12f, 0f, -12.5f), // bottom left: the locker room and the balloon stand
-    };
-
     Possession spirit;
     Transform point;
     float pullBack;
@@ -42,24 +29,11 @@ public class ParkTour : MonoBehaviour
         point.SetParent(transform, false);
         At(spirit.Focus.position, 0f);
 
-        foreach (var spot in Spots)
-        {
-            yield return Glide(() => spot, SpotPullBack, SpotMove);
-            yield return new WaitForSeconds(SpotHold);
-        }
-
         var wheel = FindAnyObjectByType<FerrisWheel>();
         if (wheel != null)
         {
             yield return Glide(() => wheel.wheel.position, wheel.payoffPullBack, 3f);
             yield return new WaitForSeconds(2.5f);
-            var box = FindAnyObjectByType<ElectricalBox>();
-            if (box != null)
-            {
-                var picture = box.GetComponentInChildren<Renderer>();
-                yield return Glide(() => picture != null ? picture.bounds.center : box.transform.position, 0f, 2.5f);
-                yield return new WaitForSeconds(2f);
-            }
         }
 
         // Home, and the spirit has a plan.

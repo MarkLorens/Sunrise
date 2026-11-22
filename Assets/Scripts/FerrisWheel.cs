@@ -26,6 +26,7 @@ public class FerrisWheel : MonoBehaviour
     public float normalSpeed = 12f;  // degrees per second
     public float windDownTime = 5f;  // seconds to coast to a stop once the power's cut
     public Vector3 electricalBoxOffset = new(-3.3f, 0f, -0.6f);
+    public Transform electricalBoxAt; // set: the box stands here instead, drawn by the Objects tilemap (no picture of its own)
     public Sprite electricalBoxArt; // drawn at its own size, pivot at its feet (the palette's props); empty = Props/electrical_box
     public Vector3 closedAreaOffset = new(0f, 0f, 0.3f);
     public Vector2 closedAreaSize = new(5.4f, 3.4f);
@@ -70,7 +71,9 @@ public class FerrisWheel : MonoBehaviour
         speed = normalSpeed;
         wheelHome = wheel.localPosition;
         if (!TryGetComponent(out FerrisWheelAudio _)) gameObject.AddComponent<FerrisWheelAudio>();
-        Part<ElectricalBox>("Electrical Box", electricalBoxOffset, "Props/electrical_box", 1.3f, electricalBoxArt).wheel = this;
+        var box = Part<ElectricalBox>("Electrical Box", electricalBoxOffset, "Props/electrical_box", 1.3f, electricalBoxArt, electricalBoxAt);
+        box.gameObject.AddComponent<ZapFx>(); // live electrics, always buzzing
+        box.wheel = this;
         var mat = wheel.GetComponent<SpriteRenderer>().sharedMaterial;
         for (int i = 0; i < cabinCount; i++)
         {
@@ -184,12 +187,13 @@ public class FerrisWheel : MonoBehaviour
         }
     }
 
-    // Offsets are relative to the wheel's base.
-    T Part<T>(string name, Vector3 offset, string sprite, float height, Sprite art = null) where T : Component
+    // Offsets are relative to the wheel's base. `at` set: it stands there instead, already drawn in the scene (a tile),
+    // so its own picture is hidden (kept for its shape: the tutorial lights it up) and it adds nothing to bump into.
+    T Part<T>(string name, Vector3 offset, string sprite, float height, Sprite art = null, Transform at = null) where T : Component
     {
         var go = new GameObject(name);
         go.SetActive(false); // so Interactable's Awake finds the rules component
-        go.transform.position = transform.position + offset * Scale;
+        go.transform.position = at != null ? at.position : transform.position + offset * Scale;
         var pic = Prop(go.transform, sprite, height, Vector3.zero);
         if (art != null)
         {
@@ -200,6 +204,11 @@ public class FerrisWheel : MonoBehaviour
         var part = go.AddComponent<T>();
         go.AddComponent<Interactable>();
         go.SetActive(true);
+        if (at != null)
+        {
+            pic.enabled = false;
+            return part;
+        }
 
         // Something people bump into: a box the size of its picture. Made after the scene loaded, so GroundWalker
         // is told about it.
@@ -272,7 +281,7 @@ public class FerrisWheel : MonoBehaviour
         yield return new WaitForSeconds(1f); // the camera easing back
         Possession.InputBlocked = false;
         Mischief.Complete(Mischief.Task.WheelRolled);
-        Aftermath.Add(new Vector3(wheel.position.x, 0f, wheel.position.z), 13f, 9999f); // just outside the wreck's panic zone
+        Aftermath.Add(new Vector3(wheel.position.x, 0f, wheel.position.z), wheelRadius * Scale + 1f, 9999f);
         GameHud.Think(GameText.ThinkRolled);
     }
 

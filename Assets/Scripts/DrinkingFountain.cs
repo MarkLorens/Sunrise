@@ -143,12 +143,12 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
 
         if (victims > payoffVictims)
         {
-            foreach (var v in zapped) v.Die(payoffPan, payoffTwitch);
+            foreach (var v in zapped) v.Die(payoffPan, payoffTwitch, true);
             StartCoroutine(Payoff(from, zapped));
         }
         else
         {
-            foreach (var v in zapped) v.Die();
+            foreach (var v in zapped) v.Die(0f, 0f, true);
             Zap(from, zapped, 0.3f);
         }
         if (victims == 0) return;

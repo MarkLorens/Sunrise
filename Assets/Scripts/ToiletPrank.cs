@@ -4,8 +4,10 @@ using UnityEngine.Tilemaps;
 
 // The tutorial's prank, at the park's toilet block (the "bathroom" tile): an Out of Order sign in front of the door,
 // and a water valve on a pipe beside it. In a body (K): take the sign down (ToiletSign), crank the valve all the way
-// up (ToiletValve), and the next visitor who goes in comes back out in a geyser. Made by Tutorial, on a new game only.
-// ponytail: placeholder blocks until there's art at Resources/Park/Props/toilet_sign.png and toilet_valve.png.
+// up (ToiletValve), and the next visitor who goes in comes back out in a geyser, sending everyone nearby running.
+// The block's left broken (Props/toilet_broken), and a Reset Agent comes and puts up a caution sign
+// (Props/toilet_sign_caution), for good. Made by Tutorial, on a new game only.
+// The valve is drawn into the block's own tile (its left side), so the valve part is just an invisible spot to press K.
 public class ToiletPrank : MonoBehaviour
 {
     public const int Turns = 3; // cranks to max the pressure
@@ -15,7 +17,9 @@ public class ToiletPrank : MonoBehaviour
     // Light enough to read at night (the puff picture is soft and see-through, so it comes out darker than this).
     static readonly Color[] Poop = { new(0.78f, 0.52f, 0.26f), new(0.62f, 0.4f, 0.18f), new(0.88f, 0.66f, 0.38f), new(0.5f, 0.3f, 0.12f) };
     static readonly Color SignRed = new(0.85f, 0.28f, 0.24f);
-    static readonly Color PipeGrey = new(0.55f, 0.6f, 0.68f);
+    // The middle of the hole in the broken roof (Props/toilet_broken), as a share of the picture's width and height
+    // from its bottom middle (where its feet are): the geyser comes out here.
+    static readonly Vector2 RoofHole = new(0.09f, 0.68f);
 
     public Transform Sign { get; private set; }
     public Transform Valve { get; private set; }
@@ -24,11 +28,14 @@ public class ToiletPrank : MonoBehaviour
     public Transform Middle { get; private set; }      // its middle, for the camera
     public Transform Picture { get; private set; }     // a copy of its tile that never draws, for the tutorial's light
     public bool SignDown { get; private set; }
+    public bool Erupted { get; private set; }
+    public float geyserHeight = 6f;                    // the drawn geyser (Fx/poop_geyser_1, _2), out of the roof          // the geyser went off (not just skipped past: gossip's about it)
+    public float panicRadius = 8f;                     // everyone this close runs from the geyser
+    public float panicTime = 6f;
     public int Pressure { get; private set; }
     public bool Maxed => Pressure >= Turns;
 
-    Transform wheel;
-    float wheelAngle, wheelShown;
+    Vector3 handle; // the drawn valve's handle, where the crank's splashes come out
     // The block's tile, put back after the copy has stood in for it while it rumbles.
     Tilemap tiles;
     Vector3Int cell;
@@ -63,21 +70,12 @@ public class ToiletPrank : MonoBehaviour
         // Just in front of the block's door (people bump into its front edge), and the sign right in their way.
         Door = feet + new Vector3(0f, 0f, -0.85f);
 
-        Sign = Part<ToiletSign>("Out Of Order Sign", Door + new Vector3(0f, 0f, 0.1f), "Props/toilet_sign", 1.1f, SignRed).transform;
+        Sign = Part<ToiletSign>("Out Of Order Sign", Door + new Vector3(0.35f, 1f, 0.8f), "Props/toilet_sign", 1.1f, SignRed).transform;
         if (ParkArt.Get("Props/toilet_sign") == null) Label(Sign, "OUT OF\nORDER", 1.1f);
 
-        Valve = Part<ToiletValve>("Water Valve", feet + new Vector3(size.x * 0.5f + 0.45f, 0f, -0.5f), "Props/toilet_valve", 1f, PipeGrey).transform;
-        if (ParkArt.Get("Props/toilet_valve") == null)
-        {
-            // A red handwheel on top of the pipe, with a spoke so you can see it turn.
-            wheel = new GameObject("Wheel").transform;
-            wheel.SetParent(Valve, false);
-            wheel.localPosition = new Vector3(0f, 1.05f, -0.06f);
-            ParkArt.Make("Rim", wheel, "Markers/ring", 0.5f, SignRed, 1);
-            var spoke = ParkArt.Make("Spoke", wheel, "Markers/white", 0.42f, SignRed, 1);
-            Vector3 s = spoke.sprite.bounds.size;
-            spoke.transform.localScale = new Vector3(0.07f / s.x, 0.42f / s.y, 1f);
-        }
+        // The pipe and valve drawn at the tile's left, ~15% in from its edge, handle ~23% up (bathroom.PNG).
+        Valve = Part<ToiletValve>("Water Valve", feet + new Vector3(-size.x * 0.35f, 0f, -0.5f), null, 0f, default).transform;
+        handle = new Vector3(Valve.position.x, feet.y + size.y * 0.23f, feet.z - 0.1f);
     }
 
     // The toilet block is a tile, drawn with the rest of its tilemap: this copy sits exactly where the tile is drawn, so
@@ -146,17 +144,32 @@ public class ToiletPrank : MonoBehaviour
 
     void OnDestroy()
     {
-        if (Picture != null) Settle(); // skipped mid-rumble: the toilet comes back
+        if (Picture != null && !broken) Settle(); // skipped mid-rumble: the toilet comes back
     }
 
-    // Something you use with K, standing on the floor at `at`.
+    // Blown open: the copy stays in the tile's place, showing the broken block, for good.
+    bool broken;
+
+    void Break()
+    {
+        var art = ParkArt.Get("Props/toilet_broken");
+        if (art == null || Picture == null) return;
+        broken = true;
+        var r = Picture.GetComponent<SpriteRenderer>();
+        r.sprite = art; // cut and imported like the tile's own picture, so it lands right where the tile was
+        r.forceRenderingOff = false;
+        Picture.localPosition = pictureAt;
+        if (tiles != null) tiles.SetTile(cell, null);
+    }
+
+    // Something you use with K, standing on the floor at `at`. No sprite: just the spot (it's drawn in the tile).
     T Part<T>(string name, Vector3 at, string sprite, float height, Color standIn) where T : MonoBehaviour
     {
         var go = new GameObject(name);
         go.SetActive(false); // so Interactable's Awake finds the rules component
         go.transform.SetParent(transform, true);
         go.transform.position = at;
-        ParkArt.Solid(go.transform, sprite, height, standIn);
+        if (sprite != null) ParkArt.Solid(go.transform, sprite, height, standIn);
         var part = go.AddComponent<T>();
         go.AddComponent<Interactable>().range = 1.8f;
         go.SetActive(true);
@@ -183,13 +196,6 @@ public class ToiletPrank : MonoBehaviour
         r.sortingOrder = 2;
     }
 
-    void Update()
-    {
-        if (wheel == null) return;
-        wheelShown = Mathf.MoveTowards(wheelShown, wheelAngle, 400f * Time.deltaTime);
-        wheel.localRotation = Quaternion.Euler(0f, 0f, -wheelShown);
-    }
-
     public void TakeDownSign()
     {
         if (SignDown) return;
@@ -204,12 +210,11 @@ public class ToiletPrank : MonoBehaviour
     {
         if (Maxed) return;
         Pressure++;
-        wheelAngle += 120f;
         Sfx.Play(Sfx.HitWood, 0.6f, 1f + 0.15f * Pressure);
-        Fx.Burst("Fx/sparkle", Valve.position + Vector3.up * 1.1f, 3 + Pressure * 2, Water, 1.5f + Pressure * 0.5f, 0.2f, 0.4f);
+        Fx.Burst("Fx/sparkle", handle, 3 + Pressure * 2, Water, 1.5f + Pressure * 0.5f, 0.2f, 0.4f);
         Fx.Shake(0.04f * Pressure);
         if (!Maxed) return;
-        Fx.Burst("Fx/puff", Valve.position + Vector3.up * 1.1f, 10, Water, 3f, 0.4f, 0.6f);
+        Fx.Burst("Fx/puff", handle, 10, Water, 3f, 0.4f, 0.6f);
         Mischief.Complete(Mischief.Task.TutorialValve);
     }
 
@@ -220,15 +225,37 @@ public class ToiletPrank : MonoBehaviour
         Settle();
         Sfx.Play(Sfx.Crash, 1f, 0.9f);
         Fx.Shake(0.45f, 0.6f);
-        // Out of the roof and up, in front of the block's picture (level with it, the puffs would hide behind it).
-        Vector3 roof = new(Block.center.x, Block.max.y, Door.z);
+        // Out of the hole in the broken roof and up. In front of the block's picture (level with it, the puffs would
+        // hide behind it), but slid straight toward the camera so on screen it still comes out of the hole.
+        Vector3 hole = transform.position + new Vector3(RoofHole.x * Block.size.x, RoofHole.y * Block.size.y, 0f);
+        var cam = Camera.main;
+        Vector3 toCam = cam != null ? (cam.transform.position - hole).normalized : Vector3.back;
+        Vector3 roof = hole + toCam * 1f;
+        var frames = new[] { ParkArt.Get("Fx/poop_geyser_1"), ParkArt.Get("Fx/poop_geyser_2") };
+        SpriteRenderer spout = null;
+        if (frames[0] != null)
+        {
+            spout = ParkArt.Make("Geyser", null, "Fx/poop_geyser_1", geyserHeight, Color.white, ParkArt.OverheadOrder - 1);
+            spout.transform.position = roof; // its foot in the hole
+        }
+        Break();
         for (int i = 0; i < 10; i++)
         {
+            if (spout != null)
+            {
+                spout.sprite = frames[i % 2] ?? frames[0];
+                ParkArt.Fit(spout, geyserHeight * Mathf.Min(1f, 0.4f + i * 0.2f)); // shoots up, then gushes
+            }
             Vector3 up = roof + Vector3.up * (i % 7 * 0.55f);
             var c = Poop[i % Poop.Length];
             Fx.Burst("Fx/puff", up, 10, new Color(c.r, c.g, c.b, 0.45f), 3f, 2.6f, 1.8f);  // the blur
             Fx.Burst("Fx/puff", up, 16, c, 4.5f, 1.2f, 1.5f);
             Fx.Burst("Fx/puff", Door + Vector3.up * 0.4f, 8, Poop[(i + 1) % Poop.Length], 4f, 0.7f, 1.2f); // splats
+            if (i == 3)
+            {
+                Erupted = true;
+                ParkChaos.Add(Door, panicRadius, panicTime); // everybody nearby runs
+            }
             if (i == 3 && victim != null)
             {
                 victim.Look.SetVisible(true);
@@ -238,7 +265,33 @@ public class ToiletPrank : MonoBehaviour
             }
             yield return new WaitForSeconds(0.35f);
         }
-        ParkChaos.Add(Door, 3.5f, 3f, ParkChaos.Scary);
+        if (spout != null) Destroy(spout.gameObject);
         Mischief.Complete(Mischief.Task.TutorialToilet);
+
+        // Clean-up comes to put the sign back.
+        ResetAgent.Call(new StaffWorker.Job
+        {
+            spot = Door + new Vector3(0.8f, 0f, -0.6f),
+            at = Sign.position,
+            seconds = 2f,
+            shout = GameText.SignBackShout,
+            done = PutSignBack,
+        });
+    }
+
+    // Out of order again, and nobody's taking it down this time.
+    void PutSignBack()
+    {
+        var caution = ParkArt.Get("Props/toilet_sign_caution");
+        var picture = Sign.GetComponentInChildren<SpriteRenderer>(true);
+        if (caution != null && picture != null)
+        {
+            picture.sprite = caution;
+            ParkArt.Fit(picture, 1.1f);
+        }
+        Sign.gameObject.SetActive(true);
+        Sign.GetComponent<Interactable>().enabled = false;
+        Sfx.Play(Sfx.HitWood, 0.6f, 1.1f);
+        Fx.Burst("Fx/puff", Sign.position + Vector3.up * 0.6f, 8, Color.white, 2f, 0.35f, 0.5f);
     }
 }
