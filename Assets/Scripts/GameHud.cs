@@ -56,7 +56,9 @@ public class GameHud : MonoBehaviour
     const float StepWrap = 438f;   // a line of a step (bullet and all) is no wider than this
     const float WrapStep = 36f;    // how far down each wrapped line sits from the one above
     const float ObjectiveWidth = 540f, TitleHeight = 104f, TitlePad = 34f, StepsNarrower = 11f, StepsInset = 4f;
-    const int TitleSize = 29, StepSize = 24;
+    // The objective's name in Atma at the design's 24 (under the type scale's smallest Atma, as the design draws it);
+    // the steps in Arvo Body.
+    static readonly int TitleSize = Mathf.RoundToInt(24f * Figma.K), StepSize = Figma.Type.ArvoBody;
     readonly List<StepRow> stepRows = new();
     int shownPart = -2; // index into Mischief.Parts, -1 when every step is done
     const float StepHeight = 36f;
@@ -75,7 +77,8 @@ public class GameHud : MonoBehaviour
     const int MaxEvents = 3;
     // "Saving..." bottom right, on its own canvas over the pause menu.
     CanvasGroup saving;
-    RectTransform savingSpinner;
+    Image savingSpinner;
+    static Sprite[] savingFrames;
     float savingAge = SavingTime;
     const float SavingTime = 1.6f;
     const float PartHold = 1.5f; // seconds the finished part's struck-through list stays up before the next part
@@ -88,7 +91,8 @@ public class GameHud : MonoBehaviour
     GameObject gripRow;
     RectTransform prompt;
     GameObject promptCap;
-    Text promptKey, promptText;
+    KeyCap promptKey;
+    Text promptText;
     Transform refusedBy;
     bool refusedPerson;
     string refusal;
@@ -495,7 +499,7 @@ public class GameHud : MonoBehaviour
         var row = Ui("Event", eventList);
         var group = row.gameObject.AddComponent<CanvasGroup>();
         group.alpha = 0f;
-        var text = Txt(row, line, 24, Color.white, TextAnchor.MiddleRight);
+        var text = Txt(row, line, Figma.Type.ArvoSubtitle2, Color.white, TextAnchor.MiddleRight);
         var shadow = row.gameObject.AddComponent<Shadow>();
         shadow.effectColor = new Color(0f, 0f, 0f, 0.7f);
         shadow.effectDistance = new Vector2(1.5f, -1.5f);
@@ -550,7 +554,7 @@ public class GameHud : MonoBehaviour
     {
         savingAge += Time.unscaledDeltaTime;
         saving.alpha = Mathf.Min(Mathf.Clamp01(savingAge / 0.15f), Mathf.Clamp01((SavingTime - savingAge) / 0.3f));
-        if (saving.alpha > 0f) savingSpinner.localRotation = Quaternion.Euler(0f, 0f, -Time.unscaledTime * 400f);
+        if (saving.alpha > 0f && savingFrames[0] != null) savingSpinner.sprite = savingFrames[(int)(Time.unscaledTime * 12f) % savingFrames.Length];
     }
 
     void UpdateGrip()
@@ -609,7 +613,7 @@ public class GameHud : MonoBehaviour
         RectTransformUtility.ScreenPointToLocalPointInRectangle(canvas, screen, null, out Vector2 local);
         prompt.anchoredPosition = local;
         Set(promptCap, key.Length > 0);
-        promptKey.text = key;
+        promptKey.SetKey(key);
         promptText.text = text;
     }
 
@@ -647,14 +651,9 @@ public class GameHud : MonoBehaviour
     // The middle of the screen, a little above the player: the objectives' title art, bigger, with the words.
     void BuildPuzzleBanner()
     {
-        puzzleBanner = Ui("Objective Completed", canvas);
-        Img(puzzleBanner, "UI/Menu/main_objective", Color.white).pixelsPerUnitMultiplier = 0.7f;
-        var label = Ui("Label", puzzleBanner);
-        Stretch(label);
-        label.offsetMin = new Vector2(0f, 6f);
-        var text = Txt(label, GameText.ObjectiveCompleted, 64, Ink, TextAnchor.MiddleCenter);
-        text.font = ParkArt.TitleFont;
-        Place(puzzleBanner, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 200f), new Vector2(text.preferredWidth + 2f * 90f, 150f));
+        // The artist's "OBJECTIVE COMPLETED" (UI Asset/Logo/Objective_complete), where the design (Figma: Objective
+        // completed) has it.
+        puzzleBanner = Figma.Picture(canvas, "Objective Completed", "Logo/Objective_complete", 780.3f, 532.8f, 866.4f, 731.3f).rectTransform;
         puzzleGroup = puzzleBanner.gameObject.AddComponent<CanvasGroup>();
         puzzleGroup.alpha = 0f;
     }
@@ -671,7 +670,7 @@ public class GameHud : MonoBehaviour
         BubbleArt(body);
         Row(body, 0f, new RectOffset(BubblePad.left, BubblePad.right, BubblePad.top, BubblePad.bottom));
         Fit(body);
-        bubbleText = Txt(Ui("Label", body), "", 30, Ink, TextAnchor.MiddleCenter);
+        bubbleText = Txt(Ui("Label", body), "", Figma.Type.ArvoSubtitle, Ink, TextAnchor.MiddleCenter);
     }
 
     // The speech bubble's art (UI/Bubble/dialog_box_left and _right, cut from the artist's dialog box down the middle
@@ -759,7 +758,7 @@ public class GameHud : MonoBehaviour
         var pill = Ui("Pill", grip);
         Img(pill, "UI/pill", PanelDark);
         Row(pill, 10f, new RectOffset(22, 30, 8, 8)).childAlignment = TextAnchor.MiddleLeft;
-        gripLabel = Txt(Ui("Label", pill), "", 24, Soft);
+        gripLabel = Txt(Ui("Label", pill), "", Figma.Type.ArvoBody, Soft);
         gripRow = grip.gameObject;
     }
 
@@ -773,7 +772,8 @@ public class GameHud : MonoBehaviour
         Fit(eventList);
     }
 
-    // Bottom right, over the pause menu: a turning ring and "Saving...".
+    // Bottom right, over the pause menu, as in the design (Figma: Objective completed): the artist's pink strip
+    // (UI Asset/SavingIcon/AutoSave) running off the right edge, a turning icon (SavingIcon_1..8) and "Saving...".
     void BuildSaving()
     {
         var go = new GameObject("Saving", typeof(RectTransform));
@@ -784,37 +784,21 @@ public class GameHud : MonoBehaviour
         Stretch((RectTransform)go.transform);
         saving = go.AddComponent<CanvasGroup>();
         saving.alpha = 0f;
-        var row = Ui("Row", (RectTransform)go.transform);
-        Place(row, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-60f, 50f), Vector2.zero);
-        Row(row, 14f);
-        Fit(row);
-        savingSpinner = Ui("Spinner", row);
-        var ring = savingSpinner.gameObject.AddComponent<RawImage>();
-        ring.texture = Ring(64);
-        ring.raycastTarget = false;
-        var le = savingSpinner.gameObject.AddComponent<LayoutElement>();
-        le.preferredWidth = le.preferredHeight = 30f;
-        var text = Txt(Ui("Label", row), GameText.Saving, 26, Color.white);
-        text.gameObject.AddComponent<Shadow>().effectColor = new Color(0f, 0f, 0f, 0.7f);
-    }
-
-    // A white ring with a gap in it, `size` px.
-    static Texture2D Ring(int size)
-    {
-        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
-        var px = new Color32[size * size];
-        float r = size * 0.5f;
-        for (int y = 0; y < size; y++)
-            for (int x = 0; x < size; x++)
-            {
-                Vector2 p = new(x + 0.5f - r, y + 0.5f - r);
-                float d = p.magnitude, angle = Mathf.Atan2(p.y, p.x) * Mathf.Rad2Deg;
-                float a = Mathf.Clamp01(Mathf.Min(r - 1f - d, d - (r - 8f))) * (angle > 20f && angle < 70f ? 0f : 1f);
-                px[y * size + x] = new Color32(255, 255, 255, (byte)(a * 255f));
-            }
-        tex.SetPixels32(px);
-        tex.Apply();
-        return tex;
+        // Laid out from the screen's bottom right corner, in design px: the strip's left edge 210.8 in, its bottom
+        // 29.8 up, 350 x 58.4 (most of it past the edge); the icon's middle 147.5 in, 56 up; the words from 124 in.
+        var strip = Ui("Strip", (RectTransform)go.transform);
+        Place(strip, Vector2.right, Vector2.zero, new Vector2(-210.8f, 29.8f) * Figma.K, new Vector2(350f, 58.4f) * Figma.K);
+        strip.gameObject.AddComponent<Image>().sprite = UiArt.Get("SavingIcon/AutoSave");
+        savingFrames ??= new Sprite[8];
+        for (int i = 0; i < savingFrames.Length; i++) savingFrames[i] = UiArt.Get("SavingIcon/SavingIcon_" + (i + 1));
+        var icon = Ui("Icon", (RectTransform)go.transform);
+        Place(icon, Vector2.right, new Vector2(0.5f, 0.5f), new Vector2(-147.5f, 56f) * Figma.K, new Vector2(36.7f, 36.7f) * Figma.K);
+        savingSpinner = icon.gameObject.AddComponent<Image>();
+        savingSpinner.sprite = savingFrames[0];
+        savingSpinner.raycastTarget = false;
+        var words = Ui("Label", (RectTransform)go.transform);
+        Place(words, Vector2.right, new Vector2(0f, 0.5f), new Vector2(-124f, 56f) * Figma.K, new Vector2(200f, 40f));
+        Txt(words, GameText.Saving, Figma.Type.ArvoBody, new Color32(36, 23, 37, 255));
     }
 
     void BuildPrompt()
@@ -826,11 +810,10 @@ public class GameHud : MonoBehaviour
         Img(body, "UI/pill", new Color(0.12f, 0.08f, 0.12f, 0.88f));
         Row(body, 10f, new RectOffset(10, 22, 6, 6));
         Fit(body);
-        var cap = KeyCap(body, "K", new Key[0], false, 40f);
-        Destroy(cap.GetComponent<KeyHint>());
-        promptCap = cap.gameObject;
-        promptKey = cap.GetComponentInChildren<Text>();
-        promptText = Txt(Ui("Label", body), "", 26, Color.white);
+        promptKey = KeyCap.Make(body, "K", new Key[0], 40f);
+        Destroy(promptKey.GetComponent<KeyHint>());
+        promptCap = promptKey.gameObject;
+        promptText = Txt(Ui("Label", body), "", Figma.Type.ArvoBody, Color.white);
     }
 
     // ---------------------------------------------------------------- UI helpers
@@ -922,23 +905,5 @@ public class GameHud : MonoBehaviour
     {
         var fit = rt.gameObject.AddComponent<ContentSizeFitter>();
         fit.horizontalFit = fit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-    }
-
-    static RectTransform KeyCap(RectTransform parent, string text, Key[] keys, bool mouse, float height = 46f)
-    {
-        var cap = Ui("Key " + text, parent);
-        var img = Img(cap, "UI/key", Color.white);
-        img.pixelsPerUnitMultiplier = 1f;
-        var element = cap.gameObject.AddComponent<LayoutElement>();
-        element.preferredWidth = Mathf.Max(height, text.Length * 15f + 26f);
-        element.preferredHeight = height;
-        var hint = cap.gameObject.AddComponent<KeyHint>();
-        hint.keys = keys;
-        hint.leftMouse = mouse;
-        var label = Ui("Label", cap);
-        Stretch(label);
-        label.offsetMin = new Vector2(0f, 6f);
-        Txt(label, text, Mathf.RoundToInt(height * 0.45f), Ink, TextAnchor.MiddleCenter, true);
-        return cap;
     }
 }

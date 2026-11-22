@@ -89,7 +89,7 @@ public class Tutorial : MonoBehaviour
     float bubbleAge;
     Graphic[] bubbleParts;
     CanvasGroup skip;
-    Image skipFill;
+    Image skipIcon;
     float skipHeld;
     Transform guide, guideArrow;
 
@@ -405,7 +405,8 @@ public class Tutorial : MonoBehaviour
         // Hold Space to skip.
         bool holding = Active && !PauseMenu.Paused && Controls.SkipHeld;
         skipHeld = holding ? skipHeld + dt : Mathf.MoveTowards(skipHeld, 0f, dt * 3f);
-        skipFill.fillAmount = skipHeld / SkipHold;
+        int frame = 1 + Mathf.Clamp(Mathf.FloorToInt(skipHeld / SkipHold * 14f), 0, 13);
+        skipIcon.sprite = UiArt.Get("SpaceIcon/SpaceIcon_" + frame);
         skip.alpha = Mathf.MoveTowards(skip.alpha, Active ? 1f : 0f, dt * 4f);
         if (Active && skipHeld >= SkipHold) Skip();
 
@@ -574,18 +575,18 @@ public class Tutorial : MonoBehaviour
             keys.Add(text);
             sentence.Add($"<b>{text}</b>");
         }
-        Words(cardContent, string.Join(" ", sentence), 34, CardInk);
+        Words(cardContent, string.Join(" ", sentence), Figma.Type.ArvoSubtitle, CardInk);
 
         if (keys.Count == 0 && !next) return;
         var row = Row(Ui("Keys", cardContent), 12f);
         foreach (var k in keys)
         {
             if (k == "WASD") Wasd(row);
-            else KeyCap(row, k, Keys(k), 52f);
+            else KeyCap.Make(row, k, Keys(k), 50f);
         }
         if (!next) return;
-        KeyCap(row, "Space", new[] { Key.Space, Key.Enter, Key.NumpadEnter }, 44f);
-        Words(row, GameText.TutorialNext + " ›", 28, CardFaint);
+        KeyCap.Make(row, "Space", new[] { Key.Space, Key.Enter, Key.NumpadEnter }, 44f);
+        Words(row, GameText.TutorialNext + " ›", Figma.Type.ArvoBody, CardFaint);
     }
 
     // The card sits by whatever's lit (under it, or over it when there's no room below), its little pointer aimed at
@@ -720,24 +721,10 @@ public class Tutorial : MonoBehaviour
         column.childForceExpandWidth = column.childForceExpandHeight = false;
         var top = Row(Ui("Top", block), 2f);
         var bottom = Row(Ui("Bottom", block), 2f);
-        KeyArt(top, "W", Key.W, 54f);
-        KeyArt(bottom, "A", Key.A, 54f);
-        KeyArt(bottom, "S", Key.S, 54f);
-        KeyArt(bottom, "D", Key.D, 54f);
-    }
-
-    // A key drawn with its letter (UI/Buttons/key_w...), lighting up while it's held like the other keycaps.
-    static RectTransform KeyArt(RectTransform parent, string name, Key key, float height)
-    {
-        var cap = Ui("Key " + name, parent);
-        var img = Img(cap, "UI/Buttons/key_" + name.ToLowerInvariant(), Color.white);
-        img.preserveAspect = true;
-        var element = cap.gameObject.AddComponent<LayoutElement>();
-        Vector2 size = img.sprite != null ? img.sprite.rect.size : Vector2.one;
-        element.preferredWidth = height * size.x / size.y;
-        element.preferredHeight = height;
-        cap.gameObject.AddComponent<KeyHint>().keys = new[] { key };
-        return cap;
+        KeyCap.Make(top, "W", new[] { Key.W }, 50f);
+        KeyCap.Make(bottom, "A", new[] { Key.A }, 50f);
+        KeyCap.Make(bottom, "S", new[] { Key.S }, 50f);
+        KeyCap.Make(bottom, "D", new[] { Key.D }, 50f);
     }
 
     // ---------------------------------------------------------------- the speech bubble
@@ -865,7 +852,7 @@ public class Tutorial : MonoBehaviour
         var pad = GameHud.BubblePad;
         Row(body, 0f, new RectOffset(pad.left, pad.right, pad.top, pad.bottom));
         Fit(body);
-        bubbleText = Txt(Ui("Label", body), "", 30, Ink, TextAnchor.MiddleCenter);
+        bubbleText = Txt(Ui("Label", body), "", Figma.Type.ArvoSubtitle, Ink, TextAnchor.MiddleCenter);
         bubbleText.font = ParkArt.Font;
         // Keep its size steady while the line types out: the full line sizes it, invisibly.
         body.gameObject.AddComponent<BubbleSizer>().Init(bubbleText, () => bubbleLine);
@@ -880,16 +867,22 @@ public class Tutorial : MonoBehaviour
         Row(skipRoot, 10f, new RectOffset(18, 24, 8, 8));
         Fit(skipRoot);
         var (before, keyName, after) = SplitOne(GameText.TutorialSkip);
-        if (before.Length > 0) Words(skipRoot, before, 22, Faint);
-        var cap = KeyCap(skipRoot, keyName, Keys(keyName), 38f);
-        var fill = Ui("Hold", cap);
-        Stretch(fill);
-        skipFill = Img(fill, "UI/key", new Color(1f, 0.55f, 0.7f, 0.85f));
-        skipFill.type = Image.Type.Filled;
-        skipFill.fillMethod = Image.FillMethod.Horizontal;
-        skipFill.fillAmount = 0f;
-        fill.SetAsFirstSibling();
-        if (after.Length > 0) Words(skipRoot, after, 22, Faint);
+        if (before.Length > 0) Words(skipRoot, before, Figma.Type.ArvoBody, Faint);
+        // The artist's SPACE tag, its blue edge drawing round it as you hold (UI Asset/SpaceIcon/SpaceIcon_1..14).
+        // The layout holds the drawn tag (161 x 81 of its 270 px picture), 38 tall; the picture spills round it.
+        var tag = Ui("Hold " + keyName, skipRoot);
+        var tagSize = tag.gameObject.AddComponent<LayoutElement>();
+        float k = 38f / 81f;
+        tagSize.preferredWidth = 161f * k;
+        tagSize.preferredHeight = 38f;
+        var pic = Ui("Art", tag);
+        pic.anchorMin = pic.anchorMax = new Vector2(0.5f, 0.5f);
+        pic.sizeDelta = new Vector2(270f, 270f) * k;
+        pic.anchoredPosition = new Vector2(8f, -7f) * k; // the drawn tag sits up and left of the picture's middle
+        skipIcon = pic.gameObject.AddComponent<Image>();
+        skipIcon.sprite = UiArt.Get("SpaceIcon/SpaceIcon_1");
+        skipIcon.raycastTarget = false;
+        if (after.Length > 0) Words(skipRoot, after, Figma.Type.ArvoBody, Faint);
     }
 
     static (string before, string key, string after) SplitOne(string line)
@@ -1010,28 +1003,6 @@ public class Tutorial : MonoBehaviour
     {
         var fit = rt.gameObject.AddComponent<ContentSizeFitter>();
         fit.horizontalFit = fit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-    }
-
-    // A keycap (the HUD's key art) that lights up while one of its keys is held.
-    static RectTransform KeyCap(RectTransform parent, string text, Key[] keys, float height)
-    {
-        var cap = Ui("Key " + text, parent);
-        var img = Img(cap, "UI/key", Color.white);
-        img.pixelsPerUnitMultiplier = 1f;
-        var element = cap.gameObject.AddComponent<LayoutElement>();
-        element.preferredWidth = Mathf.Max(height, text.Length * 15f + 26f);
-        element.preferredHeight = height;
-        cap.gameObject.AddComponent<KeyHint>().keys = keys;
-        if (text.Length > 0)
-        {
-            var label = Ui("Label", cap);
-            Stretch(label);
-            label.offsetMin = new Vector2(0f, 6f);
-            var t = Txt(label, text, Mathf.RoundToInt(height * 0.45f), Ink, TextAnchor.MiddleCenter);
-            t.font = ParkArt.Font;
-            t.fontStyle = FontStyle.Bold;
-        }
-        return cap;
     }
 
     // Sizes the speech bubble to its whole line from the first letter, so it doesn't grow as the line types out.

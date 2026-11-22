@@ -142,14 +142,14 @@ public class LoadGameMenu : MonoBehaviour
         var title = MainMenu.Ui("Objective", c.rt);
         Place(title, new Vector2(0f, TitleY));
         title.sizeDelta = new Vector2(300f, 100f);
-        c.title = MainMenu.Label(title, "", 37, Color.white, ParkArt.TitleFont);
+        c.title = MainMenu.Label(title, "", Figma.Type.AtmaBody, Color.white, ParkArt.TitleFont);
         c.title.horizontalOverflow = HorizontalWrapMode.Wrap;
         c.title.lineSpacing = 0.85f;
 
         var played = MainMenu.Ui("Played", c.rt);
         Place(played, new Vector2(0f, PlayedY));
         played.sizeDelta = new Vector2(360f, 40f);
-        c.played = MainMenu.Label(played, "", 25, Color.white, ParkArt.Font);
+        c.played = MainMenu.Label(played, "", Figma.Type.ArvoBody, Color.white, ParkArt.Font);
 
         var info = SaveGame.Read(slot);
         c.saved = info != null;

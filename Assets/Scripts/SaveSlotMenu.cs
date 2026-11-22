@@ -60,7 +60,7 @@ public class SaveSlotMenu : MonoBehaviour
 
         var panel = Place(MainMenu.Ui("Panel", canvas), Vector2.zero, new Vector2(PanelW, PanelH));
         MainMenu.Img(panel, "UI/Menu/bg_main", Color.white).pixelsPerUnitMultiplier = 0.8f;
-        MainMenu.Label(Place(MainMenu.Ui("Title", panel), new Vector2(0f, TitleY), new Vector2(600f, 60f)), "SELECT SLOT", 39, Color.white, ParkArt.TitleFont);
+        MainMenu.Label(Place(MainMenu.Ui("Title", panel), new Vector2(0f, TitleY), new Vector2(600f, 60f)), "SELECT SLOT", Figma.Type.AtmaH2, Color.white, ParkArt.TitleFont);
         list = Place(MainMenu.Ui("Rows", panel), Vector2.zero, new Vector2(PanelW, PanelH));
 
         foreach (var slot in SaveGame.Saved()) rows.Add(MakeRow(slot, true));
@@ -103,8 +103,8 @@ public class SaveSlotMenu : MonoBehaviour
 
         var info = saved ? SaveGame.Read(slot) : null;
         if (info?.picture != null) Destroy(info.picture); // no pictures here
-        r.title = MainMenu.Label(Line(r.rt, "Objective", NameX, 420f), info == null ? "[NEW SLOT]" : string.IsNullOrEmpty(info.title) ? "Saved game" : info.title, 35, Pale, ParkArt.TitleFont);
-        r.played = MainMenu.Label(Line(r.rt, "Played", DateX, 260f), info == null ? "" : info.played.ToString("d MMM yyyy, HH:mm"), 21, Pale, ParkArt.Font);
+        r.title = MainMenu.Label(Line(r.rt, "Objective", NameX, 420f), info == null ? "[NEW SLOT]" : string.IsNullOrEmpty(info.title) ? "Saved game" : info.title, Figma.Type.AtmaBody, Pale, ParkArt.TitleFont);
+        r.played = MainMenu.Label(Line(r.rt, "Played", DateX, 260f), info == null ? "" : info.played.ToString("d MMM yyyy, HH:mm"), Figma.Type.ArvoBody, Pale, ParkArt.Font);
         r.title.alignment = r.played.alignment = TextAnchor.MiddleLeft;
         return r;
     }
