@@ -14,7 +14,7 @@ public class HotDogMan : MonoBehaviour
 
     public enum State { AtStall, Hopping, Fleeing, Returning, Charred }
 
-    public float awayTime = 25f;   // seconds he stays away from the rats
+    public float awayTime = 10f;   // seconds he stays away from the rats
     public float fleeDistance = 9f;
     public float guardRadius = 12f; // how far from his stall he keeps an eye on the fan
     public Vector3 exitOffset = new(3.2f, 0f, 0f); // where he lands hopping out of the stall, relative to his post

@@ -20,7 +20,12 @@ public class GroundWalker : MonoBehaviour
     public bool readKeyboard = true;
     [HideInInspector] public Vector2 move; // x = world X, y = world Z; used when readKeyboard is off
 
+    // The most anyone steps up or down at once: a stair, not the side of a raised floor (RaisedFloor).
+    public const float MaxStep = 0.9f; // the Ferris wheel platform's steps are ~0.22 high, its sides 1.71
+    const float ClimbSpeed = 6f; // how fast you rise or sink to the floor's height on stairs
+
     Rigidbody rb;
+    float hover; // how far above the floor this body sits (the spirit floats; people stand on it)
     Visitor visitor; // people are kept out of staff-only areas (StaffArea); the spirit isn't
     // Looked up when needed: staff in the scene get their Visitor body added in their own Awake, which may run after ours.
     Visitor Body => visitor != null ? visitor : visitor = GetComponent<Visitor>();
@@ -41,6 +46,9 @@ public class GroundWalker : MonoBehaviour
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
+        // Height is placed by hand (FixedUpdate); a Y freeze would snap it back every physics step, so no stairs.
+        rb.constraints &= ~RigidbodyConstraints.FreezePositionY;
+        hover = Mathf.Max(0f, transform.position.y - RaisedFloor.Height(transform.position));
 
         // Visitors and the mechanic are spawned from code, so look the tilemaps up next to the ground.
         if (obstaclesFor != ground)
@@ -68,7 +76,20 @@ public class GroundWalker : MonoBehaviour
         // Each axis alone can be clear while the diagonal step cuts the corner into a tree: don't.
         if (!OnTile(new Vector3(v.x, 0, v.y))) v.y = 0;
 
-        rb.linearVelocity = new Vector3(v.x, rb.linearVelocity.y, v.y);
+        rb.linearVelocity = new Vector3(v.x, 0f, v.y);
+
+        // Up and down stairs: no gravity, so the height is placed by hand.
+        Vector3 at = rb.position;
+        float y = Mathf.MoveTowards(at.y, RaisedFloor.Height(at) + hover, ClimbSpeed * Time.fixedDeltaTime);
+        if (y != at.y) rb.position = new Vector3(at.x, y, at.z);
+    }
+
+    // Switched back on (out of a possession, or a body teleported somewhere): straight to the floor's height.
+    void OnEnable()
+    {
+        if (rb == null) return; // first enable: Awake has the starting height
+        Vector3 at = transform.position;
+        transform.position = rb.position = new Vector3(at.x, RaisedFloor.Height(at) + hover, at.z);
     }
 
     // Player/Move in the project's input actions (Controls).
@@ -79,6 +100,7 @@ public class GroundWalker : MonoBehaviour
         Vector3Int cell = ground.WorldToCell(worldPos);
         cell.z = 0; // height above the floor doesn't matter
         return ground.HasTile(cell)
+            && Mathf.Abs(RaisedFloor.Height(worldPos) - RaisedFloor.Height(transform.position)) <= MaxStep // stairs, not the sides
             && !BumpsIntoObject(transform.position, worldPos)
             && StaffArea.Allows(Body, transform.position, worldPos)
             && FingerprintArea.Allows(Body, transform.position, worldPos)
@@ -197,7 +219,7 @@ public class GroundWalker : MonoBehaviour
                 right = Mathf.Max(right, p.x);
             }
             if (left > right) (left, right) = (s.bounds.min.x, s.bounds.max.x);
-            Vector3 c = map.GetCellCenterWorld(cell);
+            Vector3 c = map.GetCellCenterWorld(cell) + Vector3.forward * map.GetTransformMatrix(cell).m23; // a tile nudged off its cell
             footprints.Add(Rect.MinMaxRect(c.x + left, c.z - ObjectFront, c.x + right, c.z - ObjectFront));
         }
     }
