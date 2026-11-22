@@ -1701,7 +1701,7 @@ SpriteRenderer:
   m_Size: {x: 3.62, y: 5.71}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 1
+  m_WasSpriteAssigned: 0
   m_SpriteSortPoint: 0
   m_BlendShapeWeights: []
 --- !u!4 &484566583
@@ -1738,6 +1738,7 @@ MonoBehaviour:
   speed: 5
   readKeyboard: 1
   move: {x: 0, y: 0}
+  ignoreObstacles: 0
 --- !u!54 &484566586
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1813,7 +1814,6 @@ MonoBehaviour:
   touchRange: 1
   sameTargetCooldown: 10
   abilityCooldown: 0
-  grabRange: 1.6
 --- !u!1 &554712938
 GameObject:
   m_ObjectHideFlags: 0
@@ -2038,9 +2038,23 @@ MonoBehaviour:
   normalSpeed: 12
   windDownTime: 5
   electricalBoxOffset: {x: -3.3, y: 0, z: -0.6}
+  electricalBoxAt: {fileID: 0}
+  electricalBoxArt: {fileID: 0}
   closedAreaOffset: {x: 0, y: 0, z: 0.3}
   closedAreaSize: {x: 5.4, y: 3.4}
   queue: {fileID: 700000134}
+  payoffTime: 6
+  payoffPullBack: 8
+  screamingCabins: 4
+  cabinShake: 4
+  wobble: 0.08
+  overdriveSpeed: 140
+  spinUpTime: 6
+  holdTime: 2
+  breakDelay: 1.5
+  rollSpeed: 6
+  rollDistance: 22
+  rollDirection: {x: 1, y: 0, z: -0.6}
 --- !u!1 &700000103
 GameObject:
   m_ObjectHideFlags: 0
@@ -2355,6 +2369,7 @@ MonoBehaviour:
   wheel: {fileID: 700000102}
   rideOperator: {fileID: 700000126}
   sparks: {fileID: 700000116}
+  booth: {fileID: 0}
 --- !u!1 &700000114
 GameObject:
   m_ObjectHideFlags: 0
@@ -2619,6 +2634,7 @@ MonoBehaviour:
   speed: 2
   readKeyboard: 0
   move: {x: 0, y: 0}
+  ignoreObstacles: 0
 --- !u!114 &700000124
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2632,17 +2648,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterSprite
   character: operator
-  walkFps: 10
+  waddleAngle: 7
+  waddleRate: 0.6
+  waddlePerSpeed: 0.5
   stepBounce: 0.04
   idle: {fileID: 0}
   think: {fileID: 0}
   interact: {fileID: 0}
   fallDown: {fileID: 0}
-  walk: []
-  run: []
   cheer: []
   pose: {fileID: 0}
   running: 0
+  panic: {fileID: 0}
+  poses: []
+  panicFace: 0
+  panicBody: 0
+  dance: 0
 --- !u!114 &700000126
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2658,9 +2679,6 @@ MonoBehaviour:
   post: {fileID: 700000118}
   wheel: {fileID: 700000102}
   walkSpeed: 2
-  runSpeed: 4
-  attendRadius: 15
-  attendTime: 15
   callTime: 4
 --- !u!1 &700000127
 GameObject:
@@ -2828,7 +2846,6 @@ MonoBehaviour:
   capacity: 8
   boardInterval: 5
   rideTime: 20
-  gateRange: 1.4
 --- !u!1 &700000135
 GameObject:
   m_ObjectHideFlags: 0
@@ -2872,7 +2889,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0a366a45f3645cd9f0fbe195da33697, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameHud
-  objective: Cut the Ferris wheel's power
 --- !u!1 &719843468
 GameObject:
   m_ObjectHideFlags: 0
@@ -3905,7 +3921,7 @@ Tilemap:
     second:
       serializedVersion: 2
       m_TileIndex: 0
-      m_TileSpriteIndex: 0
+      m_TileSpriteIndex: 7
       m_TileMatrixIndex: 0
       m_TileColorIndex: 0
       m_TileObjectToInstantiateIndex: 65535
@@ -3915,7 +3931,7 @@ Tilemap:
     second:
       serializedVersion: 2
       m_TileIndex: 0
-      m_TileSpriteIndex: 0
+      m_TileSpriteIndex: 7
       m_TileMatrixIndex: 0
       m_TileColorIndex: 0
       m_TileObjectToInstantiateIndex: 65535
@@ -3925,7 +3941,7 @@ Tilemap:
     second:
       serializedVersion: 2
       m_TileIndex: 0
-      m_TileSpriteIndex: 0
+      m_TileSpriteIndex: 7
       m_TileMatrixIndex: 0
       m_TileColorIndex: 0
       m_TileObjectToInstantiateIndex: 65535
@@ -3935,7 +3951,7 @@ Tilemap:
     second:
       serializedVersion: 2
       m_TileIndex: 0
-      m_TileSpriteIndex: 0
+      m_TileSpriteIndex: 7
       m_TileMatrixIndex: 0
       m_TileColorIndex: 0
       m_TileObjectToInstantiateIndex: 65535
@@ -3985,7 +4001,7 @@ Tilemap:
     second:
       serializedVersion: 2
       m_TileIndex: 0
-      m_TileSpriteIndex: 0
+      m_TileSpriteIndex: 7
       m_TileMatrixIndex: 0
       m_TileColorIndex: 0
       m_TileObjectToInstantiateIndex: 65535
@@ -4019,7 +4035,7 @@ Tilemap:
     m_Data: {fileID: 11400000, guid: 913b004b99ad6463a881d2a25c24cc82, type: 2}
   m_TileSpriteArray:
   - serializedVersion: 2
-    m_RefCount: 5
+    m_RefCount: 0
     m_Data: {fileID: 21300000, guid: 3d5f45539c2864f1aa79e140c6c08b32, type: 3}
   - serializedVersion: 2
     m_RefCount: 0
@@ -4040,8 +4056,8 @@ Tilemap:
     m_RefCount: 0
     m_Data: {fileID: 21300000, guid: d4ecfc9b05fad40c8bf96b2ce258f68f, type: 3}
   - serializedVersion: 2
-    m_RefCount: 0
-    m_Data: {fileID: 21300000, guid: 8cd0971da9aa046148d002b2a56db695, type: 3}
+    m_RefCount: 5
+    m_Data: {fileID: 4506356013978917213, guid: ae33370f13663431395cc1c0579033da, type: 3}
   m_TileMatrixArray:
   - serializedVersion: 2
     m_RefCount: 9
@@ -5557,7 +5573,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Speaker
   crowdOffset: {x: 0, y: 0, z: -1.6}
   crowdRadius: 1.6
-  crowdSize: 6
+  livePlug: 1
   cableEndOffset: {x: -2.5, y: 0, z: 0.5}
   fountain: {fileID: 1916883789}
 --- !u!4 &1786531568
@@ -5716,9 +5732,12 @@ MonoBehaviour:
   count: 16
   spawnRadius: 12
   personScale: 1.35
+  workerScale: 2
   guaranteedItems: 03000000030000000500000005000000i
   carryChance: 0.4
   carryItems: 0300000005000000i
+  groupChance: 0.35
+  groupSize: {x: 2, y: 4}
   queue: {fileID: 700000134}
   startInQueue: 5
   characters:
@@ -5728,39 +5747,29 @@ MonoBehaviour:
   - body_croptop
   - body_hoodie
   - body_tanktop
-  names:
-  - Budi
-  - Sari
-  - Rina
-  - Dodi
-  - Wati
-  - Andi
-  - Maya
-  - Joni
-  - Tika
-  - Bayu
-  - Lina
-  - Eko
-  - Nina
-  - Rudi
-  - Dewi
-  - Agus
-  - Fitri
-  - Hendra
-  - Intan
-  - Yusuf
   pointsOfInterest: []
   mechanicCharacter: mechanic
   mechanicName: Electrician
   mechanicPost: {fileID: 1625246199}
   resetAgents: 2
   resetAgentCharacter: malePersonTeal
-  cableManCharacter: maleAdventurer
-  cableManName: Cable Man Ucok
-  cableManPost: {fileID: 641270998}
   technicianCharacter: malePersonRed
   technicianName: Technician Bambang
   technicianPost: {fileID: 407931831}
+  hotDogManCharacter: worker_hot_dog
+  hotDogManName: Hot Dog Man
+  hotDogManPost: {fileID: 0}
+  iceCreamCharacter: worker_ice_cream
+  iceCreamSlot: {x: 0, y: 0, z: 0.25}
+  iceCreamBackOffset: {x: 0, y: 0, z: 0.4}
+  iceCreamBackScale: 1.4
+  balloonCharacter: worker_balloon
+  balloonSpot: {x: 1.4, y: 0, z: -0.7}
+  mascotCharacter: mascot
+  mascotName: Mascot
+  mascotPost: {fileID: 0}
+  gossipEvery: {x: 5, y: 10}
+  gossipRange: 12
 --- !u!1 &1916883788
 GameObject:
   m_ObjectHideFlags: 0
@@ -5793,12 +5802,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DrinkingFountain
   puddleOffset: {x: -1, y: 0, z: -1}
   startRadius: 0.5
-  growth: 0.45
+  tapsToFull: 4
   maxRadius: 4.2
   crowdToFlood: 3
   victimsToCallMechanic: 3
   fixTime: 12
   mopTime: 8
+  bodyTime: 10
+  cleanupDelay: 3
+  payoffVictims: 5
+  payoffPan: 1
+  payoffTwitch: 2
+  pressCooldown: 3
+  spreadSpeed: 0.45
+  puddleArt: {fileID: 0}
+  puddleOpacity: 0.6
 --- !u!114 &1916883790
 MonoBehaviour:
   m_ObjectHideFlags: 0

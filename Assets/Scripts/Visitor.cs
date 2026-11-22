@@ -523,6 +523,8 @@ public class Visitor : MonoBehaviour
         Look.SetPossessed(false);
         if (Current == State.Down) return;
         Look.SetTint(Color.white);
+        // Coming round, staff included: ambient, so it doesn't hold up "Objective Completed!".
+        GameHud.Shout(transform, GameText.ComingRound[Random.Range(0, GameText.ComingRound.Length)], 2.2f, true);
         if (brain != null)
         {
             SetState(State.Idle);

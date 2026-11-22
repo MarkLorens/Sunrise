@@ -96,13 +96,15 @@ public class Possession : MonoBehaviour
         var events = FMODEvents.instance;
         if (events != null && !events.possess.IsNull && AudioManager.instance != null) AudioManager.instance.PlayOneShot(events.possess, transform.position);
         else Sfx.Play(Sfx.Possess, 0.7f);
+        ClosedCaptions.Show(Captions.Possess);
     }
 
     void Hover()
     {
         var events = FMODEvents.instance;
         bool drifting = State == Mode.Spirit && !rb.isKinematic && Flat(rb.linearVelocity).sqrMagnitude > 0.04f;
-        if (events != null && drifting) hover.Play(events.spiritHover);
+        if (events != null && drifting)
+            hover.Play(events.spiritHover);
         else hover.Stop();
     }
 
@@ -124,12 +126,15 @@ public class Possession : MonoBehaviour
         foreach (var v in Visitor.All)
         {
             if (v.Current is Visitor.State.Down or Visitor.State.Riding || !v.Look.Visible) continue;
+            var mascot = v.brain as Mascot;
+            if (mascot != null && !mascot.Teasable) continue; // he's said his piece
             float d = Flat(v.transform.position - transform.position).magnitude;
             if (d > best) continue;
             best = d;
             Candidate = v.transform;
             CandidateName = v.name;
-            CandidateBlocked = !v.CanBePossessed ? GameText.CantBePossessed(v.name)
+            CandidateBlocked = mascot != null ? null // looks possessable; he just won't have it (Mascot.Tease)
+                : !v.CanBePossessed ? GameText.CantBePossessed(v.name)
                 : IsLocked(v, out float left) ? GameText.StillShaken(v.name, Mathf.CeilToInt(left))
                 : CooldownLeft > 0f ? GameText.TooWeak(Mathf.CeilToInt(CooldownLeft))
                 : null;
@@ -170,8 +175,14 @@ public class Possession : MonoBehaviour
         FindCandidate();
         if (Candidate == null) return false;
         var v = Touching();
+        if (v != null && v.brain is Mascot mascot)
+        {
+            mascot.Tease();
+            return true;
+        }
         if (v == null)
         {
+            ClosedCaptions.Show(Captions.Refused);
             GameHud.Refuse(Candidate, CandidateBlocked, true); // with the "can't" sound
             return true; // E was used up on trying
         }
@@ -259,6 +270,7 @@ public class Possession : MonoBehaviour
         host.EndPossession();
         lockedUntil[host] = Time.time + sameTargetCooldown;
         BackToSpirit(host.transform.position, cooldown);
+        ClosedCaptions.Show(Captions.Leave);
         if (!AudioManager.TryPlay(e => e.release, host.transform.position)) Sfx.Play(Sfx.Leave, 0.6f); // RU-04
         Fx.Burst("Fx/sparkle", host.HeadPoint, 14, Fx.Spirit, 3f, 0.4f, 0.5f);
     }

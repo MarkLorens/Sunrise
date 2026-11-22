@@ -64,23 +64,18 @@ public class RideTechnician : MonoBehaviour
 
     static bool Box(out ElectricalBox box) => (box = FindAnyObjectByType<ElectricalBox>()) != null;
 
-    // ponytail: built-in TextMesh, swap for a Bubbles/sleep sprite once there's art for one.
+    // The Zs drifting up out of his booth (SleepZFx). The point also marks where his voice comes from once he's up.
     Transform Snore()
     {
         var go = new GameObject("Zzz");
         go.transform.SetParent(booth, false);
-        var text = go.AddComponent<TextMesh>();
-        text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        text.text = "Zzz";
-        text.fontSize = 48;
-        text.characterSize = 0.08f;
-        text.fontStyle = FontStyle.Bold;
-        text.anchor = TextAnchor.LowerLeft;
-        text.color = new Color(0.75f, 0.85f, 1f);
-        var r = go.GetComponent<MeshRenderer>();
-        r.sharedMaterial = text.font.material;
-        r.sortingOrder = ParkArt.OverheadOrder;
+        go.AddComponent<SleepZFx>();
         return go.transform;
+    }
+
+    void StopSnoring()
+    {
+        if (zzz != null) zzz.GetComponent<SleepZFx>().enabled = false;
     }
 
     // Something blew up. He yells from inside his booth; if the wheel's already down he takes the call he slept through.
@@ -89,7 +84,7 @@ public class RideTechnician : MonoBehaviour
     {
         if (IsAwake) return;
         IsAwake = true;
-        zzz.GetComponent<TextMesh>().text = ""; // still marks where his voice comes from
+        StopSnoring(); // the point still marks where his voice comes from
         Mischief.Complete(Mischief.Task.WakeTechnician);
         foreach (var w in FerrisWheel.All)
             if (!w.Powered) Answer(true); // WakeUp has already said his lines by now
@@ -104,8 +99,8 @@ public class RideTechnician : MonoBehaviour
         CameraRig.Spotlight(zzz, 999f, 2f);
         yield return new WaitForSeconds(1.2f); // the camera getting there: still snoring
         Fx.Burst("Fx/puff", zzz.position + Vector3.up * 0.3f, 8, Color.white, 2f, 0.35f, 0.5f);
-        zzz.GetComponent<TextMesh>().text = "";
-        Sfx.Play(Sfx.Huh, 0.8f);
+        StopSnoring();
+        Sfx.Play(Sfx.Huh, 0.8f, 1f, Captions.Startled);
         GameHud.Shout(zzz, "!!", 0.8f);
         yield return Jolt(0.6f);
         GameHud.Shout(zzz, GameText.TechnicianWake, 1.8f);

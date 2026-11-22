@@ -56,7 +56,9 @@ public class GameHud : MonoBehaviour
     const float StepWrap = 438f;   // a line of a step (bullet and all) is no wider than this
     const float WrapStep = 36f;    // how far down each wrapped line sits from the one above
     const float ObjectiveWidth = 540f, TitleHeight = 104f, TitlePad = 34f, StepsNarrower = 11f, StepsInset = 4f;
-    const int TitleSize = 29, StepSize = 24;
+    // The objective's name in Atma at the design's 24 (under the type scale's smallest Atma, as the design draws it);
+    // the steps in Arvo Body.
+    static readonly int TitleSize = Mathf.RoundToInt(24f * Figma.K), StepSize = Figma.Type.ArvoBody;
     readonly List<StepRow> stepRows = new();
     int shownPart = -2; // index into Mischief.Parts, -1 when every step is done
     const float StepHeight = 36f;
@@ -75,20 +77,23 @@ public class GameHud : MonoBehaviour
     const int MaxEvents = 3;
     // "Saving..." bottom right, on its own canvas over the pause menu.
     CanvasGroup saving;
-    RectTransform savingSpinner;
+    Image savingSpinner;
+    static Sprite[] savingFrames;
     float savingAge = SavingTime;
     const float SavingTime = 1.6f;
     const float PartHold = 1.5f; // seconds the finished part's struck-through list stays up before the next part
     // Between parts: "Objective Completed!" pops up in the middle of the screen, then the next part's list comes in.
     RectTransform puzzleBanner;
     CanvasGroup puzzleGroup;
+    Text puzzleWords; // "<the part's title> COMPLETED" on the cloud
     float puzzleAge = -1f; // < 0 while it isn't showing
     const float PuzzleTime = 2.4f;
     Text gripLabel;
     GameObject gripRow;
     RectTransform prompt;
     GameObject promptCap;
-    Text promptKey, promptText;
+    KeyCap promptKey;
+    Text promptText;
     Transform refusedBy;
     bool refusedPerson;
     string refusal;
@@ -123,6 +128,7 @@ public class GameHud : MonoBehaviour
         if (Camera.main != null && Camera.main.GetComponent<CameraRig>() == null) Camera.main.gameObject.AddComponent<CameraRig>();
         if (Camera.main != null && Camera.main.GetComponent<SeeThrough>() == null) Camera.main.gameObject.AddComponent<SeeThrough>();
         if (FindAnyObjectByType<NightLighting>() == null) new GameObject("Night Lighting").AddComponent<NightLighting>();
+        if (FindAnyObjectByType<ParkAnimations>() == null) new GameObject("Park Animations").AddComponent<ParkAnimations>();
         if (GetComponent<ActionOutline>() == null) gameObject.AddComponent<ActionOutline>();
         if (GetComponent<PauseMenu>() == null) gameObject.AddComponent<PauseMenu>();
         if (GetComponent<Tutorial>() == null) gameObject.AddComponent<Tutorial>();
@@ -263,6 +269,18 @@ public class GameHud : MonoBehaviour
         Instance.shouts.Add(new Shouted { bubble = b, group = b.GetComponent<CanvasGroup>(), over = over, life = seconds, until = Time.unscaledTime + seconds, ambient = ambient });
     }
 
+    // Takes down whatever `over` is saying now, so a new line replaces it instead of stacking.
+    public static void Hush(Transform over)
+    {
+        if (Instance == null) return;
+        Instance.shouts.RemoveAll(s =>
+        {
+            if (s.over != over) return false;
+            Destroy(s.bubble.gameObject);
+            return true;
+        });
+    }
+
     class Shouted
     {
         public RectTransform bubble;
@@ -320,14 +338,26 @@ public class GameHud : MonoBehaviour
                 shouts.RemoveAt(i);
                 continue;
             }
-            var r = s.over.GetComponent<Renderer>();
-            Vector3 top = r != null ? new Vector3(r.bounds.center.x, r.bounds.max.y, r.bounds.center.z) : s.over.position;
-            Vector3 screen = cam.WorldToScreenPoint(top);
+            Vector3 screen = cam.WorldToScreenPoint(Top(s.over));
             s.group.alpha = screen.z <= 0f ? 0f : Mathf.Min(Mathf.Clamp01(age / 0.08f), Mathf.Clamp01(left / 0.15f));
             s.bubble.localScale = Vector3.one * Mathf.Lerp(0.6f, 1f, age / 0.12f);
             RectTransformUtility.ScreenPointToLocalPointInRectangle(canvas, screen, null, out Vector2 local);
             s.bubble.anchoredPosition = local;
         }
+    }
+
+    // Over the top of whatever's drawn there: everything showing in it and its children (a person's body and head are
+    // on their Pose child, not the root), or head height over an empty marker.
+    static Vector3 Top(Transform t)
+    {
+        Bounds? drawn = null;
+        foreach (var r in t.GetComponentsInChildren<SpriteRenderer>())
+        {
+            if (!r.enabled || r.sprite == null) continue;
+            if (drawn is Bounds b) { b.Encapsulate(r.bounds); drawn = b; }
+            else drawn = r.bounds;
+        }
+        return drawn is Bounds all ? new Vector3(all.center.x, all.max.y, all.center.z) : PersonTop(t);
     }
 
     void UpdateBubble()
@@ -391,7 +421,11 @@ public class GameHud : MonoBehaviour
             if (shownPart < 0) ShowPart(part);
             else if (calm >= SettleTime)
             {
-                if (IsPuzzle(shownPart)) puzzleAge = 0f;
+                if (IsPuzzle(shownPart))
+                {
+                    SetPuzzleWords(PartTitle(shownPart));
+                    puzzleAge = 0f;
+                }
                 else ShowPart(part);
             }
         }
@@ -475,9 +509,8 @@ public class GameHud : MonoBehaviour
         stepsOpen = true; // a new part's steps always drop down, even if the last ones were closed
         foreach (var r in stepRows) Destroy(r.slot.gameObject);
         stepRows.Clear();
-        var (title, steps) = Mischief.Parts[part];
-        int dot = title.IndexOf(". ");
-        objectiveTitle.text = dot >= 0 && dot < 3 ? title[(dot + 2)..] : title; // "1. A-leak-tricity" -> "A-leak-tricity"
+        var (_, steps) = Mischief.Parts[part];
+        objectiveTitle.text = PartTitle(part);
         bannerSize.preferredWidth = Mathf.Max(ObjectiveWidth, 2f * TitlePad + objectiveTitle.preferredWidth);
         stepsSize.minWidth = bannerSize.preferredWidth - StepsNarrower;
         foreach (var (task, label) in steps)
@@ -566,7 +599,7 @@ public class GameHud : MonoBehaviour
         var row = Ui("Event", eventList);
         var group = row.gameObject.AddComponent<CanvasGroup>();
         group.alpha = 0f;
-        var text = Txt(row, line, 24, Color.white, TextAnchor.MiddleRight);
+        var text = Txt(row, line, Figma.Type.ArvoSubtitle2, Color.white, TextAnchor.MiddleRight);
         var shadow = row.gameObject.AddComponent<Shadow>();
         shadow.effectColor = new Color(0f, 0f, 0f, 0.7f);
         shadow.effectDistance = new Vector2(1.5f, -1.5f);
@@ -621,7 +654,7 @@ public class GameHud : MonoBehaviour
     {
         savingAge += Time.unscaledDeltaTime;
         saving.alpha = Mathf.Min(Mathf.Clamp01(savingAge / 0.15f), Mathf.Clamp01((SavingTime - savingAge) / 0.3f));
-        if (saving.alpha > 0f) savingSpinner.localRotation = Quaternion.Euler(0f, 0f, -Time.unscaledTime * 400f);
+        if (saving.alpha > 0f && savingFrames[0] != null) savingSpinner.sprite = savingFrames[(int)(Time.unscaledTime * 12f) % savingFrames.Length];
     }
 
     void UpdateGrip()
@@ -655,7 +688,7 @@ public class GameHud : MonoBehaviour
             anchor = PersonTop(spirit.Candidate);
             if (spirit.CandidateBlocked == null)
             {
-                key = "J";
+                key = KeyBindings.Name(KeyBindings.Bind.Possess);
                 text = "Possess " + spirit.CandidateName;
             }
             else text = spirit.CandidateBlocked;
@@ -667,7 +700,7 @@ public class GameHud : MonoBehaviour
             {
                 anchor = ThingTop(target.transform);
                 string blocked = target.Blocked(host);
-                key = blocked == null ? "K" : "";
+                key = blocked == null ? KeyBindings.Name(KeyBindings.Bind.Interact) : "";
                 text = blocked == null ? target.Prompt(host) : $"<color=#bbbbbb>{target.Prompt(host)}: {blocked}</color>";
             }
         }
@@ -680,7 +713,7 @@ public class GameHud : MonoBehaviour
         RectTransformUtility.ScreenPointToLocalPointInRectangle(canvas, screen, null, out Vector2 local);
         prompt.anchoredPosition = local;
         Set(promptCap, key.Length > 0);
-        promptKey.text = key;
+        promptKey.SetKey(key);
         promptText.text = text;
     }
 
@@ -715,19 +748,54 @@ public class GameHud : MonoBehaviour
         BuildPuzzleBanner();
     }
 
-    // The middle of the screen, a little above the player: the objectives' title art, bigger, with the words.
+    // A part's title as the player reads it: "1. A-leak-tricity" -> "A-leak-tricity".
+    static string PartTitle(int part)
+    {
+        string title = Mischief.Parts[part].title;
+        int dot = title.IndexOf(". ");
+        return dot >= 0 && dot < 3 ? title[(dot + 2)..] : title;
+    }
+
+    // The middle of the screen, a little above the player: the done part's title and "COMPLETED" on the artist's cloud.
     void BuildPuzzleBanner()
     {
-        puzzleBanner = Ui("Objective Completed", canvas);
-        Img(puzzleBanner, "UI/Menu/main_objective", Color.white).pixelsPerUnitMultiplier = 0.7f;
-        var label = Ui("Label", puzzleBanner);
-        Stretch(label);
-        label.offsetMin = new Vector2(0f, 6f);
-        var text = Txt(label, GameText.ObjectiveCompleted, 64, Ink, TextAnchor.MiddleCenter);
-        text.font = ParkArt.TitleFont;
-        Place(puzzleBanner, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 200f), new Vector2(text.preferredWidth + 2f * 90f, 150f));
+        // The cloud of the artist's "OBJECTIVE COMPLETED" without its words (UI Asset/Logo/Mission_cloud, the same
+        // picture), where the design (Figma: Objective completed) has it, 85% of the design's size, same middle.
+        puzzleBanner = Figma.Picture(canvas, "Objective Completed", "Logo/Mission_cloud", 780.3f, 532.8f, 736.4f, 621.6f).rectTransform;
         puzzleGroup = puzzleBanner.gameObject.AddComponent<CanvasGroup>();
         puzzleGroup.alpha = 0f;
+        // The words over the cloud's body (x 120..1130, y 190..790 of its 1301 x 1098 picture), as the art writes them:
+        // yellow capitals in Atma, a thick dark line round them and a drop shadow.
+        var words = Ui("Words", puzzleBanner);
+        words.anchorMin = new Vector2(120f / 1301f, (1098f - 790f) / 1098f);
+        words.anchorMax = new Vector2(1130f / 1301f, (1098f - 190f) / 1098f);
+        words.offsetMin = words.offsetMax = Vector2.zero;
+        puzzleWords = words.gameObject.AddComponent<Text>();
+        puzzleWords.font = ParkArt.TitleFont;
+        puzzleWords.alignment = TextAnchor.MiddleCenter;
+        puzzleWords.color = new Color32(254, 208, 62, 255);
+        puzzleWords.lineSpacing = 0.85f;
+        puzzleWords.horizontalOverflow = HorizontalWrapMode.Overflow;
+        puzzleWords.verticalOverflow = VerticalWrapMode.Overflow;
+        puzzleWords.raycastTarget = false;
+        var line = words.gameObject.AddComponent<Outline>();
+        line.effectColor = new Color32(52, 27, 56, 255);
+        line.effectDistance = new Vector2(4f, 4f);
+        var shadow = words.gameObject.AddComponent<Shadow>();
+        shadow.effectColor = new Color32(52, 27, 56, 255);
+        shadow.effectDistance = new Vector2(3f, -7f);
+    }
+
+    // "<TITLE>\nCOMPLETED" (GameText.ObjectiveCompleted), at the biggest of the title sizes that fits across the cloud.
+    void SetPuzzleWords(string title)
+    {
+        puzzleWords.text = GameText.ObjectiveCompleted(title).ToUpperInvariant();
+        float room = puzzleWords.rectTransform.rect.width;
+        foreach (int size in new[] { Figma.Type.AtmaPage, Figma.Type.AtmaH1, Figma.Type.AtmaSpecial, Figma.Type.AtmaH2, Figma.Type.AtmaBody })
+        {
+            puzzleWords.fontSize = size;
+            if (puzzleWords.preferredWidth <= room) break;
+        }
     }
 
     // The hand-drawn speech bubble (thoughts, shouts), its tail's tip at `bubble`'s position.
@@ -742,7 +810,7 @@ public class GameHud : MonoBehaviour
         BubbleArt(body);
         Row(body, 0f, new RectOffset(BubblePad.left, BubblePad.right, BubblePad.top, BubblePad.bottom));
         Fit(body);
-        bubbleText = Txt(Ui("Label", body), "", 30, Ink, TextAnchor.MiddleCenter);
+        bubbleText = Txt(Ui("Label", body), "", Figma.Type.ArvoSubtitle, Ink, TextAnchor.MiddleCenter);
     }
 
     // The speech bubble's art (UI/Bubble/dialog_box_left and _right, cut from the artist's dialog box down the middle
@@ -830,7 +898,7 @@ public class GameHud : MonoBehaviour
         var pill = Ui("Pill", grip);
         Img(pill, "UI/pill", PanelDark);
         Row(pill, 10f, new RectOffset(22, 30, 8, 8)).childAlignment = TextAnchor.MiddleLeft;
-        gripLabel = Txt(Ui("Label", pill), "", 24, Soft);
+        gripLabel = Txt(Ui("Label", pill), "", Figma.Type.ArvoBody, Soft);
         gripRow = grip.gameObject;
     }
 
@@ -844,7 +912,8 @@ public class GameHud : MonoBehaviour
         Fit(eventList);
     }
 
-    // Bottom right, over the pause menu: a turning ring and "Saving...".
+    // Bottom right, over the pause menu, as in the design (Figma: Objective completed): the artist's pink strip
+    // (UI Asset/SavingIcon/AutoSave) running off the right edge, a turning icon (SavingIcon_1..8) and "Saving...".
     void BuildSaving()
     {
         var go = new GameObject("Saving", typeof(RectTransform));
@@ -855,37 +924,21 @@ public class GameHud : MonoBehaviour
         Stretch((RectTransform)go.transform);
         saving = go.AddComponent<CanvasGroup>();
         saving.alpha = 0f;
-        var row = Ui("Row", (RectTransform)go.transform);
-        Place(row, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-60f, 50f), Vector2.zero);
-        Row(row, 14f);
-        Fit(row);
-        savingSpinner = Ui("Spinner", row);
-        var ring = savingSpinner.gameObject.AddComponent<RawImage>();
-        ring.texture = Ring(64);
-        ring.raycastTarget = false;
-        var le = savingSpinner.gameObject.AddComponent<LayoutElement>();
-        le.preferredWidth = le.preferredHeight = 30f;
-        var text = Txt(Ui("Label", row), GameText.Saving, 26, Color.white);
-        text.gameObject.AddComponent<Shadow>().effectColor = new Color(0f, 0f, 0f, 0.7f);
-    }
-
-    // A white ring with a gap in it, `size` px.
-    static Texture2D Ring(int size)
-    {
-        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
-        var px = new Color32[size * size];
-        float r = size * 0.5f;
-        for (int y = 0; y < size; y++)
-            for (int x = 0; x < size; x++)
-            {
-                Vector2 p = new(x + 0.5f - r, y + 0.5f - r);
-                float d = p.magnitude, angle = Mathf.Atan2(p.y, p.x) * Mathf.Rad2Deg;
-                float a = Mathf.Clamp01(Mathf.Min(r - 1f - d, d - (r - 8f))) * (angle > 20f && angle < 70f ? 0f : 1f);
-                px[y * size + x] = new Color32(255, 255, 255, (byte)(a * 255f));
-            }
-        tex.SetPixels32(px);
-        tex.Apply();
-        return tex;
+        // Laid out from the screen's bottom right corner, in design px: the strip's left edge 210.8 in, its bottom
+        // 29.8 up, 350 x 58.4 (most of it past the edge); the icon's middle 147.5 in, 56 up; the words from 124 in.
+        var strip = Ui("Strip", (RectTransform)go.transform);
+        Place(strip, Vector2.right, Vector2.zero, new Vector2(-210.8f, 29.8f) * Figma.K, new Vector2(350f, 58.4f) * Figma.K);
+        strip.gameObject.AddComponent<Image>().sprite = UiArt.Get("SavingIcon/AutoSave");
+        savingFrames ??= new Sprite[8];
+        for (int i = 0; i < savingFrames.Length; i++) savingFrames[i] = UiArt.Get("SavingIcon/SavingIcon_" + (i + 1));
+        var icon = Ui("Icon", (RectTransform)go.transform);
+        Place(icon, Vector2.right, new Vector2(0.5f, 0.5f), new Vector2(-147.5f, 56f) * Figma.K, new Vector2(36.7f, 36.7f) * Figma.K);
+        savingSpinner = icon.gameObject.AddComponent<Image>();
+        savingSpinner.sprite = savingFrames[0];
+        savingSpinner.raycastTarget = false;
+        var words = Ui("Label", (RectTransform)go.transform);
+        Place(words, Vector2.right, new Vector2(0f, 0.5f), new Vector2(-124f, 56f) * Figma.K, new Vector2(200f, 40f));
+        Txt(words, GameText.Saving, Figma.Type.ArvoBody, new Color32(36, 23, 37, 255));
     }
 
     void BuildPrompt()
@@ -897,11 +950,10 @@ public class GameHud : MonoBehaviour
         Img(body, "UI/pill", new Color(0.12f, 0.08f, 0.12f, 0.88f));
         Row(body, 10f, new RectOffset(10, 22, 6, 6));
         Fit(body);
-        var cap = KeyCap(body, "K", new Key[0], false, 40f);
-        Destroy(cap.GetComponent<KeyHint>());
-        promptCap = cap.gameObject;
-        promptKey = cap.GetComponentInChildren<Text>();
-        promptText = Txt(Ui("Label", body), "", 26, Color.white);
+        promptKey = KeyCap.Make(body, "K", new Key[0], 40f);
+        Destroy(promptKey.GetComponent<KeyHint>());
+        promptCap = promptKey.gameObject;
+        promptText = Txt(Ui("Label", body), "", Figma.Type.ArvoBody, Color.white);
     }
 
     // ---------------------------------------------------------------- UI helpers
@@ -993,23 +1045,5 @@ public class GameHud : MonoBehaviour
     {
         var fit = rt.gameObject.AddComponent<ContentSizeFitter>();
         fit.horizontalFit = fit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-    }
-
-    static RectTransform KeyCap(RectTransform parent, string text, Key[] keys, bool mouse, float height = 46f)
-    {
-        var cap = Ui("Key " + text, parent);
-        var img = Img(cap, "UI/key", Color.white);
-        img.pixelsPerUnitMultiplier = 1f;
-        var element = cap.gameObject.AddComponent<LayoutElement>();
-        element.preferredWidth = Mathf.Max(height, text.Length * 15f + 26f);
-        element.preferredHeight = height;
-        var hint = cap.gameObject.AddComponent<KeyHint>();
-        hint.keys = keys;
-        hint.leftMouse = mouse;
-        var label = Ui("Label", cap);
-        Stretch(label);
-        label.offsetMin = new Vector2(0f, 6f);
-        Txt(label, text, Mathf.RoundToInt(height * 0.45f), Ink, TextAnchor.MiddleCenter, true);
-        return cap;
     }
 }

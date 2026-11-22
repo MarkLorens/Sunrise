@@ -88,6 +88,11 @@ public class SpiritSprite : MonoBehaviour
 
     static Sprite Art(string name) => Resources.Load<Sprite>("MC/" + name);
 
+    // The middle of the body as it's drawn (its picture's tight outline, leaning and bobbing): where the see-through
+    // hole goes (SeeThrough). Not the spirit's own SpriteRenderer, which doesn't draw and may have no picture.
+    public bool HasBody => enabled && body != null;
+    public Vector3 Middle => body.bounds.center;
+
     SpriteRenderer Part(string name, Sprite sprite, Material material)
     {
         var r = new GameObject(name).AddComponent<SpriteRenderer>();

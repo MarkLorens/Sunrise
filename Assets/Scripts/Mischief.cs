@@ -108,6 +108,7 @@ public static class Mischief
     public static void Complete(Task t)
     {
         if (!done.Add(t)) return;
+        ClosedCaptions.Show(Captions.StepDone);
         // The last step of a part: the puzzle's done (G-07). Any other step, or no G-07 yet: the usual chime.
         if (!(PartFinished(t) && AudioManager.TryPlay(e => e.puzzleComplete))) Sfx.Play(Sfx.TaskDone, 0.7f);
         GameHud.StepDone(GameText.StepDone(t)); // the events, top right

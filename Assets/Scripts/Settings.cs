@@ -3,7 +3,8 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
 // The player's settings, kept between sessions in PlayerPrefs and applied as soon as the game starts. The settings
-// screen (SettingsMenu) changes them; the camera reads ShakeStrength and DepthOfField itself (CameraRig).
+// screen (SettingsMenu) changes them; the camera reads ShakeStrength, DepthOfField and AntiAliasing itself
+// (CameraRig), and AudioMix puts MusicVolume and SfxVolume on the sounds.
 // Graphics quality changes the render pipeline asset in place; in the Editor its values are put back when Play mode
 // ends, so the asset in the project never keeps them.
 public static class Settings
@@ -18,18 +19,32 @@ public static class Settings
         set { PlayerPrefs.SetFloat("volume", Mathf.Clamp01(value)); ApplyVolume(); }
     }
 
-    // Background music only (FMOD's Music group), on top of Volume.
+    // Background music and every other sound, each 0..1 on top of Volume (FMOD's Music, SFX and UI groups via AudioBuses, or AudioMix on banks without them; Sfx for Unity's own clips).
     public static float MusicVolume
     {
         get => PlayerPrefs.GetFloat("musicVolume", 1f);
         set { PlayerPrefs.SetFloat("musicVolume", Mathf.Clamp01(value)); ApplyVolume(); }
     }
 
-    // Sound effects and menu sounds (FMOD's SFX and UI groups, and the old Sfx clips), on top of Volume.
     public static float SfxVolume
     {
         get => PlayerPrefs.GetFloat("sfxVolume", 1f);
         set { PlayerPrefs.SetFloat("sfxVolume", Mathf.Clamp01(value)); ApplyVolume(); }
+    }
+
+    // Each frame waits for the screen's refresh: no tearing as the camera pans. On unless turned off.
+    public static bool VSync
+    {
+        get => PlayerPrefs.GetInt("vsync", 1) == 1;
+        set { PlayerPrefs.SetInt("vsync", value ? 1 : 0); ApplyVSync(); }
+    }
+
+    // The park camera's temporal anti-aliasing (CameraRig): smooth edges, and the see-through hole's dither fading
+    // smoothly instead of showing as dots. On unless turned off.
+    public static bool AntiAliasing
+    {
+        get => PlayerPrefs.GetInt("antiAliasing", 1) == 1;
+        set { PlayerPrefs.SetInt("antiAliasing", value ? 1 : 0); if (CameraRig.Instance != null) CameraRig.Instance.ApplyAntiAliasing(); }
     }
 
     public static bool Fullscreen
@@ -60,6 +75,13 @@ public static class Settings
 
     public static float ShakeStrength => Shake * 0.5f;
 
+    // Closed captions for every sound (ClosedCaptions; the words are in Captions). Off unless turned on.
+    public static bool ClosedCaptions
+    {
+        get => PlayerPrefs.GetInt("captions", 0) == 1;
+        set => PlayerPrefs.SetInt("captions", value ? 1 : 0);
+    }
+
     public static bool DepthOfField
     {
         get => PlayerPrefs.GetInt("dof", 1) == 1;
@@ -72,6 +94,7 @@ public static class Settings
         ApplyVolume();
         ApplyScreen();
         ApplyGraphics();
+        ApplyVSync();
         Application.quitting += RestoreGraphics;
     }
 
@@ -79,7 +102,7 @@ public static class Settings
 
     static void ApplyVolume()
     {
-        AudioListener.volume = Volume * SfxVolume; // the old Sfx clips
+        AudioListener.volume = Volume; // the old Sfx clips (which take SfxVolume as they play)
         AudioBuses.SetVolume(AudioBuses.Master, Volume);
         AudioBuses.SetVolume(AudioBuses.Music, MusicVolume);
         AudioBuses.SetVolume(AudioBuses.Sfx, SfxVolume);
@@ -87,6 +110,12 @@ public static class Settings
     }
 
     // ---------------------------------------------------------------- screen
+
+    static void ApplyVSync()
+    {
+        QualitySettings.vSyncCount = VSync ? 1 : 0;
+        Application.targetFrameRate = -1; // as fast as it goes when off, the screen's rate when on
+    }
 
     // The screen's own resolutions, one per size, smallest first.
     public static Vector2Int[] Resolutions()
@@ -103,6 +132,24 @@ public static class Settings
 
     public static Vector2Int CurrentResolution =>
         Resolution.x > 0 ? Resolution : new Vector2Int(UnityEngine.Screen.width, UnityEngine.Screen.height);
+
+    // The screen's resolution `step` places along from the current one. A current size that isn't one of the
+    // screen's own (a window dragged to a size; the Editor's Game view) starts from the nearest.
+    public static Vector2Int StepResolution(int step)
+    {
+        var list = Resolutions();
+        var now = CurrentResolution;
+        int at = System.Array.IndexOf(list, now);
+        if (at < 0)
+        {
+            at = 0;
+            for (int i = 1; i < list.Length; i++)
+                if (Mathf.Abs(list[i].x * list[i].y - now.x * now.y) < Mathf.Abs(list[at].x * list[at].y - now.x * now.y)) at = i;
+            if (step > 0 && list[at].x * list[at].y > now.x * now.y) step--; // the nearest is already the next one up
+            else if (step < 0 && list[at].x * list[at].y < now.x * now.y) step++;
+        }
+        return list[Mathf.Clamp(at + step, 0, list.Length - 1)];
+    }
 
     static void ApplyScreen()
     {

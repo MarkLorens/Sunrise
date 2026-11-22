@@ -1,0 +1,162 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b4b95ff1cd2144d8b3add6d491f14a6, type: 3}
+  m_Name: UiArt
+  m_EditorClassIdentifier: Assembly-CSharp::UiArt
+  names:
+  - Buttons/Arrows/LeftArrow_Active
+  - Buttons/Arrows/LeftArrow_Idle
+  - Buttons/Arrows/RightArrow_Active
+  - Buttons/Arrows/RightArrow_Idle
+  - Buttons/Button1_Active
+  - Buttons/Button1_Idle
+  - Buttons/Button2_Active
+  - Buttons/Button2_Idle
+  - Buttons/Button3_Active
+  - Card_active
+  - Card_idle
+  - ConfirmationCard
+  - Dialogue/Dialogue_down
+  - Dialogue/Dialogue_up
+  - Dialogue/InfoCard
+  - HeaderCredits
+  - ImageCard
+  - KeyboardKey/KeyA
+  - KeyboardKey/KeyBlank
+  - KeyboardKey/KeyD
+  - KeyboardKey/KeyDown
+  - KeyboardKey/KeyJ
+  - KeyboardKey/KeyK
+  - KeyboardKey/KeyLeft
+  - KeyboardKey/KeyRight
+  - KeyboardKey/KeyS
+  - KeyboardKey/KeySpace
+  - KeyboardKey/KeySpace_fx
+  - KeyboardKey/KeyUp
+  - KeyboardKey/KeyW
+  - KeyboardKey/KeyX
+  - KeyboardKey/KeyZ
+  - Logo/Max2_Studio
+  - Logo/Mission_cloud
+  - Logo/Objective_complete
+  - Logo/Wohooland_logo
+  - MissionCard
+  - PageBG
+  - SaveCard_idle
+  - SaveCard_selected
+  - SavingIcon/AutoSave
+  - SavingIcon/SavingIcon_1
+  - SavingIcon/SavingIcon_2
+  - SavingIcon/SavingIcon_3
+  - SavingIcon/SavingIcon_4
+  - SavingIcon/SavingIcon_5
+  - SavingIcon/SavingIcon_6
+  - SavingIcon/SavingIcon_7
+  - SavingIcon/SavingIcon_8
+  - Scroll/Scroll
+  - Scroll/ScrollBar
+  - SpaceIcon/SpaceIcon_1
+  - SpaceIcon/SpaceIcon_2
+  - SpaceIcon/SpaceIcon_3
+  - SpaceIcon/SpaceIcon_4
+  - SpaceIcon/SpaceIcon_5
+  - SpaceIcon/SpaceIcon_6
+  - SpaceIcon/SpaceIcon_7
+  - SpaceIcon/SpaceIcon_8
+  - SpaceIcon/SpaceIcon_9
+  - SpaceIcon/SpaceIcon_10
+  - SpaceIcon/SpaceIcon_11
+  - SpaceIcon/SpaceIcon_12
+  - SpaceIcon/SpaceIcon_13
+  - SpaceIcon/SpaceIcon_14
+  - Tab_Active
+  - Tab_Idle
+  - Title_Idle
+  - Title_Selected
+  - Volume/VolumeBar_Active
+  - Volume/VolumeBar_Idle
+  - Volume/VolumeSelecter_Active
+  - Volume/VolumeSelecter_Idle
+  sprites:
+  - {fileID: 21300000, guid: cb5878306df644f65a3ab8e61458769a, type: 3}
+  - {fileID: 21300000, guid: db812af0bf1cc473a8a5a6d3c4eb06ff, type: 3}
+  - {fileID: 21300000, guid: 3fb3240ac234a42b5b5d6fbc6c9b7888, type: 3}
+  - {fileID: 21300000, guid: 8200085017fa84138ad6d601e9daf9d3, type: 3}
+  - {fileID: 21300000, guid: 41b8271f794a14f1ca1a7a92e577d562, type: 3}
+  - {fileID: 21300000, guid: e85669379bcc54300951bf067858fbfb, type: 3}
+  - {fileID: 21300000, guid: f4defef3a866245c085ec0df5d1099b3, type: 3}
+  - {fileID: 21300000, guid: 83a680060580144ac8fe870d45a43d38, type: 3}
+  - {fileID: 21300000, guid: cee8667f382f841b8b34e0ea0b5a0edb, type: 3}
+  - {fileID: 21300000, guid: 905f359782e094a37b235781f6a56b84, type: 3}
+  - {fileID: 21300000, guid: 00d019fe9cfb24041a794ba005e5e4ba, type: 3}
+  - {fileID: 21300000, guid: d726df09ef5134aeaa04d61571f2ab9f, type: 3}
+  - {fileID: 21300000, guid: 576d52b550fa9469b9a381bae862edaa, type: 3}
+  - {fileID: 21300000, guid: 8eed04496de4d4145b105d0646222fa3, type: 3}
+  - {fileID: 21300000, guid: a622151b0b3cf44d3aa90295e332b074, type: 3}
+  - {fileID: 21300000, guid: f6354d284d5664d6e8aaa55d6eeb844f, type: 3}
+  - {fileID: 21300000, guid: 6cbc0f636befd4ab4ae767ca5e840032, type: 3}
+  - {fileID: 21300000, guid: b4c6f8009ed3e44c09046a2ac37d5570, type: 3}
+  - {fileID: 21300000, guid: 94fe2e9be775e4eaabf6b4d0d50caf36, type: 3}
+  - {fileID: 21300000, guid: 1ad2dee32cd2d47f6bd57a3fdd32e5a6, type: 3}
+  - {fileID: 21300000, guid: bd681237a2af04d30ae7658bd0c01c60, type: 3}
+  - {fileID: 21300000, guid: 2cd5a8a49a20c4b409ac188e82b86633, type: 3}
+  - {fileID: 21300000, guid: 2e7fefdb7be05403f8d9e9d241c7b150, type: 3}
+  - {fileID: 21300000, guid: 80e2bd14af64c40a6b8e2438f7c8fb34, type: 3}
+  - {fileID: 21300000, guid: 0a194413777d64510b43107bdf57da39, type: 3}
+  - {fileID: 21300000, guid: 73df0532ea60243dfb9e834e48d6e1e1, type: 3}
+  - {fileID: 21300000, guid: 011dfe04ed7e44b3fbc607db4919cf4d, type: 3}
+  - {fileID: 21300000, guid: 3bc0ea08ed748455f82407804bbb2726, type: 3}
+  - {fileID: 21300000, guid: 02322b8a217514fac8592a6f1c31ee12, type: 3}
+  - {fileID: 21300000, guid: 6240ca4bbdbcc4688884c52ebdda833a, type: 3}
+  - {fileID: 21300000, guid: d3e0e6e1d373847ebb92fb6d0944f483, type: 3}
+  - {fileID: 21300000, guid: 5d8c607366cb944708fd062f60aebabf, type: 3}
+  - {fileID: 21300000, guid: 38801a1dee97d448a84b6ef94caccb97, type: 3}
+  - {fileID: 21300000, guid: 7a421c8f254fa4c22be2b7d82acd7cb0, type: 3}
+  - {fileID: 21300000, guid: 19b5e14306f3a4448b7335a3e344eb36, type: 3}
+  - {fileID: 21300000, guid: 481bf50693ff44f888bb4d708cd9c1e1, type: 3}
+  - {fileID: 21300000, guid: c7e177402e12141b497f7c8f0e3a3c0c, type: 3}
+  - {fileID: 21300000, guid: 1d3e5ca494258465598059548d791abf, type: 3}
+  - {fileID: 21300000, guid: 6fda0aa9f0c264e12bdfa2772d8842e3, type: 3}
+  - {fileID: 21300000, guid: fbcbbf84f3e4741fabe968cb5b1a0225, type: 3}
+  - {fileID: 21300000, guid: 9e2f963e908fe47008d0112757e8e51d, type: 3}
+  - {fileID: 21300000, guid: 4a33b3af7612445ddb5353b9f2ee030f, type: 3}
+  - {fileID: 21300000, guid: 04cd6882023ed4504a58fc1408c9476e, type: 3}
+  - {fileID: 21300000, guid: ef2b21b7766624b1d9558acea95c611d, type: 3}
+  - {fileID: 21300000, guid: 09452171d891e4beca6e80aa8423045c, type: 3}
+  - {fileID: 21300000, guid: fadb6314b97b64404b5258b9161d26e2, type: 3}
+  - {fileID: 21300000, guid: a6c462762955a48e3866a6d06ffc0945, type: 3}
+  - {fileID: 21300000, guid: 6ad10eb026235473eb042dd607d13dda, type: 3}
+  - {fileID: 21300000, guid: 1ef6eda7e593a49cbb68486f29d6418f, type: 3}
+  - {fileID: 21300000, guid: 605b8ba8842824eaa9c869c3504b92ed, type: 3}
+  - {fileID: 21300000, guid: 8c009fd9c43134b40a40bc7513ecaa0c, type: 3}
+  - {fileID: 21300000, guid: 20c01cf9110f74b3389dc96207d4e5cd, type: 3}
+  - {fileID: 21300000, guid: c8162cb2729ed44e4ba8efe8b71a1423, type: 3}
+  - {fileID: 21300000, guid: 9d94f7f01274e48f08d9a89f926b42e1, type: 3}
+  - {fileID: 21300000, guid: 01c55025dd19c4ed88b05b703bab1cb5, type: 3}
+  - {fileID: 21300000, guid: 016e2db5b1056496ca1e8f1beb57327a, type: 3}
+  - {fileID: 21300000, guid: dfb10f12232af4ef1b1241112cf7ff50, type: 3}
+  - {fileID: 21300000, guid: 94c6281ce23cf49e980fc0ffdf919fcc, type: 3}
+  - {fileID: 21300000, guid: bf695594d467f4d50b198170f1a0d011, type: 3}
+  - {fileID: 21300000, guid: f64248ea951194dfba9683b089dc09b7, type: 3}
+  - {fileID: 21300000, guid: 6ca9b6c215f7b4b889ae0caba5366e2b, type: 3}
+  - {fileID: 21300000, guid: 623c1fdaef3e44a52ae0bb24cbcf5982, type: 3}
+  - {fileID: 21300000, guid: f1e2632ac2f9245609d9ee5311c29da2, type: 3}
+  - {fileID: 21300000, guid: 752a7f564b8584e5eacd5b5bbb95c3f1, type: 3}
+  - {fileID: 21300000, guid: 6ce22bb72a9994be28dbcde046e68260, type: 3}
+  - {fileID: 21300000, guid: 907f3bc279f0e4848a5ecf0a92510708, type: 3}
+  - {fileID: 21300000, guid: 540adb5ceda7b4d27a7dbc402241550d, type: 3}
+  - {fileID: 21300000, guid: 4c49c217ed001405296c21660993b358, type: 3}
+  - {fileID: 21300000, guid: 272cbcf3b7e29485cb4d08926dc7ce6d, type: 3}
+  - {fileID: 21300000, guid: c218e3dc592ec4dbabc995be097ff8d3, type: 3}
+  - {fileID: 21300000, guid: 3630817751089434c9bff31ddf8dffa8, type: 3}
+  - {fileID: 21300000, guid: 3be64a07d59a34309947a8403e8b07c8, type: 3}
+  - {fileID: 21300000, guid: b262ee3bdfca44bb9b72b7feda7ec41c, type: 3}

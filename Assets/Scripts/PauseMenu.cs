@@ -24,7 +24,7 @@ public class PauseMenu : MonoBehaviour
         MainMenu.Img(dim, null, MainMenu.PauseShade).raycastTarget = true; // also stops clicks reaching the HUD
         blur = ScreenBlur.Add(canvas, Color.white);
         column = MainMenu.Column(canvas);
-        MainMenu.Title(column, "PAUSED", 560f, 80);
+        MainMenu.Title(column, "PAUSED", 560f, Figma.Type.AtmaPage);
         MainMenu.Button(column, "Continue", () => SetPaused(false));
         saveButton = MainMenu.Button(column, "Save Game", Save, sound: e => e.saveButton); // S-07
         settingsButton = MainMenu.Button(column, "Options", OpenSettings);
@@ -93,7 +93,7 @@ public class PauseMenu : MonoBehaviour
     void BackToMainMenu()
     {
         SetPaused(false);
-        SceneManager.LoadScene(0); // the main menu is first in Build Settings
+        LoadingScreen.Load(0); // the main menu is first in Build Settings
     }
 
     // Leaving the scene while paused (or stopping Play mode): don't leave the game frozen.

@@ -12,6 +12,12 @@ public static class AudioBuses
     public const string Sfx = "bus:/SFX";
     public const string Ui = "bus:/UI";
 
+    // The built banks have the Music and SFX groups, so the volume sliders go on them (Settings.ApplyVolume).
+    public static bool HasGroups =>
+        RuntimeManager.IsInitialized
+        && RuntimeManager.StudioSystem.getBus(Music, out _) == FMOD.RESULT.OK
+        && RuntimeManager.StudioSystem.getBus(Sfx, out _) == FMOD.RESULT.OK;
+
     public static bool SetVolume(string path, float volume)
     {
         try

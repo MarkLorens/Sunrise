@@ -5,19 +5,17 @@ using UnityEngine.InputSystem.UI;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-// The main menu, the first scene in Build Settings. Built at runtime: the title on a plain white page (blank for now)
-// and a column of words, the one picked sitting on a yellow brush stroke (UI/Menu/selected_menu). Mouse, keyboard
-// (arrows + Enter) and gamepad all work.
-// New Game starts the park (the next scene in Build Settings) in a new save slot (there's no limit); Load Game picks
-// a slot (LoadGameMenu). Options opens the settings (SettingsMenu). Credits does
-// nothing yet.
+// The main menu, the first scene in Build Settings, laid out off the artist's design (Figma: Main Menu): the Woohoo Land
+// logo (UI Asset/Logo/Wohooland_logo) on the dark page and a column of words under it, the one picked in bold on the
+// yellow brush stroke (UI Asset/Buttons/Button3_Active). Mouse, keyboard (arrows + Enter) and gamepad all work.
+// New Game starts the park (the next scene in Build Settings) in a new save slot (there's no limit), through the
+// loading screen (LoadingScreen); Load Game picks a slot (LoadGameMenu); Options opens the settings (SettingsMenu);
+// Credits, the credits (CreditsMenu).
 // The static builders below are shared with the pause menu (PauseMenu), the settings (SettingsMenu) and Load Game.
 // Titles are in Atma (ParkArt.TitleFont), everything else in Arvo (ParkArt.Font).
 public class MainMenu : MonoBehaviour
 {
-    public const string GameTitle = "WOOHOO", GameTitleSmall = "LAND";
-
-    public static readonly Color Paper = Color.white;
+    public static readonly Color Paper = new Color32(14, 16, 24, 255); // the design's near-black page
     public static readonly Color Night = new(0.13f, 0.145f, 0.22f); // Load Game's and the settings' dark blue
     public static readonly Color Ink = Color.black; // as in the design
     public static readonly Color Soft = Color.white;
@@ -25,7 +23,7 @@ public class MainMenu : MonoBehaviour
     // UI a lot compared with the design tool, hence so close to opaque.
     public static readonly Color PauseShade = new(0.025f, 0.022f, 0.045f, 0.985f);
 
-    Button loadButton, optionsButton;
+    Button loadButton, optionsButton, creditsButton;
 
     void Awake()
     {
@@ -36,17 +34,18 @@ public class MainMenu : MonoBehaviour
             cam.backgroundColor = Paper;
         }
         var canvas = Screen("Main Menu", 0);
-        GameTitleArt(canvas);
+        // The logo (its picture's see-through margin and all), and the column of words, both as placed in the design.
+        // 80% of the design's size, its bottom edge where the design has it (just over the words).
+        Figma.Picture(canvas, "Logo", "Logo/Wohooland_logo", 778f, 378.2f, 921.3f, 754.4f);
 
         var column = Column(canvas);
-        column.anchoredPosition = new Vector2(0f, -150f);
-        var first = Button(column, "New Game", NewGame, ink: Ink);
-        loadButton = Button(column, "Load Game", OpenLoad, ink: Ink);
+        column.anchoredPosition = new Vector2(0f, (Figma.Height * 0.5f - 715.2f) * Figma.K);
+        var first = Button(column, "New Game", NewGame);
+        loadButton = Button(column, "Load Game", OpenLoad);
         loadButton.interactable = SaveGame.Exists; // greyed out with no save yet
-        optionsButton = Button(column, "Options", OpenOptions, ink: Ink);
-        // ponytail: Credits does nothing yet (no credits screen); wire it when there is one.
-        Button(column, "Credits", null, ink: Ink);
-        Button(column, "Exit", Quit, ink: Ink);
+        optionsButton = Button(column, "Options", OpenOptions);
+        creditsButton = Button(column, "Credits", OpenCredits);
+        Button(column, "Exit", Quit);
         Select(first);
         if (AudioManager.instance != null && FMODEvents.instance != null)
             AudioManager.instance.PlayMusic(FMODEvents.instance.lobbyMusic); // G-01
@@ -58,33 +57,13 @@ public class MainMenu : MonoBehaviour
         if (AudioManager.instance != null) AudioManager.instance.StopMusic();
     }
 
-    // "WOOHOO" with a small "LAND" tucked in after it, both tilted up a little. ponytail: hardcoded until there's art.
-    static void GameTitleArt(RectTransform canvas)
-    {
-        var big = Ui("Title", canvas);
-        Place(big, new Vector2(-80f, 235f));
-        big.localRotation = Quaternion.Euler(0f, 0f, 9f);
-        Label(big, GameTitle, 170, Ink, ParkArt.TitleFont);
-        var small = Ui("Title Small", canvas);
-        Place(small, new Vector2(275f, 190f));
-        small.localRotation = Quaternion.Euler(0f, 0f, 12f);
-        Label(small, GameTitleSmall, 84, Ink, ParkArt.TitleFont);
-    }
-
-    static void Place(RectTransform rt, Vector2 at)
-    {
-        rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
-        rt.anchoredPosition = at;
-        rt.sizeDelta = new Vector2(900f, 200f);
-    }
-
     void NewGame() => StartIn(SaveGame.FirstEmpty); // a slot of its own, however many saves there are
 
     // A new game in `slot` (Save Game in the pause menu saves into it).
     public static void StartIn(int slot)
     {
         SaveGame.Slot = slot;
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
+        LoadingScreen.Load(SceneManager.GetActiveScene().buildIndex + 1);
     }
 
     void OpenLoad() => LoadGameMenu.Open(5, () =>
@@ -94,6 +73,8 @@ public class MainMenu : MonoBehaviour
     });
 
     void OpenOptions() => SettingsMenu.Open(5, () => Select(optionsButton));
+
+    void OpenCredits() => CreditsMenu.Open(5, () => Select(creditsButton));
 
     void Quit()
     {
@@ -147,17 +128,21 @@ public class MainMenu : MonoBehaviour
         Size(Ui("Gap", column), 10f, 30f);
     }
 
-    // A word to pick: `ink` on its own, dark on the yellow brush stroke while hovered or picked with the keys.
+    // A word to pick: `ink` on its own, bold and dark on the yellow brush stroke while hovered or picked with the keys.
     // `sound` is what clicking it plays: the usual click (G-03) unless given, e.g. e => e.backButton.
+    // Sizes off the design (Main Menu): a word every 49.7 design px, Arvo 28; the stroke 418.6 x 77.8, a touch low.
     public static Button Button(RectTransform parent, string text, UnityAction onClick, float width = 430f, Color? ink = null,
         System.Func<FMODEvents, FMODUnity.EventReference> sound = null)
     {
         var rt = Ui(text, parent);
-        Size(rt, width, 66f);
+        Size(rt, width, 49.7f * Figma.K);
         var stroke = Ui("Stroke", rt);
-        Stretch(stroke);
-        var img = Img(stroke, "UI/Menu/selected_menu", Color.white);
-        img.pixelsPerUnitMultiplier = 0.58f; // the 38 px art drawn 66 tall: its ends keep their shape
+        stroke.anchorMin = stroke.anchorMax = stroke.pivot = new Vector2(0.5f, 0.5f);
+        stroke.anchoredPosition = new Vector2(0f, -3.6f * Figma.K);
+        stroke.sizeDelta = new Vector2(418.6f, 77.8f) * Figma.K;
+        var img = stroke.gameObject.AddComponent<Image>();
+        img.sprite = UiArt.Get("Buttons/Button3_Active");
+        img.raycastTarget = false;
         var hit = rt.gameObject.AddComponent<Image>(); // the whole row is clickable, see-through
         hit.color = Color.clear;
         var button = rt.gameObject.AddComponent<Button>();
@@ -165,7 +150,7 @@ public class MainMenu : MonoBehaviour
         button.transition = Selectable.Transition.None;
         OnClick(button, onClick, sound);
 
-        var label = Label(Ui("Label", rt), text, 32, ink ?? Soft, ParkArt.Font);
+        var label = Label(Ui("Label", rt), text, Figma.Type.ArvoSubtitle, ink ?? Soft, ParkArt.Font);
         Stretch((RectTransform)label.transform);
         var look = rt.gameObject.AddComponent<MenuWord>();
         look.label = label;
@@ -175,25 +160,27 @@ public class MainMenu : MonoBehaviour
         return button;
     }
 
-    // A small hand-drawn pill (Delete Slot, Back, Yes, No): pink, yellow while hovered or picked.
-    public static Button Pill(RectTransform parent, string text, UnityAction onClick, float width = 210f, float height = 58f)
+    // A small hand-drawn pill (Delete Slot, Back, Cancel, Yes, No): light blue (UI Asset/Buttons/Button1_Idle), yellow
+    // while hovered or picked (Button1_Active), as in the design.
+    public static Button Pill(RectTransform parent, string text, UnityAction onClick, float width = 210f, float height = 58f,
+        System.Func<FMODEvents, FMODUnity.EventReference> sound = null)
     {
         var rt = Ui(text, parent);
         rt.sizeDelta = new Vector2(width, height);
         var le = rt.gameObject.AddComponent<LayoutElement>();
         le.preferredWidth = width;
         le.preferredHeight = height;
-        var img = Img(rt, "UI/Menu/button_main", Color.white);
-        img.pixelsPerUnitMultiplier = 33f / height; // the 33 px art at this height: its pointed ends keep their shape
+        var img = rt.gameObject.AddComponent<Image>();
+        img.sprite = UiArt.Get("Buttons/Button1_Idle");
         img.raycastTarget = true; // clickable
         var button = rt.gameObject.AddComponent<Button>();
         button.targetGraphic = img;
         button.transition = Selectable.Transition.SpriteSwap;
         var swap = button.spriteState;
-        swap.highlightedSprite = swap.selectedSprite = swap.pressedSprite = ParkArt.Get("UI/Menu/button_selected");
+        swap.highlightedSprite = swap.selectedSprite = swap.pressedSprite = UiArt.Get("Buttons/Button1_Active");
         button.spriteState = swap;
-        OnClick(button, onClick, null);
-        var label = Label(Ui("Label", rt), text, 26, Ink, ParkArt.Font);
+        OnClick(button, onClick, sound);
+        var label = Label(Ui("Label", rt), text, Figma.Type.ArvoSubtitle, Ink, ParkArt.Font);
         Stretch((RectTransform)label.transform);
         ((RectTransform)label.transform).offsetMin = new Vector2(0f, 3f);
         rt.gameObject.AddComponent<HoverSelects>();
@@ -295,6 +282,7 @@ public class MainMenu : MonoBehaviour
             bool picked = button.interactable && EventSystem.current != null && EventSystem.current.currentSelectedGameObject == gameObject;
             stroke.enabled = picked;
             label.color = !button.interactable ? new Color(ink.r, ink.g, ink.b, 0.3f) : picked ? Ink : ink;
+            label.fontStyle = picked ? FontStyle.Bold : FontStyle.Normal;
         }
     }
 }

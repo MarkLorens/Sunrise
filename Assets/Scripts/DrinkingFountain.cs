@@ -135,6 +135,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
         if (presses < lines.Length) GameHud.Think(GameHud.ThoughtPriority.Action, lines[presses]);
         presses++;
         target = Mathf.Min(maxRadius, Mathf.Max(target, startRadius) + (maxRadius - startRadius) / tapsToFull); // Update lets it creep out
+        ClosedCaptions.Show(Captions.FountainPress);
         if (!AudioManager.TryPlay(e => e.fountainPress, transform.position)) Sfx.Play(Sfx.HitSoft, 0.6f, 1.4f); // AL-02
         Fx.Burst("Fx/puff", transform.position + Vector3.up * 0.8f, 6, Water, 2f, 0.35f, 0.5f);
         GameHud.Say(GameText.PressedFountain);
@@ -154,6 +155,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     // The FMOD electrocution sound where the cable hit the water; the old one if that isn't set up.
     void PlayZap(Vector3 at)
     {
+        ClosedCaptions.Show(Captions.Electrocution);
         var events = FMODEvents.instance;
         if (events != null && !events.electrocution.IsNull && AudioManager.instance != null) AudioManager.instance.PlayOneShot(events.electrocution, at);
         else Sfx.Play(Sfx.Crash, 1f, 1.6f);
@@ -364,6 +366,6 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     void Fix()
     {
         Fixed = true;
-        Sfx.Play(Sfx.HitWood, 0.8f);
+        Sfx.Play(Sfx.HitWood, 0.8f, 1f, Captions.FountainFixed);
     }
 }

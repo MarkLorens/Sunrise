@@ -57,7 +57,7 @@ public class ElectricalBox : MonoBehaviour, IInteraction
         if (!wheel.Powered)
         {
             wheel.Restart();
-            Sfx.Play(Sfx.HitWood, 0.7f, 0.8f);
+            Sfx.Play(Sfx.HitWood, 0.7f, 0.8f, Captions.PowerBackOn);
             GameHud.Say(GameText.RestartedWheel);
             Mischief.Complete(Mischief.Task.RestartWheel);
             return;
@@ -70,7 +70,7 @@ public class ElectricalBox : MonoBehaviour, IInteraction
         if (!Unlocked)
         {
             Unlocked = true;
-            Sfx.Play(Sfx.HitWood, 0.7f, 1.5f);
+            Sfx.Play(Sfx.HitWood, 0.7f, 1.5f, Captions.BoxUnlocked);
             if (host.brain is Mechanic) GameHud.Think(GameHud.ThoughtPriority.Action, GameText.ThinkBoxMechanic);
             GameHud.Say(GameText.UnlockedBox);
             Mischief.Complete(Mischief.Task.UnlockBox);
