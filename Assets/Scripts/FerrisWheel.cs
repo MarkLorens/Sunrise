@@ -92,6 +92,7 @@ public class FerrisWheel : MonoBehaviour
     {
         Current = State.Unpowered;
         speed = 0f;
+        if (TryGetComponent(out FerrisWheelAudio audio)) audio.RestoreUnpowered();
     }
 
     // Loading a save (SaveGame) with the wheel already started again: running wobbly, no payoff.
@@ -299,7 +300,7 @@ public class FerrisWheel : MonoBehaviour
                 {
                     Set(State.Breaking);
                     Fx.Shake(0.25f, breakDelay);
-                    Sfx.Play(Sfx.HitWood, 1f, 0.5f, Captions.WheelBreaking); // *CREAK*
+                    ClosedCaptions.Show(Captions.WheelBreaking);
                 }
                 break;
 
@@ -376,8 +377,7 @@ public class FerrisWheel : MonoBehaviour
         }
         if (queue != null) queue.ThrowOutRiders(transform.position + Vector3.back * 1.5f, 3f);
         Fx.Shake(0.45f, 1f);
-        Sfx.Play(Sfx.Crash, 1f, 1f, Captions.WheelCollapse);
-        Sfx.Play(Sfx.Thud, 1f, 0.6f);
+        ClosedCaptions.Show(Captions.WheelCollapse);
         ParkChaos.Add(transform.position, 12f, 9999f);
     }
 
@@ -410,7 +410,7 @@ public class FerrisWheel : MonoBehaviour
             {
                 Set(State.Wrecked);
                 Fx.Shake(0.4f, 0.8f);
-                Sfx.Play(Sfx.Crash, 0.9f, 0.7f, Captions.WheelWrecked);
+                ClosedCaptions.Show(Captions.WheelWrecked);
                 Fx.Burst("Fx/puff", p, 30, new Color(0.7f, 0.65f, 0.6f), 6f, 1.2f, 1.2f);
                 ParkChaos.Add(p, 12f, 9999f);
             }
@@ -429,7 +429,7 @@ public class FerrisWheel : MonoBehaviour
             d.y = 0f;
             if (Mathf.Abs(Vector3.Dot(d, dir)) > 0.8f || Mathf.Abs(Vector3.Dot(d, side)) > radius * 0.3f) continue;
             v.KnockDown();
-            Sfx.Play(Sfx.Crash, 0.6f, Random.Range(0.9f, 1.2f), Captions.Flattened);
+            ClosedCaptions.Show(Captions.Flattened);
         }
     }
 }

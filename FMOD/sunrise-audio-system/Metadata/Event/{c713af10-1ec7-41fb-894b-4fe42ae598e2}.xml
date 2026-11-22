@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="Event" id="{c713af10-1ec7-41fb-894b-4fe42ae598e2}">
 		<property name="name">
-			<value>AL-03 Water Leak</value>
+			<value>Water Leak</value>
 		</property>
 		<property name="outputFormat">
 			<value>2</value>
@@ -53,24 +53,17 @@
 			<destination>{05becd02-31d9-47c6-9a73-5ff17a76efb2}</destination>
 		</relationship>
 		<relationship name="output">
-			<destination>{035be584-e15d-4de2-8632-9243e87f4af2}</destination>
+			<destination>{0ec14085-3a65-4220-a90e-be00581d9ad5}</destination>
 		</relationship>
 	</object>
 	<object class="EventAutomatableProperties" id="{2550a1e0-aafe-4204-9fb9-07eccf8aa8d9}" />
 	<object class="MarkerTrack" id="{f8be8cba-0b3d-47f9-8713-ad456d8bff3c}" />
 	<object class="GroupTrack" id="{43216a20-db2a-4e8a-a561-22786841b27e}">
-		<relationship name="modules">
-			<destination>{dfeaad1e-a017-45a1-9a34-ba741ff84952}</destination>
-		</relationship>
 		<relationship name="mixerGroup">
 			<destination>{4566c1cb-8bff-4560-bba9-65cf84bc2aed}</destination>
 		</relationship>
 	</object>
-	<object class="Timeline" id="{febaca71-c834-4fe0-bd12-39da20f94962}">
-		<relationship name="modules">
-			<destination>{dfeaad1e-a017-45a1-9a34-ba741ff84952}</destination>
-		</relationship>
-	</object>
+	<object class="Timeline" id="{febaca71-c834-4fe0-bd12-39da20f94962}" />
 	<object class="EventMixerMaster" id="{0e0e5c08-8b13-4983-a0d1-c2652941f934}">
 		<relationship name="effectChain">
 			<destination>{e9a4ca0b-f317-465a-9833-e8a8d5b19b2a}</destination>
@@ -88,24 +81,10 @@
 		</relationship>
 	</object>
 	<object class="MixerBusPanner" id="{05becd02-31d9-47c6-9a73-5ff17a76efb2}" />
-	<object class="SingleSound" id="{dfeaad1e-a017-45a1-9a34-ba741ff84952}">
-		<property name="start">
-			<value>4.4408920985006262e-16</value>
-		</property>
-		<property name="length">
-			<value>3.8842774063836578</value>
-		</property>
-		<property name="timelockedOffset">
-			<value>0.22118388500548242</value>
-		</property>
-		<relationship name="modulators">
-			<destination>{ea8c1a19-caef-48f2-a122-970fe455bc08}</destination>
-		</relationship>
-		<relationship name="audioFile">
-			<destination>{eb8587cc-8b47-4e8b-8d69-9293de889746}</destination>
-		</relationship>
-	</object>
 	<object class="EventMixerGroup" id="{4566c1cb-8bff-4560-bba9-65cf84bc2aed}">
+		<property name="volume">
+			<value>-2.5</value>
+		</property>
 		<property name="name">
 			<value>Audio 1</value>
 		</property>
@@ -127,14 +106,6 @@
 	</object>
 	<object class="MixerBusPanner" id="{9ddd6e93-c44e-41fa-a70d-82303bef2672}" />
 	<object class="MixerBusFader" id="{bc4e62e4-949a-4ebc-ba52-aafc4103eeca}" />
-	<object class="RandomizerModulator" id="{ea8c1a19-caef-48f2-a122-970fe455bc08}">
-		<property name="nameOfPropertyBeingModulated">
-			<value>pitch</value>
-		</property>
-		<property name="amount">
-			<value>4</value>
-		</property>
-	</object>
 	<object class="MixerBusEffectChain" id="{d1b21a83-2410-42a5-91c6-bde87d713625}">
 		<relationship name="effects">
 			<destination>{157a00a7-f8bb-4c4f-a5c4-775bf514541a}</destination>

@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="Event" id="{eb94e275-b85d-4f71-b93a-adc278cf08bf}">
 		<property name="name">
-			<value>NPC-03 Curious</value>
+			<value>Curious</value>
 		</property>
 		<property name="outputFormat">
 			<value>2</value>

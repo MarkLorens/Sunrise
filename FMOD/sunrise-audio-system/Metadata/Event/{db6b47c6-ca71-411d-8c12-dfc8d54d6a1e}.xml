@@ -2,13 +2,13 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="Event" id="{db6b47c6-ca71-411d-8c12-dfc8d54d6a1e}">
 		<property name="name">
-			<value>S-06 Back Button</value>
+			<value>Back Button</value>
 		</property>
 		<property name="outputFormat">
 			<value>1</value>
 		</property>
 		<relationship name="folder">
-			<destination>{aace5fff-c57a-4570-a986-e48e45855e99}</destination>
+			<destination>{25b34505-73f5-476a-afba-0339b49f1b16}</destination>
 		</relationship>
 		<relationship name="mixer">
 			<destination>{e47c3f79-b394-4587-8268-51db4ac07425}</destination>

@@ -2,13 +2,13 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="Event" id="{3e64162e-8ecf-4862-a623-0d00b6aa72f3}">
 		<property name="name">
-			<value>S-07 Save Button</value>
+			<value>Save Button</value>
 		</property>
 		<property name="outputFormat">
-			<value>0</value>
+			<value>1</value>
 		</property>
 		<relationship name="folder">
-			<destination>{aace5fff-c57a-4570-a986-e48e45855e99}</destination>
+			<destination>{25b34505-73f5-476a-afba-0339b49f1b16}</destination>
 		</relationship>
 		<relationship name="mixer">
 			<destination>{65ab9b93-1a71-41c3-8bcc-78e582988e31}</destination>
@@ -30,6 +30,9 @@
 		</relationship>
 		<relationship name="parameters">
 			<destination>{fabd6bb1-37b9-4679-b61c-449c554fc869}</destination>
+		</relationship>
+		<relationship name="banks">
+			<destination>{33e8e0a6-d8ff-4fb1-af74-ecced7a8007e}</destination>
 		</relationship>
 	</object>
 	<object class="EventMixer" id="{65ab9b93-1a71-41c3-8bcc-78e582988e31}">
@@ -79,7 +82,11 @@
 			<destination>{65ab9b93-1a71-41c3-8bcc-78e582988e31}</destination>
 		</relationship>
 	</object>
-	<object class="MultiSound" id="{9d97b5d5-5312-4dcc-86f2-b7bdcbc04d5e}" />
+	<object class="MultiSound" id="{9d97b5d5-5312-4dcc-86f2-b7bdcbc04d5e}">
+		<relationship name="sounds">
+			<destination>{7e2d31d6-aa63-4025-99b5-571fbe350206}</destination>
+		</relationship>
+	</object>
 	<object class="MixerBusEffectChain" id="{0e32025e-3281-41b8-83d7-3e6093080d4f}">
 		<relationship name="effects">
 			<destination>{bfd1adee-17a0-42b4-9aab-f4de0475deda}</destination>
@@ -92,6 +99,11 @@
 		</relationship>
 	</object>
 	<object class="MixerBusPanner" id="{42e045e0-1c6b-44de-b86f-facd4fb084db}" />
+	<object class="SingleSound" id="{7e2d31d6-aa63-4025-99b5-571fbe350206}">
+		<relationship name="audioFile">
+			<destination>{10f35af8-0bf8-47df-93f3-25590c5a676e}</destination>
+		</relationship>
+	</object>
 	<object class="MixerBusFader" id="{bfd1adee-17a0-42b4-9aab-f4de0475deda}" />
 	<object class="MixerBusFader" id="{3192aff6-a3ec-4987-98de-a9748c7e513f}" />
 </objects>

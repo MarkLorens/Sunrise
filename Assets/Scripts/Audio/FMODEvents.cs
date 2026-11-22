@@ -9,27 +9,23 @@ public class FMODEvents : MonoBehaviour
     [field: Header("Game (G)")]
     [field: Tooltip("G-01: music on the main menu.")]
     [field: SerializeField] public EventReference lobbyMusic { get; private set; }
-    [field: Tooltip("G-02: moving between menu items.")]
-    [field: SerializeField] public EventReference menuHover { get; private set; }
-    [field: Tooltip("G-03: picking a menu item.")]
-    [field: SerializeField] public EventReference menuClick { get; private set; }
     [field: Tooltip("G-04: background music while playing as Ruckus, the spirit.")]
     [field: SerializeField] public EventReference ruckusMusic { get; private set; }
     [field: Tooltip("G-05: background music while possessing someone (lower, pitch-shifted).")]
     [field: SerializeField] public EventReference possessedMusic { get; private set; }
     [field: Tooltip("G-06: trying something you can't do right now.")]
     [field: SerializeField] public EventReference disabledAction { get; private set; }
-    [field: Tooltip("G-07: a puzzle is solved (the transition).")]
-    [field: SerializeField] public EventReference puzzleComplete { get; private set; }
+    [field: Tooltip("G-07: \"Objective Completed!\" pops up after a part is done. Everything else is turned down while it plays.")]
+    [field: SerializeField] public EventReference objectiveCompleted { get; private set; }
 
-    [field: Header("Settings (S)")]
-    [field: Tooltip("S-01: turning a volume up.")]
-    [field: SerializeField] public EventReference volumeUp { get; private set; }
-    [field: Tooltip("S-02: turning a volume down.")]
-    [field: SerializeField] public EventReference volumeDown { get; private set; }
-    [field: Tooltip("S-03: a volume is already at its lowest or highest.")]
-    [field: SerializeField] public EventReference volumeLimit { get; private set; }
-    [field: Tooltip("S-04: changing a setting (On/Off, resolution, graphics, screen shake).")]
+    [field: Header("Menu (M)")]
+    [field: Tooltip("G-02: moving between menu items.")]
+    [field: SerializeField] public EventReference menuHover { get; private set; }
+    [field: Tooltip("G-03: picking a menu item.")]
+    [field: SerializeField] public EventReference menuClick { get; private set; }
+    [field: Tooltip("Starting a game: New Game on the main menu, or picking a slot in Load Game.")]
+    [field: SerializeField] public EventReference newOrLoadGame { get; private set; }
+    [field: Tooltip("S-04: changing a setting (a volume up or down, On/Off, resolution, graphics, screen shake).")]
     [field: SerializeField] public EventReference toggle { get; private set; }
     [field: Tooltip("S-05: Esc opens the pause menu.")]
     [field: SerializeField] public EventReference pauseMenu { get; private set; }
@@ -37,11 +33,13 @@ public class FMODEvents : MonoBehaviour
     [field: SerializeField] public EventReference backButton { get; private set; }
     [field: Tooltip("S-07: the pause menu's Save Game button.")]
     [field: SerializeField] public EventReference saveButton { get; private set; }
+    [field: Tooltip("Yes in Load Game's Delete Slot: the save is deleted.")]
+    [field: SerializeField] public EventReference deleteSaveFile { get; private set; }
 
     [field: Header("Tutorial (TT)")]
     [field: Tooltip("TT-01: the camera zooms into Ruckus: cheeky sounds, Ruckus laughs.")]
     [field: SerializeField] public EventReference tutorialZoomIn { get; private set; }
-    [field: Tooltip("TT-02: holding Tab to skip the tutorial (a filling-up sound).")]
+    [field: Tooltip("TT-02: holding Space to skip the tutorial (a filling-up sound; cut off if let go early).")]
     [field: SerializeField] public EventReference skipTutorialHold { get; private set; }
     [field: Tooltip("TT-03: taking down the Out of Order sign.")]
     [field: SerializeField] public EventReference outOfOrderSign { get; private set; }

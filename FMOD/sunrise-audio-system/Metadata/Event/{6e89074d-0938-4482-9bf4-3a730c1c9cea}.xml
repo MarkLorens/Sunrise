@@ -2,13 +2,13 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="Event" id="{6e89074d-0938-4482-9bf4-3a730c1c9cea}">
 		<property name="name">
-			<value>S-04 Toggle</value>
+			<value>Menu Toggle</value>
 		</property>
 		<property name="outputFormat">
-			<value>0</value>
+			<value>1</value>
 		</property>
 		<relationship name="folder">
-			<destination>{aace5fff-c57a-4570-a986-e48e45855e99}</destination>
+			<destination>{25b34505-73f5-476a-afba-0339b49f1b16}</destination>
 		</relationship>
 		<relationship name="mixer">
 			<destination>{49af0c8d-a096-4a9b-8cb0-4c7f178b0de7}</destination>
@@ -30,6 +30,9 @@
 		</relationship>
 		<relationship name="parameters">
 			<destination>{1d4b64a0-9ce9-4559-a200-53b5aa6d473e}</destination>
+		</relationship>
+		<relationship name="banks">
+			<destination>{33e8e0a6-d8ff-4fb1-af74-ecced7a8007e}</destination>
 		</relationship>
 	</object>
 	<object class="EventMixer" id="{49af0c8d-a096-4a9b-8cb0-4c7f178b0de7}">
@@ -79,7 +82,11 @@
 			<destination>{49af0c8d-a096-4a9b-8cb0-4c7f178b0de7}</destination>
 		</relationship>
 	</object>
-	<object class="MultiSound" id="{8d01d22a-22bd-4c92-9f2f-4dab65deea95}" />
+	<object class="MultiSound" id="{8d01d22a-22bd-4c92-9f2f-4dab65deea95}">
+		<relationship name="sounds">
+			<destination>{8118ff81-22c2-4c18-aadc-1b61f179a49f}</destination>
+		</relationship>
+	</object>
 	<object class="MixerBusEffectChain" id="{d981c4e7-424e-405f-b277-5535d3e7848d}">
 		<relationship name="effects">
 			<destination>{1b3d4aaa-f42e-4dde-98a6-ea99f90d9862}</destination>
@@ -92,6 +99,11 @@
 		</relationship>
 	</object>
 	<object class="MixerBusPanner" id="{c79734af-44af-4b6d-ac87-6b8fcdbae579}" />
+	<object class="SingleSound" id="{8118ff81-22c2-4c18-aadc-1b61f179a49f}">
+		<relationship name="audioFile">
+			<destination>{03064a54-cb4a-4359-8e91-905069d72db2}</destination>
+		</relationship>
+	</object>
 	<object class="MixerBusFader" id="{1b3d4aaa-f42e-4dde-98a6-ea99f90d9862}" />
 	<object class="MixerBusFader" id="{651503d0-f444-41b5-89b4-d2c9c2e43b76}" />
 </objects>

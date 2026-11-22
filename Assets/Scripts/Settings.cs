@@ -19,7 +19,7 @@ public static class Settings
         set { PlayerPrefs.SetFloat("volume", Mathf.Clamp01(value)); ApplyVolume(); }
     }
 
-    // Background music and every other sound, each 0..1 on top of Volume (FMOD's Music, SFX and UI groups via AudioBuses, or AudioMix on banks without them; Sfx for Unity's own clips).
+    // Background music and every other sound, each 0..1 on top of Volume (FMOD's Music, SFX and UI groups via AudioBuses, or AudioMix on banks without them).
     public static float MusicVolume
     {
         get => PlayerPrefs.GetFloat("musicVolume", 1f);
@@ -102,7 +102,7 @@ public static class Settings
 
     static void ApplyVolume()
     {
-        AudioListener.volume = Volume; // the old Sfx clips (which take SfxVolume as they play)
+        AudioListener.volume = Volume; // any Unity AudioSource
         AudioBuses.SetVolume(AudioBuses.Master, Volume);
         AudioBuses.SetVolume(AudioBuses.Music, MusicVolume);
         AudioBuses.SetVolume(AudioBuses.Sfx, SfxVolume);

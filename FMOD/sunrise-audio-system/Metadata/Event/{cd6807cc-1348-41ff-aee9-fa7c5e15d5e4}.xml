@@ -2,13 +2,13 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="Event" id="{cd6807cc-1348-41ff-aee9-fa7c5e15d5e4}">
 		<property name="name">
-			<value>S-05 Trigger Pause Menu (Esc)</value>
+			<value>Trigger Pause Menu (Esc)</value>
 		</property>
 		<property name="outputFormat">
 			<value>0</value>
 		</property>
 		<relationship name="folder">
-			<destination>{aace5fff-c57a-4570-a986-e48e45855e99}</destination>
+			<destination>{25b34505-73f5-476a-afba-0339b49f1b16}</destination>
 		</relationship>
 		<relationship name="mixer">
 			<destination>{54e58c32-5a26-475b-9303-937efae5db0b}</destination>

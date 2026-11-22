@@ -8,7 +8,7 @@ using FMOD.Studio;
 // after the frame's sounds have started, every playing event's volume is set to its share, music events (a path with
 // "Music" in it) to MusicVolume and the rest to SfxVolume. (The event's volume, not its channel group's: FMOD Studio's
 // own faders drive that.) An event with a volume of its own (EmitterVolume) hands it to OwnVolume each frame instead of
-// setting it, and gets the two multiplied. Unity's own clips (Sfx) take SfxVolume as they play. Kept across scenes.
+// setting it, and gets the two multiplied. Kept across scenes.
 public class AudioMix : MonoBehaviour
 {
     readonly Dictionary<FMOD.GUID, bool> isMusic = new();

@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="Event" id="{1976115a-45b2-4683-b18c-8b5717f581ce}">
 		<property name="name">
-			<value>RU-02 Float</value>
+			<value>Float</value>
 		</property>
 		<property name="outputFormat">
 			<value>2</value>
@@ -87,7 +87,7 @@
 	</object>
 	<object class="EventMixerMaster" id="{3adaab41-d131-46fb-b6ee-c91646c33b99}">
 		<property name="volume">
-			<value>-20</value>
+			<value>-15</value>
 		</property>
 		<relationship name="modulators">
 			<destination>{3c8a1520-6fd2-4459-a2f7-5120f0cc9559}</destination>

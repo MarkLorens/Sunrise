@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="Event" id="{8d32ead9-fa19-4f4f-a4d1-adb962198695}">
 		<property name="name">
-			<value>NPC-01 Scream or Panic</value>
+			<value>Scream or Panic</value>
 		</property>
 		<property name="outputFormat">
 			<value>2</value>

@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="Event" id="{a66b0c3b-244e-46fd-bc33-cc52f04a399f}">
 		<property name="name">
-			<value>G-06 Disabled Action</value>
+			<value>Disabled Action</value>
 		</property>
 		<property name="outputFormat">
 			<value>1</value>

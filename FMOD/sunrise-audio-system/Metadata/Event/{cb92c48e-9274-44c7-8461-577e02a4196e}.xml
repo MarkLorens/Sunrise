@@ -2,13 +2,13 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="Event" id="{cb92c48e-9274-44c7-8461-577e02a4196e}">
 		<property name="name">
-			<value>G-03 Click or Confirm</value>
+			<value>Menu Click</value>
 		</property>
 		<property name="outputFormat">
-			<value>0</value>
+			<value>1</value>
 		</property>
 		<relationship name="folder">
-			<destination>{1f94a0b9-8c17-473b-bceb-73d06975c9a8}</destination>
+			<destination>{25b34505-73f5-476a-afba-0339b49f1b16}</destination>
 		</relationship>
 		<relationship name="mixer">
 			<destination>{82a2bf99-e2fe-49c1-86fc-85c650a78624}</destination>
@@ -30,6 +30,9 @@
 		</relationship>
 		<relationship name="parameters">
 			<destination>{6c6a43f6-e0f5-40c4-8ebe-33a028e688c0}</destination>
+		</relationship>
+		<relationship name="banks">
+			<destination>{33e8e0a6-d8ff-4fb1-af74-ecced7a8007e}</destination>
 		</relationship>
 	</object>
 	<object class="EventMixer" id="{82a2bf99-e2fe-49c1-86fc-85c650a78624}">
@@ -79,7 +82,11 @@
 			<destination>{82a2bf99-e2fe-49c1-86fc-85c650a78624}</destination>
 		</relationship>
 	</object>
-	<object class="MultiSound" id="{539914bc-c24f-4c79-acee-92fd77ade843}" />
+	<object class="MultiSound" id="{539914bc-c24f-4c79-acee-92fd77ade843}">
+		<relationship name="sounds">
+			<destination>{b0f659f2-3e34-446e-b825-f769ef8802ac}</destination>
+		</relationship>
+	</object>
 	<object class="MixerBusEffectChain" id="{d4dec9df-d9da-4a4d-aae1-1bc43c4737f8}">
 		<relationship name="effects">
 			<destination>{38ca3ded-e4ec-410a-a1a2-8d5a7f9dd741}</destination>
@@ -92,6 +99,11 @@
 		</relationship>
 	</object>
 	<object class="MixerBusPanner" id="{59abf16e-ca93-45fa-925d-6d55255701b2}" />
+	<object class="SingleSound" id="{b0f659f2-3e34-446e-b825-f769ef8802ac}">
+		<relationship name="audioFile">
+			<destination>{f7c0d432-65e7-4c3a-a1c9-845029cbdbe8}</destination>
+		</relationship>
+	</object>
 	<object class="MixerBusFader" id="{38ca3ded-e4ec-410a-a1a2-8d5a7f9dd741}" />
 	<object class="MixerBusFader" id="{79e60242-e2fd-40b6-84cd-0d533cda17a8}" />
 </objects>

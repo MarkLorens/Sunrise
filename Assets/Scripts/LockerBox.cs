@@ -23,7 +23,7 @@ public class LockerBox : MonoBehaviour, IInteraction
 
     public void Interact(Visitor host)
     {
-        Sfx.Play(Sfx.Crash, 0.5f, 1.8f, Captions.CableSpark);
+        ClosedCaptions.Show(Captions.CableSpark);
         Fx.Burst("Fx/sparkle", transform.position + Vector3.up * 0.8f, 14, new Color(1f, 0.95f, 0.4f), 3f, 0.3f, 0.4f);
         var tank = PropaneTank.ReadyNear(room.transform.position, 1f);
         if (tank == null)

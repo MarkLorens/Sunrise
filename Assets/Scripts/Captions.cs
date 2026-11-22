@@ -1,6 +1,6 @@
 // Every closed caption's words, in one place to change the wording (Options > General > Closed Caption shows them:
-// ClosedCaptions). Each sound the game plays has one, passed where the sound is played (Sfx.Play's last argument,
-// ClosedCaptions.Show for FMOD one-shots, ClosedCaptions.Hold for sounds that go on, like the Ferris wheel's hum).
+// ClosedCaptions). Each sound the game plays has one, shown where the sound is played (ClosedCaptions.Show for
+// one-shots, ClosedCaptions.Hold for sounds that go on, like the Ferris wheel's hum).
 // A new sound needs a line here too. Footsteps and the spirit's drifting hum have none: they're there all the time.
 public static class Captions
 {

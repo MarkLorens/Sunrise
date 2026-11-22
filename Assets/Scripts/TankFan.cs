@@ -99,7 +99,7 @@ public class TankFan : MonoBehaviour, IInteraction
         }
         facing = (Dir)(((int)facing + 1) % 4);
         Face();
-        Sfx.Play(Sfx.HitWood, 0.6f, 1.2f, Captions.FanTurned);
+        ClosedCaptions.Show(Captions.FanTurned);
         GameHud.Say(GameText.TurnedFan(facing.ToString().ToLowerInvariant()));
     }
 

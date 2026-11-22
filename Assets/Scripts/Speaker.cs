@@ -14,6 +14,8 @@ public class Speaker : MonoBehaviour
     public bool livePlug = true; // its plug is the broken, live one (LiveCable)
     public Vector3 cableEndOffset = new(0.83f, 0.79f, -0.12f); // the plug in the sprite (speaker 2), relative to the speaker
     public DrinkingFountain fountain; // the puddle the cable can reach
+    [Tooltip("Metres from the player: the music is at full volume within the first number and fades out to silent at the second.")]
+    public Vector2 musicRange = new(2f, 10f);
 
     public Vector3 CrowdCenter => new(transform.position.x + crowdOffset.x, 0f, transform.position.z + crowdOffset.z);
 
@@ -49,6 +51,7 @@ public class Speaker : MonoBehaviour
     {
         musicFx = gameObject.AddComponent<MusicFx>(); // thumping, notes floating off (until SetPlaying(false))
         music = new LoopingSound(gameObject);
+        music.SetRange(musicRange.x, musicRange.y);
         if (!livePlug) return;
         var end = new GameObject("Live Cable");
         end.SetActive(false); // so Interactable's Awake finds the rules component

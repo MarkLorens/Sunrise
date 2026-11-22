@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="ParameterPreset" id="{0388cbdf-3e92-4988-9a05-6fb4d10a87c1}">
+		<property name="name">
+			<value>Crowd</value>
+		</property>
+		<relationship name="folder">
+			<destination>{0c297bad-6fb0-4dec-b708-8b830dd7d1ed}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{bb7964aa-78fb-445b-8029-6a67b1f682b5}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{bb7964aa-78fb-445b-8029-6a67b1f682b5}">
+		<property name="initialValue">
+			<value>0.5</value>
+		</property>
+	</object>
+</objects>

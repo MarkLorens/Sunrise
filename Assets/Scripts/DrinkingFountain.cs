@@ -29,6 +29,8 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     public float spreadSpeed = 0.45f; // how fast the water creeps out after a press (radius per second)
     public Sprite puddleArt;         // empty = a tinted round blob
     [Range(0f, 1f)] public float puddleOpacity = 0.6f;
+    [Tooltip("Metres from the player: the leak is at full volume within the first number and fades out to silent at the second.")]
+    public Vector2 leakRange = new(1f, 6f);
 
     // Under the fountain while small, sliding out to puddleOffset as it grows.
     public Vector3 PuddleCenter => new Vector3(transform.position.x, 0f, transform.position.z)
@@ -60,6 +62,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     void Start()
     {
         leak = new LoopingSound(gameObject);
+        leak.SetRange(leakRange.x, leakRange.y);
         puddle = ParkArt.Make("Puddle", null, "Markers/shadow", 1f, new Color(Water.r, Water.g, Water.b, 0.55f), ParkArt.DecalOrder, true);
         if (puddleArt != null)
         {
@@ -136,7 +139,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
         presses++;
         target = Mathf.Min(maxRadius, Mathf.Max(target, startRadius) + (maxRadius - startRadius) / tapsToFull); // Update lets it creep out
         ClosedCaptions.Show(Captions.FountainPress);
-        if (!AudioManager.TryPlay(e => e.fountainPress, transform.position)) Sfx.Play(Sfx.HitSoft, 0.6f, 1.4f); // AL-02
+        AudioManager.TryPlay(e => e.fountainPress, transform.position); // AL-02
         Fx.Burst("Fx/puff", transform.position + Vector3.up * 0.8f, 6, Water, 2f, 0.35f, 0.5f);
         GameHud.Say(GameText.PressedFountain);
     }
@@ -158,7 +161,6 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
         ClosedCaptions.Show(Captions.Electrocution);
         var events = FMODEvents.instance;
         if (events != null && !events.electrocution.IsNull && AudioManager.instance != null) AudioManager.instance.PlayOneShot(events.electrocution, at);
-        else Sfx.Play(Sfx.Crash, 1f, 1.6f);
     }
 
     public void Electrify(Vector3 from)
@@ -366,6 +368,6 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     void Fix()
     {
         Fixed = true;
-        Sfx.Play(Sfx.HitWood, 0.8f, 1f, Captions.FountainFixed);
+        ClosedCaptions.Show(Captions.FountainFixed);
     }
 }

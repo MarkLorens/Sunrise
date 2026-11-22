@@ -2,13 +2,13 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="Event" id="{5b490249-bc35-4b6b-ba47-e41cd5b2dd37}">
 		<property name="name">
-			<value>PowerOff</value>
+			<value>Power Off</value>
 		</property>
 		<property name="outputFormat">
 			<value>2</value>
 		</property>
 		<relationship name="folder">
-			<destination>{cad8cdce-b301-4107-acb5-74ef2989189f}</destination>
+			<destination>{d9acfb58-9fdc-472d-b039-29fa741e9ece}</destination>
 		</relationship>
 		<relationship name="mixer">
 			<destination>{7d4318e1-b297-4e71-b650-7a3f919fde5e}</destination>

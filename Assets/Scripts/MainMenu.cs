@@ -40,7 +40,7 @@ public class MainMenu : MonoBehaviour
 
         var column = Column(canvas);
         column.anchoredPosition = new Vector2(0f, (Figma.Height * 0.5f - 715.2f) * Figma.K);
-        var first = Button(column, "New Game", NewGame);
+        var first = Button(column, "New Game", NewGame, sound: e => e.newOrLoadGame);
         loadButton = Button(column, "Load Game", OpenLoad);
         loadButton.interactable = SaveGame.Exists; // greyed out with no save yet
         optionsButton = Button(column, "Options", OpenOptions);
@@ -59,10 +59,18 @@ public class MainMenu : MonoBehaviour
 
     void NewGame() => StartIn(SaveGame.FirstEmpty); // a slot of its own, however many saves there are
 
+    // New Game or a Load Game slot picked: the lobby music stops dead as "Loading...." comes up, leaving the
+    // New / Load Game sound on its own.
+    public static void CutLobbyMusic()
+    {
+        if (AudioManager.instance != null) AudioManager.instance.StopMusic(now: true);
+    }
+
     // A new game in `slot` (Save Game in the pause menu saves into it).
     public static void StartIn(int slot)
     {
         SaveGame.Slot = slot;
+        CutLobbyMusic();
         LoadingScreen.Load(SceneManager.GetActiveScene().buildIndex + 1);
     }
 
@@ -162,6 +170,7 @@ public class MainMenu : MonoBehaviour
 
     // A small hand-drawn pill (Delete Slot, Back, Cancel, Yes, No): light blue (UI Asset/Buttons/Button1_Idle), yellow
     // while hovered or picked (Button1_Active), as in the design.
+    // `sound` is what clicking it plays: the usual click (G-03) unless given, e.g. e => e.backButton.
     public static Button Pill(RectTransform parent, string text, UnityAction onClick, float width = 210f, float height = 58f,
         System.Func<FMODEvents, FMODUnity.EventReference> sound = null)
     {
@@ -254,9 +263,11 @@ public class MainMenu : MonoBehaviour
     }
 
     // Hovering something selects it, so mouse and keys share one highlight.
-    // Moving the highlight onto it, with the mouse or the keys, plays the hover sound (G-02).
+    // Moving the highlight onto it, with the mouse or the keys, plays the hover sound (G-02), unless it's `quiet`.
     public class HoverSelects : MonoBehaviour, IPointerEnterHandler, ISelectHandler
     {
+        public bool quiet; // no hover sound (Options' tabs: they only sound when clicked)
+
         public void OnPointerEnter(PointerEventData e)
         {
             if (TryGetComponent(out Selectable s) && s.interactable) EventSystem.current?.SetSelectedGameObject(gameObject);
@@ -264,7 +275,7 @@ public class MainMenu : MonoBehaviour
 
         public void OnSelect(BaseEventData e)
         {
-            if (!quietSelect) AudioManager.TryPlay(ev => ev.menuHover);
+            if (!quietSelect && !quiet) AudioManager.TryPlay(ev => ev.menuHover);
         }
     }
 

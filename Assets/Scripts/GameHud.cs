@@ -190,7 +190,7 @@ public class GameHud : MonoBehaviour
     public static void Refuse(Transform by, string why, bool person = false)
     {
         if (Instance == null || by == null || string.IsNullOrEmpty(why)) return;
-        if (!AudioManager.TryPlay(e => e.disabledAction)) Sfx.Play(Sfx.Refuse, 0.5f); // G-06
+        AudioManager.TryPlay(e => e.disabledAction); // G-06
         Instance.refusedBy = by;
         Instance.refusedPerson = person;
         Instance.refusal = why;
@@ -425,6 +425,7 @@ public class GameHud : MonoBehaviour
                 {
                     SetPuzzleWords(PartTitle(shownPart));
                     puzzleAge = 0f;
+                    AudioManager.TryPlayOverOthers(e => e.objectiveCompleted); // G-07, everything else turned down
                 }
                 else ShowPart(part);
             }

@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="Event" id="{8a8c61ee-65fe-4558-872b-f2a63770f04b}">
 		<property name="name">
-			<value>G-05 BGM (Possessed)</value>
+			<value>BGM (Possessed)</value>
 		</property>
 		<property name="outputFormat">
 			<value>2</value>
@@ -96,7 +96,7 @@
 			<value>223.25381572317747</value>
 		</property>
 		<property name="pitch">
-			<value>-3</value>
+			<value>-5</value>
 		</property>
 		<relationship name="modulators">
 			<destination>{aad1f642-f690-4149-a278-85855628cfbe}</destination>
@@ -163,7 +163,7 @@
 	<object class="SpatialiserEffect" id="{dce190fb-31bc-4f1e-872f-13157fe04a14}" />
 	<object class="PitchShifterEffect" id="{d81be703-7348-4a5b-8c5d-1f161b3e6122}">
 		<property name="pitch">
-			<value>1</value>
+			<value>0.599999964</value>
 		</property>
 	</object>
 	<object class="MixerBusFader" id="{f53cc528-b8cc-4d70-abb5-2274eb877396}" />
