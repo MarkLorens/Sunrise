@@ -22,7 +22,7 @@ public class Gutter : MonoBehaviour, IInteraction
     static readonly Color Stink = new(0.6f, 0.75f, 0.3f, 0.6f);
 
     SpriteRenderer lid, hole;
-    bool open, thought;
+    bool open, nearGutter;
     float nextStink;
 
     void Start()
@@ -35,11 +35,10 @@ public class Gutter : MonoBehaviour, IInteraction
 
     void Update()
     {
-        if (!thought && Possession.PlayerNear(transform.position, GetComponent<Interactable>().range))
-        {
-            thought = true;
-            GameHud.Think(GameText.ThinkGutter);
-        }
+        // Randomized pool while lid is still shut (default). Open = no more gutter thoughts here.
+        bool inRange = !open && Possession.PlayerNear(transform.position, GetComponent<Interactable>().range);
+        if (inRange && !nearGutter) GameHud.Think(GameText.PickGutter());
+        nearGutter = inRange;
         if (Time.time < nextStink) return;
         nextStink = Time.time + (Stinking ? 0.2f : 0.8f);
         if (!Stinking || fan == null)
@@ -117,7 +116,7 @@ public class Gutter : MonoBehaviour, IInteraction
                     scared = true;
                     man.Scare(transform.position);
                     Mischief.Complete(Mischief.Task.RatsOut);
-                    GameHud.Think(GameText.ThinkRats);
+                    GameHud.Think(GameHud.ThoughtPriority.Action, GameText.ThinkRats);
                     chaseEnds = Time.time + chaseTime;
                 }
             }

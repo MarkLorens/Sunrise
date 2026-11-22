@@ -8038,7 +8038,7 @@ MonoBehaviour:
   - {fileID: 1513455643}
   - {fileID: 1289941577}
   mechanicCharacter: worker_mechanic
-  mechanicName: Mechanic Joko
+  mechanicName: Electrician
   mechanicPost: {fileID: 1625246199}
   resetAgents: 2
   resetAgentCharacter: worker_construction_{n}

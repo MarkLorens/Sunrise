@@ -37,7 +37,7 @@ public class VisitorSpawner : MonoBehaviour
     };
     public Transform[] pointsOfInterest = new Transform[0];
     public string mechanicCharacter = "worker_mechanic";
-    public string mechanicName = "Mechanic";
+    public string mechanicName = "Electrician";
     public Transform mechanicPost; // the staff door: the mechanic and Reset Agents wait behind it; empty = a random spot
     public int resetAgents = 2;
     public string resetAgentCharacter = "worker_construction_{n}"; // {n}: 1-3 in turn

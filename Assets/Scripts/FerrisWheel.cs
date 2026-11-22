@@ -121,7 +121,7 @@ public class FerrisWheel : MonoBehaviour
         CameraRig.EndSpotlight();
         yield return new WaitForSeconds(1f); // the camera easing back
         Possession.InputBlocked = false;
-        GameHud.Think(GameText.ThinkWobble);
+        GameHud.Think(GameHud.ThoughtPriority.Action, GameText.ThinkWobble);
     }
 
     public void CutPower()
@@ -282,7 +282,7 @@ public class FerrisWheel : MonoBehaviour
         Possession.InputBlocked = false;
         Mischief.Complete(Mischief.Task.WheelRolled);
         Aftermath.Add(new Vector3(wheel.position.x, 0f, wheel.position.z), wheelRadius * Scale + 1f, 9999f);
-        GameHud.Think(GameText.ThinkRolled);
+        GameHud.Think(GameHud.ThoughtPriority.Critical, GameText.ThinkRolled);
     }
 
     void Update()
