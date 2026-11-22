@@ -40,7 +40,7 @@ public class Speaker : MonoBehaviour
         var cable = end.AddComponent<LiveCable>();
         cable.speaker = this;
         cable.fountain = fountain;
-        end.AddComponent<Interactable>().range = 1.6f;
+        end.AddComponent<Interactable>().range = 2f;
         end.SetActive(true);
     }
 
