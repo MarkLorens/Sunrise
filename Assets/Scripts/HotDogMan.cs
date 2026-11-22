@@ -6,7 +6,8 @@ using UnityEngine;
 // cloud is waiting for (PropaneTank). After that he stands there charred and dazed.
 // He works inside his stand, between the counter and the back wall, out of reach: he can only be possessed while he's
 // out of it (chased off, or charred). The gap's too tight to walk in and out of, so he hops the end of the counter
-// (Hop) to and from a spot just outside it (exitOffset).
+// (Hop) to and from a spot just outside it (exitOffset). His stand is one solid box, counter to back wall (Awake), so
+// nobody slips in at the ends; behind the counter he potters along it (paceHalfWidth) with ignoreObstacles.
 [RequireComponent(typeof(GroundWalker), typeof(CharacterSprite))]
 public class HotDogMan : MonoBehaviour
 {
@@ -20,6 +21,7 @@ public class HotDogMan : MonoBehaviour
     public Vector3 exitOffset = new(3.2f, 0f, 0f); // where he lands hopping out of the stall, relative to his post
     public float hopTime = 0.45f;
     public float hopHeight = 0.8f;
+    public float paceHalfWidth = 1.4f; // how far either side of his post he wanders behind the counter
 
     public State Current { get; private set; }
     // Back behind his stand, watching his fan.
@@ -34,6 +36,8 @@ public class HotDogMan : MonoBehaviour
     float hopStart;
     Vector3 hopFrom, hopTo;
     State afterHop;
+    Vector3 pacingTo;
+    float nextPace;
 
     Vector3 Exit => post + exitOffset;
 
@@ -50,7 +54,32 @@ public class HotDogMan : MonoBehaviour
         this.body = body;
         walker.speed = 2f;
         post = transform.position;
+        pacingTo = post;
         stoveAt = float.MaxValue;
+        BlockStand();
+    }
+
+    // The counter and back wall are separate thin colliders with a gap between them (his spot): one box stands in for
+    // both, counter to back wall, so nobody walks in at the ends. Only as wide as the stand's legs where they meet the
+    // ground: the colliders span the whole picture, awning overhang and all, which walled off the ground beside it.
+    void BlockStand()
+    {
+        float front = float.MaxValue, back = float.MinValue, left = float.MaxValue, right = float.MinValue;
+        foreach (var c in FindObjectsByType<Collider>())
+        {
+            if (c.isTrigger || c.attachedRigidbody != null || c.TryGetComponent<UnityEngine.Tilemaps.Tilemap>(out _)) continue; // not the floor
+            Bounds b = c.bounds;
+            if (b.size.x > 8f) continue; // something far bigger than a stall
+            if (post.x < b.min.x || post.x > b.max.x || Mathf.Abs(b.center.z - post.z) > 1.2f) continue; // not his stand
+            front = Mathf.Min(front, b.min.z);
+            back = Mathf.Max(back, b.max.z);
+            var art = c.GetComponent<SpriteRenderer>();
+            var (l, r) = art != null && art.sprite != null ? GroundWalker.BaseOf(art) : (b.min.x, b.max.x);
+            left = Mathf.Min(left, l);
+            right = Mathf.Max(right, r);
+            c.enabled = false; // the block stands in for it
+        }
+        if (front < back) GroundWalker.Block("Hot Dog Stand Block", Rect.MinMaxRect(left, front, right, back));
     }
 
     // Rats! Off he runs, away from `from`, and stays away for a while.
@@ -80,6 +109,7 @@ public class HotDogMan : MonoBehaviour
     {
         Current = State.Hopping;
         walker.move = Vector2.zero;
+        walker.ignoreObstacles = false; // only inside, behind the counter
         hopFrom = transform.position;
         hopTo = new Vector3(to.x, hopFrom.y, to.z);
         hopStart = Time.time;
@@ -106,8 +136,7 @@ public class HotDogMan : MonoBehaviour
         switch (Current)
         {
             case State.AtStall:
-                walker.move = Vector2.zero; // stays put in the gap behind the counter
-                look.Face(post + Vector3.back);
+                Pace(); // up and down behind the counter
                 // The cloud's waiting for a spark: he lights his stove a moment after he's back at it.
                 var tank = PropaneTank.ReadyNear(post, 2f);
                 if (tank == null) { stoveAt = float.MaxValue; break; }
@@ -122,7 +151,9 @@ public class HotDogMan : MonoBehaviour
             case State.Hopping:
                 float k = Mathf.Clamp01((Time.time - hopStart) / hopTime);
                 Place(Vector3.Lerp(hopFrom, hopTo, k) + Vector3.up * Mathf.Sin(k * Mathf.PI) * hopHeight);
-                if (k >= 1f) Current = afterHop;
+                if (k < 1f) break;
+                Current = afterHop;
+                walker.ignoreObstacles = afterHop == State.AtStall;
                 break;
 
             case State.Fleeing:
@@ -142,6 +173,24 @@ public class HotDogMan : MonoBehaviour
                 if (Random.value < Time.deltaTime * 2f) Fx.Burst("Fx/puff", transform.position + Vector3.up * 1.6f, 1, new Color(0.25f, 0.25f, 0.25f), 0.8f, 0.3f, 1f);
                 break;
         }
+    }
+
+    // Over to a spot along the counter, a pause there, then another.
+    void Pace()
+    {
+        walker.ignoreObstacles = true;
+        Vector3 to = pacingTo - transform.position;
+        to.y = 0f;
+        if (to.magnitude > 0.08f)
+        {
+            walker.speed = 1.2f;
+            walker.move = new Vector2(to.x, to.z).normalized;
+            return;
+        }
+        walker.move = Vector2.zero;
+        if (Time.time < nextPace) return;
+        nextPace = Time.time + Random.Range(2f, 5f);
+        pacingTo = post + Vector3.right * Random.Range(-paceHalfWidth, paceHalfWidth);
     }
 
     void Place(Vector3 p) => rb.position = transform.position = p;

@@ -47,6 +47,7 @@ public class SeeThrough : MonoBehaviour
     static Vector3 Middle(Transform t)
     {
         if (t.TryGetComponent(out SpiritSprite spirit) && spirit.HasBody) return spirit.Middle;
+        if (t.TryGetComponent(out CharacterSprite c)) return c.Bounds.center; // a body you're in: drawn on its Pose child
         return t.TryGetComponent(out SpriteRenderer r) && r.sprite != null ? r.bounds.center : t.position + Vector3.up * 0.8f;
     }
 }

@@ -245,9 +245,17 @@ public static class GameText
 
     // Out loud
     public const string MascotGuard = "*angry mascot noises* (Don't touch the fan!)";
+    public const string MascotSilent = "...";
+    public static readonly string[] MascotWarnings = { "Leave...", "You do not belong here", "Devil!" };
     public const string MascotStink = "*gagging mascot noises*";
     public const string PAFire = "ATTENTION! FIRE AT THE LOCKER ROOM! ALL STAFF TO THE LOCKER ROOM, NOW!";
     public const string OperatorFire = "FIRE?! Not the lockers, my lunch is in there!";
+
+    // Whoever the spirit just left, coming round (Visitor.EndPossession), one at random
+    public static readonly string[] ComingRound =
+    {
+        "H-Huh..?", "How did I get here?", "What just happened?", "Ugh, dizzy…", "Must’ve been the wind",
+    };
 
     // Reset Agents standing guard at a scene, in turns (Aftermath, ResetAgent)
     public static readonly string[] MoveAlong =

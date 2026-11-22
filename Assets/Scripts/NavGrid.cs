@@ -282,7 +282,9 @@ public class Route
             closest = distance;
             progressAt = Time.time;
         }
-        return corners[next];
+        // On the last leg, aim at where the destination is now, not where it was when planned: a slot creeping along
+        // with a group leader would otherwise be overshot and walked back to, over and over.
+        return next == corners.Count - 1 ? to : corners[next];
     }
 
     void Plan(Tilemap ground, Vector3 from, Vector3 to, bool staff)
