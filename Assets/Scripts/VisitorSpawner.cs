@@ -4,8 +4,8 @@ using UnityEngine.Tilemaps;
 
 // Fills the park with people on random ground tiles around this object when the scene starts.
 // Some visitors start out lined up for the ride; the rest roam (and may wander over to the line later), many of them
-// carrying a drink or a water bottle. Plus the staff: the mechanic (keys in hand) and the Reset Agents behind the
-// staff door, the cable man by the speaker, the ride technician asleep in his booth (screwdriver in hand) and the
+// carrying a drink or a water bottle, some of them in groups of friends (VisitorGroup). Plus the staff: the mechanic (keys in hand) and the Reset Agents behind the
+// staff door, the ride technician asleep in his booth (screwdriver in hand) and the
 // hot dog man behind his stand.
 // Visitors use the lineart bodies in Resources/ArtLineartTorso (body_standard_1..8, each with a random face, hair and
 // colours); staff still use Resources/Visitors/<character>/
@@ -17,11 +17,15 @@ public class VisitorSpawner : MonoBehaviour
     public int count = 16;
     public float spawnRadius = 12f;
     public float personScale = 1.35f; // people at a believable size next to the rides and stalls
+    public float workerScale = 2f;  // staff drawn as workers ("worker_..." characters) stand a little taller
 
     // Each entry goes to a different roaming visitor, so the puzzle items are always somewhere in the park.
     public VisitorItem[] guaranteedItems = { VisitorItem.Drink, VisitorItem.Drink, VisitorItem.WaterBottle, VisitorItem.WaterBottle };
     [Range(0, 1)] public float carryChance = 0.4f; // everyone else: chance of one of `carryItems` in hand
     public VisitorItem[] carryItems = { VisitorItem.Drink, VisitorItem.WaterBottle };
+
+    [Range(0, 1)] public float groupChance = 0.35f; // per roaming visitor, chance they start a group with the next few
+    public Vector2Int groupSize = new(2, 4);         // smallest and biggest group (VisitorGroup)
 
     public RideQueue queue;
     public int startInQueue = 5;
@@ -32,21 +36,26 @@ public class VisitorSpawner : MonoBehaviour
         "body_standard_5", "body_standard_6", "body_standard_7", "body_standard_8",
     };
     public Transform[] pointsOfInterest = new Transform[0];
-    public string mechanicCharacter = "mechanic";
-    public string mechanicName = "Mechanic";
+    public string mechanicCharacter = "worker_mechanic";
+    public string mechanicName = "Electrician";
     public Transform mechanicPost; // the staff door: the mechanic and Reset Agents wait behind it; empty = a random spot
     public int resetAgents = 2;
-    public string resetAgentCharacter = "malePersonTeal";
-    public string cableManCharacter = "maleAdventurer";
-    public string cableManName = "Cable Man";
-    public Transform cableManPost;  // empty = no cable man
-    public string technicianCharacter = "malePersonRed";
+    public string resetAgentCharacter = "worker_construction_{n}"; // {n}: 1-3 in turn
+    public string technicianCharacter = "worker_ride_technician";
     public string technicianName = "Technician";
     public Transform technicianPost; // empty = no technician (his booth goes here)
-    public string hotDogManCharacter = "malePerson";
+    public string hotDogManCharacter = "worker_hot_dog";
     public string hotDogManName = "Hot Dog Man";
     public Transform hotDogManPost;  // behind the hot dog stand; empty = no hot dog man
-    public string mascotCharacter = "femalePersonPink";
+    // Stand sellers, one per stand tile on the Objects tilemap (no scene objects: paint a stand, it gets a seller).
+    public string iceCreamCharacter = "worker_ice_cream";
+    public Vector3 iceCreamSlot = new(0f, 0f, 0.25f);   // where the seller stands, from the tile's cell centre: in the gap
+    public Vector3 iceCreamBackOffset = new(0f, 0f, 0.4f); // the back layer, from the front tile (like the hot dog stall's GlizzyBG)
+    public float iceCreamBackScale = 1.4f; // the back's drawing is narrower than the window: grown from its bottom middle to cover it
+    public string balloonCharacter = "worker_balloon";
+    public Vector3 balloonSpot = new(1.4f, 0f, -0.7f);  // beside the balloon stand, a little in front (mirrored if blocked)
+
+    public string mascotCharacter = "mascot";
     public string mascotName = "Mascot";
     public Transform mascotPost;     // in front of the locker room's propane fan; empty = no mascot
 
@@ -63,8 +72,12 @@ public class VisitorSpawner : MonoBehaviour
         if (Time.time < nextGossip || Possession.Instance == null) return;
         nextGossip = Time.time + Random.Range(gossipEvery.x, gossipEvery.y);
         heard.Clear();
+        var prank = FindAnyObjectByType<ToiletPrank>();
         foreach (var (after, lines) in GameText.Gossip)
-            if (Mischief.IsDone(after)) heard.AddRange(lines);
+            // The tutorial's steps also count as done when it's skipped or a game's loaded: only gossip about a geyser
+            // someone saw.
+            if (Mischief.IsDone(after) && (after != Mischief.Task.TutorialToilet || prank != null && prank.Erupted))
+                heard.AddRange(lines);
         if (heard.Count == 0) return;
 
         var near = new List<Visitor>();
@@ -76,11 +89,12 @@ public class VisitorSpawner : MonoBehaviour
                 && new Vector2(d.x, d.z).magnitude <= gossipRange)
                 near.Add(v);
         }
-        if (near.Count > 0) GameHud.Shout(near[Random.Range(0, near.Count)].transform, heard[Random.Range(0, heard.Count)], 2.5f);
+        if (near.Count > 0) GameHud.Shout(near[Random.Range(0, near.Count)].transform, heard[Random.Range(0, heard.Count)], 2.5f, true);
     }
 
     void Start()
     {
+        var roaming = new List<Visitor>();
         for (int i = 0; i < count; i++)
         {
             int queued = i - guaranteedItems.Length;
@@ -99,8 +113,44 @@ public class VisitorSpawner : MonoBehaviour
                 : Random.value < carryChance ? carryItems[Random.Range(0, carryItems.Length)]
                 : VisitorItem.None;
             if (item != VisitorItem.None) visitor.GrabItem(Item.Create(item, visitor.CarryPoint), true);
+            roaming.Add(visitor);
         }
+        MakeGroups(roaming);
         SpawnStaff();
+    }
+
+    // Some of the roaming visitors came with friends: 2-4 of them, standing together, walking at the leader's pace.
+    void MakeGroups(List<Visitor> roaming)
+    {
+        for (int i = 0; i < roaming.Count;)
+        {
+            int size = Mathf.Min(Random.Range(groupSize.x, groupSize.y + 1), roaming.Count - i);
+            if (size < 2 || Random.value >= groupChance)
+            {
+                i++;
+                continue;
+            }
+            var group = new VisitorGroup();
+            var lead = roaming[i];
+            var walker = lead.GetComponent<GroundWalker>();
+            group.Add(lead);
+            for (int k = 1; k < size; k++)
+            {
+                var v = roaming[i + k];
+                v.wanderSpeed = lead.wanderSpeed;
+                for (int tries = 0; tries < 8; tries++)
+                {
+                    Vector2 r = Random.insideUnitCircle * 1.2f;
+                    Vector3 spot = lead.transform.position + new Vector3(r.x, 0f, r.y);
+                    if (!walker.IsWalkable(spot)) continue;
+                    v.transform.position = spot;
+                    v.GetComponent<Rigidbody>().position = spot;
+                    break;
+                }
+                group.Add(v);
+            }
+            i += size;
+        }
     }
 
     void SpawnStaff()
@@ -111,8 +161,9 @@ public class VisitorSpawner : MonoBehaviour
 
         var body = Staff<Mechanic>(mechanicName, door, mechanicCharacter);
         body.GrabItem(Item.Create(VisitorItem.Keys, body.CarryPoint), true);
-        for (int i = 0; i < resetAgents; i++) Staff<ResetAgent>($"Reset Agent {i + 1}", door, resetAgentCharacter);
-        if (cableManPost != null) Staff<CableMan>(cableManName, cableManPost.position, cableManCharacter);
+        // "{n}" in the character picks one of the construction workers in turn (1-3).
+        for (int i = 0; i < resetAgents; i++)
+            Staff<ResetAgent>($"Reset Agent {i + 1}", door, resetAgentCharacter.Replace("{n}", (i % 3 + 1).ToString()));
         if (technicianPost != null)
         {
             var tech = Staff<RideTechnician>(technicianName, technicianPost.position, technicianCharacter);
@@ -120,11 +171,64 @@ public class VisitorSpawner : MonoBehaviour
         }
         if (hotDogManPost != null) Staff<HotDogMan>(hotDogManName, hotDogManPost.position, hotDogManCharacter);
         if (mascotPost != null) Staff<Mascot>(mascotName, mascotPost.position, mascotCharacter);
+        SpawnVendors();
+    }
+
+    // Every ice cream stand tile gets its back layer and a seller inside; every balloon stand tile, a seller beside it.
+    void SpawnVendors()
+    {
+        var back = ParkArt.Get("Props/hot_dog_stand_back");
+        foreach (var map in GroundWalker.SolidMaps(ground)) // the stands are on See Through, as buildings
+        foreach (var cell in map.cellBounds.allPositionsWithin)
+        {
+            var s = map.GetSprite(cell);
+            if (s == null) continue;
+            Vector3 feet = map.GetCellCenterWorld(cell);
+            if (s.name.StartsWith("ice_cream_stand"))
+            {
+                if (back != null) BackLayer(map, cell, back);
+                Staff<Vendor>("Ice Cream Seller", feet + iceCreamSlot, iceCreamCharacter, v => v.inside = true);
+            }
+            else if (s.name.StartsWith("balloon_stand"))
+            {
+                Vector3 at = feet + balloonSpot;
+                var probe = new Vector3(feet.x - balloonSpot.x, 0f, feet.z + balloonSpot.z);
+                if (GroundWalker.NearObstacle(at, 0.35f) && !GroundWalker.NearObstacle(probe, 0.35f)) at = probe;
+                Staff<Vendor>("Balloon Seller", at, balloonCharacter, _ => { });
+            }
+        }
+    }
+
+    // The stand's back: the tile's cut, where the tile is, moved by iceCreamBackOffset and grown by iceCreamBackScale.
+    void BackLayer(Tilemap map, Vector3Int cell, Sprite art)
+    {
+        Matrix4x4 m = map.transform.localToWorldMatrix
+                      * Matrix4x4.Translate(map.CellToLocalInterpolated(cell + map.tileAnchor))
+                      * map.orientationMatrix * map.GetTransformMatrix(cell);
+        var r = new GameObject("Stand Back").AddComponent<SpriteRenderer>();
+        r.transform.SetParent(transform, true);
+        r.transform.SetPositionAndRotation((Vector3)m.GetColumn(3) + iceCreamBackOffset, m.rotation);
+        r.transform.localScale = m.lossyScale * iceCreamBackScale;
+        r.sprite = art;
+        var tr = map.GetComponent<TilemapRenderer>();
+        r.sharedMaterial = tr.sharedMaterial;
+        r.sortingLayerID = tr.sortingLayerID;
+        r.sortingOrder = tr.sortingOrder;
+        r.shadowCastingMode = tr.shadowCastingMode;
+        r.receiveShadows = tr.receiveShadows;
+    }
+
+    Visitor Staff<T>(string name, Vector3 pos, string character, System.Action<T> setup) where T : MonoBehaviour
+    {
+        var go = Body(name, pos, character, character.StartsWith("worker_") ? workerScale : personScale);
+        setup(go.AddComponent<T>());
+        go.SetActive(true);
+        return go.GetComponent<Visitor>();
     }
 
     Visitor Staff<T>(string name, Vector3 pos, string character) where T : MonoBehaviour
     {
-        var go = Body(name, pos, character, personScale);
+        var go = Body(name, pos, character, character.StartsWith("worker_") ? workerScale : personScale);
         go.AddComponent<T>();
         go.SetActive(true);
         return go.GetComponent<Visitor>();
@@ -160,7 +264,7 @@ public class VisitorSpawner : MonoBehaviour
         // People don't collide with anything: they float on the floor plane and only the tile check limits them.
         var rb = go.AddComponent<Rigidbody>();
         rb.useGravity = false;
-        rb.constraints = RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotation;
+        rb.constraints = RigidbodyConstraints.FreezeRotation; // not Y: GroundWalker places the height (stairs)
         rb.interpolation = RigidbodyInterpolation.Interpolate;
 
         var walker = go.AddComponent<GroundWalker>();

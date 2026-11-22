@@ -6,14 +6,14 @@ using System.Collections.Generic;
 // Each part is a list of steps; GameHud lists the part you're on (top left) and
 // ticks them off as the behaviours that make them happen report in. Nothing here drives the
 // order: the world's own rules do. The list keeps it short: a step names the task that finishes it, and the tasks
-// on the way there (possessing the cable man, unlocking the box...) still count, they're just not listed.
+// on the way there (possessing the mechanic, unlocking the box...) still count, they're just not listed.
 public static class Mischief
 {
     // New ones go at the end: saves keep these as numbers.
     public enum Task
     {
-        Possess, FloodPuddle, PossessCableMan, Electrocute, LureMechanic, PossessMechanic, UnlockBox, CutPower, CallTechnician,
-        RatsOut, StallFanOff, LeakPropane, AimFan, GasCloud, Explode, WakeTechnician,
+        Possess, FloodPuddle, PossessCableMan /* unused: the cable man's gone */, Electrocute, LureMechanic, PossessMechanic, UnlockBox, CutPower, CallTechnician,
+        RatsOut, StallFanOff /* unused: the stall fan turns now */, LeakPropane, AimFan, GasCloud, Explode, WakeTechnician,
         PossessTechnician, OpenPlatform, LoosenHinge, RestartWheel,
         TutorialPossess, TutorialSign, TutorialValve, TutorialLeave, TutorialToilet,
         SmellMascot, LeakLockerGas, AimLockerFan, LockerGasCloud, SparkLocker, LockerFire,
@@ -35,14 +35,14 @@ public static class Mischief
             (Task.TutorialLeave, "Leave the body"),
             (Task.TutorialToilet, "Wait for someone to use the toilet..."),
         }),
-        // After the park tour (ParkTour). Done by getting to the box (ElectricalBox), which starts the puzzle.
+        // After the tutorial. Done by getting to the box (ElectricalBox), which starts the puzzle.
         ("0. Ferris Wheel Chaos", new[]
         {
             (Task.ReachBox, "Go to the Ferris Wheel and open the electrical box"),
         }),
         ("1. A-Leak-Tricity", new[]
         {
-            (Task.LureMechanic, "Find a way to lure The Mechanic."),
+            (Task.LureMechanic, "Find a way to lure The Electrician."),
             (Task.CutPower, "Open the electrical box and turn off the Ferris Wheel."),
         }),
         // Shows once the cutscene of the wheel's power going out is over (GameHud waits for cutscenes).
@@ -109,6 +109,16 @@ public static class Mischief
     {
         if (!done.Add(t)) return;
         Sfx.Play(Sfx.TaskDone, 0.7f);
-        GameHud.StepDone(GameText.StepDone(t)); // the pop-up at the bottom left
+        GameHud.StepDone(GameText.StepDone(t)); // the events, top right
+        if (Listed(t)) SaveGame.AutoSave = true; // a step crossed off the objectives: save (GameHud does, when it can)
+    }
+
+    // On the objectives list (Parts), not one of the hidden steps in between.
+    static bool Listed(Task t)
+    {
+        foreach (var (_, steps) in Parts)
+            foreach (var (task, _) in steps)
+                if (task == t) return true;
+        return false;
     }
 }

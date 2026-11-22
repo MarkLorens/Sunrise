@@ -1,43 +1,68 @@
+using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Serialization;
 
-// A big standing fan anyone can turn round (E, in anyone's body). It starts out blowing away from `awayFrom`; turned,
-// it blows at `aimAt`. By the hot dog stand's propane tank it carries the gas to the stand (PropaneTank); by the
-// locker room it carries the gas to the locker room, but the mascot won't let anyone touch that one (Mascot); and by
-// the smelly gutter it carries the stink to the mascot (Gutter). (The fan the hot dog man guards is StallFan.)
+// A big standing fan. E (in anyone's body) turns its head a quarter turn clockwise: up, right, down, left (up is away
+// from the camera). Whatever drifts into it goes on the way it faces: propane passes from fan to fan along a chain
+// (PropaneTank) until one blows it at its target, and the smelly gutter's stink goes where its fan points (Gutter,
+// Mascot). Some are guarded: the hot dog man won't let anyone touch his while he's at his stall, nor the mascot the
+// locker room's.
+// ponytail: one side-on sprite, flipped for left; up and down only show in the arrow at its feet until there's art.
 [RequireComponent(typeof(Interactable))]
 public class TankFan : MonoBehaviour, IInteraction
 {
-    public Transform awayFrom;
-    [FormerlySerializedAs("stall")] public Transform aimAt;
-    public string aimName = "hot dog stand";             // "Turn the fan toward the ..."
-    public bool countsAsStep = true;
-    public Mischief.Task task = Mischief.Task.AimFan;     // ticked off when it's turned (if countsAsStep)
-    public bool mascotGuards;                              // the mascot keeps people off it while he's around
+    public static readonly List<TankFan> All = new();
 
-    public bool Aimed { get; private set; }
+    public enum Dir { Up, Right, Down, Left } // clockwise, the order E turns it through
+    public enum Guard { None, HotDogMan, Mascot }
+
+    public Dir facing = Dir.Right;
+    public Guard guardedBy;
+
     // Which way it blows, along the ground.
-    public Vector3 Wind
+    public Vector3 Wind => facing switch
     {
-        get
-        {
-            Vector3 d = Aimed ? aimAt.position - transform.position : transform.position - awayFrom.position;
-            d.y = 0f;
-            return d.normalized;
-        }
-    }
+        Dir.Up => Vector3.forward,
+        Dir.Right => Vector3.right,
+        Dir.Down => Vector3.back,
+        _ => Vector3.left,
+    };
 
     SpriteRenderer art;
+    Transform arrow;
     float nextGust;
     bool thoughtGuarded;
+
+    void OnEnable() => All.Add(this);
+    void OnDisable() => All.Remove(this);
 
     void Start()
     {
         art = ParkArt.Solid(transform, "Props/fan", 1.5f, new Color(0.6f, 0.65f, 0.7f));
+        var a = ParkArt.Make("Facing", transform, "Markers/arrow", 0.9f, new Color(1f, 1f, 1f, 0.7f), ParkArt.DecalOrder + 2, true);
+        arrow = a.transform.parent;
+        arrow.localPosition = Vector3.up * 0.03f;
         Face();
     }
 
-    void Face() => art.flipX = Wind.x < 0f; // the art blows right
+    // The art blows right; the arrow at its feet points the way it blows.
+    void Face()
+    {
+        art.flipX = facing == Dir.Left;
+        arrow.rotation = Quaternion.LookRotation(Wind); // the arrow sprite points up, which lies flat as away from the camera
+        arrow.localPosition = Wind * 0.6f + Vector3.up * 0.03f;
+    }
+
+    // Is `p` in this fan's stream: ahead of it, within `reach`, and no more than `lane` off to the side?
+    public bool Blows(Vector3 p, float lane, float reach)
+    {
+        Vector3 d = p - transform.position;
+        d.y = 0f;
+        float ahead = Vector3.Dot(d, Wind);
+        return ahead > 0.3f && ahead <= reach && (d - Wind * ahead).magnitude <= lane;
+    }
+
+    // How far ahead `p` is along the wind.
+    public float Ahead(Vector3 p) => Vector3.Dot(p - transform.position, Wind);
 
     void Update()
     {
@@ -46,7 +71,7 @@ public class TankFan : MonoBehaviour, IInteraction
         Gust(transform.position, Wind);
     }
 
-    // A streak of air off a fan (StallFan too).
+    // A streak of air off a fan.
     public static void Gust(Vector3 fan, Vector3 wind)
     {
         var g = ParkArt.Make("Gust", null, "Fx/sparkle", 0.2f, new Color(1f, 1f, 1f, 0.5f), ParkArt.OverheadOrder);
@@ -56,37 +81,41 @@ public class TankFan : MonoBehaviour, IInteraction
         bit.life = 0.6f;
     }
 
-    public string Prompt(Visitor host) => $"Turn the fan toward the {aimName}";
+    public string Prompt(Visitor host) => "Turn the fan";
 
-    public string Blocked(Visitor host) => Aimed ? GameText.FanAimed : null;
+    public string Blocked(Visitor host) => null;
 
     public void Interact(Visitor host)
     {
-        var guard = mascotGuards ? Mascot.GuardNear(transform.position) : null;
+        var guard = Guarding();
         if (guard != null)
         {
-            GameHud.Shout(guard.transform, GameText.MascotGuard, 2f);
-            GameHud.Refuse(transform, GameText.MascotGuards);
-            if (!thoughtGuarded) GameHud.Think(GameText.ThinkMascot);
+            bool mascot = guardedBy == Guard.Mascot;
+            GameHud.Shout(guard.transform, mascot ? GameText.MascotGuard : GameText.HotDogGuard, 2f);
+            GameHud.Refuse(transform, mascot ? GameText.MascotGuards : GameText.FanGuarded);
+            if (!thoughtGuarded) GameHud.Think(mascot ? GameText.ThinkMascot : GameText.PickFanGuarded());
             thoughtGuarded = true;
             return;
         }
-        Aim();
-        Sfx.Play(Sfx.HitWood, 0.6f, 1.2f);
-        GameHud.Say(GameText.TurnedFan(aimName));
-        GameHud.Think(GameText.ThinkFanAimed);
-        if (countsAsStep) Mischief.Complete(task);
-    }
-
-    void Aim()
-    {
-        Aimed = true;
+        facing = (Dir)(((int)facing + 1) % 4);
         Face();
+        Sfx.Play(Sfx.HitWood, 0.6f, 1.2f);
+        GameHud.Say(GameText.TurnedFan(facing.ToString().ToLowerInvariant()));
     }
 
-    // Loading a save (SaveGame). A fan that isn't a step of its own is turned once the step after it is done.
-    public void Restore()
+    Component Guarding()
     {
-        if (countsAsStep ? Mischief.IsDone(task) : Mischief.IsDone(Mischief.Task.SmellMascot)) Aim();
+        if (guardedBy == Guard.Mascot) return Mascot.GuardNear(transform.position);
+        if (guardedBy != Guard.HotDogMan) return null;
+        foreach (var h in HotDogMan.All)
+            if (h.Guarding) return h;
+        return null;
+    }
+
+    // Loading a save (SaveGame).
+    public void Restore(Dir dir)
+    {
+        facing = dir;
+        if (art != null) Face();
     }
 }

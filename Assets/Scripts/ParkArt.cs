@@ -13,7 +13,13 @@ public static class ParkArt
     static Material material, litMaterial, characterMaterial, spiritMaterial, faceMaterial;
     static Font font;
 
-    // Same shader as Palletes/Shaders/SpriteLit2.5 (lit, alpha clip, casts shadows, tinted by SpriteRenderer.color).
+    // The Grid's tilemaps besides Ground and Decor: things you bump into (GroundWalker). Objects are drawn whole; See
+    // Through holds the buildings and trees, which open up round the player when they're in front of them
+    // (SeeThrough.cs, material Palletes/Shaders/SpriteLit2.5 SeeThrough). Everything else is drawn whole by default.
+    public const string ObjectsMap = "Objects", SeeThroughMap = "See Through";
+
+    // Same shader as Palletes/Shaders/SpriteLit2.5 (lit, alpha clip, casts shadows, tinted by SpriteRenderer.color),
+    // drawn whole (no see-through hole).
     public static Material LitMaterial
     {
         get
@@ -22,6 +28,7 @@ public static class ParkArt
             {
                 litMaterial = new Material(Shader.Find("Shader Graphs/SpriteLit3D")) { name = "Park Lit Sprite" };
                 litMaterial.SetFloat("_SwayStrength", 0f); // the graph's default sways; SpriteLit2.5.mat doesn't
+                litMaterial.SetFloat(SeeThroughCutId, 0f); // props drawn whole, like SpriteLit2.5.mat (only buildings open up)
             }
             return litMaterial;
         }
@@ -87,7 +94,10 @@ public static class ParkArt
         }
     }
 
-    public static Font Font => font != null ? font : font = Resources.Load<Font>("Park/Fonts/Fredoka");
+    // Ordinary text is Arvo; titles (menus, the objective's name, banners) are Atma.
+    public static Font Font => font != null ? font : font = Resources.Load<Font>("Park/Fonts/Arvo-Regular");
+    public static Font TitleFont => titleFont != null ? titleFont : titleFont = Resources.Load<Font>("Park/Fonts/Atma-Bold");
+    static Font titleFont;
 
     // Resources/Park/<path>, or Resources/<path> for the older icons.
     public static Sprite Get(string path)

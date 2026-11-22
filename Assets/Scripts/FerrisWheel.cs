@@ -26,6 +26,7 @@ public class FerrisWheel : MonoBehaviour
     public float normalSpeed = 12f;  // degrees per second
     public float windDownTime = 5f;  // seconds to coast to a stop once the power's cut
     public Vector3 electricalBoxOffset = new(-3.3f, 0f, -0.6f);
+    public Transform electricalBoxAt; // set: the box stands here instead, drawn by the Objects tilemap (no picture of its own)
     public Sprite electricalBoxArt; // drawn at its own size, pivot at its feet (the palette's props); empty = Props/electrical_box
     public Vector3 closedAreaOffset = new(0f, 0f, 0.3f);
     public Vector2 closedAreaSize = new(5.4f, 3.4f);
@@ -70,7 +71,9 @@ public class FerrisWheel : MonoBehaviour
         speed = normalSpeed;
         wheelHome = wheel.localPosition;
         if (!TryGetComponent(out FerrisWheelAudio _)) gameObject.AddComponent<FerrisWheelAudio>();
-        Part<ElectricalBox>("Electrical Box", electricalBoxOffset, "Props/electrical_box", 1.3f, electricalBoxArt).wheel = this;
+        var box = Part<ElectricalBox>("Electrical Box", electricalBoxOffset, "Props/electrical_box", 1.3f, electricalBoxArt, electricalBoxAt);
+        box.gameObject.AddComponent<ZapFx>(); // live electrics, always buzzing
+        box.wheel = this;
         var mat = wheel.GetComponent<SpriteRenderer>().sharedMaterial;
         for (int i = 0; i < cabinCount; i++)
         {
@@ -118,7 +121,7 @@ public class FerrisWheel : MonoBehaviour
         CameraRig.EndSpotlight();
         yield return new WaitForSeconds(1f); // the camera easing back
         Possession.InputBlocked = false;
-        GameHud.Think(GameText.ThinkWobble);
+        GameHud.Think(GameHud.ThoughtPriority.Action, GameText.ThinkWobble);
     }
 
     public void CutPower()
@@ -184,12 +187,13 @@ public class FerrisWheel : MonoBehaviour
         }
     }
 
-    // Offsets are relative to the wheel's base.
-    T Part<T>(string name, Vector3 offset, string sprite, float height, Sprite art = null) where T : Component
+    // Offsets are relative to the wheel's base. `at` set: it stands there instead, already drawn in the scene (a tile),
+    // so its own picture is hidden (kept for its shape: the tutorial lights it up) and it adds nothing to bump into.
+    T Part<T>(string name, Vector3 offset, string sprite, float height, Sprite art = null, Transform at = null) where T : Component
     {
         var go = new GameObject(name);
         go.SetActive(false); // so Interactable's Awake finds the rules component
-        go.transform.position = transform.position + offset * Scale;
+        go.transform.position = at != null ? at.position : transform.position + offset * Scale;
         var pic = Prop(go.transform, sprite, height, Vector3.zero);
         if (art != null)
         {
@@ -200,6 +204,11 @@ public class FerrisWheel : MonoBehaviour
         var part = go.AddComponent<T>();
         go.AddComponent<Interactable>();
         go.SetActive(true);
+        if (at != null)
+        {
+            pic.enabled = false;
+            return part;
+        }
 
         // Something people bump into: a box the size of its picture. Made after the scene loaded, so GroundWalker
         // is told about it.
@@ -272,8 +281,8 @@ public class FerrisWheel : MonoBehaviour
         yield return new WaitForSeconds(1f); // the camera easing back
         Possession.InputBlocked = false;
         Mischief.Complete(Mischief.Task.WheelRolled);
-        Aftermath.Add(new Vector3(wheel.position.x, 0f, wheel.position.z), 13f, 9999f); // just outside the wreck's panic zone
-        GameHud.Think(GameText.ThinkRolled);
+        Aftermath.Add(new Vector3(wheel.position.x, 0f, wheel.position.z), wheelRadius * Scale + 1f, 9999f);
+        GameHud.Think(GameHud.ThoughtPriority.Critical, GameText.ThinkRolled);
     }
 
     void Update()
@@ -345,10 +354,11 @@ public class FerrisWheel : MonoBehaviour
         // Flung cabins fall until they hit the ground.
         for (int i = 0; i < cabins.Count; i++)
         {
-            if (cabins[i].position.y <= 0.9f * Scale && cabinVelocity[i].y <= 0) continue; // landed (a cabin hangs from its top)
+            float landed = RaisedFloor.Height(cabins[i].position) + 0.9f * Scale; // a cabin hangs from its top
+            if (cabins[i].position.y <= landed && cabinVelocity[i].y <= 0) continue;
             cabinVelocity[i] += Vector3.down * 15f * Time.deltaTime;
             Vector3 p = cabins[i].position + cabinVelocity[i] * Time.deltaTime;
-            p.y = Mathf.Max(p.y, 0.9f * Scale);
+            p.y = Mathf.Max(p.y, landed);
             cabins[i].position = p;
             cabins[i].rotation = Quaternion.Euler(0, 0, cabinVelocity[i].x * -4f);
         }
@@ -377,7 +387,8 @@ public class FerrisWheel : MonoBehaviour
         Vector3 dir = new Vector3(rollDirection.x, 0f, rollDirection.z).normalized;
         float radius = wheelRadius * Scale;
         Vector3 p = wheel.position;
-        p.y = Mathf.MoveTowards(p.y, radius, 9f * Time.deltaTime);
+        float floor = RaisedFloor.Height(p); // the platform, or the ground once it's rolled off
+        p.y = Mathf.MoveTowards(p.y, floor + radius, 9f * Time.deltaTime);
 
         if (rolled < rollDistance)
         {
@@ -394,8 +405,8 @@ public class FerrisWheel : MonoBehaviour
             // Topple: tip back until it lies on the ground.
             var flat = Quaternion.Euler(90f, 0f, angle);
             wheel.rotation = Quaternion.RotateTowards(wheel.rotation, flat, 120f * Time.deltaTime);
-            p.y = Mathf.MoveTowards(p.y, 0.05f, radius * 1.4f * Time.deltaTime); // lands as it finishes tipping
-            if (Quaternion.Angle(wheel.rotation, flat) < 0.5f && p.y <= 0.06f)
+            p.y = Mathf.MoveTowards(p.y, floor + 0.05f, radius * 1.4f * Time.deltaTime); // lands as it finishes tipping
+            if (Quaternion.Angle(wheel.rotation, flat) < 0.5f && p.y <= floor + 0.06f)
             {
                 Set(State.Wrecked);
                 Fx.Shake(0.4f, 0.8f);

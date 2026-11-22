@@ -102,10 +102,10 @@ TextureImporter:
       name: balloon_stand
       rect:
         serializedVersion: 2
-        x: 468
-        y: 62
-        width: 1099
-        height: 1605
+        x: 556
+        y: 29
+        width: 1093
+        height: 1257
       alignment: 7
       pivot: {x: 0.5, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

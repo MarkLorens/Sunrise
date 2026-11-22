@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 // K uses the nearest Interactable whose range reaches the player (a ride part, the stall...), on behalf of whoever
 // the spirit is possessing. As a spirit there's nothing it can touch: K just says so. (Possessing is J: Possession.)
@@ -13,8 +12,7 @@ public class PlayerInteractor : MonoBehaviour
 
     void Update()
     {
-        var kb = Keyboard.current;
-        if (Possession.InputBlocked || kb == null || !kb.kKey.wasPressedThisFrame) return;
+        if (Possession.InputBlocked || !Controls.Use) return; // K
         if (possession.State == Possession.Mode.Diving) return;
 
         var target = Nearest();

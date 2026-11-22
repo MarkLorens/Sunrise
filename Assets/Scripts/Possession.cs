@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 // The player: an evil spirit floating around the park, possessing visitors.
 //   Spirit:     WASD float anywhere in the park - J possess whoever you touch.
@@ -72,9 +71,8 @@ public class Possession : MonoBehaviour
 
     void Update()
     {
-        var kb = Keyboard.current;
-        bool live = !InputBlocked && kb != null;
-        bool j = live && kb.jKey.wasPressedThisFrame; // J: in when you're out, out when you're in
+        bool live = !InputBlocked;
+        bool j = live && Controls.Possess; // J: in when you're out, out when you're in
 
         switch (State)
         {
@@ -218,7 +216,6 @@ public class Possession : MonoBehaviour
         Fx.Shake(0.2f, 0.3f); // a small knock that sways and settles, like a landed hit
         GameHud.Say(GameText.Possessed(Host.name));
         if (Host.brain == null) Mischief.Complete(Tutorial.Active ? Mischief.Task.TutorialPossess : Mischief.Task.Possess);
-        else if (Host.brain is CableMan) Mischief.Complete(Mischief.Task.PossessCableMan);
         else if (Host.brain is Mechanic) Mischief.Complete(Mischief.Task.PossessMechanic);
         else if (Host.brain is RideTechnician) Mischief.Complete(Mischief.Task.PossessTechnician);
         else if (Host.brain is RideOperator) Mischief.Complete(Mischief.Task.PossessOperator);
@@ -237,6 +234,10 @@ public class Possession : MonoBehaviour
         {
             Release();
             GameHud.Say(GameText.LeftBody);
+            // Tutorial already says a leave line in its own bubble; don't stack a second one.
+            // Observe + chance: leaving is quiet flavor, not guaranteed banter every eject.
+            if (!Tutorial.Active && Random.value < GameText.LeaveBodyThinkChance)
+                GameHud.Think(GameText.PickLeaveBody());
         }
     }
 

@@ -4,8 +4,8 @@ using UnityEngine;
 // The hand-drawn "boil" on the park's sprites (the sprite doodle effect, Palletes/Shaders/Doodle.hlsl): every
 // outline is redrawn a few times a second, each time a little off. One place to set it for each group:
 //   Floor:          the ground tilemap (its own material, SpriteLit2.5 Ground)
-//   Props & decor:  the Objects and Decor tilemaps, the Ferris wheel, stalls, signs... (SpriteLit2.5, SpriteLit2.5
-//                   NoSeeThrough, SpriteLit2.5Sway) and props made in code (ParkArt.LitMaterial)
+//   Props & decor:  the Objects, See Through and Decor tilemaps, the Ferris wheel, stalls, signs... (SpriteLit2.5,
+//                   SpriteLit2.5 SeeThrough, SpriteLit2.5Sway) and props made in code (ParkArt.LitMaterial)
 //   People:         visitors and staff (ParkArt.CharacterMaterial)
 //   Main character: the spirit (ParkArt.SpiritMaterial)
 // Strength is how far an outline may wander, in world units across the screen (0 = still); Per Second is how many

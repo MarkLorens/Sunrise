@@ -42,11 +42,11 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _DoodlePerSecond: 4
-    - _DoodleStrength: 0.012
+    - _DoodlePerSecond: 1
+    - _DoodleStrength: 0
     - _QueueControl: 0
     - _QueueOffset: 0
-    - _SeeThroughCut: 1
+    - _SeeThroughCut: 0
     - _SwayScale: 0
     - _SwaySpeed: 0
     - _SwayStrength: 0

@@ -14,7 +14,7 @@ public class HotDogMan : MonoBehaviour
 
     public enum State { AtStall, Hopping, Fleeing, Returning, Charred }
 
-    public float awayTime = 25f;   // seconds he stays away from the rats
+    public float awayTime = 10f;   // seconds he stays away from the rats
     public float fleeDistance = 9f;
     public float guardRadius = 12f; // how far from his stall he keeps an eye on the fan
     public Vector3 exitOffset = new(3.2f, 0f, 0f); // where he lands hopping out of the stall, relative to his post
@@ -71,6 +71,7 @@ public class HotDogMan : MonoBehaviour
         look.pose = null;
         backAt = Time.time + awayTime;
         GameHud.Shout(transform, GameText.HotDogRats, 2f);
+        look.Expression("surprised_1", awayTime);
         Hop(Exit, State.Fleeing); // over the end of the counter, then off he runs
     }
 
@@ -96,6 +97,7 @@ public class HotDogMan : MonoBehaviour
         look.running = false;
         look.pose = look.think;
         look.SetTint(new Color(0.3f, 0.27f, 0.25f));
+        look.Expression("surprised_2", 0f); // dazed, for good
     }
 
     void Update()

@@ -10,6 +10,11 @@ using UnityEngine;
 // line and each gets a random colour from its palette. Bodies also get a random face and hair from
 // Resources/ArtLineartHead (face_<n>[_open/_closed], hair_<n> + _hair/_hat fills), drawn on canvases that line up
 // with the body's; faces with a _closed frame blink.
+// Staff can be workers (character = "worker_<role>"): Resources/Workers/worker_<role>_body with its own
+// worker_<role>_face on the same canvas, and Expression() swaps in worker_face_<name> (surprised_1, surprised_2).
+// Scared (panicFace / panicBody): lineart bodies switch to body_<variant>_panic (arms up, with its own fills) and the
+// face to one of Resources/ArtLineartHeadPanic/face_panic_<n> (each visitor has their own).
+// The mascot (character = "mascot"): Resources/Mascot/mascot_idle, mascot_pose_1/2 (poses) and mascot_panic.
 [RequireComponent(typeof(SpriteRenderer))]
 public class CharacterSprite : MonoBehaviour
 {
@@ -26,6 +31,12 @@ public class CharacterSprite : MonoBehaviour
     // Held pose that overrides walking/idle (e.g. confused, knocked down). Null = automatic.
     [HideInInspector] public Sprite pose;
     [HideInInspector] public bool running;
+    // Scared: the panic face (gawking at a scene) and the panic body (running from it). Null art = no change.
+    [HideInInspector] public Sprite panic;
+    [HideInInspector] public Sprite[] poses = new Sprite[0]; // the mascot's show-off poses
+    [HideInInspector] public bool panicFace, panicBody;
+    // Rocking from side to side on the spot, as if walking (the mascot showing off in a pose).
+    [HideInInspector] public bool dance;
     // True while they're walking (moving, visible, not held in a pose): Footsteps plays while this is on.
     public bool Stepping { get; private set; }
 
@@ -51,7 +62,8 @@ public class CharacterSprite : MonoBehaviour
     static readonly Dictionary<Sprite, Vector3> handAnchors = new();
     Transform head;
     SpriteRenderer face;
-    Sprite faceOpen, faceClosed;
+    Sprite faceOpen, faceClosed, facePanic;
+    static Sprite[] panicFaces;
     float nextBlink, blinkUntil;
     readonly List<(SpriteRenderer r, Color c)> headParts = new();
 
@@ -103,12 +115,38 @@ public class CharacterSprite : MonoBehaviour
             // Lineart bodies only have the idle pose so far; the other poses borrow it until they're drawn.
             string line = $"ArtLineartTorso/{character}_";
             idle = Resources.Load<Sprite>(line + "idle");
+            panic = Resources.Load<Sprite>(line + "panic");
             think = interact = fallDown = idle;
             cheer = new[] { idle, idle };
             drawnFacingLeft = true;
             LoadFills(line);
             LoadHead();
             ApplyTint();
+        }
+        else if (character.StartsWith("worker_"))
+        {
+            // One drawn pose so far, like the lineart bodies; the face is theirs, drawn on the same canvas.
+            idle = Resources.Load<Sprite>($"Workers/{character}_body");
+            think = interact = fallDown = idle;
+            cheer = new[] { idle, idle };
+            drawnFacingLeft = true;
+            var own = Resources.Load<Sprite>($"Workers/{character}_face");
+            if (own != null)
+            {
+                head = new GameObject("Head").transform;
+                head.SetParent(transform, false);
+                faceOpen = own;
+                face = HeadPart("Face", own, -0.002f, Color.white);
+            }
+            ApplyTint();
+        }
+        else if (character == "mascot")
+        {
+            idle = Resources.Load<Sprite>("Mascot/mascot_idle");
+            panic = Resources.Load<Sprite>("Mascot/mascot_panic");
+            poses = new[] { Resources.Load<Sprite>("Mascot/mascot_pose_1"), Resources.Load<Sprite>("Mascot/mascot_pose_2") };
+            think = interact = fallDown = idle;
+            cheer = new[] { idle, idle };
         }
         else
         {
@@ -129,6 +167,7 @@ public class CharacterSprite : MonoBehaviour
     void LoadFills(string line)
     {
         var poses = new List<(string name, Sprite sprite)> { ("idle", idle) };
+        if (panic != null) poses.Add(("panic", panic));
 
         for (int k = 0; k < FillLayers.Length; k++)
         {
@@ -187,6 +226,9 @@ public class CharacterSprite : MonoBehaviour
             faceClosed = HeadArt(id + "_closed");
             face = HeadPart("Face", faceOpen, -0.002f, Color.white);
             nextBlink = Time.time + Random.Range(1f, 4f);
+            // A random panic face of their own, kept for good.
+            panicFaces ??= Resources.LoadAll<Sprite>("ArtLineartHeadPanic");
+            if (panicFaces.Length > 0) facePanic = panicFaces[Random.Range(0, panicFaces.Length)];
         }
         if (hairIds.Count > 0)
         {
@@ -208,9 +250,19 @@ public class CharacterSprite : MonoBehaviour
         {
             if (mcEyes == null)
             {
-                var center = Resources.Load<Sprite>("MC/MC_face_eyes center");
-                mcEyes = new[] { Resources.Load<Sprite>("MC/MC_face_eyes left"), center, Resources.Load<Sprite>("MC/MC_face_eyes right"), center };
-                mcMouth = Resources.Load<Sprite>("MC/MC_face_mouth grin");
+                // The ruckus face (red eyes and grin in one drawing, on the visitors' face canvas); else the spirit's own.
+                var ruckus = Resources.Load<Sprite>("Ruckus/ruckus_center");
+                if (ruckus != null)
+                {
+                    mcEyes = new[] { Resources.Load<Sprite>("Ruckus/ruckus_left"), ruckus, Resources.Load<Sprite>("Ruckus/ruckus_right"), ruckus };
+                    mcMouth = null;
+                }
+                else
+                {
+                    var center = Resources.Load<Sprite>("MC/MC_face_eyes center");
+                    mcEyes = new[] { Resources.Load<Sprite>("MC/MC_face_eyes left"), center, Resources.Load<Sprite>("MC/MC_face_eyes right"), center };
+                    mcMouth = Resources.Load<Sprite>("MC/MC_face_mouth grin");
+                }
             }
             if (mcEyes[1] == null) return;
             possessedFace = new GameObject("Possessed Face").AddComponent<SpriteRenderer>();
@@ -225,8 +277,12 @@ public class CharacterSprite : MonoBehaviour
                 theirs = Rect.MinMaxRect(Mathf.Min(theirs.xMin, grin.xMin), Mathf.Min(theirs.yMin, grin.yMin),
                     Mathf.Max(theirs.xMax, grin.xMax), Mathf.Max(theirs.yMax, grin.yMax));
             }
-            float scale = PossessedFaceWidth / faceOpen.pixelsPerUnit / theirs.width;
-            Vector2 at = mine.center - theirs.center * scale;
+            // Drawn on the same canvas as their face (the ruckus face on a visitor): it goes exactly where it was drawn.
+            // Otherwise it's fitted over their face: a fixed width on visitors, a bit wider than a worker's own face.
+            bool sameCanvas = faceOpen.rect.size == mcEyes[1].rect.size && Mathf.Approximately(faceOpen.pixelsPerUnit, mcEyes[1].pixelsPerUnit);
+            float width = character.StartsWith("worker_") ? mine.width * 1.5f : PossessedFaceWidth / faceOpen.pixelsPerUnit;
+            float scale = sameCanvas ? 1f : width / theirs.width;
+            Vector2 at = sameCanvas ? Vector2.zero : mine.center - theirs.center * scale;
             possessedFace.transform.localPosition = new Vector3(at.x, at.y, -0.002f);
             possessedFace.transform.localScale = Vector3.one * scale;
             possessedFace.sprite = mcEyes[0];
@@ -247,6 +303,18 @@ public class CharacterSprite : MonoBehaviour
         if (possessedFace != null) possessedFace.sprite = mcEyes[0];
         SetVisible(body.enabled);
     }
+
+    // A worker pulls a face (Resources/Workers/worker_face_<name>: surprised_1, surprised_2) for `seconds`; 0 = for good.
+    public void Expression(string name, float seconds)
+    {
+        Load();
+        if (face == null || !character.StartsWith("worker_")) return; // drawn on the workers' canvas only
+        expression = Resources.Load<Sprite>("Workers/worker_face_" + name);
+        expressionUntil = seconds > 0f ? Time.time + seconds : float.MaxValue;
+    }
+
+    Sprite expression;
+    float expressionUntil;
 
     static Rect DrawnRect(Sprite s)
     {
@@ -319,6 +387,14 @@ public class CharacterSprite : MonoBehaviour
             {
                 if (Time.time > nextBlink) { blinkUntil = Time.time + 0.12f; nextBlink = Time.time + Random.Range(2f, 5f); }
                 face.sprite = Time.time < blinkUntil ? faceClosed : faceOpen;
+            }
+            // Scared: the panic face, no blinking.
+            if (facePanic != null && (panicFace || panicBody)) face.sprite = facePanic;
+            else if (facePanic != null && face.sprite == facePanic) face.sprite = faceOpen;
+            if (expression != null)
+            {
+                face.sprite = Time.time < expressionUntil ? expression : faceOpen;
+                if (Time.time >= expressionUntil) expression = null;
             }
             if (possessed && Time.time >= eyeUntil)
             {
@@ -416,13 +492,19 @@ public class CharacterSprite : MonoBehaviour
 
         bool stepping = false;
         bool twitching = Time.time < twitchUntil;
-        if (twitching) body.sprite = (int)(Time.time * 14f) % 2 == 0 ? cheer[0] : idle;
+        // Scared, the panic body stands in for the idle one (lineart cheering borrows idle too).
+        Sprite standing = panicBody && panic != null ? panic : idle;
+        if (twitching)
+        {
+            var jolt = (int)(Time.time * 14f) % 2 == 0 ? cheer[0] : idle;
+            body.sprite = jolt == idle ? standing : jolt;
+        }
         else if (Time.time < gestureUntil) body.sprite = gesture;
-        else if (Time.time < cheerUntil) body.sprite = cheer[(int)(Time.time * 6f) % 2];
+        else if (Time.time < cheerUntil) body.sprite = cheer[(int)(Time.time * 6f) % 2] == idle ? standing : cheer[(int)(Time.time * 6f) % 2];
         else if (pose != null) body.sprite = pose;
         else
         {
-            body.sprite = idle;
+            body.sprite = standing;
             stepping = moving;
         }
         SyncFills();
@@ -431,8 +513,11 @@ public class CharacterSprite : MonoBehaviour
         // The waddle: they rock from foot to foot round their feet (the sprite's pivot), a step to each side per rock,
         // stretching up a touch as they pass upright and settling a touch at each lean. Quicker the faster they go and
         // wider when running; it eases in as they set off and back to standing straight when they stop.
-        stride = Mathf.MoveTowards(stride, stepping ? 1f : 0f, Time.deltaTime * 5f);
-        waddle = (waddle + Time.deltaTime * (waddleRate + speed * waddlePerSpeed) * Mathf.PI * 2f) % (Mathf.PI * 2f);
+        // Dancing on the spot, they rock as if walking at an easy pace (2 units/second) without going anywhere.
+        bool dancing = dance && body.enabled;
+        stride = Mathf.MoveTowards(stride, stepping || dancing ? 1f : 0f, Time.deltaTime * 5f);
+        float pace = dancing && !moving ? 2f : speed;
+        waddle = (waddle + Time.deltaTime * (waddleRate + pace * waddlePerSpeed) * Mathf.PI * 2f) % (Mathf.PI * 2f);
         float lean = Mathf.Sin(waddle) * waddleAngle * (running ? 1.4f : 1f) * stride;
         float lift = (Mathf.Abs(Mathf.Cos(waddle)) - 0.5f) * stepBounce * (running ? 1.5f : 1f) * stride;
         float sx = 1f - lift * 0.5f, sy = 1f + lift;

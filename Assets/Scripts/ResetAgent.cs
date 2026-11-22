@@ -20,7 +20,7 @@ public class ResetAgent : StaffWorker
     int nextLine;
 
     // The nearest free agent takes it; with everyone busy it waits for the first one done.
-    public static bool Call(Job job) => Dispatch(All, backlog, job);
+    public static bool Call(Job job) => Dispatch(All, backlog, job) != null;
 
     // Stand watch over a scene from `keepBack` away, on the side facing the middle of the park.
     public static void Guard(Vector3 scene, float keepBack)
@@ -32,6 +32,18 @@ public class ResetAgent : StaffWorker
         for (int i = 0; i < 8 && GroundWalker.NearObstacle(spot, 0.4f); i++)
             spot = scene + Quaternion.Euler(0f, (i + 1) * 45f, 0f) * toPark.normalized * keepBack;
         Call(new Job { spot = spot, at = scene, seconds = 0.5f, stay = true });
+    }
+
+    // The scene's cleared: whoever's watching it (or still about to) goes back to work or inside.
+    public static void StandDown(Vector3 scene)
+    {
+        scene.y = 0f;
+        for (int i = backlog.Count; i > 0; i--)
+        {
+            var j = backlog.Dequeue();
+            if (!(j.stay && Same(j.at, scene))) backlog.Enqueue(j);
+        }
+        foreach (var a in All) a.LeavePost(scene);
     }
 
     protected override void Update()
@@ -52,7 +64,7 @@ public class ResetAgent : StaffWorker
         }
         if (!anyone) return;
         var lines = GameText.MoveAlong;
-        GameHud.Shout(transform, lines[nextLine++ % lines.Length], 2f);
+        GameHud.Shout(transform, lines[nextLine++ % lines.Length], 2f, true);
     }
 
     protected override void OnEnable()

@@ -1,11 +1,12 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
-// A propane tank feeding the park's stands. Loosen its valve (E, in anyone's body) and gas hisses out. Its fan
-// (TankFan) blows it away to nothing, until someone turns the fan round to blow it at `target`. Anything else blowing
-// there (`blowers`: the hot dog stand's own StallFan) blows it straight back out until it's switched off; with those
-// off, a cloud builds up round the target (propane's invisible, so it's drawn as a faint green haze). Once it's thick
-// enough, a spark sets it off:
+// A propane tank feeding the park's stands. Loosen its valve (E, in anyone's body) and gas hisses out into the fan
+// beside it (TankFan), which carries it the way it faces. Any fan straight ahead within `fanReach` picks it up and
+// carries it on its own way, and so on down the chain (Route). When the last fan blows it at `target`, a cloud builds
+// up round it (propane's invisible, so it's drawn as a faint green haze); anywhere else, it just blows away. Once the
+// cloud's thick enough, a spark sets it off:
 //   - at the hot dog stand, the hot dog man lighting his stove (HotDogMan): the stand goes up in a fireball, the crowd
 //     runs, and the bang wakes the ride technician (RideTechnician.Wake);
 //   - at the locker room, its broken cable (LockerBox): the building catches fire (LockerRoom.Burn).
@@ -15,7 +16,9 @@ public class PropaneTank : MonoBehaviour, IInteraction
     public TankFan fan;
     [UnityEngine.Serialization.FormerlySerializedAs("stall")]
     public Transform target;           // where the cloud gathers
-    public StallFan[] blowers = new StallFan[0];
+    public float fanReach = 10f;       // how far a fan's stream carries gas to the next fan, or to the target
+    public float fanLane = 1.5f;       // how far off to the side of the stream the next fan can stand
+    public Mischief.Task aimTask = Mischief.Task.AimFan; // the chain first carries the gas all the way
     public LockerRoom burns;           // set: the locker room's tank (it burns); empty: the hot dog stand's (wakes the technician)
     public Mischief.Task leakTask = Mischief.Task.LeakPropane;
     public Mischief.Task cloudTask = Mischief.Task.GasCloud;
@@ -24,7 +27,6 @@ public class PropaneTank : MonoBehaviour, IInteraction
     public float cloudRadius = 2.6f;
     public int cloudPuffs = 14;
     public float payoffTime = 2.5f;    // the camera on the fireball
-    public float wakeShot = 4.5f;      // then on the technician waking up (and coming out, if the wheel's down)
 
     static readonly Color Gas = new(0.7f, 0.95f, 0.55f);
 
@@ -49,10 +51,38 @@ public class PropaneTank : MonoBehaviour, IInteraction
         return null;
     }
 
-    bool Blowing()
+    // The gas's way from the valve: through each fan in turn, ending at the target (true) or blown off past the last
+    // fan (false). `path` gets the points it passes.
+    readonly List<Vector3> path = new();
+    readonly List<TankFan> chain = new();
+
+    bool Route()
     {
-        foreach (var b in blowers)
-            if (b != null && b.On) return true;
+        path.Clear();
+        chain.Clear();
+        path.Add(transform.position);
+        var f = fan;
+        while (f != null)
+        {
+            path.Add(f.transform.position);
+            chain.Add(f);
+            // The nearest thing in its stream: another fan, or the target.
+            TankFan next = null;
+            float best = f.Blows(Center, cloudRadius, fanReach) ? f.Ahead(Center) : float.MaxValue;
+            foreach (var other in TankFan.All)
+                if (!chain.Contains(other) && f.Blows(other.transform.position, fanLane, fanReach) && f.Ahead(other.transform.position) < best)
+                {
+                    next = other;
+                    best = f.Ahead(other.transform.position);
+                }
+            if (next == null && best < float.MaxValue)
+            {
+                path.Add(Center);
+                return true;
+            }
+            if (next == null) path.Add(f.transform.position + f.Wind * 3f); // off to nowhere
+            f = next;
+        }
         return false;
     }
 
@@ -73,12 +103,18 @@ public class PropaneTank : MonoBehaviour, IInteraction
     void Update()
     {
         if (!leaking || spent) return;
-        bool aimed = fan != null && fan.Aimed;
-        if (aimed && level < 1f && Blowing())
+        bool aimed = Route();
+        if (aimed && !Mischief.IsDone(aimTask))
         {
-            // Another fan scatters it as fast as it comes.
+            Mischief.Complete(aimTask);
+            GameHud.Think(GameHud.ThoughtPriority.Action, GameText.PickFanAimed());
+        }
+        if (!aimed && level < 1f)
+        {
+            // Not reaching: what's there thins out again. A guarded fan blowing it away is worth a thought.
             level = Mathf.Max(0f, level - Time.deltaTime / fillTime);
-            if (!thoughtBlown && Possession.PlayerNear(Center, cloudRadius + 4f))
+            var last = chain.Count > 0 ? chain[chain.Count - 1] : null;
+            if (!thoughtBlown && last != null && last.guardedBy != TankFan.Guard.None && Possession.PlayerNear(last.transform.position, 6f))
             {
                 thoughtBlown = true;
                 GameHud.Think(GameText.ThinkGasBlownAway);
@@ -90,7 +126,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
             if (level >= 1f)
             {
                 Mischief.Complete(cloudTask);
-                GameHud.Think(HotDogStand ? GameText.ThinkCloud : GameText.ThinkLockerCloud);
+                GameHud.Think(GameHud.ThoughtPriority.Action, HotDogStand ? GameText.ThinkCloud : GameText.ThinkLockerCloud);
             }
         }
 
@@ -101,16 +137,23 @@ public class PropaneTank : MonoBehaviour, IInteraction
             puffs[i].transform.position = puffSpots[i] + new Vector3(Mathf.Sin(Time.time * 0.7f + i), Mathf.Sin(Time.time * 0.5f + i * 2f) * 0.3f, 0f) * 0.25f;
         }
 
-        // Gas wisps off the valve, carried along by the fan: at the target, or off to nowhere.
+        // Gas wisps drifting along every leg of its way: fan to fan, to the target or off to nowhere.
         if (Time.time < nextWisp) return;
-        nextWisp = Time.time + 0.25f;
-        Vector3 wind = fan != null ? fan.Wind : Vector3.up * 0.3f;
-        var w = ParkArt.Make("Wisp", null, "Fx/puff", 0.5f, new Color(Gas.r, Gas.g, Gas.b, 0.45f), ParkArt.OverheadOrder);
-        w.transform.position = transform.position + Vector3.up * 1.3f;
-        var bit = w.gameObject.AddComponent<FxBit>();
-        bit.velocity = wind * (aimed ? 3.5f : 2.5f) + Vector3.up * 0.3f;
-        bit.life = aimed ? 2f : 1.2f;
+        nextWisp = Time.time + 0.3f;
+        for (int i = 0; i + 1 < path.Count; i++)
+        {
+            Vector3 leg = path[i + 1] - path[i];
+            leg.y = 0f;
+            var w = ParkArt.Make("Wisp", null, "Fx/puff", 0.5f, new Color(Gas.r, Gas.g, Gas.b, 0.45f), ParkArt.OverheadOrder);
+            w.transform.position = path[i] + Vector3.up * 1.2f;
+            var bit = w.gameObject.AddComponent<FxBit>();
+            bit.drag = 0f;
+            bit.velocity = leg.normalized * WispSpeed;
+            bit.life = Mathf.Max(0.3f, leg.magnitude / WispSpeed);
+        }
     }
+
+    const float WispSpeed = 3.5f;
 
     // ---------------------------------------------------------------- the valve
 
@@ -123,7 +166,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
         leaking = true;
         Sfx.Play(Sfx.HitWood, 0.5f, 1.8f);
         GameHud.Say(GameText.OpenedValve);
-        GameHud.Think(GameText.ThinkValve);
+        GameHud.Think(GameHud.ThoughtPriority.Action, GameText.PickValve());
         Mischief.Complete(leakTask);
     }
 
@@ -168,23 +211,16 @@ public class PropaneTank : MonoBehaviour, IInteraction
             CameraRig.EndSpotlight();
             yield return new WaitForSeconds(1f);
             Possession.InputBlocked = false;
-            GameHud.Think(GameText.ThinkFire);
+            GameHud.Think(GameHud.ThoughtPriority.Critical, GameText.ThinkFire);
             yield break;
         }
 
         // Across the park, someone's nap is over.
-        foreach (var t in RideTechnician.All)
-        {
-            CameraRig.Spotlight(t.transform, 999f, 1.5f);
-            yield return new WaitForSeconds(1f);
-            t.Wake();
-            yield return new WaitForSeconds(wakeShot);
-            break;
-        }
+        if (RideTechnician.All.Count > 0) yield return RideTechnician.All[0].WakeUp();
         CameraRig.EndSpotlight();
         yield return new WaitForSeconds(1f); // the camera easing back
         Possession.InputBlocked = false;
-        GameHud.Think(GameText.ThinkBoom);
+        GameHud.Think(GameHud.ThoughtPriority.Critical, GameText.ThinkBoom);
     }
 
     // Loading a save (SaveGame).
