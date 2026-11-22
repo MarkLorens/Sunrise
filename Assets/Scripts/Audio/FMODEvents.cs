@@ -25,6 +25,10 @@ public class FMODEvents : MonoBehaviour
     [field: Tooltip("The stuck cabins creaking once the wheel has stopped.")]
     [field: SerializeField] public EventReference ferrisCabinCreak { get; private set; }
 
+    [field: Header("Park")]
+    [field: Tooltip("Theme playing out of the park megaphones (ParkMusic). The level, not the main menu.")]
+    [field: SerializeField] public EventReference parkMusic { get; private set; }
+
     public static FMODEvents instance { get; private set; }
 
     private void Awake()

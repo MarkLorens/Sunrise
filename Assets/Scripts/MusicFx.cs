@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// A loudspeaker playing, always on: the two Speakers (Speaker adds it) and the four theme song speakers up on the
+// A loudspeaker playing, always on: the two Speakers (Speaker adds it) and the four park megaphones up on the
 // park's corners (added in the scene): the box thumps to the beat, squashing down a touch from its feet,
 // and music notes (Resources/Park/Fx/note_1..3, each on a soft warm glow, note_N_glow, so the dark ink reads at night)
 // puff out of the cone now and then, float up swaying and fade away.
