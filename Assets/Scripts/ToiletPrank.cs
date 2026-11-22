@@ -126,7 +126,7 @@ public class ToiletPrank : MonoBehaviour
             {
                 next = t + Mathf.Lerp(0.35f, 0.12f, k);
                 Fx.Shake(Mathf.Lerp(0.05f, 0.18f, k));
-                Sfx.Play(Sfx.HitSoft, Mathf.Lerp(0.25f, 0.6f, k), Random.Range(0.6f, 0.8f));
+                Sfx.Play(Sfx.HitSoft, Mathf.Lerp(0.25f, 0.6f, k), Random.Range(0.6f, 0.8f), Captions.ToiletRumble);
             }
             yield return null;
         }
@@ -200,7 +200,7 @@ public class ToiletPrank : MonoBehaviour
     {
         if (SignDown) return;
         SignDown = true;
-        Sfx.Play(Sfx.Grab, 0.7f);
+        Sfx.Play(Sfx.Grab, 0.7f, 1f, Captions.SignOff);
         Fx.Burst("Fx/puff", Sign.position + Vector3.up * 0.6f, 8, Color.white, 2f, 0.35f, 0.5f);
         Sign.gameObject.SetActive(false); // its collider goes with it: the door's clear
         Mischief.Complete(Mischief.Task.TutorialSign);
@@ -210,7 +210,7 @@ public class ToiletPrank : MonoBehaviour
     {
         if (Maxed) return;
         Pressure++;
-        Sfx.Play(Sfx.HitWood, 0.6f, 1f + 0.15f * Pressure);
+        Sfx.Play(Sfx.HitWood, 0.6f, 1f + 0.15f * Pressure, Captions.Valve);
         Fx.Burst("Fx/sparkle", handle, 3 + Pressure * 2, Water, 1.5f + Pressure * 0.5f, 0.2f, 0.4f);
         Fx.Shake(0.04f * Pressure);
         if (!Maxed) return;
@@ -223,7 +223,7 @@ public class ToiletPrank : MonoBehaviour
     public IEnumerator Geyser(Visitor victim)
     {
         Settle();
-        Sfx.Play(Sfx.Crash, 1f, 0.9f);
+        Sfx.Play(Sfx.Crash, 1f, 0.9f, Captions.ToiletGeyser);
         Fx.Shake(0.45f, 0.6f);
         // Out of the hole in the broken roof and up. In front of the block's picture (level with it, the puffs would
         // hide behind it), but slid straight toward the camera so on screen it still comes out of the hole.
@@ -291,7 +291,7 @@ public class ToiletPrank : MonoBehaviour
         }
         Sign.gameObject.SetActive(true);
         Sign.GetComponent<Interactable>().enabled = false;
-        Sfx.Play(Sfx.HitWood, 0.6f, 1.1f);
+        Sfx.Play(Sfx.HitWood, 0.6f, 1.1f, Captions.SignBack);
         Fx.Burst("Fx/puff", Sign.position + Vector3.up * 0.6f, 8, Color.white, 2f, 0.35f, 0.5f);
     }
 }

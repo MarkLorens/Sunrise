@@ -16,6 +16,6 @@ public class EmitterVolume : MonoBehaviour
     void Update()
     {
         foreach (var e in emitters)
-            if (e.EventInstance.isValid()) e.EventInstance.setVolume(volume);
+            if (e.EventInstance.isValid()) AudioMix.OwnVolume(e.EventInstance, volume); // with the music / SFX slider on top
     }
 }

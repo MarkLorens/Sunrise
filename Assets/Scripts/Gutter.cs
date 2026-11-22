@@ -75,7 +75,7 @@ public class Gutter : MonoBehaviour, IInteraction
         if (smellOnly)
         {
             Open();
-            Sfx.Play(Sfx.HitWood, 0.6f, 0.7f);
+            Sfx.Play(Sfx.HitWood, 0.6f, 0.7f, Captions.GutterOpen);
             Fx.Burst("Fx/puff", transform.position + Vector3.up * 0.3f, 8, Stink, 2f, 0.5f, 1f);
             GameHud.Say(GameText.OpenedGutter);
             return;
@@ -89,7 +89,7 @@ public class Gutter : MonoBehaviour, IInteraction
         open = true;
         lid.transform.parent.localPosition = new Vector3(0.7f * size, 0.03f, -0.2f); // slid aside
         hole.enabled = true;
-        Sfx.Play(Sfx.HitWood, 0.6f, 0.7f);
+        Sfx.Play(Sfx.HitWood, 0.6f, 0.7f, Captions.GutterOpen);
         Fx.Burst("Fx/puff", transform.position + Vector3.up * 0.3f, 8, Stink, 2f, 0.5f, 1f);
         ParkChaos.Add(transform.position, 4f, 8f, ParkChaos.Scary); // kids don't like rats
 
@@ -137,7 +137,7 @@ public class Gutter : MonoBehaviour, IInteraction
         }
         lid.transform.parent.localPosition = Vector3.up * 0.02f;
         hole.enabled = false;
-        Sfx.Play(Sfx.HitWood, 0.5f, 0.8f);
+        Sfx.Play(Sfx.HitWood, 0.5f, 0.8f, Captions.GutterShut);
         open = false;
     }
 

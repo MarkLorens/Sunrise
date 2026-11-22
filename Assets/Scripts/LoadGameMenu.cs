@@ -32,6 +32,8 @@ public class LoadGameMenu : MonoBehaviour
     const int Visible = 3;
     const float CardW = 460f, CardH = 634f, CardY = 0f, CardGap = 458f, PickedScale = 1.06f;
     const float TitleY = -120f, EmptyTitleY = -100f, PlayedY = -192f;
+    // The cards' insides (inside the drawn edge) sit 8.5 px of their 370 px art left of the middle: the picture with them.
+    const float PictureX = -11f;
     const float ArrowX = CardGap + CardW * 0.5f + 80f, ArrowW = 100f, ArrowH = 80f;
     static readonly Color Empty = new(0.85f, 0.85f, 0.85f);
     static Texture2D disc;
@@ -132,7 +134,7 @@ public class LoadGameMenu : MonoBehaviour
         c.rt.gameObject.AddComponent<CardKeys>().menu = this;
 
         var pic = MainMenu.Ui("Picture", c.rt);
-        Place(pic, new Vector2(0f, 90f));
+        Place(pic, new Vector2(PictureX, 90f));
         pic.sizeDelta = new Vector2(260f, 260f);
         c.picture = pic.gameObject.AddComponent<RawImage>();
         c.picture.raycastTarget = false;
@@ -140,14 +142,14 @@ public class LoadGameMenu : MonoBehaviour
         var title = MainMenu.Ui("Objective", c.rt);
         Place(title, new Vector2(0f, TitleY));
         title.sizeDelta = new Vector2(300f, 100f);
-        c.title = MainMenu.Label(title, "", 37, Color.white, ParkArt.TitleFont);
+        c.title = MainMenu.Label(title, "", Figma.Type.AtmaBody, Color.white, ParkArt.TitleFont);
         c.title.horizontalOverflow = HorizontalWrapMode.Wrap;
         c.title.lineSpacing = 0.85f;
 
         var played = MainMenu.Ui("Played", c.rt);
         Place(played, new Vector2(0f, PlayedY));
         played.sizeDelta = new Vector2(360f, 40f);
-        c.played = MainMenu.Label(played, "", 25, Color.white, ParkArt.Font);
+        c.played = MainMenu.Label(played, "", Figma.Type.ArvoBody, Color.white, ParkArt.Font);
 
         var info = SaveGame.Read(slot);
         c.saved = info != null;

@@ -227,7 +227,7 @@ public static class SaveGame
         if (!Has(slot)) return;
         Slot = slot;
         pending = JsonUtility.FromJson<Data>(File.ReadAllText(PathOf(slot)));
-        SceneManager.LoadScene(pending.scene);
+        LoadingScreen.Load(pending.scene);
     }
 
     public static void ApplyPending()

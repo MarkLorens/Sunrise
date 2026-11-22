@@ -34,11 +34,17 @@ public class CameraRig : MonoBehaviour
     public float zoomTime = 0.5f; // roughly how long Zoom / EndZoom take to ease in and out: higher = slower
 
     [Header("Depth of field")]
-    // Tilt-shift look: the player stays sharp, the ground in front and behind blurs, so the park reads as a diorama.
-    // Focus follows whoever you control (and the dolly). Blur grows with focal length and shrinks with aperture.
+    // Diorama look: the player stays sharp and what's behind them blurs. Focus follows whoever you control (and the
+    // dolly). Only behind: what's in front of the player stays sharp, because that's what the see-through hole
+    // (SeeThrough.cs) opens up. Blurred too (the old Bokeh mode), its blur spread over the hole and filled it with
+    // a frosted grey disc.
     public bool depthOfField = true;
-    [Range(1, 300)] public float focalLength = 120f; // mm
-    [Range(1, 32)] public float aperture = 4f;       // f-stop
+    [Tooltip("World units behind the player where the blur starts.")]
+    public float blurStart = 2f;
+    [Tooltip("World units behind the player where the blur is full.")]
+    public float blurEnd = 12f;
+    [Range(0.5f, 1.5f), Tooltip("How strong the full blur is.")]
+    public float blurRadius = 1f;
 
     CinemachineTargetGroup group;
     CinemachinePositionComposer body;
@@ -109,6 +115,27 @@ public class CameraRig : MonoBehaviour
         }
     }
 
+    // Temporal anti-aliasing (Options > Display > Anti-Aliasing, Settings.AntiAliasing): blends the last few frames.
+    // Besides smoothing edges, it turns the see-through hole's moving dither (SeeThrough.hlsl) into a smooth fade
+    // instead of a visible dot pattern. Off, the picture is sharper but the edges jagged and the hole dotted.
+    public void ApplyAntiAliasing()
+    {
+        var urp = GetComponent<Camera>().GetUniversalAdditionalCameraData();
+        if (!Settings.AntiAliasing)
+        {
+            urp.antialiasing = AntialiasingMode.None;
+            return;
+        }
+        urp.antialiasing = AntialiasingMode.TemporalAntiAliasing;
+        urp.antialiasingQuality = AntialiasingQuality.High;
+        // Average more frames (blend) and clamp the history less tightly, so the dither noise melts into a smooth
+        // fade. Push these further and fast movement starts to leave faint trails (ghosting).
+        var taa = urp.taaSettings;
+        taa.baseBlendFactor = 0.95f;     // default 0.9
+        taa.varianceClampScale = 1.5f;   // default 0.9
+        urp.taaSettings = taa;
+    }
+
     void Awake()
     {
         Instance = this;
@@ -122,17 +149,7 @@ public class CameraRig : MonoBehaviour
         orthographic = GetComponent<Camera>().orthographic;
         baseLens = orthographic ? lens.OrthographicSize : lens.FieldOfView;
 
-        // Temporal anti-aliasing: blends the last few frames. Besides smoothing edges, it turns the see-through hole's
-        // moving dither (SeeThrough.hlsl) into a smooth fade instead of a visible dot pattern.
-        var urp = GetComponent<Camera>().GetUniversalAdditionalCameraData();
-        urp.antialiasing = AntialiasingMode.TemporalAntiAliasing;
-        urp.antialiasingQuality = AntialiasingQuality.High;
-        // Average more frames (blend) and clamp the history less tightly, so the dither noise melts into a smooth
-        // fade. Push these further and fast movement starts to leave faint trails (ghosting).
-        var taa = urp.taaSettings;
-        taa.baseBlendFactor = 0.95f;     // default 0.9
-        taa.varianceClampScale = 1.5f;   // default 0.9
-        urp.taaSettings = taa;
+        ApplyAntiAliasing();
 
         group =new GameObject("Camera Target Group").AddComponent<CinemachineTargetGroup>();
 
@@ -156,7 +173,8 @@ public class CameraRig : MonoBehaviour
 
         dofProfile = ScriptableObject.CreateInstance<VolumeProfile>();
         dof = dofProfile.Add<DepthOfField>();
-        dof.mode.Override(DepthOfFieldMode.Bokeh);
+        dof.mode.Override(DepthOfFieldMode.Gaussian); // far blur only (Bokeh blurs in front of the focus too)
+        dof.highQualitySampling.Override(true);
         var vol = new GameObject("Depth Of Field").AddComponent<Volume>();
         vol.transform.SetParent(go.transform, false);
         vol.isGlobal = true;
@@ -251,9 +269,10 @@ public class CameraRig : MonoBehaviour
         if (!dof.active) return;
         var cam = transform; // the brain places the main camera
         var on = spot != null ? spot : target;
-        dof.focusDistance.Override(Mathf.Max(0.5f, Vector3.Dot(on.position - cam.position, cam.forward)));
-        dof.focalLength.Override(focalLength);
-        dof.aperture.Override(aperture);
+        float focus = Mathf.Max(0.5f, Vector3.Dot(on.position - cam.position, cam.forward));
+        dof.gaussianStart.Override(focus + blurStart);
+        dof.gaussianEnd.Override(focus + Mathf.Max(blurEnd, blurStart + 0.1f));
+        dof.gaussianMaxRadius.Override(blurRadius);
     }
 
     // Points of interest ease in (weight up) when they come within joinRadius and ease out past leaveRadius
