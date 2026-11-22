@@ -336,11 +336,14 @@ public class NightLighting : MonoBehaviour
             float f = 1f - lampFlicker * Mathf.PerlinNoise(Time.time * lampFlickerSpeed, i * 7.31f);
             if (i == Sputtering && Mathf.PerlinNoise(Time.time * 9f, 0.5f) < 0.45f) f = 0.08f; // a faulty bulb cutting out
             var l = lamps[i];
-            Set(l.light, l.color, lampIntensity * f, lampRange);
-            Set(l.pool, l.color, poolIntensity * f, poolRange);
+            // The palette is read live (not the colour stored when the lamp was built) so it can be tuned while playing.
+            l.color = LampColor(i);
+            Color color = l.color;
+            Set(l.light, color, lampIntensity * f, lampRange);
+            Set(l.pool, color, poolIntensity * f, poolRange);
             l.pool.transform.position = l.foot + new Vector3(0f, poolHeight, -0.3f);
-            Tint(l.core, l.color, lampCoreAlpha * f, lampCoreSize);
-            Tint(l.halo, l.color, lampHaloAlpha * f, lampHaloSize);
+            Tint(l.core, color, lampCoreAlpha * f, lampCoreSize);
+            Tint(l.halo, color, lampHaloAlpha * f, lampHaloSize);
         }
         foreach (var l in stalls) Set(l, stallColor, stallIntensity, stallRange);
 
