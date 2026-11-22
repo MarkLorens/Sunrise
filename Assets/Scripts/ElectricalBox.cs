@@ -38,7 +38,7 @@ public class ElectricalBox : MonoBehaviour, IInteraction
         GameHud.Think(GameText.ThinkBoxSpirit);
     }
 
-    public string Prompt(Visitor host) => !wheel.Powered ? "Start the Ferris wheel" : Unlocked ? "Cut the Ferris wheel's power" : "Unlock the mechanic's electrical box";
+    public string Prompt(Visitor host) => !wheel.Powered ? "Start the Ferris wheel" : Unlocked ? "Cut the Ferris wheel's power" : "Unlock the electrician's electrical box";
 
     public string Blocked(Visitor host)
     {

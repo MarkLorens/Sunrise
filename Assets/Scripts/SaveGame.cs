@@ -9,7 +9,7 @@ using UnityEngine.SceneManagement;
 // is and whose body they're in (with what in hand). Everyone else starts fresh around the park.
 // Saved from the pause menu (PauseMenu), loaded from the main menu (MainMenu): Load() opens the level, and the
 // level's PauseMenu calls ApplyPending() once everything in it has set itself up.
-// Bodies are found again by name: staff by theirs ("Mechanic", "Cable Man"...), any free visitor for a "Visitor".
+// Bodies are found again by name: staff by theirs ("Electrician", "Cable Man"...), any free visitor for a "Visitor".
 public static class SaveGame
 {
     [System.Serializable]

@@ -3,7 +3,7 @@
 //   Pop-up (bottom left): one line for each thing the player does, and one for each step of the level done.
 //   Refusals: why pressing K didn't work, shown over whatever said no.
 // To reword a line, change the text between the quotes. Words in {curly brackets} are filled in by the game:
-//   {who}  someone's name as the game knows them ("Visitor", "Mechanic", "Cable Man"...)
+//   {who}  someone's name as the game knows them ("Visitor", "Electrician", "Cable Man"...)
 //   {what} a thing ("drink", "keys", "water bottle")
 //   {s}    seconds
 // Plain C# strings, so nothing is loaded or read at runtime; a broken line shows up as a compile error.
@@ -36,7 +36,7 @@ public static class GameText
     public const string SparkedCable = "You sparked the broken cable";
     public const string MaxedSpeed = "You turned the Ferris wheel up to max speed";
 
-    // "a visitor", "the mechanic", "the cable man" (staff go by their job; numbers like "Reset Agent 2" are dropped).
+    // "a visitor", "the electrician", "the cable man" (staff go by their job; numbers like "Reset Agent 2" are dropped).
     static string Someone(string who)
     {
         who = who.TrimEnd(' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9').ToLowerInvariant();
@@ -54,8 +54,8 @@ public static class GameText
         Mischief.Task.FloodPuddle => "Water fountain leaked",
         Mischief.Task.PossessCableMan => "Cable man possessed",
         Mischief.Task.Electrocute => "Visitors electrocuted",
-        Mischief.Task.LureMechanic => "Mechanic arrived",
-        Mischief.Task.PossessMechanic => "Mechanic possessed",
+        Mischief.Task.LureMechanic => "Electrician arrived",
+        Mischief.Task.PossessMechanic => "Electrician possessed",
         Mischief.Task.UnlockBox => "Electrical box unlocked",
         Mischief.Task.CutPower => "Ferris wheel power cut",
         Mischief.Task.CallTechnician => "Technician called",
@@ -102,7 +102,7 @@ public static class GameText
 
     // The drinking fountain
     public const string FountainFixed = "Fixed. Not a drop";
-    public const string MechanicOnIt = "The mechanic's on it";
+    public const string MechanicOnIt = "The electrician's on it";
     public const string PuddleFull = "The puddle won't spread any further";
 
     // The live cable
@@ -114,7 +114,7 @@ public static class GameText
     public const string OperatorOnly = "Only the operator knows how to work this";
     public const string NoPower = "No power";
     public const string PowerOff = "The power's off";
-    public const string BoxLocked = "Locked. The mechanic has the keys";
+    public const string BoxLocked = "Locked. The electrician has the keys";
 
     // The drinking fountain
     public const string FountainBusy = "Still gurgling";
@@ -141,7 +141,7 @@ public static class GameText
     public const string GutterOpen = "It's open. The smell's out";
     public const string MascotGuards = "The mascot won't let you near the fan";
     public const string CableSparks = "Pretty sparks. Nothing here to burn yet";
-    public const string NeedKeys = "Locked. The mechanic has the keys";
+    public const string NeedKeys = "Locked. The electrician has the keys";
     public const string AlreadyBurning = "It's already burning";
     public const string PanelNotYet = "The technician has to start the ride first";
     public const string PanelFromBooth = "You have to be in the booth to reach it";
@@ -254,7 +254,7 @@ public static class GameText
     // Burn the locker room
     public const string ThinkMascot = "Who's the big fuzzy idiot guarding the fan?";                // the mascot refuses you
     public const string ThinkStinkGone = "The fuzzball is just as smelly, to be honest.";           // the mascot runs off
-    public const string ThinkLockerCloud = "Locker room's full of gas. Now, the mechanic and that cable..."; // the cloud is full
+    public const string ThinkLockerCloud = "Locker room's full of gas. Now, the electrician and that cable..."; // the cloud is full
     public const string ThinkFire = "Shoddy Construction, really. Now's my chance with the operator"; // after the fire payoff
     public const string ThinkBooth = "His own finger. How trusting";                                  // scanning as the operator
     public const string ThinkMaxSpeed = "Faster... FASTER!";                                          // maxing the wheel

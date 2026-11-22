@@ -42,7 +42,7 @@ public static class Mischief
         }),
         ("1. A-Leak-Tricity", new[]
         {
-            (Task.LureMechanic, "Find a way to lure The Mechanic."),
+            (Task.LureMechanic, "Find a way to lure The Electrician."),
             (Task.CutPower, "Open the electrical box and turn off the Ferris Wheel."),
         }),
         // Shows once the cutscene of the wheel's power going out is over (GameHud waits for cutscenes).
