@@ -100,7 +100,7 @@ public class RideTechnician : MonoBehaviour
         yield return new WaitForSeconds(1.2f); // the camera getting there: still snoring
         Fx.Burst("Fx/puff", zzz.position + Vector3.up * 0.3f, 8, Color.white, 2f, 0.35f, 0.5f);
         StopSnoring();
-        Sfx.Play(Sfx.Huh, 0.8f);
+        Sfx.Play(Sfx.Huh, 0.8f, 1f, Captions.Startled);
         GameHud.Shout(zzz, "!!", 0.8f);
         yield return Jolt(0.6f);
         GameHud.Shout(zzz, GameText.TechnicianWake, 1.8f);

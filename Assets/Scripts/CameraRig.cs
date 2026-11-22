@@ -115,6 +115,27 @@ public class CameraRig : MonoBehaviour
         }
     }
 
+    // Temporal anti-aliasing (Options > Display > Anti-Aliasing, Settings.AntiAliasing): blends the last few frames.
+    // Besides smoothing edges, it turns the see-through hole's moving dither (SeeThrough.hlsl) into a smooth fade
+    // instead of a visible dot pattern. Off, the picture is sharper but the edges jagged and the hole dotted.
+    public void ApplyAntiAliasing()
+    {
+        var urp = GetComponent<Camera>().GetUniversalAdditionalCameraData();
+        if (!Settings.AntiAliasing)
+        {
+            urp.antialiasing = AntialiasingMode.None;
+            return;
+        }
+        urp.antialiasing = AntialiasingMode.TemporalAntiAliasing;
+        urp.antialiasingQuality = AntialiasingQuality.High;
+        // Average more frames (blend) and clamp the history less tightly, so the dither noise melts into a smooth
+        // fade. Push these further and fast movement starts to leave faint trails (ghosting).
+        var taa = urp.taaSettings;
+        taa.baseBlendFactor = 0.95f;     // default 0.9
+        taa.varianceClampScale = 1.5f;   // default 0.9
+        urp.taaSettings = taa;
+    }
+
     void Awake()
     {
         Instance = this;
@@ -128,17 +149,7 @@ public class CameraRig : MonoBehaviour
         orthographic = GetComponent<Camera>().orthographic;
         baseLens = orthographic ? lens.OrthographicSize : lens.FieldOfView;
 
-        // Temporal anti-aliasing: blends the last few frames. Besides smoothing edges, it turns the see-through hole's
-        // moving dither (SeeThrough.hlsl) into a smooth fade instead of a visible dot pattern.
-        var urp = GetComponent<Camera>().GetUniversalAdditionalCameraData();
-        urp.antialiasing = AntialiasingMode.TemporalAntiAliasing;
-        urp.antialiasingQuality = AntialiasingQuality.High;
-        // Average more frames (blend) and clamp the history less tightly, so the dither noise melts into a smooth
-        // fade. Push these further and fast movement starts to leave faint trails (ghosting).
-        var taa = urp.taaSettings;
-        taa.baseBlendFactor = 0.95f;     // default 0.9
-        taa.varianceClampScale = 1.5f;   // default 0.9
-        urp.taaSettings = taa;
+        ApplyAntiAliasing();
 
         group =new GameObject("Camera Target Group").AddComponent<CinemachineTargetGroup>();
 

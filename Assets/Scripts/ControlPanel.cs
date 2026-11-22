@@ -28,7 +28,7 @@ public class ControlPanel : MonoBehaviour, IInteraction
     public void Interact(Visitor host)
     {
         sparks.enabled = true;
-        Sfx.Play(Sfx.HitWood, 0.7f, 1.6f);
+        Sfx.Play(Sfx.HitWood, 0.7f, 1.6f, Captions.ControlPanel);
         GameHud.Say(GameText.MaxedSpeed);
         GameHud.Think(GameHud.ThoughtPriority.Action, GameText.ThinkMaxSpeed);
         Mischief.Complete(Mischief.Task.MaxSpeed);

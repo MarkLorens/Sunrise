@@ -96,13 +96,15 @@ public class Possession : MonoBehaviour
         var events = FMODEvents.instance;
         if (events != null && !events.possess.IsNull && AudioManager.instance != null) AudioManager.instance.PlayOneShot(events.possess, transform.position);
         else Sfx.Play(Sfx.Possess, 0.7f);
+        ClosedCaptions.Show(Captions.Possess);
     }
 
     void Hover()
     {
         var events = FMODEvents.instance;
         bool drifting = State == Mode.Spirit && !rb.isKinematic && Flat(rb.linearVelocity).sqrMagnitude > 0.04f;
-        if (events != null && drifting) hover.Play(events.spiritHover);
+        if (events != null && drifting)
+            hover.Play(events.spiritHover);
         else hover.Stop();
     }
 
@@ -172,7 +174,7 @@ public class Possession : MonoBehaviour
         var v = Touching();
         if (v == null)
         {
-            Sfx.Play(Sfx.Refuse, 0.5f);
+            Sfx.Play(Sfx.Refuse, 0.5f, 1f, Captions.Refused);
             GameHud.Refuse(Candidate, CandidateBlocked, true);
             return true; // E was used up on trying
         }
@@ -260,7 +262,7 @@ public class Possession : MonoBehaviour
         host.EndPossession();
         lockedUntil[host] = Time.time + sameTargetCooldown;
         BackToSpirit(host.transform.position, cooldown);
-        Sfx.Play(Sfx.Leave, 0.6f);
+        Sfx.Play(Sfx.Leave, 0.6f, 1f, Captions.Leave);
         Fx.Burst("Fx/sparkle", host.HeadPoint, 14, Fx.Spirit, 3f, 0.4f, 0.5f);
     }
 

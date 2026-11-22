@@ -6,7 +6,8 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 // The pause menu's Save Game: "SELECT SLOT" on the blue panel, a row per save (the objective you were on, when you
-// last played, as on the Load Game cards) and a [NEW SLOT] row last. The row picked sits on the yellow brush stroke in
+// last played, as on the Load Game cards) and a [NEW SLOT] row last. The row picked sits on the yellow brush stroke
+// (UI Asset/Buttons/Button3_Active) in
 // dark writing, the rest in pale lilac. Visible rows show at once; the mouse wheel, or up/down past the end, scrolls.
 // Picking the slot being played (or [NEW SLOT]) saves straight away; another saved slot asks first (ConfirmDialog).
 // Cancel, or Esc, closes it. `done` hears true (saved), false (couldn't save) or null (cancelled).
@@ -98,8 +99,8 @@ public class SaveSlotMenu : MonoBehaviour
         r.rt.gameObject.AddComponent<RowKeys>().menu = this;
 
         var stroke = Place(MainMenu.Ui("Stroke", r.rt), new Vector2(0f, 3f), new Vector2(StrokeW, StrokeH));
-        r.stroke = MainMenu.Img(stroke, "UI/Menu/selected_menu", Color.white);
-        r.stroke.pixelsPerUnitMultiplier = 38f / StrokeH; // the 38 px art at this height: its ends keep their shape
+        r.stroke = MainMenu.Img(stroke, null, Color.white);
+        r.stroke.sprite = UiArt.Get("Buttons/Button3_Active"); // the artist's yellow stroke, stretched along the row
 
         var info = saved ? SaveGame.Read(slot) : null;
         if (info?.picture != null) Destroy(info.picture); // no pictures here

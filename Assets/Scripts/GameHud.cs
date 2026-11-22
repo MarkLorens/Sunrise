@@ -85,6 +85,7 @@ public class GameHud : MonoBehaviour
     // Between parts: "Objective Completed!" pops up in the middle of the screen, then the next part's list comes in.
     RectTransform puzzleBanner;
     CanvasGroup puzzleGroup;
+    Text puzzleWords; // "<the part's title> COMPLETED" on the cloud
     float puzzleAge = -1f; // < 0 while it isn't showing
     const float PuzzleTime = 2.4f;
     Text gripLabel;
@@ -394,7 +395,11 @@ public class GameHud : MonoBehaviour
             if (shownPart < 0) ShowPart(part);
             else if (calm >= SettleTime)
             {
-                if (IsPuzzle(shownPart)) puzzleAge = 0f;
+                if (IsPuzzle(shownPart))
+                {
+                    SetPuzzleWords(PartTitle(shownPart));
+                    puzzleAge = 0f;
+                }
                 else ShowPart(part);
             }
         }
@@ -478,9 +483,8 @@ public class GameHud : MonoBehaviour
         stepsOpen = true; // a new part's steps always drop down, even if the last ones were closed
         foreach (var r in stepRows) Destroy(r.slot.gameObject);
         stepRows.Clear();
-        var (title, steps) = Mischief.Parts[part];
-        int dot = title.IndexOf(". ");
-        objectiveTitle.text = dot >= 0 && dot < 3 ? title[(dot + 2)..] : title; // "1. A-leak-tricity" -> "A-leak-tricity"
+        var (_, steps) = Mischief.Parts[part];
+        objectiveTitle.text = PartTitle(part);
         bannerSize.preferredWidth = Mathf.Max(ObjectiveWidth, 2f * TitlePad + objectiveTitle.preferredWidth);
         stepsSize.minWidth = bannerSize.preferredWidth - StepsNarrower;
         foreach (var (task, label) in steps)
@@ -658,7 +662,7 @@ public class GameHud : MonoBehaviour
             anchor = PersonTop(spirit.Candidate);
             if (spirit.CandidateBlocked == null)
             {
-                key = "J";
+                key = KeyBindings.Name(KeyBindings.Bind.Possess);
                 text = "Possess " + spirit.CandidateName;
             }
             else text = spirit.CandidateBlocked;
@@ -670,7 +674,7 @@ public class GameHud : MonoBehaviour
             {
                 anchor = ThingTop(target.transform);
                 string blocked = target.Blocked(host);
-                key = blocked == null ? "K" : "";
+                key = blocked == null ? KeyBindings.Name(KeyBindings.Bind.Interact) : "";
                 text = blocked == null ? target.Prompt(host) : $"<color=#bbbbbb>{target.Prompt(host)}: {blocked}</color>";
             }
         }
@@ -718,14 +722,54 @@ public class GameHud : MonoBehaviour
         BuildPuzzleBanner();
     }
 
-    // The middle of the screen, a little above the player: the objectives' title art, bigger, with the words.
+    // A part's title as the player reads it: "1. A-leak-tricity" -> "A-leak-tricity".
+    static string PartTitle(int part)
+    {
+        string title = Mischief.Parts[part].title;
+        int dot = title.IndexOf(". ");
+        return dot >= 0 && dot < 3 ? title[(dot + 2)..] : title;
+    }
+
+    // The middle of the screen, a little above the player: the done part's title and "COMPLETED" on the artist's cloud.
     void BuildPuzzleBanner()
     {
-        // The artist's "OBJECTIVE COMPLETED" (UI Asset/Logo/Objective_complete), where the design (Figma: Objective
-        // completed) has it.
-        puzzleBanner = Figma.Picture(canvas, "Objective Completed", "Logo/Objective_complete", 780.3f, 532.8f, 866.4f, 731.3f).rectTransform;
+        // The cloud of the artist's "OBJECTIVE COMPLETED" without its words (UI Asset/Logo/Mission_cloud, the same
+        // picture), where the design (Figma: Objective completed) has it, 85% of the design's size, same middle.
+        puzzleBanner = Figma.Picture(canvas, "Objective Completed", "Logo/Mission_cloud", 780.3f, 532.8f, 736.4f, 621.6f).rectTransform;
         puzzleGroup = puzzleBanner.gameObject.AddComponent<CanvasGroup>();
         puzzleGroup.alpha = 0f;
+        // The words over the cloud's body (x 120..1130, y 190..790 of its 1301 x 1098 picture), as the art writes them:
+        // yellow capitals in Atma, a thick dark line round them and a drop shadow.
+        var words = Ui("Words", puzzleBanner);
+        words.anchorMin = new Vector2(120f / 1301f, (1098f - 790f) / 1098f);
+        words.anchorMax = new Vector2(1130f / 1301f, (1098f - 190f) / 1098f);
+        words.offsetMin = words.offsetMax = Vector2.zero;
+        puzzleWords = words.gameObject.AddComponent<Text>();
+        puzzleWords.font = ParkArt.TitleFont;
+        puzzleWords.alignment = TextAnchor.MiddleCenter;
+        puzzleWords.color = new Color32(254, 208, 62, 255);
+        puzzleWords.lineSpacing = 0.85f;
+        puzzleWords.horizontalOverflow = HorizontalWrapMode.Overflow;
+        puzzleWords.verticalOverflow = VerticalWrapMode.Overflow;
+        puzzleWords.raycastTarget = false;
+        var line = words.gameObject.AddComponent<Outline>();
+        line.effectColor = new Color32(52, 27, 56, 255);
+        line.effectDistance = new Vector2(4f, 4f);
+        var shadow = words.gameObject.AddComponent<Shadow>();
+        shadow.effectColor = new Color32(52, 27, 56, 255);
+        shadow.effectDistance = new Vector2(3f, -7f);
+    }
+
+    // "<TITLE>\nCOMPLETED" (GameText.ObjectiveCompleted), at the biggest of the title sizes that fits across the cloud.
+    void SetPuzzleWords(string title)
+    {
+        puzzleWords.text = GameText.ObjectiveCompleted(title).ToUpperInvariant();
+        float room = puzzleWords.rectTransform.rect.width;
+        foreach (int size in new[] { Figma.Type.AtmaPage, Figma.Type.AtmaH1, Figma.Type.AtmaSpecial, Figma.Type.AtmaH2, Figma.Type.AtmaBody })
+        {
+            puzzleWords.fontSize = size;
+            if (puzzleWords.preferredWidth <= room) break;
+        }
     }
 
     // The hand-drawn speech bubble (thoughts, shouts), its tail's tip at `bubble`'s position.

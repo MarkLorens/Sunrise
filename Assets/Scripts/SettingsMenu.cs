@@ -2,17 +2,22 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 // Options, from the main menu or the pause menu, laid out off the artist's four design pages (Figma: Options -
 // General / Display / Audio / Game Controls): "OPTIONS" over the page background (UI Asset/PageBG), four tabs
 // (Tab_Active for the page showing, Tab_Idle for the others), and the page's rows under them.
 // A row is picked by the mouse or up/down (its words go bold and yellow, its arrows/slider yellow too); left/right
-// changes it. Up from the first row reaches the tabs, where left/right turns the page; clicking a tab does too. Esc
-// closes it.
-// ponytail: only the settings the game already has do anything (window mode, graphics, screen shake, resolution,
-// depth of field, master volume: Settings). Language, closed captions, vertical sync, anti-aliasing, music and sound
-// volume and the controls are the design's pictures for now.
+// changes it, and so does the mouse: clicking an arrow or a pill, or pressing anywhere on a volume bar (drag to slide). Up from the first row reaches the tabs, where left/right turns the page; clicking a tab does too. Esc
+// asks Back.
+// Changes show straight away, but they're only kept with Apply Changes (bottom right, with Reset and Back, placed as
+// Credits' Back): Reset puts every setting back to how the game first starts; Back with changes not applied asks
+// "DISCARD CHANGES" first (No stays, Yes puts them back and leaves).
+// What works: window mode, graphics, screen shake, resolution, depth of field, master volume, closed captions
+// (Settings) and the game controls (KeyBindings). Language is English only. Everything else works too: window mode,
+// graphics, screen shake, resolution (the screen's own, Settings.Resolutions), depth of field, vertical sync,
+// anti-aliasing, and the master, music and SFX volumes (Settings; AudioMix).
 public class SettingsMenu : MonoBehaviour
 {
     public static bool IsOpen => open != null;
@@ -29,10 +34,8 @@ public class SettingsMenu : MonoBehaviour
     };
     static readonly Color Yellow = new Color32(254, 208, 62, 255), Ink = new Color32(13, 9, 11, 255);
     const float RowY = 392f, RowStep = 70f, ContentTop = 330f;
+    const float ActiveLift = 16f; // the open tab sits this much higher than the design draws it (its top under the header)
 
-    // The design's own values for what the game doesn't have yet: shown and changeable, but they do nothing.
-    static bool captions = true, vsync, antiAliasing;
-    static int music = 80, sfx = 30;
 
     Action onClose;
     RectTransform canvas, page;
@@ -40,7 +43,9 @@ public class SettingsMenu : MonoBehaviour
     readonly List<Button> tabButtons = new();
     readonly List<Row> rows = new();
     ScrollRect scroll;
-    int openedFrame;
+    int openedFrame, order, confirmClosedFrame = -1;
+    State kept; // as it was when Options opened, or last applied
+    Button resetButton, applyButton, backButton;
 
     // One line of a page: its label and whatever shows its value (arrows and words, pills, or a slider).
     class Row
@@ -65,6 +70,8 @@ public class SettingsMenu : MonoBehaviour
         open.onClose = onClose;
         open.canvas = canvas;
         open.openedFrame = Time.frameCount;
+        open.order = order;
+        open.kept = State.Now();
         open.Build();
     }
 
@@ -93,6 +100,10 @@ public class SettingsMenu : MonoBehaviour
         tabButtons.Clear();
         rows.Clear();
         scroll = null;
+        firstControl = cards[0] = cards[1] = null;
+        controlsContent = null;
+        pills.Clear();
+        pillBinds.Clear();
 
         // Idle tabs first, the open one last so it overlaps them.
         for (int pass = 0; pass < 2; pass++)
@@ -102,7 +113,7 @@ public class SettingsMenu : MonoBehaviour
                 if (on != (pass == 1)) continue;
                 float x = TabX[t][i];
                 var art = Figma.Picture(page, "Tab " + TabNames[i], on ? "Tab_Active" : "Tab_Idle",
-                    on ? x + 2f : x, on ? 250.3f : 222.2f, on ? 243.5f : 197f, on ? 159f : 105.5f);
+                    on ? x + 2f : x, on ? 250.3f - ActiveLift : 222.2f, on ? 243.5f : 197f, on ? 159f : 105.5f);
                 art.raycastTarget = true;
                 var b = art.gameObject.AddComponent<Button>();
                 b.transition = Selectable.Transition.None;
@@ -114,8 +125,8 @@ public class SettingsMenu : MonoBehaviour
                 string[] lines = TabNames[i].Split('\n');
                 for (int l = 0; l < lines.Length; l++)
                 {
-                    float y = lines.Length == 1 ? (on ? 257.5f : 221f) : on ? 218f + 45f * l : 201f + 30f * l;
-                    Figma.Words(page, lines[l], x, y, on ? Figma.Type.AtmaH1 : Figma.Type.ArvoSubtitle, Yellow, on ? ParkArt.TitleFont : ParkArt.Font);
+                    float y = lines.Length == 1 ? (on ? 257.5f - ActiveLift : 221f) : on ? 218f - ActiveLift + 45f * l : 201f + 30f * l;
+                    Figma.Words(page, lines[l], x, y, on ? Figma.Type.AtmaH1 : Figma.Type.ArvoSubtitle, on ? Yellow : Color.white, on ? ParkArt.TitleFont : ParkArt.Font);
                 }
             }
 
@@ -124,8 +135,9 @@ public class SettingsMenu : MonoBehaviour
             case 0: General(); break;
             case 1: Display(); break;
             case 2: Audio(); break;
-            default: firstControl = null; Controls(); break;
+            default: Controls(); break;
         }
+        Buttons();
         Wire();
         MainMenu.Select(rows.Count > 0 ? rows[0].button : firstControl != null ? firstControl : tabButtons[^1]);
     }
@@ -138,6 +150,7 @@ public class SettingsMenu : MonoBehaviour
             if (e.moveDir == MoveDirection.Left && menu.tab > 0) menu.ShowTab(menu.tab - 1);
             else if (e.moveDir == MoveDirection.Right && menu.tab < 3) menu.ShowTab(menu.tab + 1);
             else if (e.moveDir == MoveDirection.Down && menu.rows.Count > 0) MainMenu.Select(menu.rows[0].button);
+            else if (e.moveDir == MoveDirection.Down && menu.cards[0] != null) MainMenu.Select(menu.cards[0]);
         }
     }
 
@@ -146,27 +159,26 @@ public class SettingsMenu : MonoBehaviour
     void General()
     {
         ArrowRow(0, 146f, "Language", 650f, 862.5f, 756f, () => "English", _ => { });
-        ArrowRow(1, 146f, "Closed Caption", 650f, 862.5f, 756f, () => captions ? "ON" : "OFF", _ => captions = !captions);
+        ArrowRow(1, 146f, "Closed Caption", 650f, 862.5f, 756f, () => Settings.ClosedCaptions ? "ON" : "OFF", _ => Settings.ClosedCaptions = !Settings.ClosedCaptions);
     }
 
     void Display()
     {
-        var resolutions = Settings.Resolutions();
         PillRow(0, "Window Mode", new[] { "Windowed", "Fullscreen" }, () => Settings.Fullscreen ? 1 : 0, i => Settings.Fullscreen = i == 1);
         PillRow(1, "Graphic", new[] { "Low", "Medium", "High" }, () => (int)Settings.Graphics, i => Settings.Graphics = (Settings.Quality)i);
         PillRow(2, "Screen Shake", new[] { "Full", "Half", "Off" }, () => 2 - Settings.Shake, i => Settings.Shake = 2 - i);
         ArrowRow(3, 152f, "Resolution", 574f, 786.4f, 679.5f, () => $"{Settings.CurrentResolution.x} x {Settings.CurrentResolution.y}",
-            d => Settings.Resolution = resolutions[Wrap(Array.IndexOf(resolutions, Settings.CurrentResolution) + d, resolutions.Length)]);
+            d => Settings.Resolution = Settings.StepResolution(d));
         ArrowRow(4, 152f, "Depth of field", 574f, 786.4f, 679.5f, () => Settings.DepthOfField ? "ON" : "OFF", _ => Settings.DepthOfField = !Settings.DepthOfField);
-        ArrowRow(5, 152f, "Vertical Sync", 574f, 786.4f, 679.5f, () => vsync ? "ON" : "OFF", _ => vsync = !vsync);
-        ArrowRow(6, 152f, "Anti-Aliasing", 574f, 786.4f, 679.5f, () => antiAliasing ? "ON" : "OFF", _ => antiAliasing = !antiAliasing);
+        ArrowRow(5, 152f, "Vertical Sync", 574f, 786.4f, 679.5f, () => Settings.VSync ? "ON" : "OFF", _ => Settings.VSync = !Settings.VSync);
+        ArrowRow(6, 152f, "Anti-Aliasing", 574f, 786.4f, 679.5f, () => Settings.AntiAliasing ? "ON" : "OFF", _ => Settings.AntiAliasing = !Settings.AntiAliasing);
     }
 
     void Audio()
     {
-        SliderRow(0, "Master Volume", () => Mathf.Round(Settings.Volume * 100f), d => Settings.Volume = Mathf.Clamp01(Mathf.Round(Settings.Volume * 10f + d) / 10f));
-        SliderRow(1, "Background Music", () => music, d => music = Mathf.Clamp(music + d * 10, 0, 100));
-        SliderRow(2, "SFX", () => sfx, d => sfx = Mathf.Clamp(sfx + d * 10, 0, 100));
+        SliderRow(0, "Master Volume", () => Mathf.Round(Settings.Volume * 100f), v => Settings.Volume = v / 100f);
+        SliderRow(1, "Background Music", () => Mathf.Round(Settings.MusicVolume * 100f), v => Settings.MusicVolume = v / 100f);
+        SliderRow(2, "SFX", () => Mathf.Round(Settings.SfxVolume * 100f), v => Settings.SfxVolume = v / 100f);
     }
 
     static int Wrap(int i, int n) => ((i % n) + n) % n;
@@ -200,6 +212,34 @@ public class SettingsMenu : MonoBehaviour
         r.value = Figma.Words(page, shown(), valueX, y, Figma.Type.ArvoSubtitle, Ink, ParkArt.Font);
         r.shown = shown;
         r.step = step;
+        ArrowClick(r.left, r, -1);
+        ArrowClick(r.right, r, 1);
+    }
+
+    // A click on an arrow steps its row, as left / right does.
+    void ArrowClick(Image arrow, Row r, int d)
+    {
+        arrow.raycastTarget = true;
+        var b = arrow.gameObject.AddComponent<Button>();
+        b.targetGraphic = arrow;
+        b.transition = Selectable.Transition.None;
+        b.navigation = new Navigation { mode = Navigation.Mode.None };
+        b.onClick.AddListener(() =>
+        {
+            r.step?.Invoke(d);
+            MainMenu.Select(r.button);
+            Refresh();
+        });
+        arrow.gameObject.AddComponent<PicksRow>().row = r.button;
+    }
+
+    // An arrow or pill picks its row the moment the mouse goes down on it. (They're buttons that can't be picked
+    // themselves, and pressing one would otherwise leave nothing picked until the click: the menu would jump to the
+    // first row and back, a flicker.)
+    class PicksRow : MonoBehaviour, IPointerDownHandler
+    {
+        public Button row;
+        public void OnPointerDown(PointerEventData e) => MainMenu.Select(row);
     }
 
     // The pills, left to right, as the design spaces them; the one that's set is the yellow one.
@@ -219,6 +259,7 @@ public class SettingsMenu : MonoBehaviour
             b.transition = Selectable.Transition.None;
             b.navigation = new Navigation { mode = Navigation.Mode.None };
             b.onClick.AddListener(() => { set(which); Refresh(); MainMenu.Select(r.button); });
+            r.pills[i].gameObject.AddComponent<PicksRow>().row = r.button;
             Figma.Words(page, options[i], PillX[i] + 6f, y - 4.5f, Figma.Type.ArvoBody, Ink, ParkArt.Font);
         }
         r.options = options;
@@ -226,7 +267,8 @@ public class SettingsMenu : MonoBehaviour
         r.step = d => set(Mathf.Clamp(current() + d, 0, options.Length - 1));
     }
 
-    void SliderRow(int index, string name, Func<float> amount, Action<int> step)
+    // `set` takes 0..100; left / right go to the next ten.
+    void SliderRow(int index, string name, Func<float> amount, Action<float> set)
     {
         var r = NewRow(index, 146f, name);
         float y = RowY + RowStep * index;
@@ -234,7 +276,37 @@ public class SettingsMenu : MonoBehaviour
         r.knob = Figma.Picture(page, "Knob", "Volume/VolumeSelecter_Idle", 0f, y, 24.7f, 54f);
         r.value = Figma.Words(page, "", 1174f, y, Figma.Type.ArvoSubtitle, Ink, ParkArt.Font);
         r.amount = amount;
-        r.step = step;
+        r.step = d => set(Mathf.Clamp(Mathf.Round(amount() / 10f + d) * 10f, 0f, 100f));
+        foreach (var img in new[] { r.bar, r.knob })
+        {
+            img.raycastTarget = true;
+            var drag = img.gameObject.AddComponent<SliderDrag>();
+            drag.menu = this;
+            drag.row = r;
+            drag.set = set;
+        }
+    }
+
+    // Pressing on a volume bar (or its knob) puts the knob there, to the nearest whole number; dragging slides it.
+    class SliderDrag : MonoBehaviour, IPointerDownHandler, IDragHandler, IInitializePotentialDragHandler
+    {
+        public SettingsMenu menu;
+        public Row row;
+        public Action<float> set;
+
+        public void OnPointerDown(PointerEventData e) => Move(e);
+        public void OnDrag(PointerEventData e) => Move(e);
+        public void OnInitializePotentialDrag(PointerEventData e) => e.useDragThreshold = false; // follows at once
+
+        void Move(PointerEventData e)
+        {
+            var page = menu.page;
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(page, e.position, e.pressEventCamera, out var local)) return;
+            float x = (local.x - page.rect.center.x) / Figma.K + Figma.Width * 0.5f; // in design px, as the knob's placed
+            set(Mathf.Clamp(Mathf.Round((x - 700f) / 3.86f), 0f, 100f));
+            MainMenu.Select(row.button);
+            menu.Refresh();
+        }
     }
 
     // A label starting at x (left-aligned), its middle at y.
@@ -275,7 +347,7 @@ public class SettingsMenu : MonoBehaviour
             {
                 mode = Navigation.Mode.Explicit,
                 selectOnUp = i > 0 ? rows[i - 1].button : tabButtons[^1],
-                selectOnDown = i < rows.Count - 1 ? rows[i + 1].button : null,
+                selectOnDown = i < rows.Count - 1 ? rows[i + 1].button : applyButton,
             };
         foreach (var b in tabButtons) b.navigation = new Navigation { mode = Navigation.Mode.None }; // TabKeys
         Refresh();
@@ -316,16 +388,171 @@ public class SettingsMenu : MonoBehaviour
         }
     }
 
-    // ---------------------------------------------------------------- game controls (pictures only, scrolling)
+    // ---------------------------------------------------------------- Reset, Apply Changes, Back
+
+    // Bottom right, Back where Credits has it and the other two to its left, in the same light blue pills.
+    void Buttons()
+    {
+        resetButton = BottomPill("Reset", 819.5f, 213f, Reset);
+        applyButton = BottomPill("Apply Changes", 1072f, 260f, Apply);
+        backButton = BottomPill("Back", 1324.5f, 213f, Back);
+        // Up from them: the page's last row (or last key on Game Control, or the tab); left / right along them.
+        Selectable leftUp = rows.Count > 0 ? rows[^1].button : pills.Count > 0 ? pills[LeftBinds.Length - 1] : tabButtons[^1];
+        Selectable rightUp = rows.Count > 0 ? rows[^1].button : pills.Count > 0 ? pills[^1] : tabButtons[^1];
+        resetButton.navigation = new Navigation { mode = Navigation.Mode.Explicit, selectOnUp = leftUp, selectOnRight = applyButton };
+        applyButton.navigation = new Navigation { mode = Navigation.Mode.Explicit, selectOnUp = rightUp, selectOnLeft = resetButton, selectOnRight = backButton };
+        backButton.navigation = new Navigation { mode = Navigation.Mode.Explicit, selectOnUp = rightUp, selectOnLeft = applyButton };
+        // Down from the bottom of each column of keys.
+        foreach (var i in new[] { LeftBinds.Length - 1, pills.Count - 1 })
+            if (i >= 0 && i < pills.Count)
+            {
+                var nav = pills[i].navigation;
+                nav.selectOnDown = applyButton;
+                pills[i].navigation = nav;
+            }
+    }
+
+    Button BottomPill(string words, float x, float w, UnityEngine.Events.UnityAction onClick)
+    {
+        var b = MainMenu.Pill(page, words, onClick);
+        Figma.Place((RectTransform)b.transform, x, 897.5f, w, 63f);
+        b.GetComponent<Image>().sprite = UiArt.Get("Buttons/Button2_Idle");
+        var swap = b.spriteState;
+        swap.highlightedSprite = swap.selectedSprite = swap.pressedSprite = UiArt.Get("Buttons/Button2_Active");
+        b.spriteState = swap;
+        b.GetComponentInChildren<Text>().fontSize = Figma.Type.ArvoBody;
+        return b;
+    }
+
+    // Every setting back to how the game first starts (not kept until applied).
+    void Reset()
+    {
+        if (listening >= 0) return;
+        State.Defaults().Restore();
+        var at = controlsContent != null ? controlsContent.anchoredPosition : Vector2.zero;
+        ShowTab(tab);
+        if (controlsContent != null) controlsContent.anchoredPosition = at;
+        MainMenu.Select(resetButton);
+    }
+
+    void Apply()
+    {
+        if (listening >= 0) return;
+        kept = State.Now();
+        PlayerPrefs.Save();
+    }
+
+    // Leaves, asking first if there are changes not applied: Yes puts them back as they were kept.
+    void Back()
+    {
+        if (listening >= 0) return;
+        if (kept.Same(State.Now()))
+        {
+            Close();
+            return;
+        }
+        ConfirmDialog.Open(order + 1, "DISCARD CHANGES", "Are you sure?", yes =>
+        {
+            confirmClosedFrame = Time.frameCount;
+            if (yes)
+            {
+                kept.Restore();
+                Close();
+            }
+            else MainMenu.Select(backButton);
+        });
+    }
+
+    // Everything Options changes: to tell whether anything's changed since it was kept, and to put it back.
+    class State
+    {
+        public bool fullscreen, dof, captions, vsync, antiAliasing;
+        public int quality, shake;
+        public float volume, music, sfx;
+        public Vector2Int resolution;
+        public Key[] keys;
+
+        public static State Now() => new()
+        {
+            fullscreen = Settings.Fullscreen, dof = Settings.DepthOfField, captions = Settings.ClosedCaptions,
+            vsync = Settings.VSync, antiAliasing = Settings.AntiAliasing, quality = (int)Settings.Graphics,
+            shake = Settings.Shake, music = Settings.MusicVolume, sfx = Settings.SfxVolume, volume = Settings.Volume,
+            resolution = Settings.Resolution, keys = KeyBindings.Current(),
+        };
+
+        // How the game first starts (Settings' and KeyBindings' own defaults).
+        public static State Defaults() => new()
+        {
+            fullscreen = true, dof = true, captions = false, vsync = true, antiAliasing = true,
+            quality = (int)Settings.Quality.High, shake = 2, music = 1f, sfx = 1f, volume = 1f,
+            resolution = Vector2Int.zero, keys = KeyBindings.Defaults(),
+        };
+
+        public bool Same(State o) =>
+            fullscreen == o.fullscreen && dof == o.dof && captions == o.captions && vsync == o.vsync &&
+            antiAliasing == o.antiAliasing && quality == o.quality && shake == o.shake &&
+            Mathf.Approximately(music, o.music) && Mathf.Approximately(sfx, o.sfx) && Mathf.Approximately(volume, o.volume) && resolution == o.resolution &&
+            System.Linq.Enumerable.SequenceEqual(keys, o.keys);
+
+        // Sets what differs (so the screen's only set again if it changed).
+        public void Restore()
+        {
+            var now = Now();
+            if (now.fullscreen != fullscreen) Settings.Fullscreen = fullscreen;
+            if (now.resolution != resolution) Settings.Resolution = resolution;
+            if (now.dof != dof) Settings.DepthOfField = dof;
+            if (now.captions != captions) Settings.ClosedCaptions = captions;
+            if (now.quality != quality) Settings.Graphics = (Settings.Quality)quality;
+            if (now.shake != shake) Settings.Shake = shake;
+            if (!Mathf.Approximately(now.volume, volume)) Settings.Volume = volume;
+            if (now.vsync != vsync) Settings.VSync = vsync;
+            if (now.antiAliasing != antiAliasing) Settings.AntiAliasing = antiAliasing;
+            if (!Mathf.Approximately(now.music, music)) Settings.MusicVolume = music;
+            if (!Mathf.Approximately(now.sfx, sfx)) Settings.SfxVolume = sfx;
+            if (!System.Linq.Enumerable.SequenceEqual(now.keys, keys)) KeyBindings.SetAll(keys);
+        }
+    }
+
+    // ---------------------------------------------------------------- game controls (scrolling)
+
+    // The two ready-made schemes (KeyBindings), each as the design draws it: Control A's on the left, B's on the right.
+    // Their keycaps: (picture, x, y).
+    static readonly (string art, float x, float y)[][] SchemeKeys =
+    {
+        new[] { ("KeyW", 241f, 480.5f), ("KeyA", 169f, 544.5f), ("KeyS", 241f, 544.5f), ("KeyD", 313f, 544.5f), ("KeyJ", 452f, 520.5f), ("KeyK", 605f, 520.5f) },
+        new[] { ("KeyUp", 928f, 480.5f), ("KeyLeft", 856f, 544.5f), ("KeyDown", 928f, 544.5f), ("KeyRight", 1000f, 544.5f), ("KeyZ", 1139f, 520.5f), ("KeyX", 1292f, 520.5f) },
+    };
+    static readonly float[] CardX = { 401.5f, 1083.5f }, TitleX = { 244.5f, 937f }, NameX = { 236.5f, 928f };
+    static readonly float[] MoveX = { 239f, 925f }, InteractX = { 607f, 1293.5f }, PossessX = { 453f, 1139.5f };
+
+    // The custom controls: what each does and the key it's on, a pill per job (left column, then right).
+    static readonly (KeyBindings.Bind bind, string what)[] LeftBinds =
+    {
+        (KeyBindings.Bind.Left, "Left"), (KeyBindings.Bind.Right, "Right"), (KeyBindings.Bind.Up, "Up"), (KeyBindings.Bind.Down, "Down"),
+        (KeyBindings.Bind.Possess, "Possess / Leave Body"), (KeyBindings.Bind.Interact, "Interact"),
+    };
+    static readonly (KeyBindings.Bind bind, string what)[] RightBinds =
+    {
+        (KeyBindings.Bind.Objectives, "Expand Objective"), (KeyBindings.Bind.Skip, "Skip"), (KeyBindings.Bind.Pause, "Pause"),
+    };
+
+    Button firstControl;
+    readonly Button[] cards = new Button[2];
+    readonly List<Button> pills = new();
+    readonly List<KeyBindings.Bind> pillBinds = new();
+    RectTransform controlsContent;
+    // The pill waiting for its new key (-1: none), and the frames it started and stopped waiting.
+    int listening = -1, listenFrame, listenEndFrame = -10;
 
     void Controls()
     {
         // Everything under the tabs scrolls (the design's page is taller than the screen); the scroll bar on the right.
         var view = MainMenu.Ui("View", page);
-        // From just under the tabs (ContentTop, measured from the screen's middle like everything else) to the bottom.
-        view.anchorMin = Vector2.zero;
+        // From just under the tabs (ContentTop, measured from the screen's middle like everything else) to just above
+        // the buttons at the bottom.
+        view.anchorMin = new Vector2(0f, 0.5f);
         view.anchorMax = new Vector2(1f, 0.5f);
-        view.offsetMin = Vector2.zero;
+        view.offsetMin = new Vector2(0f, (Figma.Height * 0.5f - 856f) * Figma.K); // ends above Reset / Apply / Back
         view.offsetMax = new Vector2(0f, (Figma.Height * 0.5f - ContentTop) * Figma.K);
         view.gameObject.AddComponent<RectMask2D>();
         var viewImg = view.gameObject.AddComponent<Image>();
@@ -334,6 +561,7 @@ public class SettingsMenu : MonoBehaviour
         var content = MainMenu.Ui("Content", view);
         content.anchorMin = content.anchorMax = content.pivot = new Vector2(0.5f, 1f);
         content.sizeDelta = new Vector2(Figma.Width * Figma.K, (1298f - ContentTop + 40f) * Figma.K);
+        controlsContent = content;
 
         scroll = page.gameObject.AddComponent<ScrollRect>();
         scroll.viewport = view;
@@ -342,47 +570,41 @@ public class SettingsMenu : MonoBehaviour
         scroll.movementType = ScrollRect.MovementType.Clamped;
         scroll.scrollSensitivity = 40f;
 
-        // The two schemes.
-        At(content, "Card_active", 401.5f, 553f, 654f, 262f);
-        At(content, "Card_idle", 1083.5f, 550f, 665f, 266f);
-        At(content, "Title_Selected", 244.5f, 407f, 371f, 72.6f);
-        At(content, "Title_Idle", 937f, 408f, 378f, 74f);
-        AtWords(content, "Control A", 236.5f, 406.5f, Figma.Type.ArvoTitle, Ink, FontStyle.Bold);
-        AtWords(content, "Control B", 928f, 406.5f, Figma.Type.ArvoTitle, Ink, FontStyle.Bold);
-        foreach (var (key, x, y) in new[] { ("KeyW", 241f, 480.5f), ("KeyA", 169f, 544.5f), ("KeyS", 241f, 544.5f), ("KeyD", 313f, 544.5f),
-                     ("KeyJ", 452f, 520.5f), ("KeyK", 605f, 520.5f), ("KeyUp", 928f, 480.5f), ("KeyLeft", 856f, 544.5f), ("KeyDown", 928f, 544.5f),
-                     ("KeyRight", 1000f, 544.5f), ("KeyZ", 1139f, 520.5f), ("KeyX", 1292f, 520.5f) })
-            At(content, "KeyboardKey/" + key, x, y, 141f, 141f);
-        foreach (var (words, x) in new[] { ("Movement", 239f), ("Interact", 607f), ("Movement", 925f), ("Interact", 1293.5f) })
-            AtWords(content, words, x, 615.5f, Figma.Type.ArvoSubtitle, Ink);
-        foreach (var x in new[] { 453f, 1139.5f })
-        {
-            AtWords(content, "Possess /", x, 603f, Figma.Type.ArvoSubtitle, Ink);
-            AtWords(content, "Leave Body", x, 629.5f, Figma.Type.ArvoSubtitle, Ink);
-        }
+        // The two schemes: the one in use on the bright card under the picked title. Keys changed away from both
+        // (custom): neither is picked, and both go dark.
+        int scheme = KeyBindings.Scheme;
+        for (int s = 0; s < 2; s++) SchemeCard(content, s, s == scheme, scheme < 0);
 
-        // Custom controls: what each does, and its key on a pill (the first one picked, as in the design).
+        // Custom controls: what each does, and its key on a pill. Picking a pill waits for the key to put it on.
         var title = AtWords(content, "Custom Controls", 0f, 741.5f, Figma.Type.ArvoSelection, Color.white, FontStyle.Bold);
         LeftIn(title, 124f);
-        string[,] leftCol = { { "Left", "A" }, { "Right", "D" }, { "Up", "W" }, { "Down", "S" }, { "Possess / Leave Body", "J" }, { "Interact", "K" } };
-        string[,] rightCol = { { "Expand Objective", "TAB" }, { "Skip", "SPACE" }, { "Pause", "ESC" } };
-        var pills = new List<Button>();
-        for (int i = 0; i < 6; i++) pills.Add(KeyRow(content, leftCol[i, 0], leftCol[i, 1], 154f, 640.5f, 795.5f + 70f * i));
-        for (int i = 0; i < 3; i++) pills.Add(KeyRow(content, rightCol[i, 0], rightCol[i, 1], 836f, 1261.5f, 796.5f + 70f * i));
+        for (int i = 0; i < LeftBinds.Length; i++)
+            AddPill(KeyRow(content, LeftBinds[i].what, KeyBindings.Words(LeftBinds[i].bind), 154f, 640.5f, 795.5f + 70f * i), LeftBinds[i].bind);
+        for (int i = 0; i < RightBinds.Length; i++)
+            AddPill(KeyRow(content, RightBinds[i].what, KeyBindings.Words(RightBinds[i].bind), 836f, 1261.5f, 796.5f + 70f * i), RightBinds[i].bind);
+        int leftCount = LeftBinds.Length;
         for (int i = 0; i < pills.Count; i++)
         {
-            bool leftSide = i < 6;
-            int top = leftSide ? 0 : 6, count = leftSide ? 6 : 3;
+            bool leftSide = i < leftCount;
+            int top = leftSide ? 0 : leftCount, count = leftSide ? leftCount : RightBinds.Length;
             pills[i].navigation = new Navigation
             {
                 mode = Navigation.Mode.Explicit,
-                selectOnUp = i > top ? pills[i - 1] : tabButtons[^1],
+                selectOnUp = i > top ? pills[i - 1] : cards[leftSide ? 0 : 1],
                 selectOnDown = i < top + count - 1 ? pills[i + 1] : null,
-                selectOnLeft = leftSide ? null : pills[i - 6],
-                selectOnRight = leftSide && i + 6 < pills.Count ? pills[i + 6] : null,
+                selectOnLeft = leftSide ? null : pills[i - leftCount],
+                selectOnRight = leftSide && i + leftCount < pills.Count ? pills[i + leftCount] : null,
             };
-            pills[i].gameObject.AddComponent<KeepInView>().menu = this;
         }
+        for (int s = 0; s < 2; s++)
+            cards[s].navigation = new Navigation
+            {
+                mode = Navigation.Mode.Explicit,
+                selectOnUp = tabButtons[^1],
+                selectOnDown = pills[s == 0 ? 0 : leftCount],
+                selectOnLeft = s == 1 ? cards[0] : null,
+                selectOnRight = s == 0 ? cards[1] : null,
+            };
         firstControl = pills[0];
 
         // The scroll bar (the design's, fixed on the right), driving the list.
@@ -418,7 +640,118 @@ public class SettingsMenu : MonoBehaviour
         scroll.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.Permanent;
     }
 
-    Button firstControl;
+    // One scheme's card: the card and title pictures (bright and "selected" when it's the one in use), its name, its
+    // keycaps and what they do. The whole card is one button that switches to it; picked, it grows a touch.
+    void SchemeCard(RectTransform content, int s, bool on, bool dark)
+    {
+        var section = MainMenu.Ui(s == 0 ? "Control A" : "Control B", content);
+        MainMenu.Stretch(section);
+        // Grows round the card's middle (design y 527.5, between the title's top and the card's bottom).
+        section.pivot = new Vector2(CardX[s] / Figma.Width, 1f - (527.5f - ContentTop) / (1298f - ContentTop + 40f));
+
+        if (on) At(section, "Card_active", CardX[s], 553f, 654f, 262f);
+        else At(section, "Card_idle", CardX[s], 550f, 665f, 266f);
+        if (on) At(section, "Title_Selected", TitleX[s], 407f, 371f, 72.6f);
+        else At(section, "Title_Idle", TitleX[s], 408f, 378f, 74f);
+        AtWords(section, s == 0 ? "Control A" : "Control B", NameX[s], 406.5f, Figma.Type.ArvoTitle, Ink, FontStyle.Bold);
+        foreach (var (key, x, y) in SchemeKeys[s])
+            At(section, "KeyboardKey/" + key, x, y, 141f, 141f);
+        AtWords(section, "Movement", MoveX[s], 615.5f, Figma.Type.ArvoSubtitle, Ink);
+        AtWords(section, "Interact", InteractX[s], 615.5f, Figma.Type.ArvoSubtitle, Ink);
+        AtWords(section, "Possess /", PossessX[s], 603f, Figma.Type.ArvoSubtitle, Ink);
+        AtWords(section, "Leave Body", PossessX[s], 629.5f, Figma.Type.ArvoSubtitle, Ink);
+
+        if (dark)
+            foreach (var g in section.GetComponentsInChildren<Graphic>())
+                g.color = new Color(g.color.r * 0.45f, g.color.g * 0.45f, g.color.b * 0.45f, g.color.a);
+
+        // See-through, over the title and the card.
+        var hitRt = MainMenu.Ui("Pick", section);
+        Figma.Place(hitRt, CardX[s], 527.5f, 670f, 320f);
+        Top(hitRt, CardX[s], 527.5f);
+        var hit = hitRt.gameObject.AddComponent<Image>();
+        hit.color = Color.clear;
+        hit.raycastTarget = true;
+        var b = hit.gameObject.AddComponent<Button>();
+        b.targetGraphic = hit;
+        b.transition = Selectable.Transition.None;
+        int which = s;
+        b.onClick.AddListener(() => PickScheme(which));
+        hit.gameObject.AddComponent<MainMenu.HoverSelects>();
+        hit.gameObject.AddComponent<KeepInView>().menu = this;
+        hit.gameObject.AddComponent<Grows>().target = section;
+        cards[s] = b;
+    }
+
+    class Grows : MonoBehaviour, ISelectHandler, IDeselectHandler
+    {
+        public RectTransform target;
+        public void OnSelect(BaseEventData e) => target.localScale = Vector3.one * 1.04f;
+        public void OnDeselect(BaseEventData e) => target.localScale = Vector3.one;
+    }
+
+    void PickScheme(int s)
+    {
+        if (listening >= 0) return;
+        KeyBindings.UseScheme(s);
+        RebuildControls(() => cards[s]);
+    }
+
+    void AddPill(Button pill, KeyBindings.Bind bind)
+    {
+        int i = pills.Count;
+        pills.Add(pill);
+        pillBinds.Add(bind);
+        pill.onClick.AddListener(() => Listen(i));
+        pill.gameObject.AddComponent<KeepInView>().menu = this;
+    }
+
+    // A pill picked: it waits for the next key pressed, which goes on that job (KeyBindings.Set: if another job had
+    // it, the two swap). Esc stops waiting and leaves it as it was, unless it's Pause's own pill.
+    void Listen(int i)
+    {
+        if (listening >= 0 || Time.frameCount <= listenEndFrame + 1) return; // the key just put on isn't a pick too
+        listening = i;
+        listenFrame = Time.frameCount;
+        PillText(pills[i], "PRESS A KEY");
+        // The key pressed goes to the pill, not to moving about the menu (or picking or closing).
+        if (EventSystem.current != null) EventSystem.current.sendNavigationEvents = false;
+    }
+
+    void Listening()
+    {
+        if (Time.frameCount == listenFrame) return;
+        var kb = Keyboard.current;
+        var mouse = Mouse.current;
+        if (kb != null)
+            foreach (var k in kb.allKeys)
+            {
+                if (k == null || k.keyCode == Key.None || !k.wasPressedThisFrame) continue;
+                var bind = pillBinds[listening];
+                if (k.keyCode != Key.Escape || bind == KeyBindings.Bind.Pause) KeyBindings.Set(bind, k.keyCode);
+                StopListening();
+                return;
+            }
+        if (mouse != null && mouse.leftButton.wasPressedThisFrame) StopListening(); // a click elsewhere: never mind
+    }
+
+    void StopListening()
+    {
+        int i = listening;
+        listening = -1;
+        listenEndFrame = Time.frameCount;
+        RebuildControls(() => pills[i]);
+    }
+
+    // The page again after a change (the cards, the dark, the pills' keys), kept where it was scrolled to and on what
+    // was picked.
+    void RebuildControls(Func<Selectable> pick)
+    {
+        var at = controlsContent != null ? controlsContent.anchoredPosition : Vector2.zero;
+        ShowTab(3);
+        controlsContent.anchoredPosition = at;
+        MainMenu.Select(pick());
+    }
 
     // In the scrolling content: placed by design px, its y from the page's top (the content starts at ContentTop).
     static Image At(RectTransform content, string art, float x, float y, float w, float h)
@@ -457,8 +790,16 @@ public class SettingsMenu : MonoBehaviour
         var rt = (RectTransform)pill.transform;
         Figma.Place(rt, pillX, y + 0.5f, 174f, 47f);
         Top(rt, pillX, y + 0.5f);
-        pill.GetComponentInChildren<Text>().fontSize = Figma.Type.ArvoBody;
+        PillText(pill, key);
         return pill;
+    }
+
+    // A key's name on its pill: a long one ("RIGHT ARROW") a size smaller so it fits.
+    static void PillText(Button pill, string words)
+    {
+        var t = pill.GetComponentInChildren<Text>();
+        t.text = words;
+        t.fontSize = words.Length > 7 ? Figma.Type.ArvoSubtitle2 : Figma.Type.ArvoBody;
     }
 
     // A picked control scrolled into view.
@@ -488,6 +829,13 @@ public class SettingsMenu : MonoBehaviour
     void Update()
     {
         var es = EventSystem.current;
+        if (listening >= 0)
+        {
+            Listening();
+            return;
+        }
+        if (es != null && !es.sendNavigationEvents && Time.frameCount > listenEndFrame) es.sendNavigationEvents = true;
+        if (ConfirmDialog.IsOpen || Time.frameCount == confirmClosedFrame) return;
         var picked = es != null ? es.currentSelectedGameObject : null;
         if (picked == null && es != null)
         {
@@ -499,7 +847,7 @@ public class SettingsMenu : MonoBehaviour
             lastPicked = picked;
             Refresh();
         }
-        if (Time.frameCount != openedFrame && global::Controls.Back) Close();
+        if (Time.frameCount != openedFrame && Time.frameCount > listenEndFrame && global::Controls.Back) Back();
     }
 
     void Close()
@@ -513,5 +861,6 @@ public class SettingsMenu : MonoBehaviour
     void OnDestroy()
     {
         if (open == this) open = null;
+        if (EventSystem.current != null) EventSystem.current.sendNavigationEvents = true;
     }
 }

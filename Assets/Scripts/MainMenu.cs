@@ -35,7 +35,8 @@ public class MainMenu : MonoBehaviour
         }
         var canvas = Screen("Main Menu", 0);
         // The logo (its picture's see-through margin and all), and the column of words, both as placed in the design.
-        Figma.Picture(canvas, "Logo", "Logo/Wohooland_logo", 783.8f, 336.3f, 1151.6f, 943f);
+        // 80% of the design's size, its bottom edge where the design has it (just over the words).
+        Figma.Picture(canvas, "Logo", "Logo/Wohooland_logo", 778f, 378.2f, 921.3f, 754.4f);
 
         var column = Column(canvas);
         column.anchoredPosition = new Vector2(0f, (Figma.Height * 0.5f - 715.2f) * Figma.K);

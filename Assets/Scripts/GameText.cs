@@ -356,7 +356,7 @@ public static class GameText
 
     // After the tutorial: the park tour (ParkTour), and the banner when a part of the objectives is done
     public const string TourSays = "Alright! Opening day, baby!";
-    public const string ObjectiveCompleted = "Objective Completed!";
+    public static string ObjectiveCompleted(string title) => $"{title}\nCompleted"; // two lines on the cloud, in capitals
 
     // The toilet's sign and valve
     public const string SignPrompt = "Take down the Out of Order sign";
