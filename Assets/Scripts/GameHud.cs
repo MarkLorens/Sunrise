@@ -286,7 +286,7 @@ public class GameHud : MonoBehaviour
 
         // Over the host's head, or just above the little spirit.
         var host = spirit.Host;
-        Vector3 over = host != null ? PersonTop(host.transform) : spirit.transform.position + Vector3.up * 1.4f;
+        Vector3 over = host != null ? PersonTop(host.transform) : spirit.transform.position + Vector3.up * 0.9f;
         var cam = Camera.main;
         Vector3 screen = cam != null ? cam.WorldToScreenPoint(over) : Vector3.back;
         if (screen.z <= 0f) return;
@@ -613,7 +613,7 @@ public class GameHud : MonoBehaviour
     }
 
     // Where the floating prompt goes: over the head of someone you could possess, or over the top of a thing.
-    static Vector3 PersonTop(Transform t) => t.position + Vector3.up * 2.6f;
+    static Vector3 PersonTop(Transform t) => t.position + Vector3.up * 2f;
 
     static Vector3 ThingTop(Transform t)
     {
