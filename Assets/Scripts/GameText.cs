@@ -232,7 +232,7 @@ public static class GameText
             return ThinkFanAimed[UnityEngine.Random.Range(0, ThinkFanAimed.Length)];
         // Aim() runs before Think, so this fan already counts. One propane aimed = first trigger.
         int aimed = 0;
-        foreach (var f in Object.FindObjectsByType<TankFan>(FindObjectsSortMode.None))
+        foreach (var f in UnityEngine.Object.FindObjectsByType<TankFan>())
             if (f.Aimed && PropaneAim(f)) aimed++;
         if (aimed <= 1) return ThinkFanAimedFirst;
         return ThinkFanAimed[UnityEngine.Random.Range(0, ThinkFanAimed.Length)];
@@ -256,7 +256,7 @@ public static class GameText
     public const string ThinkStinkGone = "The fuzzball is just as smelly, to be honest.";           // the mascot runs off
     public const string ThinkLockerCloud = "Locker room's full of gas. Now, the electrician and that cable..."; // the cloud is full
     public const string ThinkFire = "Shoddy Construction, really. Now's my chance with the operator"; // after the fire payoff
-    public const string ThinkBooth = "His own finger. How trusting";                                  // scanning as the operator
+    public const string ThinkBooth = "Nice fingers. Don't mind if I do.";                             // scanning as the operator
     public const string ThinkMaxSpeed = "Faster... FASTER!";                                          // maxing the wheel
     public const string ThinkRolled = "Fare-thee-wheel... Hehehe";                                    // after the wheel's rolled
 
