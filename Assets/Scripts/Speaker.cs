@@ -12,7 +12,7 @@ public class Speaker : MonoBehaviour
     public Vector3 crowdOffset = new(0f, 0f, -1.6f); // where the crowd stands, relative to the speaker
     public float crowdRadius = 1.6f;
     public bool livePlug = true; // its plug is the broken, live one (LiveCable)
-    public Vector3 cableEndOffset = new(0.8f, 0.83f, -0.12f); // the plug in the sprite, relative to the speaker
+    public Vector3 cableEndOffset = new(0.83f, 0.79f, -0.12f); // the plug in the sprite (speaker 2), relative to the speaker
     public DrinkingFountain fountain; // the puddle the cable can reach
 
     public Vector3 CrowdCenter => new(transform.position.x + crowdOffset.x, 0f, transform.position.z + crowdOffset.z);
@@ -22,6 +22,7 @@ public class Speaker : MonoBehaviour
 
     void Start()
     {
+        gameObject.AddComponent<MusicFx>(); // always playing: thumping, notes floating off
         if (!livePlug) return;
         var end = new GameObject("Live Cable");
         end.SetActive(false); // so Interactable's Awake finds the rules component

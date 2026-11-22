@@ -7,21 +7,25 @@ using UnityEngine.UI;
 
 // The tutorial: a new game starts with it, in the park, before level 1 (a loaded game skips it). Twelve steps, after
 // the design doc's flow:
-//    1 the spirit is lit up ("I'm so ready to have fun!")      7 a ring at your feet points the way to the toilet
+//    1 the spirit is lit up                                     7 a ring at your feet points the way to the toilet
 //    2 the objectives (top left) are lit up                     8 the Out of Order sign: K takes it down
-//    3 float around with W A S D                                9 the valve: K cranks it up, three times
+//    3 float around with W A S D                                9 the valve: walk over to it, then K cranks it up
 //    4 a visitor is held still and lit up                      10 J leaves the body
 //    5 J possesses them                                        11 a visitor goes in: geyser, evil laugh
-//    6 "Let's complete an objective!"                          12 the pop-up (bottom left) is lit up
+//    6 "Let's complete an objective!"                          12 the events (top right) are lit up
 // While a step points at something, the park goes dark except for it: someone or something in the park is lit in its
 // own shape, with a soft glow of light round it (TutorialSpotlight); a piece of the HUD gets a soft rounded spotlight
 // and breathes a little. A card at the bottom says what to do, and under it, on a line of their own, the keys to
-// press as keycaps that light up while they're held; the spirit talks in a speech bubble. Steps you only read move on with
+// press as keycaps that light up while they're held. While the card points at something it's the artist's speech bubble,
+// its tail towards it (dialog_box_up under it, dialog_box over it); otherwise the plain box. The spirit's own lines (and its thoughts, GameHud)
+// don't show while a card is up, so nothing says the same thing twice. Steps you only read move on with
 // Space (or Enter). Hold Tab to skip it all. Its own prank (ToiletPrank) is the objectives' first part, "Toilet
 // Trouble". Every word it shows is in GameText. GameHud adds it to the spirit.
 public class Tutorial : MonoBehaviour
 {
     public static bool Active { get; private set; }
+    // A card is up: the spirit keeps its lines to itself meanwhile (here and GameHud's thoughts).
+    public static bool CardShowing { get; private set; }
 
     const float Dim = 0.82f;       // how dark the HUD gets around the piece being pointed at
     // How dark the park gets around who or what's lit. The shade is blended in linear colour, so it looks lighter than
@@ -38,13 +42,8 @@ public class Tutorial : MonoBehaviour
     static readonly Color Soft = new(0.96f, 0.92f, 0.88f);
     static readonly Color Faint = new(0.96f, 0.92f, 0.88f, 0.6f);
     // The instruction card: light, like the speech bubbles, so it stands out on the dark.
-    static readonly Color CardFill = new(0.98f, 0.95f, 0.9f);
     static readonly Color CardInk = new(0.17f, 0.1f, 0.13f);
     static readonly Color CardFaint = new(0.17f, 0.1f, 0.13f, 0.55f);
-    static readonly Color CardShadow = new(0f, 0f, 0f, 0.35f);
-
-    static Font hand;
-    static Font HandFont => hand != null ? hand : hand = Resources.Load<Font>("Park/Fonts/LoveYaLikeASister") ?? ParkArt.Font;
 
     Possession spirit;
     ToiletPrank prank;
@@ -71,7 +70,13 @@ public class Tutorial : MonoBehaviour
     Rect box;
     bool hasLit;
 
-    RectTransform card, cardContent, cardPointer;
+    RectTransform card, cardContent, cardBubbleUp, cardBubbleDown;
+    Image cardBox;
+    HorizontalLayoutGroup cardLayout;
+    int cardArt; // 0: the plain box; +1: the bubble with its tail up (the card's under what's lit); -1: tail down
+    Transform guideTo; // where the ring's arrow points (the toilet, then the valve)
+    const float ValveNear = 1.5f; // close enough to crank the valve (its reach is 1.8)
+    static RectOffset BoxPad => new(44, 44, 28, 28); // inside the box's drawn line
     Vector2 cardAt;
     bool cardPlaced;
     CanvasGroup cardGroup;
@@ -109,6 +114,7 @@ public class Tutorial : MonoBehaviour
     void OnDestroy()
     {
         if (Active) Active = false;
+        CardShowing = false;
         TutorialSpotlight.Darkness = 0f;
         TutorialSpotlight.Lit.Clear();
     }
@@ -116,6 +122,7 @@ public class Tutorial : MonoBehaviour
     void Finish()
     {
         Active = false;
+        CardShowing = false;
         ending = true;
         Possession.InputBlocked = false;
         if (held != null)
@@ -206,6 +213,7 @@ public class Tutorial : MonoBehaviour
 
         // 7. To the toilet: a ring at your feet, its arrow pointing the way.
         Unfocus();
+        guideTo = prank.Sign;
         while (spirit.Host == null || Flat(spirit.Host.transform.position - prank.Sign.position) > 2.2f)
         {
             ShowGuide(spirit.Host != null);
@@ -224,7 +232,16 @@ public class Tutorial : MonoBehaviour
         }
         yield return new WaitForSeconds(0.6f);
 
-        // 9. The valve.
+        // 9. The valve: over to it first (the ring points the way, like the walk to the toilet), then crank it.
+        Unfocus();
+        while (!prank.Maxed && (spirit.Host == null || Flat(spirit.Host.transform.position - prank.Valve.position) > ValveNear))
+        {
+            guideTo = prank.Valve;
+            ShowGuide(spirit.Host != null);
+            BodyCard(GameText.TutorialWalkValve);
+            yield return null;
+        }
+        ShowGuide(false);
         FocusOn(prank.Picture); // the valve's drawn on the block, so light the block
         Say(GameText.TutorialValveSays);
         while (!prank.Maxed)
@@ -298,8 +315,7 @@ public class Tutorial : MonoBehaviour
         while (true)
         {
             meanwhile?.Invoke();
-            var kb = Keyboard.current;
-            if (kb != null && !PauseMenu.Paused && (kb.spaceKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame)) yield break;
+            if (!PauseMenu.Paused && Controls.Skip) yield break; // Space or Enter
             yield return null;
         }
     }
@@ -387,8 +403,7 @@ public class Tutorial : MonoBehaviour
         float dt = Time.unscaledDeltaTime;
 
         // Hold Space to skip.
-        var kb = Keyboard.current;
-        bool holding = Active && !PauseMenu.Paused && kb != null && kb.spaceKey.isPressed;
+        bool holding = Active && !PauseMenu.Paused && Controls.SkipHeld;
         skipHeld = holding ? skipHeld + dt : Mathf.MoveTowards(skipHeld, 0f, dt * 3f);
         skipFill.fillAmount = skipHeld / SkipHold;
         skip.alpha = Mathf.MoveTowards(skip.alpha, Active ? 1f : 0f, dt * 4f);
@@ -579,12 +594,13 @@ public class Tutorial : MonoBehaviour
     {
         cardAge += dt;
         bool show = Active && cardShown != null;
+        CardShowing = show;
         cardGroup.alpha = Mathf.MoveTowards(cardGroup.alpha, show ? 1f : 0f, dt * 5f);
 
         Vector2 half = canvas.rect.size * 0.5f, size = card.rect.size;
         const float Gap = 34f, Margin = 24f;
         Vector2 want = new(0f, -half.y + 120f + size.y * 0.5f);
-        int pointer = 0; // +1: the card's under it, pointing up; -1: over it, pointing down
+        int pointer = 0; // +1: the card's under what's lit, pointing up; -1: over it, pointing down
         Rect? lit = Active && !switching && (worldDim > 0.5f || dim > 0.5f) ? LitRect() : null;
         if (lit.HasValue)
         {
@@ -604,11 +620,34 @@ public class Tutorial : MonoBehaviour
         float pop = 1f - Mathf.Pow(1f - Mathf.Clamp01(cardAge / 0.3f), 3f);
         card.anchoredPosition = cardAt + new Vector2(0f, -(1f - pop) * 24f);
         card.localScale = Vector3.one * Mathf.Lerp(0.94f, 1f, pop);
+        // Pointing at something: wait until the light's on it (it moves over a few frames), so the card doesn't flick
+        // from the box to the bubble as it comes in.
+        bool pointing = wantFocus != null || wantLighting.Count > 0;
+        if (show && (lit.HasValue || !pointing)) SetCardArt(lit.HasValue ? pointer : 0);
+    }
 
-        cardPointer.gameObject.SetActive(pointer != 0 && lit.HasValue);
-        if (pointer == 0 || !lit.HasValue) return;
-        float px = Mathf.Clamp(lit.Value.center.x - cardAt.x, -size.x * 0.5f + 30f, size.x * 0.5f - 30f);
-        cardPointer.anchoredPosition = new Vector2(px, pointer * (size.y * 0.5f));
+    // The bubble (tail at what's lit) or the plain box; the words keep inside the drawn line either way.
+    void SetCardArt(int pointer)
+    {
+        if (pointer == cardArt) return;
+        cardArt = pointer;
+        cardBox.enabled = pointer == 0;
+        cardBubbleUp.gameObject.SetActive(pointer > 0);
+        cardBubbleDown.gameObject.SetActive(pointer < 0);
+        cardLayout.padding = pointer == 0 ? BoxPad : pointer > 0 ? GameHud.BubblePadUp : GameHud.BubblePad;
+        LayoutRebuilder.MarkLayoutForRebuild(card);
+    }
+
+    // One of the card's speech bubbles, filling it behind the words, hidden until SetCardArt.
+    static RectTransform CardBubble(RectTransform face, bool up)
+    {
+        var art = Ui(up ? "Bubble Up" : "Bubble Down", face);
+        art.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+        Stretch(art);
+        art.SetAsFirstSibling();
+        GameHud.BubbleArt(art, up);
+        art.gameObject.SetActive(false);
+        return art;
     }
 
     // What's lit, in HUD units centred like the canvas: the HUD piece's box, or round the lit sprites on screen.
@@ -714,7 +753,7 @@ public class Tutorial : MonoBehaviour
     void UpdateBubble(float dt)
     {
         bubbleAge += dt;
-        bool show = Active && !string.IsNullOrEmpty(bubbleLine);
+        bool show = Active && !string.IsNullOrEmpty(bubbleLine) && !CardShowing; // the card says it already
         bubbleGroup.alpha = Mathf.MoveTowards(bubbleGroup.alpha, show ? 1f : 0f, dt * 6f);
         if (show) bubbleText.text = bubbleLine[..Mathf.Min(bubbleLine.Length, Mathf.FloorToInt(bubbleAge * 45f))];
         if (bubbleGroup.alpha <= 0f) return;
@@ -757,7 +796,7 @@ public class Tutorial : MonoBehaviour
         if (guide == null || spirit.Host == null || prank == null) return;
         Vector3 feet = spirit.Host.transform.position;
         guide.position = new Vector3(feet.x, 0.04f, feet.z);
-        Vector3 to = prank.Sign.position - feet;
+        Vector3 to = (guideTo != null ? guideTo.position : prank.Sign.position) - feet;
         to.y = 0f;
         if (to.sqrMagnitude > 0.01f) guideArrow.rotation = Quaternion.LookRotation(to.normalized, Vector3.up);
         guide.localScale = Vector3.one * (1f + 0.08f * Mathf.Sin(Time.time * 5f));
@@ -791,27 +830,23 @@ public class Tutorial : MonoBehaviour
             Img(shades[i], null, Shade);
         }
 
-        // The card: a light face with a soft shadow and a pointer at what's lit (placed every frame, UpdateCard).
+        // The card: the artist's hand-drawn box (UI/Bubble/box, its shadow drawn in), next to what's lit (placed every
+        // frame, UpdateCard).
         card = Ui("Card", canvas);
         Place(card, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
         cardGroup = card.gameObject.AddComponent<CanvasGroup>();
         cardGroup.alpha = 0f;
         Row(card, 0f);
         Fit(card);
-        var shadow = Ui("Shadow", card);
-        shadow.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
-        Stretch(shadow);
-        shadow.offsetMin = new Vector2(4f, -8f);
-        shadow.offsetMax = new Vector2(4f, -8f);
-        Img(shadow, "UI/pill", CardShadow);
-        cardPointer = Ui("Pointer", card);
-        cardPointer.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
-        Place(cardPointer, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(26f, 26f));
-        cardPointer.localRotation = Quaternion.Euler(0f, 0f, 45f);
-        Img(cardPointer, "Markers/white", CardFill);
         var face = Ui("Face", card);
-        Img(face, "UI/pill", CardFill);
-        Row(face, 0f, new RectOffset(40, 40, 18, 18));
+        // Three pictures: the plain box (UI/Bubble/box) when it isn't pointing at anything, and when it is, the speech
+        // bubble with its tail towards what's lit: up (dialog_box_up) when the card's under it, down when it's over it.
+        // SetCardArt picks one.
+        cardBox = Img(face, "UI/Bubble/box", Color.white);
+        cardBox.pixelsPerUnitMultiplier = 3f; // drawn big: a third of its pixels
+        cardBubbleUp = CardBubble(face, true);
+        cardBubbleDown = CardBubble(face, false);
+        cardLayout = Row(face, 0f, BoxPad).GetComponent<HorizontalLayoutGroup>();
         cardContent = Ui("Content", face);
         var lines = cardContent.gameObject.AddComponent<VerticalLayoutGroup>(); // the sentence, then the keys under it
         lines.spacing = 12f;
@@ -824,17 +859,14 @@ public class Tutorial : MonoBehaviour
         Place(bubble, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0f), Vector2.zero, new Vector2(10f, 10f));
         bubbleGroup = bubble.gameObject.AddComponent<CanvasGroup>();
         bubbleGroup.alpha = 0f;
-        var tail = Ui("Tail", bubble);
-        Place(tail, new Vector2(0.5f, 0f), new Vector2(0.5f, 0.5f), new Vector2(0f, 14f), new Vector2(18f, 18f));
-        tail.localRotation = Quaternion.Euler(0f, 0f, 45f);
-        Img(tail, null, Soft);
         var body = Ui("Body", bubble);
-        Place(body, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 18f), Vector2.zero);
-        Img(body, "UI/pill", Soft);
-        Row(body, 0f, new RectOffset(26, 26, 10, 12));
+        Place(body, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), Vector2.zero, Vector2.zero);
+        GameHud.BubbleArt(body);
+        var pad = GameHud.BubblePad;
+        Row(body, 0f, new RectOffset(pad.left, pad.right, pad.top, pad.bottom));
         Fit(body);
         bubbleText = Txt(Ui("Label", body), "", 30, Ink, TextAnchor.MiddleCenter);
-        bubbleText.font = HandFont;
+        bubbleText.font = ParkArt.Font;
         // Keep its size steady while the line types out: the full line sizes it, invisibly.
         body.gameObject.AddComponent<BubbleSizer>().Init(bubbleText, () => bubbleLine);
         bubble.SetAsFirstSibling(); // under the dark overlay: what's lit stays the brightest thing
@@ -945,7 +977,7 @@ public class Tutorial : MonoBehaviour
     static Text Txt(RectTransform rt, string text, int size, Color color, TextAnchor align = TextAnchor.MiddleLeft)
     {
         var t = rt.gameObject.AddComponent<Text>();
-        t.font = HandFont;
+        t.font = ParkArt.Font;
         t.fontSize = size;
         t.color = color;
         t.alignment = align;
@@ -1017,8 +1049,9 @@ public class Tutorial : MonoBehaviour
             if (text == null) return -1f;
             var settings = text.GetGenerationSettings(Vector2.zero);
             string s = line() ?? "";
-            return width ? text.cachedTextGeneratorForLayout.GetPreferredWidth(s, settings) / text.pixelsPerUnit + 52f
-                         : text.cachedTextGeneratorForLayout.GetPreferredHeight(s, settings) / text.pixelsPerUnit + 22f;
+            var pad = GameHud.BubblePad; // the bubble's own padding round the words
+            return width ? text.cachedTextGeneratorForLayout.GetPreferredWidth(s, settings) / text.pixelsPerUnit + pad.horizontal
+                         : text.cachedTextGeneratorForLayout.GetPreferredHeight(s, settings) / text.pixelsPerUnit + pad.vertical;
         }
         public void CalculateLayoutInputHorizontal() { }
         public void CalculateLayoutInputVertical() { }

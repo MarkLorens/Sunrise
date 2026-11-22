@@ -1,20 +1,20 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.Tilemaps;
 
 // Walks on the X/Z floor, but only onto cells that have a tile on the ground tilemap, not into anything on the
-// Objects tilemap (trees, lamps, benches, fences: things you bump into; walk-over decor like flowers and bushes
-// lives on its own Decor tilemap) or into a prop with a Box Collider (the stalls), and, for visitors, not into a
+// Objects or See Through tilemaps (SolidMaps: lamps, benches, fences; and the buildings and trees the player shows
+// through; walk-over decor like flowers and bushes lives on its own Decor tilemap) or into a prop with a Box Collider
+// (the stalls), and, for visitors, not into a
 // staff-only area: StaffArea, nor onto ground behind a fingerprint lock: FingerprintArea.
-// Driven by WASD/arrows when readKeyboard is on, otherwise by whatever sets `move`: the visitor and staff AI call
+// Driven by Player/Move (WASD/arrows, Controls) when readKeyboard is on, otherwise by whatever sets `move`: the visitor and staff AI call
 // WalkTo, which finds a way around whatever's in the way (NavGrid).
 // Gravity + the ground's collider keep it standing on the floor.
 [RequireComponent(typeof(Rigidbody))]
 public class GroundWalker : MonoBehaviour
 {
     public Tilemap ground;
-    public Tilemap objects; // things you bump into; found under the same Grid if left empty
+    public Tilemap objects; // more things you bump into, besides the Objects and See Through tilemaps next to the ground
     public float bodyRadius = 0.35f; // about half a person's width: how close your middle gets to an object
     public float speed = 5f;
     public bool readKeyboard = true;
@@ -32,7 +32,7 @@ public class GroundWalker : MonoBehaviour
     readonly Route route = new();
 
     // What's in the way, worked out once and shared by everyone, as boxes on the floor (x, z):
-    // - each object on the Objects tilemap, as wide as the bottom of its sprite (a bench's legs, a tree's trunk rather
+    // - each object on the Objects and See Through tilemaps, as wide as the bottom of its sprite (a bench's legs, a tree's trunk rather
     //   than its leaves), so a wide bench blocks more than its one cell;
     // - each prop with a Box Collider (the stalls). People have no colliders of their own (so they don't shove each
     //   other around), so physics alone would let them walk straight through it.
@@ -50,10 +50,13 @@ public class GroundWalker : MonoBehaviour
         rb.constraints &= ~RigidbodyConstraints.FreezePositionY;
         hover = Mathf.Max(0f, transform.position.y - RaisedFloor.Height(transform.position));
 
-        // Visitors and the mechanic are spawned from code, so look the Objects tilemap up next to the ground.
-        Transform t = ground.transform.parent.Find("Objects");
-        if (objects == null && t != null) objects = t.GetComponent<Tilemap>();
-        if (obstaclesFor != ground) FindObstacles(ground, objects);
+        // Visitors and the mechanic are spawned from code, so look the tilemaps up next to the ground.
+        if (obstaclesFor != ground)
+        {
+            var maps = SolidMaps(ground);
+            if (objects != null && !maps.Contains(objects)) maps.Add(objects);
+            FindObstacles(ground, maps);
+        }
 
         ground.CompressBounds();
         var b = ground.localBounds;
@@ -89,14 +92,8 @@ public class GroundWalker : MonoBehaviour
         transform.position = rb.position = new Vector3(at.x, RaisedFloor.Height(at) + hover, at.z);
     }
 
-    static Vector2 KeyboardInput()
-    {
-        var kb = Keyboard.current;
-        if (kb == null || Possession.InputBlocked) return Vector2.zero;
-        return new Vector2(
-            (kb.dKey.isPressed || kb.rightArrowKey.isPressed ? 1 : 0) - (kb.aKey.isPressed || kb.leftArrowKey.isPressed ? 1 : 0),
-            (kb.wKey.isPressed || kb.upArrowKey.isPressed ? 1 : 0) - (kb.sKey.isPressed || kb.downArrowKey.isPressed ? 1 : 0)).normalized;
-    }
+    // Player/Move in the project's input actions (Controls).
+    static Vector2 KeyboardInput() => Possession.InputBlocked ? Vector2.zero : Controls.Move;
 
     public bool IsWalkable(Vector3 worldPos)
     {
@@ -182,7 +179,20 @@ public class GroundWalker : MonoBehaviour
     static float Depth(Rect box, Vector3 p) =>
         Mathf.Min(Mathf.Min(p.x - box.xMin, box.xMax - p.x), Mathf.Min(p.z - box.yMin, box.yMax - p.z));
 
-    static void FindObstacles(Tilemap floor, Tilemap map)
+    // The tilemaps of things you bump into, next to `ground` under its Grid: Objects (drawn whole) and See Through
+    // (buildings and trees, which open up round the player: SeeThrough).
+    public static List<Tilemap> SolidMaps(Tilemap ground)
+    {
+        var maps = new List<Tilemap>();
+        foreach (var name in new[] { ParkArt.ObjectsMap, ParkArt.SeeThroughMap })
+        {
+            var t = ground != null ? ground.transform.parent.Find(name) : null;
+            if (t != null && t.TryGetComponent(out Tilemap map)) maps.Add(map);
+        }
+        return maps;
+    }
+
+    static void FindObstacles(Tilemap floor, List<Tilemap> maps)
     {
         obstaclesFor = floor;
         footprints.Clear();
@@ -194,7 +204,7 @@ public class GroundWalker : MonoBehaviour
         foreach (Collider c in FindObjectsByType<Collider>())
             if (!c.isTrigger && c.attachedRigidbody == null && !c.TryGetComponent<Tilemap>(out _)) props.Add(c);
 
-        if (map == null) return;
+        foreach (var map in maps)
         foreach (Vector3Int cell in map.cellBounds.allPositionsWithin)
         {
             Sprite s = map.GetSprite(cell);

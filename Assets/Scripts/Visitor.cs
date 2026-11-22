@@ -356,6 +356,7 @@ public class Visitor : MonoBehaviour
     {
         if (!gawkAt.HasValue) return false;
         SetState(State.Stare);
+        Look.panicFace = true; // only the face for now: the body joins in if they run (Panic)
         walker.move = Vector2.zero;
         Look.Face(gawkAt.Value);
         stateEndsAt = Time.time + Random.Range(gawkTime.x, gawkTime.y);
@@ -420,7 +421,9 @@ public class Visitor : MonoBehaviour
 
     // Gone for good: a by-product of the chaos (electrocuted in the puddle, the wheel), never the spirit's own doing.
     // Frozen on the spot at once; with a twitch, they stand still for `wait`, jolt for `twitch` seconds, then drop.
-    public void Die(float wait = 0f, float twitch = 0f)
+    // zapped: electrocuted (DrinkingFountain): face and body panic at once (arms up while they jolt), and the face
+    // stays that way once they're down.
+    public void Die(float wait = 0f, float twitch = 0f, bool zapped = false)
     {
         Group?.Leave(this);
         if (Current == State.Down) return;
@@ -431,6 +434,7 @@ public class Visitor : MonoBehaviour
         walker.move = Vector2.zero;
         Look.SetVisible(true);
         SetState(State.Down);
+        if (zapped) Look.panicBody = true; // the face too; the fallen pose takes over the body once they drop
         if (twitch <= 0f)
         {
             Collapse();
@@ -469,6 +473,7 @@ public class Visitor : MonoBehaviour
         DropHeld();
         panicFrom = from;
         SetState(State.Panic);
+        Look.panicBody = true; // panic body and face, until they calm down (SetState)
         stateEndsAt = Time.time + duration;
         Look.Cheer(0.4f);
         RunAway();
@@ -530,6 +535,7 @@ public class Visitor : MonoBehaviour
             _ => wanderSpeed,
         };
         Look.running = s == State.Panic;
+        Look.panicFace = Look.panicBody = false; // Gawk and Panic set them after
         Look.pose = s switch
         {
             State.Confused => Look.think,
