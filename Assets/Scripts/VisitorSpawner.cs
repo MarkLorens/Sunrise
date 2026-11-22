@@ -174,7 +174,8 @@ public class VisitorSpawner : MonoBehaviour
         SpawnVendors();
     }
 
-    // Every ice cream stand tile gets its back layer and a seller inside; every balloon stand tile, a seller beside it.
+    // Every ice cream stand tile gets its back layer, a solid box from its front to its back (nobody walks in, from any
+    // side) and a seller inside, pottering along the counter; every balloon stand tile, a seller beside it.
     void SpawnVendors()
     {
         var back = ParkArt.Get("Props/hot_dog_stand_back");
@@ -187,7 +188,11 @@ public class VisitorSpawner : MonoBehaviour
             if (s.name.StartsWith("ice_cream_stand"))
             {
                 if (back != null) BackLayer(map, cell, back);
-                Staff<Vendor>("Ice Cream Seller", feet + iceCreamSlot, iceCreamCharacter, v => v.inside = true);
+                Rect front = GroundWalker.FootprintOf(map, cell);
+                GroundWalker.Block("Ice Cream Stand Block", Rect.MinMaxRect(front.xMin, front.yMin, front.xMax, feet.z + iceCreamBackOffset.z + 0.1f));
+                Vector3 slot = feet + iceCreamSlot;
+                float room = Mathf.Max(0f, Mathf.Min(slot.x - front.xMin, front.xMax - slot.x) - 0.45f); // their middle, off the posts
+                Staff<Vendor>("Ice Cream Seller", slot, iceCreamCharacter, v => { v.inside = true; v.paceHalfWidth = room; });
             }
             else if (s.name.StartsWith("balloon_stand"))
             {

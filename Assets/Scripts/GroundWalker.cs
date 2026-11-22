@@ -19,6 +19,9 @@ public class GroundWalker : MonoBehaviour
     public float speed = 5f;
     public bool readKeyboard = true;
     [HideInInspector] public Vector2 move; // x = world X, y = world Z; used when readKeyboard is off
+    // A stall worker behind their counter: inside their stall's solid box (Block), which they'd otherwise be stuck in.
+    // Their own script keeps them to the stall.
+    [HideInInspector] public bool ignoreObstacles;
 
     // The most anyone steps up or down at once: a stair, not the side of a raised floor (RaisedFloor).
     public const float MaxStep = 0.9f; // the Ferris wheel platform's steps are ~0.22 high, its sides 1.71
@@ -101,7 +104,7 @@ public class GroundWalker : MonoBehaviour
         cell.z = 0; // height above the floor doesn't matter
         return ground.HasTile(cell)
             && Mathf.Abs(RaisedFloor.Height(worldPos) - RaisedFloor.Height(transform.position)) <= MaxStep // stairs, not the sides
-            && !BumpsIntoObject(transform.position, worldPos)
+            && (ignoreObstacles || !BumpsIntoObject(transform.position, worldPos))
             && StaffArea.Allows(Body, transform.position, worldPos)
             && FingerprintArea.Allows(Body, transform.position, worldPos)
             && Aftermath.Allows(Body, transform.position, worldPos);
@@ -134,6 +137,35 @@ public class GroundWalker : MonoBehaviour
     {
         if (!props.Contains(c)) props.Add(c);
         NavGrid.Invalidate();
+    }
+
+    // A solid box on the floor nobody walks into (a stall, front to back), from code. Stall workers inside it walk
+    // with ignoreObstacles.
+    public static BoxCollider Block(string name, Rect floor)
+    {
+        var box = new GameObject(name).AddComponent<BoxCollider>();
+        box.transform.position = new Vector3(floor.center.x, 1f, floor.center.y);
+        box.size = new Vector3(floor.width, 2f, floor.height);
+        AddObstacle(box);
+        return box;
+    }
+
+    // The base of a tile's object as a line on the floor (x from the bottom of its sprite, z just in front of its cell).
+    public static Rect FootprintOf(Tilemap map, Vector3Int cell)
+    {
+        Sprite s = map.GetSprite(cell);
+        // The outline's lowest 15% is the part touching the ground.
+        float bottom = s.bounds.min.y + s.bounds.size.y * 0.15f;
+        float left = float.MaxValue, right = float.MinValue;
+        foreach (Vector2 p in s.vertices)
+        {
+            if (p.y > bottom) continue;
+            left = Mathf.Min(left, p.x);
+            right = Mathf.Max(right, p.x);
+        }
+        if (left > right) (left, right) = (s.bounds.min.x, s.bounds.max.x);
+        Vector3 c = map.GetCellCenterWorld(cell) + Vector3.forward * map.GetTransformMatrix(cell).m23; // a tile nudged off its cell
+        return Rect.MinMaxRect(c.x + left, c.z - ObjectFront, c.x + right, c.z - ObjectFront);
     }
 
     // Is there an object or a prop where someone `radius` wide standing at `p` would touch it? (NavGrid maps with this.)
@@ -206,21 +238,6 @@ public class GroundWalker : MonoBehaviour
 
         foreach (var map in maps)
         foreach (Vector3Int cell in map.cellBounds.allPositionsWithin)
-        {
-            Sprite s = map.GetSprite(cell);
-            if (s == null) continue;
-            // The outline's lowest 15% is the part touching the ground.
-            float bottom = s.bounds.min.y + s.bounds.size.y * 0.15f;
-            float left = float.MaxValue, right = float.MinValue;
-            foreach (Vector2 p in s.vertices)
-            {
-                if (p.y > bottom) continue;
-                left = Mathf.Min(left, p.x);
-                right = Mathf.Max(right, p.x);
-            }
-            if (left > right) (left, right) = (s.bounds.min.x, s.bounds.max.x);
-            Vector3 c = map.GetCellCenterWorld(cell) + Vector3.forward * map.GetTransformMatrix(cell).m23; // a tile nudged off its cell
-            footprints.Add(Rect.MinMaxRect(c.x + left, c.z - ObjectFront, c.x + right, c.z - ObjectFront));
-        }
+            if (map.GetSprite(cell) != null) footprints.Add(FootprintOf(map, cell));
     }
 }
