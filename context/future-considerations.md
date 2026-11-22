@@ -34,7 +34,7 @@
 
 ## Polish / UX
 
-_(add notes as they come up)_
+- After **all asset imports are done**, open the lighting debugger in Play mode (**F1**) and play with the moon and lamp colours. Use **Copy values** and paste the block back when a look should become the default.
 
 ---
 
