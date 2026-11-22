@@ -609,9 +609,7 @@ GameObject:
   - component: {fileID: 330585545}
   - component: {fileID: 330585547}
   - component: {fileID: 330585548}
-  - component: {fileID: 330585549}
   - component: {fileID: 330585550}
-  - component: {fileID: 330585551}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -743,37 +741,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnity::FMODUnity.StudioListener
   nonRigidbodyVelocity: 0
   attenuationObject: {fileID: 484566581}
---- !u!114 &330585549
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 330585543}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9a6610d2e704f1648819acc8d7460285, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: FMODUnity::FMODUnity.StudioEventEmitter
-  CollisionTag: 
-  EventReference:
-    Guid:
-      Data1: 673475445
-      Data2: 1285183341
-      Data3: 921665162
-      Data4: -17045619
-    Path: event:/Music2
-  Event: 
-  EventPlayTrigger: 1
-  EventStopTrigger: 2
-  AllowFadeout: 1
-  TriggerOnce: 0
-  Preload: 0
-  NonRigidbodyVelocity: 0
-  Params: []
-  OverrideAttenuation: 1
-  OverrideMinDistance: 40
-  OverrideMaxDistance: 60
 --- !u!81 &330585550
 AudioListener:
   m_ObjectHideFlags: 0
@@ -782,19 +749,6 @@ AudioListener:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 330585543}
   m_Enabled: 1
---- !u!114 &330585551
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 330585543}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 90283fb369afa44fa8bca63165fa03a0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EmitterVolume
-  volume: 0.7
 --- !u!1 &344091409
 GameObject:
   m_ObjectHideFlags: 0
@@ -2151,8 +2105,9 @@ GameObject:
   - component: {fileID: 618812265}
   - component: {fileID: 618812264}
   - component: {fileID: 618812266}
+  - component: {fileID: 910001001}
   m_Layer: 0
-  m_Name: ThemeSongSpeakerBL
+  m_Name: Park Megaphone BL
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2250,6 +2205,18 @@ MonoBehaviour:
   noteEvery: {x: 0.45, y: 0.85}
   noteHeight: {x: 0.42, y: 0.6}
   noteLife: {x: 1.8, y: 2.5}
+--- !u!114 &910001001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 618812263}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c4e8a1d07b2f4a6e9d3c5b8f1a0e7d24, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ParkMegaphone
 --- !u!1 &700000100
 GameObject:
   m_ObjectHideFlags: 0
@@ -3295,8 +3262,9 @@ GameObject:
   - component: {fileID: 760199548}
   - component: {fileID: 760199547}
   - component: {fileID: 760199549}
+  - component: {fileID: 910001002}
   m_Layer: 0
-  m_Name: ThemeSongSpeakerBR
+  m_Name: Park Megaphone BR
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3394,6 +3362,18 @@ MonoBehaviour:
   noteEvery: {x: 0.45, y: 0.85}
   noteHeight: {x: 0.42, y: 0.6}
   noteLife: {x: 1.8, y: 2.5}
+--- !u!114 &910001002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 760199546}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c4e8a1d07b2f4a6e9d3c5b8f1a0e7d24, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ParkMegaphone
 --- !u!114 &819266736
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4503,8 +4483,9 @@ GameObject:
   - component: {fileID: 1439868131}
   - component: {fileID: 1439868130}
   - component: {fileID: 1439868132}
+  - component: {fileID: 910001003}
   m_Layer: 0
-  m_Name: ThemeSongSpeakerTL
+  m_Name: Park Megaphone TL
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4602,6 +4583,18 @@ MonoBehaviour:
   noteEvery: {x: 0.45, y: 0.85}
   noteHeight: {x: 0.42, y: 0.6}
   noteLife: {x: 1.8, y: 2.5}
+--- !u!114 &910001003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1439868129}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c4e8a1d07b2f4a6e9d3c5b8f1a0e7d24, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ParkMegaphone
 --- !u!1 &1448663950
 GameObject:
   m_ObjectHideFlags: 0
@@ -4742,8 +4735,9 @@ GameObject:
   - component: {fileID: 1494336511}
   - component: {fileID: 1494336510}
   - component: {fileID: 1494336512}
+  - component: {fileID: 910001004}
   m_Layer: 0
-  m_Name: ThemeSongSpeakerTR
+  m_Name: Park Megaphone TR
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4841,6 +4835,18 @@ MonoBehaviour:
   noteEvery: {x: 0.45, y: 0.85}
   noteHeight: {x: 0.42, y: 0.6}
   noteLife: {x: 1.8, y: 2.5}
+--- !u!114 &910001004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1494336509}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c4e8a1d07b2f4a6e9d3c5b8f1a0e7d24, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ParkMegaphone
 --- !u!1 &1498166793
 GameObject:
   m_ObjectHideFlags: 0
@@ -5293,6 +5299,7 @@ GameObject:
   - component: {fileID: 1680034632}
   - component: {fileID: 1680034634}
   - component: {fileID: 1680034633}
+  - component: {fileID: 910001005}
   m_Layer: 0
   m_Name: Audio
   m_TagString: Untagged
@@ -5376,6 +5383,13 @@ MonoBehaviour:
       Data3: 350874804
       Data4: 2061409165
     Path: event:/Ferris Wheel/Ferris/CabinCreak
+  <parkMusic>k__BackingField:
+    Guid:
+      Data1: 673475445
+      Data2: 1285183341
+      Data3: 921665162
+      Data4: -17045619
+    Path: event:/Music2
 --- !u!114 &1680034634
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5388,6 +5402,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7c9dc06526e454019ae27108960467c5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AudioManager
+--- !u!114 &910001005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1680034631}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e91b6c3a4f8d4e2b7a5c0d9e6f1b8a37, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ParkMusic
+  volume: 0.68
+  minDistance: 2
+  maxDistance: 30
+  switchMargin: 2
 --- !u!1 &1707651099
 GameObject:
   m_ObjectHideFlags: 0
