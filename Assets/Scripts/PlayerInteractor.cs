@@ -36,9 +36,8 @@ public class PlayerInteractor : MonoBehaviour
         foreach (var i in Interactable.All)
         {
             if (Host != null && i.gameObject == Host.gameObject) continue; // yourself
-            Vector3 d = i.transform.position - transform.position;
-            d.y = 0; // distance along the floor only, so sprite height/pivot doesn't count
-            float dist = d.magnitude;
+            // Same floor rule as the observation lines (Possession.FloorDistance): full range on X and -Z, half on +Z.
+            float dist = Possession.FloorDistance(transform.position - i.transform.position);
             if (dist <= i.range && dist < bestDist)
             {
                 best = i;

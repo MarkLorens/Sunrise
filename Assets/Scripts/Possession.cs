@@ -280,7 +280,17 @@ public class Possession : MonoBehaviour
 
     static Vector3 Flat(Vector3 v) => new(v.x, 0f, v.z);
 
+    // Floor distance from an item to the player (`fromItem` is player minus item). Height is ignored.
+    // +Z is up-screen and reads long, so a step that way counts double: that side of a trigger is half as deep.
+    // -Z, the same Z, and X all count at face value.
+    public static float FloorDistance(Vector3 fromItem)
+    {
+        if (fromItem.z > 0f) fromItem.z *= 2f;
+        fromItem.y = 0f;
+        return fromItem.magnitude;
+    }
+
     // Is whoever you control (the spirit, or the body it's in) within `range` of p, along the floor?
     public static bool PlayerNear(Vector3 p, float range) =>
-        Instance != null && Flat(Instance.Focus.position - p).magnitude <= range;
+        Instance != null && FloorDistance(Flat(Instance.Focus.position - p)) <= range;
 }
