@@ -11,7 +11,7 @@ public class Gutter : MonoBehaviour, IInteraction
 {
     public int rats = 5;
     public float ratSpeed = 5f;
-    public float chaseTime = 4f; // seconds the rats keep after him before going home
+    public float chaseTime = 1f; // seconds the rats keep after him before going home
     public float size = 1f;
     public bool smellOnly;
     public TankFan fan; // smellOnly: carries the stink

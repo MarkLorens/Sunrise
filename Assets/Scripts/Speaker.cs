@@ -17,12 +17,22 @@ public class Speaker : MonoBehaviour
 
     public Vector3 CrowdCenter => new(transform.position.x + crowdOffset.x, 0f, transform.position.z + crowdOffset.z);
 
+    MusicFx music;
+    public bool Playing => music == null || music.enabled;
+
+    // The crowd speakers' music, off while the live one's broken (DrinkingFountain) and back on once it's fixed.
+    public static void SetPlaying(bool on)
+    {
+        foreach (var s in All)
+            if (s.music != null) s.music.enabled = on;
+    }
+
     void OnEnable() => All.Add(this);
     void OnDisable() => All.Remove(this);
 
     void Start()
     {
-        gameObject.AddComponent<MusicFx>(); // always playing: thumping, notes floating off
+        music = gameObject.AddComponent<MusicFx>(); // thumping, notes floating off (until SetPlaying(false))
         if (!livePlug) return;
         var end = new GameObject("Live Cable");
         end.SetActive(false); // so Interactable's Awake finds the rules component
@@ -34,9 +44,13 @@ public class Speaker : MonoBehaviour
         end.SetActive(true);
     }
 
-    // A speaker to go and listen to, if the crowd isn't full yet.
-    public static Speaker Wanting() =>
-        All.Count == 0 || Listeners() >= MaxListeners ? null : All[Random.Range(0, All.Count)];
+    // A speaker playing music to go and listen to, if the crowd isn't full yet.
+    public static Speaker Wanting()
+    {
+        if (Listeners() >= MaxListeners) return null;
+        var playing = All.FindAll(s => s.Playing);
+        return playing.Count == 0 ? null : playing[Random.Range(0, playing.Count)];
+    }
 
     // The speaker this spot is in the crowd of, if any.
     public static Speaker Near(Vector3 p)

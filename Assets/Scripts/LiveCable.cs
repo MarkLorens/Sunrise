@@ -81,6 +81,7 @@ public class LiveCable : MonoBehaviour, IInteraction
 
     public string Blocked(Visitor host)
     {
+        if (fountain.Cleaning) return GameText.CleaningUp;
         if (Time.time < readyAt) return GameText.CableCrackling;
         if (!Reaches) return GameText.CableTooFar;
         return null;

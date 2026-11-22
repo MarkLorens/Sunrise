@@ -26,6 +26,11 @@ public class MusicFx : MonoBehaviour
         nextNote = Time.time + Random.Range(0f, noteEvery.y);
     }
 
+    void OnDisable()
+    {
+        if (body != null) transform.localScale = baseScale; // stopped: not frozen mid-thump
+    }
+
     void Update()
     {
         // The thump: a quick kick on each beat that settles before the next (feet stay put: the pivot's at the bottom).

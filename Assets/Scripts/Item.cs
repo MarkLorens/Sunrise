@@ -91,19 +91,19 @@ public class Item : MonoBehaviour
         }
         transform.localScale = Vector3.one;
         sprite.enabled = shadow.enabled = true;
-        shadowHolder.SetPositionAndRotation(new Vector3(transform.position.x, 0.02f, transform.position.z), Quaternion.identity);
+        shadowHolder.SetPositionAndRotation(new Vector3(transform.position.x, RaisedFloor.Height(transform.position) + 0.02f, transform.position.z), Quaternion.identity);
         if (!falling) return;
 
         velocity.y -= Gravity * Time.deltaTime;
         transform.position += velocity * Time.deltaTime;
         transform.Rotate(0f, 0f, -velocity.x * 60f * Time.deltaTime);
 
-        if (transform.position.y <= Size * 0.5f && velocity.y < 0f) Land();
+        if (transform.position.y <= RaisedFloor.Height(transform.position) + Size * 0.5f && velocity.y < 0f) Land();
     }
 
     void Land()
     {
-        transform.position = new Vector3(transform.position.x, Size * 0.5f, transform.position.z);
+        transform.position = new Vector3(transform.position.x, RaisedFloor.Height(transform.position) + Size * 0.5f, transform.position.z);
         transform.rotation = Quaternion.identity;
         velocity = Vector3.zero;
         falling = false;

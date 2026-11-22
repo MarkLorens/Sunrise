@@ -12,8 +12,8 @@ public class Mechanic : StaffWorker
 
     protected override Queue<Job> Backlog => backlog;
 
-    // Something broken: the nearest free mechanic comes to fix it. False if they're all busy (it waits its turn).
-    public static bool Call(Job job) => Dispatch(All, backlog, job);
+    // Something broken: the nearest free mechanic comes to fix it. Null if they're all busy (it waits its turn).
+    public static Mechanic Call(Job job) => Dispatch(All, backlog, job);
 
     protected override void OnEnable()
     {

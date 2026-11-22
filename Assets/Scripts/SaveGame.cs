@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 // Save slots, as many as there are saves (save_<n>.json, n from 0), each the level's progress, not a snapshot of
 // every person in it. Kept: the steps done, the puddle, the
 // fountain and its mechanic, the electrical box, the wheel's power (the propane, fan, technician, platform and hinge
-// all follow from the steps done), who's lying dead where, and where the player
+// all follow from the steps done), who's lying dead where, who's been carried off, and where the player
 // is and whose body they're in (with what in hand). Everyone else starts fresh around the park.
 // Saved from the pause menu (PauseMenu) into the slot being played (Slot), loaded from the main menu's Load Game page
 // (MainMenu): Load() opens the level, and the level's PauseMenu calls ApplyPending() once everything in it has set
@@ -34,6 +34,7 @@ public static class SaveGame
         public int presses;
         public bool mechanicCalled, fountainFixed, shownMechanic;
         public List<Body> dead = new();
+        public List<string> gone = new(); // carried off by the clean-up crew (Visitor.CarryOff): not coming back
         public List<Fan> fans = new();  // which way every fan faces
         public string title;            // the objective you were on (the Load Game card)
         public string played;           // when it was saved (round-trip date)
@@ -165,6 +166,8 @@ public static class SaveGame
             played = System.DateTime.Now.ToString("o"),
         };
         foreach (var f in TankFan.All) data.fans.Add(new Fan { name = f.name, facing = f.facing });
+        foreach (var v in Object.FindObjectsByType<Visitor>(FindObjectsInactive.Include))
+            if (v.CarriedOff) data.gone.Add(v.name);
         foreach (var v in Visitor.All)
             if (v.Current == Visitor.State.Down)
                 data.dead.Add(new Body { name = v.name, at = v.transform.position });
@@ -253,6 +256,8 @@ public static class SaveGame
         // ponytail: a save after the wheel has rolled loads it standing, wobbly. Nothing comes after it yet.
 
         var used = new HashSet<Visitor>();
+        foreach (var name in data.gone)
+            Find(name, used)?.CarryOff();
         foreach (var d in data.dead)
         {
             var v = Find(d.name, used);

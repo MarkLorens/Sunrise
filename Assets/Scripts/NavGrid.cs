@@ -21,6 +21,11 @@ public static class NavGrid
     static int width, height;
     static float originX, originZ;
     static bool[] blocked, staffOnly;
+    // Open, but some of the square is within Clearance of something: a straight line cutting across it could scrape
+    // what the walker bumps into (a centre 0.5 away, a line through the square's edge 0.34 away). Routes still go
+    // through these squares, just not as shortcuts across them (Clear).
+    static bool[] tight;
+    static float[] floor; // each square's floor height (RaisedFloor): neighbours more than a stair apart don't connect
 
     // Search scratch, reused so a search allocates nothing; `stamp` tells this search's entries from older ones.
     static float[] cost;
@@ -88,6 +93,8 @@ public static class NavGrid
         int n = width * height;
         blocked = new bool[n];
         staffOnly = new bool[n];
+        tight = new bool[n];
+        floor = new float[n];
         cost = new float[n];
         cameFrom = new int[n];
         seenIn = new int[n];
@@ -99,12 +106,17 @@ public static class NavGrid
             Vector3Int cell = ground.WorldToCell(p);
             cell.z = 0;
             blocked[i] = !ground.HasTile(cell) || GroundWalker.NearObstacle(p, Clearance);
+            tight[i] = !blocked[i] && GroundWalker.NearObstacle(p, Clearance + CellSize * 0.5f);
+            floor[i] = RaisedFloor.Height(p);
             foreach (var area in StaffArea.All)
                 if (area.Contains(p)) staffOnly[i] = true;
         }
     }
 
     static bool Open(int i, bool mayUseStaff) => !blocked[i] && (mayUseStaff || !staffOnly[i]);
+
+    // Up or down a stair at most, never off the side of a raised floor.
+    static bool Step(int a, int b) => Mathf.Abs(floor[a] - floor[b]) <= GroundWalker.MaxStep;
 
     static Vector3 Center(int i) => new(originX + (i % width + 0.5f) * CellSize, 0f, originZ + (i / width + 0.5f) * CellSize);
 
@@ -140,16 +152,18 @@ public static class NavGrid
         return best;
     }
 
-    // Can you walk straight from `a` to `b` without crossing a blocked square? (`a` itself may be in one.)
+    // Can you walk straight from `a` to `b` without crossing a blocked or tight square? (`a` itself may be in one.)
     static bool Clear(Vector3 a, Vector3 b, bool mayUseStaff)
     {
         Vector3 d = b - a;
         d.y = 0;
         int steps = Mathf.CeilToInt(d.magnitude / (CellSize * 0.5f));
+        int prev = ToCell(a), first = prev, last = ToCell(b); // the ends' own squares may be tight: you start or stop there
         for (int s = 1; s <= steps; s++)
         {
             int i = ToCell(a + d * (s / (float)steps));
-            if (i < 0 || !Open(i, mayUseStaff)) return false;
+            if (i < 0 || !Open(i, mayUseStaff) || tight[i] && i != first && i != last || prev >= 0 && !Step(prev, i)) return false;
+            prev = i;
         }
         return true;
     }
@@ -180,7 +194,7 @@ public static class NavGrid
                     int nx = cx + dx, nz = cz + dz;
                     if (nx < 0 || nz < 0 || nx >= width || nz >= height) continue;
                     int next = nz * width + nx;
-                    if (closedIn[next] == stamp || !Open(next, mayUseStaff)) continue;
+                    if (closedIn[next] == stamp || !Open(next, mayUseStaff) || !Step(current, next)) continue;
                     bool diagonal = dx != 0 && dz != 0;
                     // No squeezing diagonally past the corner of something.
                     if (diagonal && (!Open(cz * width + nx, mayUseStaff) || !Open(nz * width + cx, mayUseStaff))) continue;

@@ -102,6 +102,7 @@ public static class GameText
     // The drinking fountain
     public const string FountainFixed = "Fixed. Not a drop";
     public const string MechanicOnIt = "The electrician's on it";
+    public const string CleaningUp = "Not while they're still cleaning up";
     public const string PuddleFull = "The puddle won't spread any further";
 
     // The live cable
