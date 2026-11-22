@@ -121,7 +121,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
         if (presses < lines.Length) GameHud.Think(GameHud.ThoughtPriority.Action, lines[presses]);
         presses++;
         target = Mathf.Min(maxRadius, Mathf.Max(target, startRadius) + (maxRadius - startRadius) / tapsToFull); // Update lets it creep out
-        Sfx.Play(Sfx.HitSoft, 0.6f, 1.4f);
+        Sfx.Play(Sfx.HitSoft, 0.6f, 1.4f, Captions.FountainPress);
         Fx.Burst("Fx/puff", transform.position + Vector3.up * 0.8f, 6, Water, 2f, 0.35f, 0.5f);
         GameHud.Say(GameText.PressedFountain);
     }
@@ -291,7 +291,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
 
     void Zap(Vector3 from, List<Visitor> zapped, float shake, float shakeFor = 0f)
     {
-        Sfx.Play(Sfx.Crash, 1f, 1.6f);
+        Sfx.Play(Sfx.Crash, 1f, 1.6f, Captions.Electrocution);
         Fx.Burst("Fx/sparkle", from, 20, Spark, 5f, 0.4f, 0.6f);
         Fx.Shake(shake, shakeFor);
         foreach (var v in zapped) Fx.Burst("Fx/sparkle", v.HeadPoint, 10, Spark, 3f, 0.3f, 0.5f);
@@ -342,6 +342,6 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     void Fix()
     {
         Fixed = true;
-        Sfx.Play(Sfx.HitWood, 0.8f);
+        Sfx.Play(Sfx.HitWood, 0.8f, 1f, Captions.FountainFixed);
     }
 }

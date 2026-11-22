@@ -115,7 +115,7 @@ public class HotDogMan : MonoBehaviour
         hopStart = Time.time;
         afterHop = next;
         look.Cheer(hopTime);
-        Sfx.Play(Sfx.Grab, 0.4f, 0.8f);
+        Sfx.Play(Sfx.Grab, 0.4f, 0.8f, Captions.HotDogManHop);
     }
 
     // Blown up (PropaneTank): blackened, dazed, done cooking for the day.

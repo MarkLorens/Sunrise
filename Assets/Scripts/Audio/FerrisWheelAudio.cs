@@ -36,12 +36,20 @@ public class FerrisWheelAudio : MonoBehaviour
             creak.Play(events.ferrisCabinCreak);
         }
         wasPowered = ride.Powered;
+
+        // Closed captions while you're near enough to hear it (its 3D sounds fade out further off).
+        if (!Possession.PlayerNear(transform.position, HearRange)) return;
+        if (ride.Powered) ClosedCaptions.Hold(Captions.WheelHum);
+        if (!ride.Powered || ride.Wobbly) ClosedCaptions.Hold(Captions.CabinCreak);
     }
+
+    const float HearRange = 14f;
 
     void PowerOff(FMODEvents events)
     {
         foreach (var motor in GetComponents<StudioEventEmitter>()) motor.Stop();
         if (AudioManager.instance != null) AudioManager.instance.PlayOneShot(events.ferrisPowerOff, transform.position);
+        ClosedCaptions.Show(Captions.PowerOff);
     }
 
     void OnDisable()
