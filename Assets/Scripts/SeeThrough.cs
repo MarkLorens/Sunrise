@@ -42,7 +42,11 @@ public class SeeThrough : MonoBehaviour
         Shader.SetGlobalFloat(SoftnessId, softness);
     }
 
-    // The middle of the player's picture.
-    static Vector3 Middle(Transform t) =>
-        t.TryGetComponent(out SpriteRenderer r) && r.sprite != null ? r.bounds.center : t.position + Vector3.up * 0.8f;
+    // The middle of the player's picture. The spirit is drawn by its SpiritSprite pieces, not its own SpriteRenderer
+    // (that one draws nothing and its picture can be missing, which put the hole up above the spirit).
+    static Vector3 Middle(Transform t)
+    {
+        if (t.TryGetComponent(out SpiritSprite spirit) && spirit.HasBody) return spirit.Middle;
+        return t.TryGetComponent(out SpriteRenderer r) && r.sprite != null ? r.bounds.center : t.position + Vector3.up * 0.8f;
+    }
 }
