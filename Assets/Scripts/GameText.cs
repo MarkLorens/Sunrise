@@ -413,6 +413,22 @@ public static class GameText
 
     // After the tutorial: the park tour (ParkTour), and the banner when a part of the objectives is done
     public const string TourSays = "Alright! Opening day, baby!";
+
+    // Visitors in the runaway Ferris wheel's path, the moment it tears loose (FerrisWheel): a few cry out before it
+    // flattens them.
+    public static readonly string[] WheelDoomed =
+    {
+        "Is that... coming this way?!",
+        "Oh no. Oh no no no NO NO!",
+        "Not like this... NOT LIKE THIS!",
+        "Tell my mom I loved the churros!",
+        "I just wanted cotton candy!",
+        "Worst. Ride. EVER!",
+        "Mommy, the big wheel's loose!",
+    };
+
+    // A visitor having their photo taken with the mascot (Visitor)
+    public const string SayCheese = "Say cheese!";
     public static string ObjectiveCompleted(string title) => $"{title}\nCompleted"; // two lines on the cloud, in capitals
 
     // The toilet's sign and valve

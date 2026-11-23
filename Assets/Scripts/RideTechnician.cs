@@ -25,7 +25,7 @@ public class RideTechnician : MonoBehaviour
     Vector3 door;
     bool called; // picked up the call: off to the electrical box
     bool outside; // out of his booth
-    bool faceAwake; // his sleeping face swapped back for his own
+    bool napping;   // asleep on his feet (the sleep face, dozing, the Zzz): Nap
 
     void OnEnable() => All.Add(this);
     void OnDisable() => All.Remove(this);
@@ -51,8 +51,8 @@ public class RideTechnician : MonoBehaviour
         rb.position = transform.position = transform.position + Vector3.forward * standBack;
         zzz = Snore();
         body.possessable = false;
-        look.Expression("sleep", 0f);
         look.Sink(standSink);
+        Nap(true);
     }
 
     void Update()
@@ -60,12 +60,7 @@ public class RideTechnician : MonoBehaviour
         if (!outside)
         {
             look.Face(transform.position + Vector3.back); // facing out over the counter
-            if (!IsAwake) zzz.localPosition = new Vector3(0.6f, snoreHeight + Mathf.Sin(Time.time * 2f) * 0.08f, -0.05f);
-            else if (!faceAwake)
-            {
-                faceAwake = true;
-                look.ClearExpression();
-            }
+            if (napping) zzz.localPosition = new Vector3(0.6f, snoreHeight + Mathf.Sin(Time.time * 2f) * 0.08f, -0.05f);
             return;
         }
         if (!Box(out var box)) return;
@@ -86,9 +81,17 @@ public class RideTechnician : MonoBehaviour
         return go.transform;
     }
 
-    void StopSnoring()
+    void StopSnoring() => Nap(false);
+
+    // Asleep on his feet (the sleep face, breathing and nodding off: CharacterSprite.Doze, the Zzz drifting up) or
+    // awake and talking (his own face, standing still).
+    void Nap(bool on)
     {
-        if (zzz != null) zzz.GetComponent<SleepZFx>().enabled = false;
+        napping = on;
+        look.dozing = on;
+        if (on) look.Expression("sleep", 0f);
+        else look.ClearExpression();
+        if (zzz != null) zzz.GetComponent<SleepZFx>().enabled = on;
     }
 
     // Something blew up. He yells from inside his booth; if the wheel's already down he takes the call he slept through.
@@ -110,12 +113,13 @@ public class RideTechnician : MonoBehaviour
     public System.Collections.IEnumerator WakeUp()
     {
         CameraRig.Spotlight(zzz, 999f, 2f);
+        LightUp();
         yield return new WaitForSeconds(1.2f); // the camera getting there: still snoring
         Fx.Burst("Fx/puff", zzz.position + Vector3.up * 0.3f, 8, Color.white, 2f, 0.35f, 0.5f);
         StopSnoring();
         ClosedCaptions.Show(Captions.Startled);
         GameHud.Shout(zzz, "!!", 0.8f);
-        yield return Jolt(0.6f);
+        yield return new WaitForSeconds(0.6f);
         GameHud.Shout(zzz, GameText.TechnicianWake, 1.8f);
         yield return new WaitForSeconds(2f);
         bool call = false;
@@ -125,36 +129,34 @@ public class RideTechnician : MonoBehaviour
             Wake(true); // awake, staying put until someone calls
             GameHud.Shout(zzz, GameText.TechnicianStaysIn, 2.5f);
             yield return new WaitForSeconds(2.7f);
+            Nap(true); // and back to sleep, till the phone goes
+            CutsceneLight.Off();
             yield break;
         }
         SayOnMyWay(); // the call he slept through
         yield return new WaitForSeconds(2.7f);
         Wake(true); // takes it: out he comes
         yield return new WaitForSeconds(1.5f);
+        CutsceneLight.Off();
     }
 
-    // His booth (the Technician Post's picture) rattles, him tumbling out of bed inside.
-    System.Collections.IEnumerator Jolt(float seconds)
+    // The park dark round him, his booth and his Zzz (CutsceneLight), while the camera's on him.
+    void LightUp()
     {
         var spawner = FindAnyObjectByType<VisitorSpawner>();
-        var post = spawner != null ? spawner.technicianPost : null;
-        Vector3 home = post != null ? post.position : Vector3.zero;
-        for (float t = 0f; t < seconds; t += Time.deltaTime)
-        {
-            if (post != null) post.position = home + new Vector3(Random.Range(-0.06f, 0.06f), 0f, 0f);
-            yield return null;
-        }
-        if (post != null) post.position = home;
+        CutsceneLight.On(this, spawner != null ? spawner.technicianPost : null, zzz);
     }
 
     public System.Collections.IEnumerator SleepThroughCall()
     {
         CameraRig.Spotlight(zzz, 999f, 2f);
+        LightUp();
         yield return new WaitForSeconds(1.2f); // the camera getting there
         GameHud.Shout(zzz, GameText.PhoneRing, 1.4f);
         yield return new WaitForSeconds(1.6f);
         GameHud.Shout(zzz, GameText.TechnicianSnore, 2f);
         yield return new WaitForSeconds(2.2f);
+        CutsceneLight.Off();
     }
 
     // The operator ringing him (RideOperator). Asleep: nothing.
@@ -168,6 +170,7 @@ public class RideTechnician : MonoBehaviour
     {
         if (called) return;
         called = true;
+        Nap(false); // awake to pick up
         if (quiet)
         {
             ComeOut();
@@ -187,12 +190,15 @@ public class RideTechnician : MonoBehaviour
         var rb = GetComponent<Rigidbody>();
         rb.position = transform.position = new Vector3(door.x, transform.position.y, door.z);
         look.SetVisible(true);
+        Nap(false);
         look.Expression("surprised_1", 2.5f); // still rattled from the bang
     }
 
     // Loading a save (SaveGame).
     public void Restore()
     {
-        if (Mischief.IsDone(Mischief.Task.WakeTechnician)) Wake(true);
+        if (!Mischief.IsDone(Mischief.Task.WakeTechnician)) return;
+        Wake(true);
+        if (!outside) Nap(true); // woken by the bang, then back to sleep till the phone goes
     }
 }

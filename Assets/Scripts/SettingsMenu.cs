@@ -23,15 +23,17 @@ public class SettingsMenu : MonoBehaviour
     public static bool IsOpen => open != null;
     static SettingsMenu open;
 
-    static readonly string[] TabNames = { "General", "Display", "Audio", "Game\nControl" };
-    // Each page's tabs (where their words' middles are, across), as the design draws them: the open one is wider.
-    static readonly float[][] TabX =
+    static readonly string[] TabNames = { "General", "Display", "Audio", "Control" };
+    // Where each tab's words' middle is across, on page `open`: the tabs side by side from TabLeft with the same TabGap
+    // between every two (the open one is wider, ActiveTabW, the others IdleTabW).
+    const float TabLeft = 67f, TabGap = 22f, ActiveTabW = 243.5f, IdleTabW = 197f;
+
+    static float TabX(int open, int i)
     {
-        new[] { 188.5f, 398f, 579.5f, 766f },
-        new[] { 170f, 376.5f, 582.5f, 766f },
-        new[] { 170f, 352f, 557.5f, 766f },
-        new[] { 168f, 350f, 534.5f, 742f },
-    };
+        float x = TabLeft;
+        for (int k = 0; k < i; k++) x += (k == open ? ActiveTabW : IdleTabW) + TabGap;
+        return x + (i == open ? ActiveTabW : IdleTabW) * 0.5f - (i == open ? 2f : 0f); // the open tab's art sits 2 right of its words
+    }
     static readonly Color Yellow = new Color32(254, 208, 62, 255), Ink = new Color32(13, 9, 11, 255);
     const float RowY = 392f, RowStep = 70f, ContentTop = 330f;
     const float ActiveLift = 16f; // the open tab sits this much higher than the design draws it (its top under the header)
@@ -112,7 +114,7 @@ public class SettingsMenu : MonoBehaviour
             {
                 bool on = i == t;
                 if (on != (pass == 1)) continue;
-                float x = TabX[t][i];
+                float x = TabX(t, i);
                 var art = Figma.Picture(page, "Tab " + TabNames[i], on ? "Tab_Active" : "Tab_Idle",
                     on ? x + 2f : x, on ? 250.3f - ActiveLift : 222.2f, on ? 243.5f : 197f, on ? 159f : 105.5f);
                 art.raycastTarget = true;
@@ -390,7 +392,7 @@ public class SettingsMenu : MonoBehaviour
             {
                 mode = Navigation.Mode.Explicit,
                 selectOnUp = i > 0 ? rows[i - 1].button : tabButtons[^1],
-                selectOnDown = i < rows.Count - 1 ? rows[i + 1].button : applyButton,
+                selectOnDown = i < rows.Count - 1 ? rows[i + 1].button : resetButton,
             };
         foreach (var b in tabButtons) b.navigation = new Navigation { mode = Navigation.Mode.None }; // TabKeys
         Refresh();
@@ -436,23 +438,40 @@ public class SettingsMenu : MonoBehaviour
     // Bottom right, Back where Credits has it and the other two to its left, in the same light blue pills.
     void Buttons()
     {
-        resetButton = BottomPill("Reset", 819.5f, 213f, Reset);
-        applyButton = BottomPill("Apply Changes", 1072f, 260f, Apply);
+        applyButton = BottomPill("Apply Changes", 843f, 260f, Apply);
+        resetButton = BottomPill("Reset", 1095.5f, 213f, Reset);
         backButton = BottomPill("Back", 1324.5f, 213f, Back, e => e.backButton); // S-06
-        // Up from them: the page's last row (or last key on Game Control, or the tab); left / right along them.
-        Selectable leftUp = rows.Count > 0 ? rows[^1].button : pills.Count > 0 ? pills[LeftBinds.Length - 1] : tabButtons[^1];
-        Selectable rightUp = rows.Count > 0 ? rows[^1].button : pills.Count > 0 ? pills[^1] : tabButtons[^1];
-        resetButton.navigation = new Navigation { mode = Navigation.Mode.Explicit, selectOnUp = leftUp, selectOnRight = applyButton };
-        applyButton.navigation = new Navigation { mode = Navigation.Mode.Explicit, selectOnUp = rightUp, selectOnLeft = resetButton, selectOnRight = backButton };
-        backButton.navigation = new Navigation { mode = Navigation.Mode.Explicit, selectOnUp = rightUp, selectOnLeft = applyButton };
-        // Down from the bottom of each column of keys.
+        // Down from the bottom of each column of keys: Reset (always there).
         foreach (var i in new[] { LeftBinds.Length - 1, pills.Count - 1 })
             if (i >= 0 && i < pills.Count)
             {
                 var nav = pills[i].navigation;
-                nav.selectOnDown = applyButton;
+                nav.selectOnDown = resetButton;
                 pills[i].navigation = nav;
             }
+        applyShown = null;
+        ShowApply();
+    }
+
+    bool? applyShown;
+
+    // Apply Changes shows only while something's changed since Options opened or last applied; the keys step along the
+    // buttons that are there.
+    void ShowApply()
+    {
+        if (applyButton == null) return;
+        bool show = !kept.Same(State.Now());
+        if (show == applyShown) return;
+        applyShown = show;
+        if (!show && EventSystem.current != null && EventSystem.current.currentSelectedGameObject == applyButton.gameObject)
+            MainMenu.Select(resetButton); // it was picked: Reset takes over
+        applyButton.gameObject.SetActive(show);
+        // Up from them: the page's last row (or last key on Control, or the tab); left / right along them.
+        Selectable leftUp = rows.Count > 0 ? rows[^1].button : pills.Count > 0 ? pills[LeftBinds.Length - 1] : tabButtons[^1];
+        Selectable rightUp = rows.Count > 0 ? rows[^1].button : pills.Count > 0 ? pills[^1] : tabButtons[^1];
+        applyButton.navigation = new Navigation { mode = Navigation.Mode.Explicit, selectOnUp = leftUp, selectOnRight = resetButton };
+        resetButton.navigation = new Navigation { mode = Navigation.Mode.Explicit, selectOnUp = show ? rightUp : leftUp, selectOnLeft = show ? applyButton : null, selectOnRight = backButton };
+        backButton.navigation = new Navigation { mode = Navigation.Mode.Explicit, selectOnUp = rightUp, selectOnLeft = resetButton };
     }
 
     Button BottomPill(string words, float x, float w, UnityEngine.Events.UnityAction onClick,
@@ -468,10 +487,20 @@ public class SettingsMenu : MonoBehaviour
         return b;
     }
 
-    // Every setting back to how the game first starts (not kept until applied).
+    // Every setting back to how the game first starts (not kept until applied), once the player says so.
     void Reset()
     {
         if (listening >= 0) return;
+        ConfirmDialog.Open(order + 1, "RESET TO DEFAULT", "Are you sure?", yes =>
+        {
+            confirmClosedFrame = Time.frameCount;
+            if (yes) ResetNow();
+            else MainMenu.Select(resetButton);
+        });
+    }
+
+    void ResetNow()
+    {
         State.Defaults().Restore();
         var at = controlsContent != null ? controlsContent.anchoredPosition : Vector2.zero;
         ShowTab(tab);
@@ -484,6 +513,7 @@ public class SettingsMenu : MonoBehaviour
         if (listening >= 0) return;
         kept = State.Now();
         PlayerPrefs.Save();
+        ShowApply(); // applied: it goes
     }
 
     // Leaves, asking first if there are changes not applied: Yes puts them back as they were kept.
@@ -621,7 +651,8 @@ public class SettingsMenu : MonoBehaviour
 
         var content = MainMenu.Ui("Content", view);
         content.anchorMin = content.anchorMax = content.pivot = new Vector2(0.5f, 1f);
-        content.sizeDelta = new Vector2(Figma.Width * Figma.K, (1298f - ContentTop + 40f) * Figma.K);
+        // Down to just under the last key row (Interact, its pill's bottom at 1169), so the list stops scrolling there.
+        content.sizeDelta = new Vector2(Figma.Width * Figma.K, (1169f + 30f - ContentTop) * Figma.K);
         controlsContent = content;
 
         scroll = page.gameObject.AddComponent<ScrollRect>();
@@ -670,7 +701,7 @@ public class SettingsMenu : MonoBehaviour
 
         // The scroll bar (the design's, fixed on the right), driving the list.
         var barRt = MainMenu.Ui("Scroll Bar", page);
-        Figma.Place(barRt, 1462f, 589.5f, 56f, 738f);
+        Figma.Place(barRt, 1462f, (220.5f + 856f) * 0.5f, 56f, 856f - 220.5f); // ends where the list does
         var barImg = barRt.gameObject.AddComponent<Image>();
         barImg.sprite = UiArt.Get("Scroll/ScrollBar");
         // The thumb slides along the track as drawn (ScrollBar.png: x 17..55, y 18..1072 of 86 x 1136), so at the top
@@ -908,6 +939,7 @@ public class SettingsMenu : MonoBehaviour
         }
         if (es != null && !es.sendNavigationEvents && Time.frameCount > listenEndFrame) es.sendNavigationEvents = true;
         if (ConfirmDialog.IsOpen || Time.frameCount == confirmClosedFrame) return;
+        ShowApply();
         var picked = es != null ? es.currentSelectedGameObject : null;
         if (picked == null && es != null)
         {

@@ -7,6 +7,9 @@ using UnityEngine;
 // While guarding he shows off, never straying far from his post: he walks a little way to one side (paceDistance),
 // stands for idleTime, does a little hop into a pose (mascot_pose_1, then _2, in turn), holds it rocking on the spot
 // for poseTime, then walks to the other side and does it again. Running off he's in his panic pose.
+// Visitors come for a photo with him (Visitor.HeadToPhoto), one at a time. As soon as one heads his way he stops
+// showing off and waits where he is, facing them; once they're beside him he hops into a pose and holds it still for
+// the photo, then carries on.
 [RequireComponent(typeof(GroundWalker), typeof(CharacterSprite))]
 public class Mascot : MonoBehaviour
 {
@@ -27,7 +30,8 @@ public class Mascot : MonoBehaviour
     Vector3 post, away;
     bool gone, leaving;
     float stink;
-    enum Show { Walking, Standing, Hopping, Posing }
+    enum Show { Walking, Standing, Hopping, Posing, Waiting }
+    bool photoPose; // the pose he's in is for a photo: held still, no rocking
     Show show;
     float showUntil, hopStart;
     int nextPose, side = -1; // -1 = left of his post, 1 = right
@@ -47,6 +51,80 @@ public class Mascot : MonoBehaviour
         walker.speed = 2f;
         post = transform.position;
     }
+
+    // ---------------------------------------------------------------- photos with visitors (Visitor)
+
+    Visitor photoWith;
+    float photoUntil;
+    const float PhotoGap = 4f;   // seconds between one photo and the next
+    const float PhotoSide = 1.3f; // how far beside his post they stand
+
+    // A mascot near `p` free for a photo: still on guard, here, and nobody else having one.
+    public static Mascot ForPhoto(Vector3 p, float range)
+    {
+        foreach (var m in All)
+        {
+            Vector3 d = m.transform.position - p;
+            if (new Vector2(d.x, d.z).magnitude > range) continue;
+            if (m.Guarding && !m.leaving && m.enabled && m.look.Visible && Time.time > m.photoUntil + PhotoGap) return m;
+        }
+        return null;
+    }
+
+    // Where they stand: beside him where he's stopped, on the side they're coming from (the other side if that's
+    // blocked).
+    public Vector3 PhotoSpot(Vector3 from)
+    {
+        Vector3 at = new(transform.position.x, post.y, transform.position.z);
+        float s = from.x < at.x ? -1f : 1f;
+        Vector3 spot = at + Vector3.right * s * PhotoSide;
+        return walker.IsWalkable(spot) ? spot : at - Vector3.right * s * PhotoSide;
+    }
+
+    // Kept for `v` for `seconds` (while they walk over): he stops where he is and waits for them.
+    public bool Reserve(Visitor v, float seconds)
+    {
+        if (photoWith != null && photoWith != v && Time.time <= photoUntil) return false;
+        photoWith = v;
+        photoUntil = Time.time + seconds;
+        if (show != Show.Waiting && !photoPose) Wait();
+        return true;
+    }
+
+    // They changed their mind (couldn't get there): he carries on.
+    public void Release(Visitor v)
+    {
+        if (photoWith != v) return;
+        photoWith = null;
+        photoUntil = Time.time;
+        if (show == Show.Waiting) NextSide();
+    }
+
+    // Stops showing off, back on the ground, standing still.
+    void Wait()
+    {
+        if (show == Show.Hopping) Place(new Vector3(transform.position.x, post.y, transform.position.z));
+        look.pose = null;
+        look.dance = false;
+        walker.move = Vector2.zero;
+        show = Show.Waiting;
+    }
+
+    public bool ReservedFor(Visitor v) => photoWith == v && Time.time <= photoUntil && Guarding && !leaving;
+
+    // They're beside him: a hop into a pose, held still for the photo.
+    public void Pose(Visitor v)
+    {
+        if (!ReservedFor(v)) return;
+        photoUntil = Time.time + 6f;
+        Wait();
+        look.Face(v.transform.position);
+        photoPose = true;
+        show = Show.Hopping;
+        hopStart = Time.time;
+    }
+
+    public bool Posing => show == Show.Posing;
 
     // A mascot guarding something near `p`, if any.
     public static Mascot GuardNear(Vector3 p)
@@ -104,13 +182,29 @@ public class Mascot : MonoBehaviour
                 if (k < 1f) return;
                 look.pose = look.poses[nextPose]; // landed: strike the pose
                 nextPose = (nextPose + 1) % look.poses.Length;
-                look.dance = true;
+                look.dance = !photoPose; // for a photo he holds it still
                 show = Show.Posing;
                 showUntil = Time.time + poseTime;
                 return;
 
             case Show.Posing:
                 if (Time.time < showUntil) return;
+                if (photoPose)
+                {
+                    photoPose = false;
+                    photoWith = null; // the photo's done
+                }
+                NextSide();
+                return;
+
+            case Show.Waiting:
+                walker.move = Vector2.zero;
+                if (photoWith != null && Time.time <= photoUntil)
+                {
+                    look.Face(photoWith.transform.position); // watching them come over
+                    return;
+                }
+                photoWith = null; // they never came
                 NextSide();
                 return;
         }
@@ -203,6 +297,7 @@ public class Mascot : MonoBehaviour
         between.position = (transform.position + spirit.position) * 0.5f;
         CameraRig.Spotlight(between, warnTime, 1.5f);
         CameraRig.Zoom(warnZoom);
+        CutsceneLight.On(this, spirit); // the park dark round the two of them
 
         // A dark ring closing in round them, over the night's own vignette (NightLighting, priority 10).
         var profile = ScriptableObject.CreateInstance<UnityEngine.Rendering.VolumeProfile>();
@@ -228,6 +323,7 @@ public class Mascot : MonoBehaviour
         }
         CameraRig.EndZoom();
         CameraRig.EndSpotlight();
+        CutsceneLight.Off();
         yield return null; // let the rig let go of it first
         yield return null;
         Destroy(profile);

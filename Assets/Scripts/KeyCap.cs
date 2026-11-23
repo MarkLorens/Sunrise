@@ -44,6 +44,7 @@ public class KeyCap : MonoBehaviour
         cap.label.color = new Color32(13, 9, 11, 255);
         cap.label.raycastTarget = false;
         cap.label.horizontalOverflow = HorizontalWrapMode.Overflow;
+        InkWeight.On(cap.label);
 
         cap.hint = rt.gameObject.AddComponent<KeyHint>();
         cap.hint.keys = keys;

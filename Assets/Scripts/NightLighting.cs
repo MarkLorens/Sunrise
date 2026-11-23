@@ -8,7 +8,9 @@ using UnityEngine.Tilemaps;
 // moon, the ambient light drops to a cool blue-grey (the park's own colours still read), the sky goes dark, a night grade goes over the
 // post-processing, and the park's own lights come on - warm pools under every lamp post, the stalls lit, chasing
 // bulbs round the Ferris wheel rim and a glow in every cabin. The wheel's bulbs race in overdrive and the whole ride
-// goes dark when it breaks. A soft spirit glow follows whoever you control so you never lose yourself in the dark.
+// goes dark when it breaks. A soft spirit glow follows whoever you control so you never lose yourself in the dark. It
+// lights only them and the ground (a rendering layer of their own, SpiritLayer): props and people they walk past stay
+// as the night has them.
 // Everything it lights is a lit sprite (SpriteLit3D), so people walking under a lamp catch its light.
 // Untick the component in Play mode to compare with day: everything it changed goes back. Values are read every
 // frame, so they can be tuned live. GameHud adds it at runtime; put it on a scene object instead to keep tuned values.
@@ -91,6 +93,12 @@ public class NightLighting : MonoBehaviour
     bool built;
     Transform root;
     Light sun, player;
+    // The spirit glow's own rendering layer: it lights only what's on it (the ground, and whoever you control).
+    // Everything stays on the Default layer too, so the park's other lights see it as before.
+    const int SpiritLayerBit = 7;
+    const uint SpiritLayer = 1u << SpiritLayerBit;
+    Transform lit;      // whoever's on the spirit layer now
+    float nextRelayer;
     readonly List<Lamp> lamps = new();
     readonly List<Light> stalls = new();
     readonly List<Ride> rides = new();
@@ -250,6 +258,9 @@ public class NightLighting : MonoBehaviour
         foreach (var w in FerrisWheel.All) rides.Add(LightUp(w));
 
         player = PointLight("Spirit Glow", root, Vector3.zero);
+        player.renderingLayerMask = (int)SpiritLayer;
+        foreach (var tr in FindObjectsByType<UnityEngine.Tilemaps.TilemapRenderer>(FindObjectsSortMode.None))
+            if (tr.name == "Ground") tr.renderingLayerMask |= SpiritLayer; // the floor takes the glow
     }
 
     // Bulbs chase round the rim (in the wheel's own plane, so they spin with it), every cabin glows, and two
@@ -372,6 +383,21 @@ public class NightLighting : MonoBehaviour
         player.enabled = focus != null;
         if (focus != null) player.transform.position = focus.position + new Vector3(0f, 1.8f, -1.3f);
         Set(player, playerColor, playerIntensity, playerRange);
+        // Only whoever you control is on the glow's layer (checked again now and then: a body grows pieces, a face).
+        if (focus != lit || Time.time >= nextRelayer)
+        {
+            nextRelayer = Time.time + 0.5f;
+            if (focus != lit) OnSpiritLayer(lit, false);
+            lit = focus;
+            OnSpiritLayer(lit, true);
+        }
+    }
+
+    static void OnSpiritLayer(Transform who, bool on)
+    {
+        if (who == null) return;
+        foreach (var r in who.GetComponentsInChildren<Renderer>(true))
+            r.renderingLayerMask = on ? r.renderingLayerMask | SpiritLayer : r.renderingLayerMask & ~SpiritLayer;
     }
 
     static void Set(Light l, Color c, float intensity, float range)

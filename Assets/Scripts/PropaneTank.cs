@@ -32,6 +32,8 @@ public class PropaneTank : MonoBehaviour, IInteraction
 
     public bool Ready => level >= 1f && !spent;
     bool HotDogStand => burns == null;
+    const float StandScorchRadius = 4f;                           // the hot dog stand's pictures, round where it blows
+    static readonly string[] StandPictures = { "hot_dog_stand" };
 
     bool leaking, spent, thoughtBlown;
     float level, nextWisp;
@@ -178,7 +180,10 @@ public class PropaneTank : MonoBehaviour, IInteraction
         spent = true;
         foreach (var p in puffs) p.enabled = false;
         if (HotDogStand)
+        {
             foreach (var h in HotDogMan.All) h.Char();
+            Scorch.BurnNear(Center, StandScorchRadius, false, StandPictures); // the stand, burning
+        }
         StartCoroutine(Payoff());
     }
 
@@ -229,6 +234,9 @@ public class PropaneTank : MonoBehaviour, IInteraction
         leaking = Mischief.IsDone(leakTask);
         level = !spent && Mischief.IsDone(cloudTask) ? 1f : 0f;
         if (spent && HotDogStand)
+        {
             foreach (var h in HotDogMan.All) h.Char();
+            Scorch.BurnNear(Center, StandScorchRadius, true, StandPictures); // already burnt
+        }
     }
 }
