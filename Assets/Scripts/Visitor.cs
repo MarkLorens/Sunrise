@@ -105,8 +105,21 @@ public class Visitor : MonoBehaviour
         if (brain != null && Current != State.Possessed) return;
         if (scripted && Current != State.Possessed)
         {
-            if (scriptedSpot.HasValue && !WalkTo(scriptedSpot.Value)) scriptedSpot = null; // there
+            if (scriptedSpot.HasValue && !WalkTo(scriptedSpot.Value))
+            {
+                scriptedSpot = null; // there
+                if (fleeing) gameObject.SetActive(false); // out of the park (Flee)
+            }
             if (!scriptedSpot.HasValue) walker.move = Vector2.zero;
+            return;
+        }
+
+        // The park's gone mad (Unease.Mayhem): nobody's calm any more, not even in the queue. Running nowhere in
+        // particular, turning this way and that (RunAway), and off again as soon as they stop.
+        if (brain == null && Current is State.Idle or State.Wander or State.Stare or State.Confused or State.Queueing && Unease.Mayhem)
+        {
+            Vector2 r = Random.insideUnitCircle.normalized * 3f;
+            Panic(transform.position + new Vector3(r.x, 0f, r.y), Random.Range(2f, 4f));
             return;
         }
 
@@ -124,6 +137,13 @@ public class Visitor : MonoBehaviour
         if (Following && Current is State.Idle or State.Wander)
         {
             Follow();
+            return;
+        }
+
+        // Complaining at the information booth (BoothCrowd): there they stand (scares and the rest still come first).
+        if (protestSpot.HasValue && Current is State.Idle or State.Wander)
+        {
+            Protest();
             return;
         }
 
@@ -150,6 +170,10 @@ public class Visitor : MonoBehaviour
                     break;
                 }
                 WalkTo(queue.SlotPosition(this));
+                break;
+
+            case State.Riding: // still on the way up to get on (Board); once on, nothing to do till the ride's over
+                if (Boarding && !atBoardingSpot && !WalkTo(boardingSpot)) atBoardingSpot = true;
                 break;
 
             case State.Stare:
@@ -181,6 +205,23 @@ public class Visitor : MonoBehaviour
         scripted = true;
         scriptedSpot = spot;
         SetState(run ? State.Panic : State.Wander);
+    }
+
+    // The finale (FerrisWheel): drop everything, staff included, and run for `exit`, gone once there.
+    bool fleeing;
+
+    public void Flee(Vector3 exit)
+    {
+        if (Current is State.Down or State.Possessed || !gameObject.activeInHierarchy || !Look.Visible) return; // not the mascot gone home
+        if (brain != null) // a worker's job no longer matters
+        {
+            brain.enabled = false;
+            brain = null;
+        }
+        walker.ignoreObstacles = false; // out from behind any counter like everyone else
+        StopProtesting();
+        fleeing = true;
+        SendTo(exit, true);
     }
 
     public void Free()
@@ -409,9 +450,27 @@ public class Visitor : MonoBehaviour
         giveUpAt = -1f;
     }
 
+    // Their turn (RideQueue): up the platform to `spot` behind the wheel, where they get on (StartRide). Nobody can
+    // possess them on the way: they're as good as riding.
+    public bool Boarding { get; private set; }
+    public bool AtBoardingSpot => Boarding && atBoardingSpot;
+    Vector3 boardingSpot;
+    bool atBoardingSpot;
+
+    public void Board(Vector3 spot)
+    {
+        queue = null; // the queue already took us off the line
+        Group?.Leave(this);
+        SetState(State.Riding);
+        Boarding = true;
+        boardingSpot = spot;
+        atBoardingSpot = false;
+    }
+
     // Into a cabin (out of sight until the ride's over). Only visitors going about their day ride, never the spirit.
     public void StartRide()
     {
+        Boarding = false;
         queue = null; // the queue already took us off the line
         SetState(State.Riding);
         walker.move = Vector2.zero;
@@ -461,6 +520,38 @@ public class Visitor : MonoBehaviour
         if (Current != State.Idle) SetState(State.Idle);
         walker.move = Vector2.zero;
         Look.Face(transform.position + (lead.Look.FacingLeft ? Vector3.left : Vector3.right));
+    }
+
+    // ---------------------------------------------------------------- complaining (BoothCrowd)
+
+    Vector3? protestSpot;
+    Vector3 protestFacing;
+
+    public bool Protesting => protestSpot.HasValue;
+    public bool AtProtest => protestSpot.HasValue && Current == State.Idle;
+
+    // Off to `spot` in front of the information booth to stand facing `facing` and complain, until told otherwise.
+    public void Protest(Vector3 spot, Vector3 facing)
+    {
+        Group?.Leave(this);
+        protestSpot = spot;
+        protestFacing = facing;
+    }
+
+    public void StopProtesting() => protestSpot = null;
+
+    void Protest()
+    {
+        Vector3 d = protestSpot.Value - transform.position;
+        d.y = 0f;
+        if (d.magnitude > 0.4f)
+        {
+            if (Current != State.Wander) SetState(State.Wander);
+            if (WalkTo(protestSpot.Value)) return;
+        }
+        if (Current != State.Idle) SetState(State.Idle);
+        walker.move = Vector2.zero;
+        Look.Face(protestFacing);
     }
 
     // ---------------------------------------------------------------- gawking (Aftermath)
@@ -712,6 +803,7 @@ public class Visitor : MonoBehaviour
 
     void SetState(State s)
     {
+        if (s != State.Riding) Boarding = false; // scared off, sent off or worse on the way up: not getting on after all
         Current = s;
         walker.speed = s switch
         {

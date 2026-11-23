@@ -12,7 +12,7 @@ using UnityEngine.UI;
 public class GameHud : MonoBehaviour
 {
     public static GameHud Instance { get; private set; }
-    public static bool HideObjectives; // the objectives (top left) stay out of the way (the park tour, ParkTour)
+    public static bool HideObjectives; // the objectives (top left) and the key prompts stay out of the way (ParkTour, the finale)
 
 
     static readonly Color PanelDark = new(0.12f, 0.08f, 0.12f, 0.8f);
@@ -680,7 +680,8 @@ public class GameHud : MonoBehaviour
         string key = "", text = "";
         var host = spirit.Host;
 
-        if (refusedBy != null && Time.unscaledTime - refusedAt < RefusalTime)
+        if (HideObjectives) { } // a cutscene's showing: no prompts over it
+        else if (refusedBy != null && Time.unscaledTime - refusedAt < RefusalTime)
         {
             // E was just refused: say why, over whatever said no.
             anchor = refusedPerson ? PersonTop(refusedBy) : ThingTop(refusedBy);
