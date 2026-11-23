@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="AudioFile" id="{f36ae16f-089a-4068-afbe-19a55d5e4035}">
 		<property name="assetPath">
-			<value>Cheerful/Mountain Audio - Balloon - Sound (5).wav</value>
+			<value>Balloon/Mountain Audio - Balloon - Sound (5).wav</value>
 		</property>
 		<property name="frequencyInKHz">
 			<value>44.0999985</value>

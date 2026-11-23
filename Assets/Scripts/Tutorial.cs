@@ -148,6 +148,7 @@ public class Tutorial : MonoBehaviour
         ending = true;
         Possession.InputBlocked = false;
         if (hidingObjectives) GameHud.HideObjectives = hidingObjectives = false; // skipped on step 1
+        AudioManager.MusicOff = false; // skipped mid-geyser
         if (held != null)
         {
             held.Look.SetVisible(true); // skipped while they were in the toilet
@@ -163,12 +164,37 @@ public class Tutorial : MonoBehaviour
         // ParkTour.Play(); // off for now; uncomment to show the Ferris wheel after the tutorial (played through or skipped)
     }
 
+    // Skipped before the payoff: the hand-holding goes, but the prank stays to do on your own (OnYourOwn). Skipped
+    // once it's under way: it's all done for you, as before.
     void Skip()
     {
         if (flow != null) StopCoroutine(flow);
-        Mischief.CompleteQuietly(Mischief.TutorialTasks);
-        if (prank != null) Destroy(prank.gameObject);
+        bool started = Mischief.IsDone(Mischief.Task.TutorialLeave);
+        if (started)
+        {
+            Mischief.CompleteQuietly(Mischief.TutorialTasks);
+            if (prank != null) Destroy(prank.gameObject);
+        }
         Finish();
+        if (!started && prank != null) flow = StartCoroutine(OnYourOwn());
+    }
+
+    // The tutorial skipped: "Toilet Trouble" stays on the objectives, the sign and the valve work as ever, and leaving
+    // the body once both are done sends someone running for the toilet, the same payoff as step 11, with no cards,
+    // spotlights or ring.
+    IEnumerator OnYourOwn()
+    {
+        Visitor lastBody = null;
+        while (!(prank.SignDown && prank.Maxed && spirit.Host == null))
+        {
+            if (spirit.Host != null) lastBody = spirit.Host;
+            yield return null;
+        }
+        Mischief.Complete(Mischief.Task.TutorialLeave);
+        yield return new WaitForSeconds(0.6f);
+        yield return ToiletPayoff(lastBody, guided: false);
+        Possession.InputBlocked = false;
+        AudioManager.MusicOff = false;
     }
 
     // ---------------------------------------------------------------- the steps
@@ -288,12 +314,32 @@ public class Tutorial : MonoBehaviour
         Mischief.Complete(Mischief.Task.TutorialLeave);
         yield return new WaitForSeconds(0.6f);
 
-        // 11. Someone else, from a little way off, comes running for the toilet; the camera runs with them. In they
-        // go, the block rumbles harder and harder, and up it goes.
+        // 11.
+        yield return ToiletPayoff(lastBody, guided: true);
+
+        // 12. The pop-up, holding the geyser's line while you read.
+        string line = GameText.StepDone(Mischief.Task.TutorialToilet);
+        FocusOn(GameHud.Instance.PopUp, 18f);
+        Card(GameText.TutorialEvent, next: true);
+        GameHud.Instance.KeepPopUp(line);
+        yield return Next(() => GameHud.Instance.KeepPopUp(line));
+
+        Finish();
+    }
+
+    // Step 11, and the skipped tutorial's payoff (OnYourOwn): someone else, from a little way off, comes running for
+    // the toilet; the camera runs with them. In they go, the block rumbles harder and harder, and up it goes.
+    // Guided: the card and the spirit's bubble; otherwise the laugh is a thought (GameHud).
+    IEnumerator ToiletPayoff(Visitor lastBody, bool guided)
+    {
         Possession.InputBlocked = true;
-        Say(null);
-        Card(GameText.TutorialWatch);
-        Unfocus(); // the payoff in plain view: no dark, no light
+        AudioManager.MusicOff = true;
+        if (guided)
+        {
+            Say(null);
+            Card(GameText.TutorialWatch);
+            Unfocus(); // the payoff in plain view: no dark, no light
+        }
         var victim = Runner(prank.Door, lastBody);
         held = victim;
         if (victim != null)
@@ -319,18 +365,11 @@ public class Tutorial : MonoBehaviour
         yield return prank.Geyser(victim);
         held = null; // out, soaked, and on their way
         yield return new WaitForSeconds(0.8f);
-        Say(GameText.TutorialLaughSays);
+        if (guided) Say(GameText.TutorialLaughSays);
+        else GameHud.Think(GameHud.ThoughtPriority.Critical, GameText.TutorialLaughSays);
         yield return new WaitForSeconds(2.2f);
         CameraRig.EndSpotlight();
-
-        // 12. The pop-up, holding the geyser's line while you read.
-        string line = GameText.StepDone(Mischief.Task.TutorialToilet);
-        FocusOn(GameHud.Instance.PopUp, 18f);
-        Card(GameText.TutorialEvent, next: true);
-        GameHud.Instance.KeepPopUp(line);
-        yield return Next(() => GameHud.Instance.KeepPopUp(line));
-
-        Finish();
+        AudioManager.MusicOff = false;
     }
 
     // Space or Enter moves on (not while paused).

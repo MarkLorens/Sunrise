@@ -128,7 +128,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
             if (level >= 1f)
             {
                 Mischief.Complete(cloudTask);
-                GameHud.Think(GameHud.ThoughtPriority.Action, HotDogStand ? GameText.ThinkCloud : GameText.ThinkLockerCloud);
+                GameHud.Think(GameHud.ThoughtPriority.Action, HotDogStand ? (HotDogMan.GrillBurning ? GameText.ThinkCloudGrillOn : GameText.ThinkCloud) : GameText.ThinkLockerCloud);
             }
         }
 
@@ -190,6 +190,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
     IEnumerator Payoff()
     {
         Possession.InputBlocked = true;
+        AudioManager.MusicOff = true;
         ClosedCaptions.Show(Captions.Explosion);
         Fx.Burst("Fx/puff", Center + Vector3.up, 40, new Color(1f, 0.55f, 0.15f), 8f, 1.2f, 0.9f);
         Fx.Burst("Fx/puff", Center + Vector3.up, 25, new Color(1f, 0.85f, 0.3f), 5f, 0.9f, 0.6f);
@@ -213,6 +214,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
         {
             yield return burns.Burn(); // the fire, the PA, the operator running over
             CameraRig.EndSpotlight();
+            AudioManager.MusicOff = false;
             yield return new WaitForSeconds(1f);
             Possession.InputBlocked = false;
             GameHud.Think(GameHud.ThoughtPriority.Critical, GameText.ThinkFire);
@@ -222,6 +224,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
         // Across the park, someone's nap is over.
         if (RideTechnician.All.Count > 0) yield return RideTechnician.All[0].WakeUp();
         CameraRig.EndSpotlight();
+        AudioManager.MusicOff = false;
         yield return new WaitForSeconds(1f); // the camera easing back
         Possession.InputBlocked = false;
         GameHud.Think(GameHud.ThoughtPriority.Critical, GameText.ThinkBoom);

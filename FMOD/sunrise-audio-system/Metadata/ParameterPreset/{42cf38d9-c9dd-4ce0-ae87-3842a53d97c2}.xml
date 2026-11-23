@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="ParameterPreset" id="{42cf38d9-c9dd-4ce0-ae87-3842a53d97c2}">
+		<property name="name">
+			<value>Hinge</value>
+		</property>
+		<relationship name="folder">
+			<destination>{0c297bad-6fb0-4dec-b708-8b830dd7d1ed}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{25f63180-f78c-4576-9ac4-2de148dda471}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{25f63180-f78c-4576-9ac4-2de148dda471}">
+		<property name="parameterType">
+			<value>2</value>
+		</property>
+		<property name="maximum">
+			<value>2</value>
+		</property>
+		<property name="enumerationLabels">
+			<value>Loose</value>
+			<value>Intact</value>
+		</property>
+		<property name="initialValue">
+			<value>1</value>
+		</property>
+	</object>
+</objects>
