@@ -94,7 +94,7 @@ public class PauseMenu : MonoBehaviour
     void BackToMainMenu()
     {
         SetPaused(false);
-        LoadingScreen.Load(0); // the main menu is first in Build Settings
+        LoadingScreen.FadeTo(0); // the main menu is first in Build Settings; nothing much to load, so just a fade
     }
 
     // Leaving the scene while paused (or stopping Play mode): don't leave the game frozen.

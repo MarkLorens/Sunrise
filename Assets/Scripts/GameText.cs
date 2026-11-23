@@ -115,7 +115,7 @@ public static class GameText
     public const string BoxLocked = "Locked. The electrician has the keys";
 
     // The drinking fountain
-    public const string FountainBusy = "Still gurgling";
+    public const string FountainBusy = "Still leaking";
 
     // Flaming hot dogs
     public const string LidOpen = "The rats are already out";
@@ -240,7 +240,7 @@ public static class GameText
     public const string ThinkFire = "Shoddy Construction, really. Now's my chance with the operator"; // after the fire payoff
     public const string ThinkBooth = "Nice fingers. Don't mind if I do.";                             // scanning as the operator
     public const string ThinkMaxSpeed = "Faster... FASTER!";                                          // maxing the wheel
-    public const string ThinkRolled = "Fare-thee-wheel. Hehehe…";                                     // the last word, after the wheel's rolled (FerrisWheel)
+    public const string ThinkRolled = "Wheely sorry folks! Come again!";                                     // the last word, after the wheel's rolled (FerrisWheel)
 
     // Out loud
     public const string MascotGuard = "*angry mascot noises* (Don't touch the fan!)";
@@ -365,7 +365,7 @@ public static class GameText
 
     // 1. The spirit
     public const string TutorialMeSays = "I woke up and chose violence… recreationally.";
-    public const string TutorialMe = "This little evil spirit is you.";
+    public const string TutorialMe = "This is you, Ruckus, a young evil spirit";
     // 2. The objective (top left)
     public const string TutorialGoalSays = "Objectives! Like a recipe… for someone else's bad day.";
     public const string TutorialGoal = "Your mischief to-do list lives up here.";
@@ -435,4 +435,7 @@ public static class GameText
     public const string SignPrompt = "Take down the Out of Order sign";
     public static string ValvePrompt(int turns, int of) => $"Crank up the valve ({turns}/{of})";
     public const string ValveMaxed = "It won't turn any further";
+
+    // The loading screen's progress, in the middle of its Ferris wheel (LoadingScreen)
+    public static string LoadingPercent(int percent) => $"{percent}%";
 }

@@ -43,6 +43,8 @@ public class LockerRoom : MonoBehaviour
     }
 
     // The payoff, after the fireball (PropaneTank): it burns, the PA goes off, the operator runs over.
+    const float ShotHold = 5f; // seconds the camera stays on the PA booth, then on the operator, once it's there
+
     public IEnumerator Burn()
     {
         Ignite();
@@ -52,15 +54,11 @@ public class LockerRoom : MonoBehaviour
         {
             // The booth's picture is a child, well away from the marker itself: frame the picture.
             var art = paBooth.GetComponentInChildren<SpriteRenderer>();
-            CameraRig.Spotlight(art != null ? art.transform : paBooth, 999f, 2f);
-            // The park dark round the booth and the announcer in it.
-            var spawner = FindAnyObjectByType<VisitorSpawner>();
-            var announcer = spawner != null ? Visitor.All.Find(v => v.name == spawner.announcerName) : null;
-            CutsceneLight.On(art != null ? art.transform : paBooth, announcer);
+            CameraRig.Spotlight(art != null ? art.transform : paBooth, 999f, 2f); // the park stays lit (no CutsceneLight)
             yield return new WaitForSeconds(1.2f); // the camera getting there
             ClosedCaptions.Show(Captions.PaScreech);
-            GameHud.Shout(paBooth, GameText.PAFire, 3.5f);
-            yield return new WaitForSeconds(3.7f);
+            GameHud.Shout(paBooth, GameText.PAFire, ShotHold);
+            yield return new WaitForSeconds(ShotHold + 0.2f);
         }
 
         foreach (var o in RideOperator.All)
@@ -68,8 +66,8 @@ public class LockerRoom : MonoBehaviour
             o.GoToFire(Rally, transform.position);
             CameraRig.Spotlight(o.transform, 999f, 1.5f);
             CutsceneLight.On(o);
-            GameHud.Shout(o.transform, GameText.OperatorFire, 2.5f);
-            yield return new WaitForSeconds(3.5f);
+            GameHud.Shout(o.transform, GameText.OperatorFire, 1.2f + ShotHold);
+            yield return new WaitForSeconds(1.2f + ShotHold); // the camera getting there, then the shot
             break;
         }
         CutsceneLight.Off();

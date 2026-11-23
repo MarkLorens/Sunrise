@@ -45,6 +45,18 @@ MonoBehaviour:
   - KeyboardKey/KeyW
   - KeyboardKey/KeyX
   - KeyboardKey/KeyZ
+  - Loading/Base
+  - Loading/Cabin1
+  - Loading/Cabin2
+  - Loading/Cabin3
+  - Loading/Cabin4
+  - Loading/Cabin5
+  - Loading/Cabin6
+  - Loading/Cabin7
+  - Loading/Cabin8
+  - Loading/Cabin9
+  - Loading/Hub
+  - Loading/Wheel
   - Logo/Max2_Studio
   - Logo/Mission_cloud
   - Logo/Objective_complete
@@ -119,6 +131,18 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 6240ca4bbdbcc4688884c52ebdda833a, type: 3}
   - {fileID: 21300000, guid: d3e0e6e1d373847ebb92fb6d0944f483, type: 3}
   - {fileID: 21300000, guid: 5d8c607366cb944708fd062f60aebabf, type: 3}
+  - {fileID: 21300000, guid: 27295e29bc54a402aae76a769791e5df, type: 3}
+  - {fileID: 21300000, guid: 05a6585d7e1e54bcc91ae4a82fc1164d, type: 3}
+  - {fileID: 21300000, guid: fd1fbf25fde2c4a949f5d4ddfc4f6010, type: 3}
+  - {fileID: 21300000, guid: fcca8e327b90942c7b767232bbcecb61, type: 3}
+  - {fileID: 21300000, guid: 27d1bf7cdc4544d3bb3db1ca23eacc9e, type: 3}
+  - {fileID: 21300000, guid: 61ae70bad66784b8189ee00259fa2c3e, type: 3}
+  - {fileID: 21300000, guid: c146b589fd17c497197d67077800f667, type: 3}
+  - {fileID: 21300000, guid: 86e5c8a701f504c339f180c86e3fae1f, type: 3}
+  - {fileID: 21300000, guid: df4e98daa63ab4849aab4fb7af912ba4, type: 3}
+  - {fileID: 21300000, guid: 439bc86090c164320979d996f3461c08, type: 3}
+  - {fileID: 21300000, guid: e43eb2e95c153445ebe50f33b81b4a6c, type: 3}
+  - {fileID: 21300000, guid: ac9f6ae7257c247dd945b7da253fcf58, type: 3}
   - {fileID: 21300000, guid: 38801a1dee97d448a84b6ef94caccb97, type: 3}
   - {fileID: 21300000, guid: 7a421c8f254fa4c22be2b7d82acd7cb0, type: 3}
   - {fileID: 21300000, guid: 19b5e14306f3a4448b7335a3e344eb36, type: 3}

@@ -5,7 +5,8 @@ using UnityEngine.Tilemaps;
 // The tutorial's prank, at the park's toilet block (the "bathroom" tile): an Out of Order sign in front of the door,
 // and a water valve on a pipe beside it. In a body (K): take the sign down (ToiletSign), crank the valve all the way
 // up (ToiletValve), and the next visitor who goes in comes back out in a geyser, sending everyone nearby running.
-// The block's left broken (Props/toilet_broken), and a Reset Agent comes and puts up a caution sign
+// The block's left broken (Props/toilet_broken) and splattered with it, puddles of it round its front (PoopStain), and
+// a Reset Agent comes and puts up a caution sign
 // (Props/toilet_sign_caution), for good. Made by Tutorial, on a new game only.
 // The pipe and its valve stand beside the block (Props/toilet_pipe, toilet_valve: cut from the artist's picture of the
 // block, so they line up with its tile); the valve wheel turns as it's cranked. The valve part is an invisible spot to
@@ -342,8 +343,11 @@ public class ToiletPrank : MonoBehaviour
             Fx.Burst("Fx/puff", up, 10, new Color(c.r, c.g, c.b, 0.45f), 3f, 2.6f, 1.8f);  // the blur
             Fx.Burst("Fx/puff", up, 16, c, 4.5f, 1.2f, 1.5f);
             Fx.Burst("Fx/puff", Door + Vector3.up * 0.4f, 8, Poop[(i + 1) % Poop.Length], 4f, 0.7f, 1.2f); // splats
+            // Raining back down on the block (splats landing all over it, round the hole first) and onto the ground.
+            if (i == 1) PoopStain.Splatter(Picture.GetComponent<SpriteRenderer>(), new Vector2(0.5f + RoofHole.x, RoofHole.y));
             if (i == 3)
             {
+                PoopStain.Puddles(Door, Block);
                 Erupted = true;
                 ParkChaos.Add(Door, panicRadius, panicTime); // everybody nearby runs
             }

@@ -36,6 +36,7 @@ public static class NavGrid
     static int stamp;
     static readonly List<(float f, int cell)> heap = new();
     static readonly List<int> cells = new();
+    static readonly List<Rect> boxes = new(); // what's in the way, while mapping (Build)
     static int searchFrame = -1, searchesThisFrame;
 
     // Something in the way changed (a prop was added): remap before the next search.
@@ -106,13 +107,23 @@ public static class NavGrid
         seenIn = new int[n];
         closedIn = new int[n];
         stamp = 0;
+        // Near something in the way: marked from each obstacle's box over just the squares around it, with the same test
+        // as GroundWalker.NearObstacle. (Asking NearObstacle square by square checked every box for every square: half
+        // a second as the park opened, the loading screen stuck meanwhile.)
+        bool[] near = new bool[n], nearWide = new bool[n];
+        GroundWalker.ObstacleBoxes(boxes);
+        foreach (Rect r in boxes)
+        {
+            Mark(r, Clearance, near);
+            Mark(r, Clearance + CellSize * 0.5f, nearWide);
+        }
         for (int i = 0; i < n; i++)
         {
             Vector3 p = Center(i);
             Vector3Int cell = ground.WorldToCell(p);
             cell.z = 0;
-            blocked[i] = !ground.HasTile(cell) || GroundWalker.NearObstacle(p, Clearance);
-            tight[i] = !blocked[i] && GroundWalker.NearObstacle(p, Clearance + CellSize * 0.5f);
+            blocked[i] = !ground.HasTile(cell) || near[i];
+            tight[i] = !blocked[i] && nearWide[i];
             floor[i] = RaisedFloor.Height(p);
             foreach (var area in StaffArea.All)
                 if (area.Contains(p)) staffOnly[i] = true;
@@ -120,6 +131,22 @@ public static class NavGrid
                 if (area.Contains(p)) fenced[i] = area;
             if (floor[i] > RaisedFloor.Ground) staffOnly[i] = true; // up on the platform: visitors only go there to board (GroundWalker)
         }
+    }
+
+    // Each square whose middle is within `radius` of box `r` (GroundWalker.Within), looking only at the squares around it
+    // (a square either side to spare).
+    static void Mark(Rect r, float radius, bool[] near)
+    {
+        int x0 = Mathf.Max(0, Mathf.FloorToInt((r.xMin - radius - originX) / CellSize) - 1);
+        int x1 = Mathf.Min(width - 1, Mathf.CeilToInt((r.xMax + radius - originX) / CellSize) + 1);
+        int z0 = Mathf.Max(0, Mathf.FloorToInt((r.yMin - radius - originZ) / CellSize) - 1);
+        int z1 = Mathf.Min(height - 1, Mathf.CeilToInt((r.yMax + radius - originZ) / CellSize) + 1);
+        for (int z = z0; z <= z1; z++)
+            for (int x = x0; x <= x1; x++)
+            {
+                int i = z * width + x;
+                if (!near[i] && GroundWalker.Within(r, Center(i), radius)) near[i] = true;
+            }
     }
 
     static bool Open(int i, bool mayUseStaff) =>
