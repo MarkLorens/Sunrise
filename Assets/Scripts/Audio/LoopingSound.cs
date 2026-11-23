@@ -27,6 +27,15 @@ public class LoopingSound
         ApplyRange();
     }
 
+    // Back to the event's own min/max distance from FMOD Studio (undoes SetRange).
+    public void ClearRange()
+    {
+        range = null;
+        if (!instance.isValid()) return;
+        instance.setProperty(EVENT_PROPERTY.MINIMUM_DISTANCE, -1f); // -1: the event's own
+        instance.setProperty(EVENT_PROPERTY.MAXIMUM_DISTANCE, -1f);
+    }
+
     void ApplyRange()
     {
         if (range == null || !instance.isValid()) return;

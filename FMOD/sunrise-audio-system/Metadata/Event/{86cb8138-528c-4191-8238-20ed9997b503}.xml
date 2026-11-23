@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="Event" id="{86cb8138-528c-4191-8238-20ed9997b503}">
 		<property name="name">
-			<value>Ferris Wheel (Normal Speed)</value>
+			<value>Ferris Wheel</value>
 		</property>
 		<property name="outputFormat">
 			<value>2</value>
@@ -142,6 +142,9 @@
 		</property>
 		<property name="timelockedOffset">
 			<value>0.6977457302069765</value>
+		</property>
+		<property name="pitch">
+			<value>-2</value>
 		</property>
 		<relationship name="audioFile">
 			<destination>{f4ef195a-9530-4b2f-9e99-fd4c226cacb9}</destination>
