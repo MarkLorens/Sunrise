@@ -200,6 +200,7 @@ public class ToiletPrank : MonoBehaviour
     {
         if (SignDown) return;
         SignDown = true;
+        AudioManager.TryPlay(e => e.outOfOrderSign, Sign.position); // TT-03 Take Out the Sign, from the sign
         ClosedCaptions.Show(Captions.SignOff);
         Fx.Burst("Fx/puff", Sign.position + Vector3.up * 0.6f, 8, Color.white, 2f, 0.35f, 0.5f);
         Sign.gameObject.SetActive(false); // its collider goes with it: the door's clear
@@ -210,6 +211,7 @@ public class ToiletPrank : MonoBehaviour
     {
         if (Maxed) return;
         Pressure++;
+        AudioManager.TryPlay(e => e.valveCrank, handle); // TT-04 Water Valve, from the handle: each of the 3 cranks
         ClosedCaptions.Show(Captions.Valve);
         Fx.Burst("Fx/sparkle", handle, 3 + Pressure * 2, Water, 1.5f + Pressure * 0.5f, 0.2f, 0.4f);
         Fx.Shake(0.04f * Pressure);

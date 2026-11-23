@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="AudioFile" id="{f5d952d9-a882-4526-8717-01d92cc1d091}">
 		<property name="assetPath">
-			<value>Cheerful Scatter-Whistles, Human, Mouth, Short SND23750.wav</value>
+			<value>Cheerful/Whistles, Human, Mouth, Short SND23750.wav</value>
 		</property>
 		<property name="frequencyInKHz">
 			<value>96</value>

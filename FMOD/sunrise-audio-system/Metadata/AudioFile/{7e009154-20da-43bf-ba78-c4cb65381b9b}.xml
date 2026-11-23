@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="AudioFile" id="{7e009154-20da-43bf-ba78-c4cb65381b9b}">
 		<property name="assetPath">
-			<value>Clowning Around (Megaphone ver.).wav</value>
+			<value>BGM/Clowning Around (Megaphone ver.).wav</value>
 		</property>
 		<property name="isStreaming">
 			<value>true</value>

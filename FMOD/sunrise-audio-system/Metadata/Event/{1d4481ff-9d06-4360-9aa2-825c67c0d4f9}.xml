@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="Event" id="{1d4481ff-9d06-4360-9aa2-825c67c0d4f9}">
 		<property name="name">
-			<value>Hold Space to Skip</value>
+			<value>Hold Space to Skip Tutorial</value>
 		</property>
 		<property name="outputFormat">
 			<value>1</value>
@@ -101,7 +101,7 @@
 	<object class="MixerBusPanner" id="{a0902a62-4daf-4e8f-bba7-da7c681bfcac}" />
 	<object class="SingleSound" id="{398a76b2-6920-460b-a5ce-40c1dd097e5d}">
 		<property name="volume">
-			<value>-10</value>
+			<value>-7.5</value>
 		</property>
 		<property name="pitch">
 			<value>-2</value>

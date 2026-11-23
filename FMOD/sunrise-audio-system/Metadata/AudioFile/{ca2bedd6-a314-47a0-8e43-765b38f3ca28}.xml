@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="AudioFile" id="{ca2bedd6-a314-47a0-8e43-765b38f3ca28}">
 		<property name="assetPath">
-			<value>Cartoon Character Scream.wav</value>
+			<value>Panic/Cartoon Character Scream.wav</value>
 		</property>
 		<property name="frequencyInKHz">
 			<value>44.0999985</value>

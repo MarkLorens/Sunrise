@@ -1,4 +1,5 @@
 using FMODUnity;
+using UnityEngine;
 
 // The FMOD mixer's groups, so volume settings and the pause menu can reach them:
 //   Music: background music (lobby, Ruckus, possessed).
@@ -18,13 +19,45 @@ public static class AudioBuses
         && RuntimeManager.StudioSystem.getBus(Music, out _) == FMOD.RESULT.OK
         && RuntimeManager.StudioSystem.getBus(Sfx, out _) == FMOD.RESULT.OK;
 
+    // Each group's volume as the sliders set it (Settings), before any turning down (Duck).
+    static readonly System.Collections.Generic.Dictionary<string, float> setting = new();
+    static float duck = 1f;
+
     public static bool SetVolume(string path, float volume)
     {
+        setting[path] = volume;
+        return Apply(path);
+    }
+
+    // "Objective Completed!" (AudioManager.PlayOverOthers): the Music and SFX groups at `level` (0..1) of their
+    // slider's volume, so the pop-up's sound (UI) stands out; 1 puts them back.
+    public static void Duck(float level)
+    {
+        if (Mathf.Approximately(level, duck)) return;
+        duck = level;
+        Apply(Music);
+        Apply(Sfx);
+    }
+
+    static bool Apply(string path)
+    {
+        float volume = setting.TryGetValue(path, out float v) ? v : 1f;
+        if (path == Music || path == Sfx) volume *= duck;
         try
         {
             return RuntimeManager.GetBus(path).setVolume(volume) == FMOD.RESULT.OK; // starts FMOD up if it isn't yet
         }
         catch (System.Exception) { return false; } // no such group, or no FMOD banks set up
+    }
+
+    // Every sound going through this group stops dead (leaving a scene: AudioManager.StopGameplaySounds).
+    public static bool StopAll(string path)
+    {
+        try
+        {
+            return RuntimeManager.IsInitialized && RuntimeManager.GetBus(path).stopAllEvents(FMOD.Studio.STOP_MODE.IMMEDIATE) == FMOD.RESULT.OK;
+        }
+        catch (System.Exception) { return false; }
     }
 
     public static bool SetPaused(string path, bool paused)

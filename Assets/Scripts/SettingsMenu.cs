@@ -143,9 +143,11 @@ public class SettingsMenu : MonoBehaviour
     }
 
     // The player turning to a tab (clicked, or left / right on the tabs): the menu click (G-03), then the page.
-    void TurnTo(int t)
+    // Clicked: the menu click (G-03). With the arrow keys: the hover sound (G-02), as moving along a menu.
+    void TurnTo(int t, bool keys = false)
     {
-        AudioManager.TryPlay(e => e.menuClick);
+        if (keys) AudioManager.TryPlay(e => e.menuHover);
+        else AudioManager.TryPlay(e => e.menuClick);
         if (t != tab) ShowTab(t);
     }
 
@@ -154,8 +156,8 @@ public class SettingsMenu : MonoBehaviour
         public SettingsMenu menu;
         public void OnMove(AxisEventData e)
         {
-            if (e.moveDir == MoveDirection.Left && menu.tab > 0) menu.TurnTo(menu.tab - 1);
-            else if (e.moveDir == MoveDirection.Right && menu.tab < 3) menu.TurnTo(menu.tab + 1);
+            if (e.moveDir == MoveDirection.Left && menu.tab > 0) menu.TurnTo(menu.tab - 1, keys: true);
+            else if (e.moveDir == MoveDirection.Right && menu.tab < 3) menu.TurnTo(menu.tab + 1, keys: true);
             else if (e.moveDir == MoveDirection.Down && menu.rows.Count > 0) MainMenu.Select(menu.rows[0].button);
             else if (e.moveDir == MoveDirection.Down && menu.cards[0] != null) MainMenu.Select(menu.cards[0]);
         }

@@ -285,6 +285,7 @@ public class Tutorial : MonoBehaviour
             victim.Hold();
             yield return new WaitForSeconds(0.6f); // at the door, a moment, then in
             victim.Look.SetVisible(false); // in they go
+            AudioManager.TryPlay(e => e.closetEnter, prank.Door); // TT-05, the door as they disappear inside
         }
         prank.StartExplosionSound(); // TT-06, right as they go in
         CameraRig.Spotlight(prank.Middle, 20f, 2.5f, 1f);

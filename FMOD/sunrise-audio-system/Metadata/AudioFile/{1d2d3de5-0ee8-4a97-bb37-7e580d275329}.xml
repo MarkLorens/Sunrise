@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="AudioFile" id="{1d2d3de5-0ee8-4a97-bb37-7e580d275329}">
 		<property name="assetPath">
-			<value>Cartoon, Splat, Wet SND15497.wav</value>
+			<value>Toilet Explosion/Cartoon, Splat, Wet SND15497.wav</value>
 		</property>
 		<property name="frequencyInKHz">
 			<value>96</value>

@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="AudioFile" id="{c52e4aca-4583-4ae1-b7e1-e808160caf03}">
 		<property name="assetPath">
-			<value>Cheerful Scatter-Voices, Laugh, Child, Girls, 6 Years Old SND35951.wav</value>
+			<value>Cheerful/Voices, Laugh, Child, Girls, 6 Years Old SND35951.wav</value>
 		</property>
 		<property name="frequencyInKHz">
 			<value>96</value>

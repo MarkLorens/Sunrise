@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="AudioFile" id="{91a41fd4-40e1-4caf-889e-c32313f8911e}">
 		<property name="assetPath">
-			<value>Cartoon Increase.wav</value>
+			<value>UI/Cartoon Increase.wav</value>
 		</property>
 		<property name="frequencyInKHz">
 			<value>44.0999985</value>

@@ -485,7 +485,26 @@ public class Visitor : MonoBehaviour
         Look.panicBody = true; // panic body and face, until they calm down (SetState)
         stateEndsAt = Time.time + duration;
         Look.Cheer(0.4f);
+        Scream();
         RunAway();
+    }
+
+    // NPC-01 as they bolt, following them as they run. Not every time: someone who keeps panicking near something that
+    // stays frightening screams again only after ScreamCooldown, and only ScreamsPerSecond start across the whole park,
+    // so a crowd bolting at once is a few screams, not a wall of them (ParkCrowd's panic layer fills in the rest).
+    const float ScreamCooldown = 8f;
+    const int ScreamsPerSecond = 3;
+    static readonly Queue<float> recentScreams = new();
+    float nextScream;
+
+    void Scream()
+    {
+        if (Time.time < nextScream || !Look.Visible) return;
+        while (recentScreams.Count > 0 && Time.time - recentScreams.Peek() > 1f) recentScreams.Dequeue();
+        if (recentScreams.Count >= ScreamsPerSecond) return;
+        if (!AudioManager.TryPlayOn(e => e.npcScream, gameObject)) return;
+        recentScreams.Enqueue(Time.time);
+        nextScream = Time.time + ScreamCooldown;
     }
 
     void RunAway()

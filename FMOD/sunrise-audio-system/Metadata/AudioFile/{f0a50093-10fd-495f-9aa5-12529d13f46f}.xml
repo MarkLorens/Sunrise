@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="AudioFile" id="{f0a50093-10fd-495f-9aa5-12529d13f46f}">
 		<property name="assetPath">
-			<value>Electric_Zap_03.wav</value>
+			<value>Electric Shock/Electric_Zap_03.wav</value>
 		</property>
 		<property name="frequencyInKHz">
 			<value>44.0999985</value>

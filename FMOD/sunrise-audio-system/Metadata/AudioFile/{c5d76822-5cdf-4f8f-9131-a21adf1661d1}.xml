@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="AudioFile" id="{c5d76822-5cdf-4f8f-9131-a21adf1661d1}">
 		<property name="assetPath">
-			<value>electric shock cartoon.mp3</value>
+			<value>Electric Shock/electric shock cartoon.mp3</value>
 		</property>
 		<property name="frequencyInKHz">
 			<value>24</value>

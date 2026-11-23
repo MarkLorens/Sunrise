@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="AudioFile" id="{00bacb76-49c7-407e-8307-29239e12b570}">
 		<property name="assetPath">
-			<value>User Interface, Alert, Error, Dull SND85094.wav</value>
+			<value>UI/User Interface, Alert, Error, Dull SND85094.wav</value>
 		</property>
 		<property name="frequencyInKHz">
 			<value>96</value>

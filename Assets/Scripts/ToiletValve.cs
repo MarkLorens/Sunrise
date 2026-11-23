@@ -1,8 +1,9 @@
 using UnityEngine;
 
-// The water valve beside the toilet (ToiletPrank): in a body, each E cranks the pressure up a notch.
+// The water valve beside the toilet (ToiletPrank): in a body, each K cranks the pressure up a notch, with the
+// Water Valve sound (so no menu click: IOwnSound).
 [RequireComponent(typeof(Interactable))]
-public class ToiletValve : MonoBehaviour, IInteraction
+public class ToiletValve : MonoBehaviour, IInteraction, IOwnSound
 {
     ToiletPrank prank;
 

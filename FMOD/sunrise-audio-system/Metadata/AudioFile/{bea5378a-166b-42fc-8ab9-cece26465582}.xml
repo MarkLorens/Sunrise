@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="AudioFile" id="{bea5378a-166b-42fc-8ab9-cece26465582}">
 		<property name="assetPath">
-			<value>User Interface, Misc, Computer, Empty Bin, Trash, Variations 03 SND114937.wav</value>
+			<value>UI/User Interface, Misc, Computer, Empty Bin, Trash, Variations 03 SND114937.wav</value>
 		</property>
 		<property name="frequencyInKHz">
 			<value>96</value>

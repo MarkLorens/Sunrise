@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="AudioFile" id="{10f35af8-0bf8-47df-93f3-25590c5a676e}">
 		<property name="assetPath">
-			<value>Munchkin Tickle Hit.wav</value>
+			<value>UI/Munchkin Tickle Hit.wav</value>
 		</property>
 		<property name="frequencyInKHz">
 			<value>44.0999985</value>

@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="AudioFile" id="{e31002a0-f8f3-4fb5-9793-ffd427921ceb}">
 		<property name="assetPath">
-			<value>Machines, Amusement, Fairground Ride, Top Spin, Rameses Revenge SND29666.wav</value>
+			<value>Ferris Wheel/Machines, Amusement, Fairground Ride, Top Spin, Rameses Revenge SND29666.wav</value>
 		</property>
 		<property name="frequencyInKHz">
 			<value>96</value>

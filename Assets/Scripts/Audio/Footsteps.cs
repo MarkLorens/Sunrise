@@ -2,7 +2,8 @@ using UnityEngine;
 using FMODUnity;
 
 // Footsteps that follow a character around: heard while they walk (waddle), silent when they stand still.
-// Visitors and staff use FMODEvents.npcFootsteps; the body the player is possessing uses FMODEvents.hostFootsteps.
+// Visitors and staff use FMODEvents.npcFootsteps, and FMODEvents.npcRun while they run; the body the player is
+// possessing uses FMODEvents.hostFootsteps.
 // Added automatically by CharacterSprite.
 [RequireComponent(typeof(CharacterSprite))]
 public class Footsteps : MonoBehaviour
@@ -29,7 +30,9 @@ public class Footsteps : MonoBehaviour
 
         var possession = Possession.Instance;
         bool possessed = visitor != null && possession != null && possession.Host == visitor;
-        steps.Play(possessed ? HostSteps(events) : events.npcFootsteps);
+        // Running on their own (panicking, or the tutorial's "Gotta go!" dash): the running sound, if it's set up.
+        bool run = !possessed && look.running && !events.npcRun.IsNull;
+        steps.Play(possessed ? HostSteps(events) : run ? events.npcRun : events.npcFootsteps);
         steps.SetParameter("Pace", look.running ? 1f : 0f);
     }
 

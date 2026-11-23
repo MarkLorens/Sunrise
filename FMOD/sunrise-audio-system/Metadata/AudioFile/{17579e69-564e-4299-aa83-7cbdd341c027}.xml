@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="AudioFile" id="{17579e69-564e-4299-aa83-7cbdd341c027}">
 		<property name="assetPath">
-			<value>Communications, Phonograph, Vinyl, Record Scratch 13 SND13867.wav</value>
+			<value>UI/Communications, Phonograph, Vinyl, Record Scratch 13 SND13867.wav</value>
 		</property>
 		<property name="frequencyInKHz">
 			<value>96</value>

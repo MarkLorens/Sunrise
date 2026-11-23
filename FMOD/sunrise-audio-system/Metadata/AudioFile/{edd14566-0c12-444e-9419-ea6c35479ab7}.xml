@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="AudioFile" id="{edd14566-0c12-444e-9419-ea6c35479ab7}">
 		<property name="assetPath">
-			<value>Games, Video, Menu UI, Select, Notification 21 SND83163.wav</value>
+			<value>UI/Games, Video, Menu UI, Select, Notification 21 SND83163.wav</value>
 		</property>
 		<property name="frequencyInKHz">
 			<value>96</value>

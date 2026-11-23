@@ -31,6 +31,17 @@ public class AudioManager : MonoBehaviour
         return true;
     }
 
+    // Like TryPlay, but the sound follows `on` while it plays (a visitor screaming as they run off).
+    public static bool TryPlayOn(System.Func<FMODEvents, EventReference> pick, GameObject on)
+    {
+        var events = FMODEvents.instance;
+        if (instance == null || events == null || on == null) return false;
+        EventReference sound = pick(events);
+        if (sound.IsNull) return false;
+        RuntimeManager.PlayOneShotAttached(sound, on); // an event missing from the banks only logs a warning
+        return true;
+    }
+
     // Like TryPlay, but every other sound is turned down to OthersVolume while this one plays, then back up
     // (the "Objective Completed!" pop-up).
     public static bool TryPlayOverOthers(System.Func<FMODEvents, EventReference> pick)
@@ -118,6 +129,18 @@ public class AudioManager : MonoBehaviour
         music.start();
     }
 
+    // Leaving a scene (the loading screen: Exit to Main Menu, New Game, Load Game): everything the game was playing
+    // stops dead, the music and every park sound (the Music and SFX groups), one-shots too, so nothing from the
+    // park carries on into the main menu. The menus' own group (UI) is left alone so the click that got here finishes,
+    // apart from "Objective Completed!".
+    public void StopGameplaySounds()
+    {
+        StopMusic(now: true);
+        if (overOthers.isValid()) overOthers.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
+        AudioBuses.StopAll(AudioBuses.Music);
+        AudioBuses.StopAll(AudioBuses.Sfx);
+    }
+
     // Fades out, or `now`: cut dead (starting a game from the main menu, so the New / Load Game sound stands alone).
     public void StopMusic(bool now = false)
     {
@@ -169,8 +192,7 @@ public class AudioManager : MonoBehaviour
     private const float OthersVolume = 0.25f; // 75% quieter
     private const float DuckFade = 0.25f;     // seconds to go down, and to come back up
     private EventInstance overOthers;          // the sound everything else makes way for
-    private float duckLevel = 1f;              // what everything else is multiplied by right now
-    private readonly Dictionary<System.IntPtr, float> volumeBeforeDuck = new(); // each instance's own volume
+    private float duckLevel = 1f;              // what the Music and SFX groups are multiplied by right now
 
     // A 2D one-shot that everything else makes way for. FMOD frees it once it has finished.
     public bool PlayOverOthers(EventReference sound)
@@ -198,34 +220,15 @@ public class AudioManager : MonoBehaviour
         return state != PLAYBACK_STATE.STOPPED;
     }
 
-    // After every Update, so it wins over anything that set an instance's volume this frame (EmitterVolume).
-    // Sounds that start while it's down are turned down too.
-    private void LateUpdate()
+    // While it plays, the Music and SFX groups (everything in the park, the music, the crowd) ease down to
+    // OthersVolume and back up after: the groups' volume, not each sound's, so nothing that sets a sound's own volume
+    // (AudioMix, EmitterVolume) undoes it, and sounds that start meanwhile are down too. It's on the UI group itself.
+    private void Update()
     {
         float target = OverOthersPlaying() ? OthersVolume : 1f;
-        if (duckLevel >= 1f && target >= 1f) return; // nothing turned down
+        if (Mathf.Approximately(duckLevel, target)) return;
         duckLevel = Mathf.MoveTowards(duckLevel, target, Time.unscaledDeltaTime * (1f - OthersVolume) / DuckFade);
-
-        if (RuntimeManager.StudioSystem.getBankList(out Bank[] banks) != FMOD.RESULT.OK) return;
-        foreach (Bank bank in banks)
-        {
-            if (bank.getEventList(out EventDescription[] events) != FMOD.RESULT.OK) continue;
-            foreach (EventDescription description in events)
-            {
-                if (description.getInstanceList(out EventInstance[] instances) != FMOD.RESULT.OK) continue;
-                foreach (EventInstance eventInstance in instances)
-                {
-                    if (eventInstance.handle == overOthers.handle) continue;
-                    if (!volumeBeforeDuck.TryGetValue(eventInstance.handle, out float own))
-                    {
-                        eventInstance.getVolume(out own);
-                        volumeBeforeDuck[eventInstance.handle] = own;
-                    }
-                    eventInstance.setVolume(own * duckLevel);
-                }
-            }
-        }
-        if (duckLevel >= 1f) volumeBeforeDuck.Clear(); // all back to their own volume
+        AudioBuses.Duck(duckLevel);
     }
 
     // ---------------------------------------------------------------- emitters

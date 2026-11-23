@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="AudioFile" id="{a53fabea-cc62-482f-80b4-ad32c8d0f83f}">
 		<property name="assetPath">
-			<value>Cartoon, Boing, Bounce, Ascend, Whistle SND15101.wav</value>
+			<value>Ruckus/Cartoon, Boing, Bounce, Ascend, Whistle SND15101.wav</value>
 		</property>
 		<property name="frequencyInKHz">
 			<value>96</value>

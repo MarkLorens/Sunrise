@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="AudioFile" id="{f4ef195a-9530-4b2f-9e99-fd4c226cacb9}">
 		<property name="assetPath">
-			<value>Mechanical Winding 1.wav</value>
+			<value>Ferris Wheel/Mechanical Winding 1.wav</value>
 		</property>
 		<property name="isStreaming">
 			<value>true</value>
