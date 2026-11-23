@@ -24,6 +24,8 @@ public class PlayerInteractor : MonoBehaviour
             GameHud.Refuse(target.transform, blocked); // over whatever said no
             return;
         }
+        // G-03: K went through (a refusal gets G-06 instead), unless it makes a sound of its own (IOwnSound).
+        if (!target.OwnSound) AudioManager.TryPlay(e => e.menuClick);
         if (Host != null) Host.Look.Gesture(Host.Look.interact);
         target.Interact(Host);
     }

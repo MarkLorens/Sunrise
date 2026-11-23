@@ -2,13 +2,13 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="Event" id="{1976115a-45b2-4683-b18c-8b5717f581ce}">
 		<property name="name">
-			<value>Hover</value>
+			<value>Float</value>
 		</property>
 		<property name="outputFormat">
 			<value>2</value>
 		</property>
 		<relationship name="folder">
-			<destination>{90fc94d7-1518-452e-a351-61acf6fef2b3}</destination>
+			<destination>{e20428d9-c6d3-4804-a728-49d7eea5d56f}</destination>
 		</relationship>
 		<relationship name="mixer">
 			<destination>{83e2319a-cf24-454a-8fcd-ddf1ba7f2038}</destination>
@@ -54,7 +54,7 @@
 			<destination>{71978d3c-9e20-4148-8dcf-cedadfa7f116}</destination>
 		</relationship>
 		<relationship name="output">
-			<destination>{035be584-e15d-4de2-8632-9243e87f4af2}</destination>
+			<destination>{0ec14085-3a65-4220-a90e-be00581d9ad5}</destination>
 		</relationship>
 	</object>
 	<object class="EventAutomatableProperties" id="{30860415-1d13-4554-a6d1-27a5b498ba80}" />
@@ -81,13 +81,13 @@
 			<destination>{840187d4-1189-4b84-a89c-34e833879e7b}</destination>
 		</relationship>
 		<relationship name="markers">
-			<destination>{65e7c57b-8496-486e-9ee0-dc2fa984b81c}</destination>
-			<destination>{41002f45-6f78-4059-870b-0ab74354e448}</destination>
+			<destination>{0ab46bba-17dc-4ec7-8fa0-08a17a054e59}</destination>
+			<destination>{7df60c20-7680-453d-ba2b-dd2faef42b97}</destination>
 		</relationship>
 	</object>
 	<object class="EventMixerMaster" id="{3adaab41-d131-46fb-b6ee-c91646c33b99}">
 		<property name="volume">
-			<value>-20</value>
+			<value>-15</value>
 		</property>
 		<relationship name="modulators">
 			<destination>{3c8a1520-6fd2-4459-a2f7-5120f0cc9559}</destination>
@@ -124,6 +124,9 @@
 		</relationship>
 	</object>
 	<object class="EventMixerGroup" id="{c478e07b-eb7a-450f-bcb1-161af70f90f5}">
+		<property name="volume">
+			<value>-15</value>
+		</property>
 		<property name="name">
 			<value>Audio 1</value>
 		</property>
@@ -152,6 +155,9 @@
 		</relationship>
 	</object>
 	<object class="EventMixerGroup" id="{bb048a84-7e6b-4db0-8158-c46d33c7c79f}">
+		<property name="volume">
+			<value>-15</value>
+		</property>
 		<property name="name">
 			<value>Audio 2</value>
 		</property>
@@ -165,12 +171,12 @@
 			<destination>{3adaab41-d131-46fb-b6ee-c91646c33b99}</destination>
 		</relationship>
 	</object>
-	<object class="NamedMarker" id="{65e7c57b-8496-486e-9ee0-dc2fa984b81c}">
+	<object class="NamedMarker" id="{0ab46bba-17dc-4ec7-8fa0-08a17a054e59}">
 		<property name="position">
-			<value>0.022677867360936143</value>
+			<value>0</value>
 		</property>
 		<property name="name">
-			<value>Marker A</value>
+			<value>start</value>
 		</property>
 		<relationship name="timeline">
 			<destination>{27065f5c-9dff-46d2-b393-9e5486713b6b}</destination>
@@ -179,18 +185,18 @@
 			<destination>{c6499751-2b0b-40fe-afdb-27ffadebece0}</destination>
 		</relationship>
 	</object>
-	<object class="LoopRegion" id="{41002f45-6f78-4059-870b-0ab74354e448}">
+	<object class="TransitionMarker" id="{7df60c20-7680-453d-ba2b-dd2faef42b97}">
 		<property name="position">
-			<value>0</value>
-		</property>
-		<property name="length">
-			<value>7.9139350912446531</value>
+			<value>5.1556020179842257</value>
 		</property>
 		<relationship name="timeline">
 			<destination>{27065f5c-9dff-46d2-b393-9e5486713b6b}</destination>
 		</relationship>
 		<relationship name="markerTrack">
 			<destination>{c6499751-2b0b-40fe-afdb-27ffadebece0}</destination>
+		</relationship>
+		<relationship name="destination">
+			<destination>{0ab46bba-17dc-4ec7-8fa0-08a17a054e59}</destination>
 		</relationship>
 	</object>
 	<object class="RandomizerModulator" id="{3c8a1520-6fd2-4459-a2f7-5120f0cc9559}">
@@ -201,7 +207,7 @@
 			<value>1</value>
 		</property>
 		<property name="amount">
-			<value>15.5</value>
+			<value>8</value>
 		</property>
 	</object>
 	<object class="MixerBusEffectChain" id="{64fbf09a-1603-4c18-b453-6771b7a8315a}">

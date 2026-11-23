@@ -12,7 +12,10 @@ public class ConfirmDialog : MonoBehaviour
 
     Action<bool> answer;
 
-    public static void Open(int order, string title, string question, Action<bool> answer)
+    // `yesSound` is what clicking Yes plays: the usual click (G-03) unless given; e => default for none (the caller
+    // plays its own, e.g. Save Game's once it has saved).
+    public static void Open(int order, string title, string question, Action<bool> answer,
+        Func<FMODEvents, FMODUnity.EventReference> yesSound = null)
     {
         if (open != null) return;
         var canvas = MainMenu.Screen(title, order);
@@ -27,9 +30,9 @@ public class ConfirmDialog : MonoBehaviour
         Figma.Picture(canvas, "Card", "ConfirmationCard", 765.8f, 470.3f, 535f, 388f);
         Figma.Words(canvas, title, 769.5f, 412f, Figma.Type.AtmaH2, Color.white, ParkArt.TitleFont);
         Figma.Words(canvas, question, 769f, 468f, Figma.Type.ArvoSubtitle, Color.white, ParkArt.Font);
-        var yes = MainMenu.Pill(canvas, "Yes", () => open.Close(true));
+        var yes = MainMenu.Pill(canvas, "Yes", () => open.Close(true), sound: yesSound);
         Figma.Place((RectTransform)yes.transform, 654.5f, 545f, 211f, 63f);
-        var no = MainMenu.Pill(canvas, "No", () => open.Close(false));
+        var no = MainMenu.Pill(canvas, "No", () => open.Close(false), sound: e => e.backButton); // S-06: it backs out
         Figma.Place((RectTransform)no.transform, 874f, 542f, 214f, 64f);
         yes.navigation = new UnityEngine.UI.Navigation { mode = UnityEngine.UI.Navigation.Mode.Explicit, selectOnRight = no };
         no.navigation = new UnityEngine.UI.Navigation { mode = UnityEngine.UI.Navigation.Mode.Explicit, selectOnLeft = yes };
@@ -38,7 +41,11 @@ public class ConfirmDialog : MonoBehaviour
 
     void Update()
     {
-        if (Controls.Back) Close(false);
+        if (Controls.Back)
+        {
+            AudioManager.TryPlay(e => e.backButton); // S-06, as if No was clicked
+            Close(false);
+        }
     }
 
     void Close(bool yes)

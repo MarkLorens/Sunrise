@@ -24,7 +24,7 @@ public class FingerprintScanner : MonoBehaviour, IInteraction
     {
         platform.Open = true;
         if (quiet) return;
-        Sfx.Play(Sfx.TaskDone, 0.4f, 1.6f, Captions.Scanner);
+        ClosedCaptions.Show(Captions.Scanner);
         Fx.Burst("Fx/sparkle", transform.position + Vector3.up * 1.1f, 8, new Color(0.4f, 1f, 0.6f), 2f, 0.2f, 0.4f);
         GameHud.Say(GameText.ScannedFinger);
         GameHud.Think(GameHud.ThoughtPriority.Action, platform.owner == FingerprintArea.Staff.Technician ? GameText.ThinkPlatform : GameText.ThinkBooth);

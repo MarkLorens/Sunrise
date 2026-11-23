@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="AudioFile" id="{f8b1d92b-4344-4737-8bdb-d173428a53dd}">
 		<property name="assetPath">
-			<value>bombinsound-spooky-halloween-story-version-3-spooky-scary-skeletones-619784.mp3</value>
+			<value>BGM/Game Opening.mp3</value>
 		</property>
 		<property name="isStreaming">
 			<value>true</value>

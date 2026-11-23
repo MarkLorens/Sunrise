@@ -32,6 +32,7 @@ public class Tutorial : MonoBehaviour
     // the number says: 0.82 left the park bright and purple, 0.95 was too dark.
     const float WorldDim = 0.9f;
     const float SkipHold = 1.2f;   // seconds to hold Space to skip (a tap is Next; Tab opens the objectives)
+    const float HoldSoundAfter = 0.15f; // held this long before the hold sound starts, so a tap (Next) stays clean
     const float FadeSpeed = 3.5f;  // the dark fades in or out over 1 / FadeSpeed seconds
     const float Corner = 63f;      // the spotlight's soft corner radius, in HUD units
     const float SpiritZoom = 0.55f; // step 1's close-up on the spirit: lower = closer (0.55 = about 1.8x bigger)
@@ -90,6 +91,7 @@ public class Tutorial : MonoBehaviour
     CanvasGroup skip;
     Image skipIcon;
     float skipHeld;
+    FMOD.Studio.EventInstance holdSound; // TT-02, while Space is held
     Transform guide, guideArrow;
 
     // ---------------------------------------------------------------- starting and stopping
@@ -112,6 +114,7 @@ public class Tutorial : MonoBehaviour
 
     void OnDestroy()
     {
+        HoldSound(false);
         if (Active) Active = false;
         CardShowing = false;
         TutorialSpotlight.Darkness = 0f;
@@ -135,6 +138,7 @@ public class Tutorial : MonoBehaviour
         ShowGuide(false);
         CameraRig.EndSpotlight();
         CameraRig.EndZoom(); // skipped on step 1
+        CameraRig.EndTilt(); // skipped mid-geyser
         // ParkTour.Play(); // off for now; uncomment to show the Ferris wheel after the tutorial (played through or skipped)
     }
 
@@ -241,7 +245,7 @@ public class Tutorial : MonoBehaviour
             yield return null;
         }
         ShowGuide(false);
-        FocusOn(prank.Picture); // the valve's drawn on the block, so light the block
+        FocusOn(prank.ValveArt != null ? prank.ValveArt : prank.Picture, prank.PipeArt); // the valve wheel and its pipe
         Say(GameText.TutorialValveSays);
         while (!prank.Maxed)
         {
@@ -282,7 +286,9 @@ public class Tutorial : MonoBehaviour
             victim.Hold();
             yield return new WaitForSeconds(0.6f); // at the door, a moment, then in
             victim.Look.SetVisible(false); // in they go
+            AudioManager.TryPlay(e => e.closetEnter, prank.Door); // TT-05, the door as they disappear inside
         }
+        prank.StartExplosionSound(); // TT-06, right as they go in
         CameraRig.Spotlight(prank.Middle, 20f, 2.5f, 1f);
         yield return new WaitForSeconds(1f); // quiet... for now
         yield return prank.Rumble(3.5f);
@@ -314,7 +320,11 @@ public class Tutorial : MonoBehaviour
         while (true)
         {
             meanwhile?.Invoke();
-            if (!PauseMenu.Paused && Controls.Skip) yield break; // Space or Enter
+            if (!PauseMenu.Paused && Controls.Skip) // Space or Enter
+            {
+                AudioManager.TryPlay(e => e.menuClick); // G-03
+                yield break;
+            }
             yield return null;
         }
     }
@@ -404,12 +414,41 @@ public class Tutorial : MonoBehaviour
         // Hold Space to skip.
         bool holding = Active && !PauseMenu.Paused && Controls.SkipHeld;
         skipHeld = holding ? skipHeld + dt : Mathf.MoveTowards(skipHeld, 0f, dt * 3f);
+        HoldSound(holding && skipHeld >= HoldSoundAfter); // TT-02 rises while it's held, and stops if it's let go
         int frame = 1 + Mathf.Clamp(Mathf.FloorToInt(skipHeld / SkipHold * 14f), 0, 13);
         if (skipIcon != null) skipIcon.sprite = UiArt.Get("SpaceIcon/SpaceIcon_" + frame);
         skip.alpha = Mathf.MoveTowards(skip.alpha, Active ? 1f : 0f, dt * 4f);
-        if (Active && skipHeld >= SkipHold) Skip();
+        if (Active && skipHeld >= SkipHold)
+        {
+            HoldSound(false);
+            AudioManager.TryPlay(e => e.menuClick); // G-03
+            Skip();
+        }
 
         UpdateGuide();
+    }
+
+    // The Hold Space to Skip sound (TT-02): started as Space goes down, from the top each time; stopped when it's let
+    // go, paused, or the skip goes through.
+    void HoldSound(bool on)
+    {
+        if (on == holdSound.isValid()) return;
+        var audio = AudioManager.instance;
+        if (on)
+        {
+            var events = FMODEvents.instance;
+            if (audio == null || events == null || events.skipTutorialHold.IsNull) return;
+            holdSound = audio.CreateInstance(events.skipTutorialHold);
+            if (holdSound.isValid()) holdSound.start();
+            return;
+        }
+        if (audio != null) audio.ReleaseInstance(holdSound); // stops it at once
+        else
+        {
+            holdSound.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
+            holdSound.release();
+        }
+        holdSound.clearHandle();
     }
 
     void LateUpdate()
@@ -692,7 +731,7 @@ public class Tutorial : MonoBehaviour
         cardGroup.alpha = Mathf.MoveTowards(cardGroup.alpha, show ? 1f : 0f, dt * 5f);
 
         Vector2 half = canvas.rect.size * 0.5f, size = card.rect.size;
-        const float Gap = 34f, Margin = 24f;
+        const float Gap = 16f, Margin = 24f;
         Vector2 want = new(0f, -half.y + 120f + size.y * 0.5f);
         int pointer = 0; // +1: the card's under what's lit, pointing up; -1: over it, pointing down
         Rect? lit = Active && !switching && (worldDim > 0.5f || dim > 0.5f) ? LitRect() : null;

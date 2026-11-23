@@ -3,12 +3,12 @@ using UnityEngine;
 using FMODUnity;
 using FMOD.Studio;
 
-// Options > Audio's Background Music and SFX sliders (Settings.MusicVolume, SfxVolume) on the FMOD sounds. The FMOD
-// project has no buses for them (every event goes to Master, which is Master Volume), so this does it here: each frame,
+// Options > Audio's Background Music and SFX sliders (Settings.MusicVolume, SfxVolume) on the FMOD sounds, for banks
+// built before the Music / SFX groups (AudioBuses, which does it once they're there). Those banks have no buses for them (every event goes to Master, which is Master Volume), so this does it here: each frame,
 // after the frame's sounds have started, every playing event's volume is set to its share, music events (a path with
 // "Music" in it) to MusicVolume and the rest to SfxVolume. (The event's volume, not its channel group's: FMOD Studio's
 // own faders drive that.) An event with a volume of its own (EmitterVolume) hands it to OwnVolume each frame instead of
-// setting it, and gets the two multiplied. Unity's own clips (Sfx) take SfxVolume as they play. Kept across scenes.
+// setting it, and gets the two multiplied. Kept across scenes.
 public class AudioMix : MonoBehaviour
 {
     readonly Dictionary<FMOD.GUID, bool> isMusic = new();
@@ -30,7 +30,9 @@ public class AudioMix : MonoBehaviour
     {
         if (!RuntimeManager.IsInitialized) return;
         if (RuntimeManager.StudioSystem.getBankList(out Bank[] banks) != FMOD.RESULT.OK) return;
-        float music = Settings.MusicVolume, sfx = Settings.SfxVolume;
+        // Banks with the Music / SFX groups (AudioBuses) already have the sliders on them: only events' own volumes here.
+        bool groups = AudioBuses.HasGroups;
+        float music = groups ? 1f : Settings.MusicVolume, sfx = groups ? 1f : Settings.SfxVolume;
         foreach (var bank in banks)
         {
             if (bank.getEventList(out EventDescription[] events) != FMOD.RESULT.OK) continue;

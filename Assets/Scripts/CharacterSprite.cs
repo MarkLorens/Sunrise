@@ -324,6 +324,17 @@ public class CharacterSprite : MonoBehaviour
         expressionUntil = seconds > 0f ? Time.time + seconds : float.MaxValue;
     }
 
+    // Drawn this far (world units) below where they stand: someone behind a stand's counter, only their top half
+    // showing over it. 0 puts them back on their feet.
+    public void Sink(float units)
+    {
+        Load();
+        drawn.localPosition = new Vector3(0f, -units / Mathf.Max(0.01f, transform.lossyScale.y), 0f);
+    }
+
+    // Back to their own face (an expression held for good: Expression(name, 0)).
+    public void ClearExpression() => expressionUntil = 0f;
+
     Sprite expression;
     float expressionUntil;
 

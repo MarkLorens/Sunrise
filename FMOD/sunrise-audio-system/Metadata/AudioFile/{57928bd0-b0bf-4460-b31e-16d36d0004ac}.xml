@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="AudioFile" id="{57928bd0-b0bf-4460-b31e-16d36d0004ac}">
 		<property name="assetPath">
-			<value>TOONWarb_Spooky Ghost Wobble_Long.wav</value>
+			<value>Ruckus/Spooky Ghost Wobble.wav</value>
 		</property>
 		<property name="isStreaming">
 			<value>true</value>

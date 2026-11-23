@@ -65,7 +65,7 @@ public class LoadGameMenu : MonoBehaviour
         MainMenu.Img(bg, null, MainMenu.Night).raycastTarget = true; // nothing behind it gets clicked
 
         deleteButton = MainMenu.Pill(canvas, "Delete Slot", AskDelete, 285f, 56f);
-        backButton = MainMenu.Pill(canvas, "Back", Close, 205f, 56f);
+        backButton = MainMenu.Pill(canvas, "Back", Close, 205f, 56f, e => e.backButton); // S-06, like the other Backs
         Place(backButton.transform, new Vector2(650f, -435f));
         leftArrow = Arrow(-1);
         rightArrow = Arrow(1);
@@ -98,6 +98,7 @@ public class LoadGameMenu : MonoBehaviour
         colors.pressedColor = new Color(0.85f, 0.85f, 0.85f);
         button.colors = colors;
         button.navigation = new Navigation { mode = Navigation.Mode.None }; // the keys slide with left/right on a card
+        button.onClick.AddListener(() => AudioManager.TryPlay(e => e.toggle)); // S-04
         button.onClick.AddListener(() => Slide(dir));
         return button;
     }
@@ -183,8 +184,13 @@ public class LoadGameMenu : MonoBehaviour
 
     void Pick(Card c)
     {
-        if (c.saved) SaveGame.Load(c.slot);
-        else MainMenu.StartIn(c.slot);
+        AudioManager.TryPlay(e => e.newOrLoadGame);
+        if (c.saved)
+        {
+            MainMenu.CutLobbyMusic();
+            SaveGame.Load(c.slot);
+        }
+        else MainMenu.StartIn(c.slot); // cuts it too
     }
 
     // The arrows: the cards slide one along; the picked card stays picked if it's still showing.
@@ -238,7 +244,11 @@ public class LoadGameMenu : MonoBehaviour
             cards[i].rt.localScale = new Vector3(s, s, 1f);
         }
 
-        if (!ConfirmDialog.IsOpen && Time.frameCount != dialogClosedFrame && Controls.Back) Close();
+        if (!ConfirmDialog.IsOpen && Time.frameCount != dialogClosedFrame && Controls.Back)
+        {
+            AudioManager.TryPlay(e => e.backButton); // S-06, as if Back was clicked
+            Close();
+        }
     }
 
     // Only the cards in the window show, side by side; the picked one goes yellow with dark writing, Delete Slot moves
@@ -284,7 +294,7 @@ public class LoadGameMenu : MonoBehaviour
             }
             else Refresh();
             MainMenu.Select(cards[current].button);
-        });
+        }, yesSound: e => e.deleteSaveFile);
     }
 
     void Close()
