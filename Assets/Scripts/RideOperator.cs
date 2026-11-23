@@ -27,10 +27,14 @@ public class RideOperator : MonoBehaviour
     Vector3 fire;
 
     // The locker room's burning: off he runs (quiet: loading a save, he's already there).
-    public void GoToFire(Vector3 spot, bool quiet = false)
+    // `burning`: what's on fire, which he turns to stare at once he's there.
+    Vector3 blaze; // the fire he stares at (GoToFire)
+
+    public void GoToFire(Vector3 spot, Vector3 burning, bool quiet = false)
     {
         Set(State.AtFire);
         fire = spot;
+        blaze = burning;
         look.Expression("surprised_2", 0f); // panicking at the fire, for good
         walker.speed = walkSpeed * 2f;
         look.running = true;
@@ -83,6 +87,7 @@ public class RideOperator : MonoBehaviour
                 if (WalkTo(fire)) break;
                 look.running = false;
                 look.pose = look.think;
+                look.Face(blaze); // staring at the blaze
                 break;
 
             case State.Calling:

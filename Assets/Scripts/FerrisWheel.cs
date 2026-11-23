@@ -19,10 +19,12 @@ public class FerrisWheel : MonoBehaviour
     public enum State { Running, Unpowered, Overdrive, Breaking, Rolling, Wrecked }
 
     public Transform wheel;
-    public Sprite cabinSprite;
-    public int cabinCount = 12;
-    public float cabinRadius = 3.4f; // where cabins hang from, in wheel units
-    public float wheelRadius = 3.5f; // outer rim, where the light bulbs go
+    // One cabin per arm: its picture (pivot at the knob it hangs from) and where on the wheel's picture that arm's bulb
+    // is, in wheel units from the hub with the wheel unturned. The two lists go round in the same order.
+    public Sprite[] cabinSprites;
+    public Vector2[] cabinMounts;
+    public float cabinDrop = 1.45f; // from a cabin's knob down to the bottom of its bowl, in wheel units
+    public float wheelRadius = 3.1f; // outer rim (what it rolls on), where the light bulbs go
     public float normalSpeed = 12f;  // degrees per second
     public float windDownTime = 5f;  // seconds to coast to a stop once the power's cut
     public Vector3 electricalBoxOffset = new(-3.3f, 0f, -0.6f);
@@ -92,12 +94,12 @@ public class FerrisWheel : MonoBehaviour
         box.gameObject.AddComponent<ZapFx>(); // live electrics, always buzzing
         box.wheel = this;
         var mat = wheel.GetComponent<SpriteRenderer>().sharedMaterial;
-        for (int i = 0; i < cabinCount; i++)
+        for (int i = 0; i < cabinMounts.Length; i++)
         {
             var go = new GameObject($"Cabin {i + 1}");
             go.transform.SetParent(transform, false);
             var sr = go.AddComponent<SpriteRenderer>();
-            sr.sprite = cabinSprite;
+            sr.sprite = cabinSprites[i % cabinSprites.Length];
             sr.sharedMaterial = mat;
             ParkArt.CastShadows(sr);
             cabins.Add(go.transform);
@@ -131,7 +133,7 @@ public class FerrisWheel : MonoBehaviour
     IEnumerator WobblyPayoff()
     {
         Possession.InputBlocked = true;
-        CameraRig.Spotlight(wheel, 999f, (wheelRadius + 1f) * Scale, payoffPullBack);
+        CameraRig.Spotlight(wheel, 999f, (wheelRadius + cabinDrop) * Scale, payoffPullBack); // down to the lowest cabin
         ScreamIn(GameText.CabinScreamsWobbly);
         yield return new WaitForSeconds(1.5f);
         Fx.Shake(0.15f, payoffTime - 1.5f);
@@ -155,7 +157,7 @@ public class FerrisWheel : MonoBehaviour
     IEnumerator Payoff()
     {
         Possession.InputBlocked = true;
-        CameraRig.Spotlight(wheel, 999f, (wheelRadius + 1f) * Scale, payoffPullBack);
+        CameraRig.Spotlight(wheel, 999f, (wheelRadius + cabinDrop) * Scale, payoffPullBack); // down to the lowest cabin
         shakeUntil = Time.time + payoffTime;
 
         ScreamIn(GameText.CabinScreams);
@@ -303,7 +305,7 @@ public class FerrisWheel : MonoBehaviour
     IEnumerator MaxSpeedPayoff()
     {
         Possession.InputBlocked = true;
-        CameraRig.Spotlight(wheel, 999f, (wheelRadius + 1f) * Scale, payoffPullBack);
+        CameraRig.Spotlight(wheel, 999f, (wheelRadius + cabinDrop) * Scale, payoffPullBack); // down to the lowest cabin
         ScreamIn(GameText.CabinScreamsWobbly);
         while (Current != State.Wrecked) yield return null;
         yield return new WaitForSeconds(2f);
@@ -424,11 +426,10 @@ public class FerrisWheel : MonoBehaviour
     {
         if (Current < State.Rolling)
         {
-            // Hang upright from evenly spaced points on the spinning rim.
+            // Hang upright from the arms' bulbs as the wheel turns.
             for (int i = 0; i < cabins.Count; i++)
             {
-                float a = (angle + i * 360f / cabins.Count) * Mathf.Deg2Rad;
-                cabins[i].position = wheel.position + new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0) * cabinRadius * Scale + new Vector3(0, 0, -0.05f);
+                cabins[i].position = wheel.TransformPoint(cabinMounts[i]) + new Vector3(0, 0, -0.05f);
                 // Stuck cabins rock, each to its own rhythm, settling as the payoff ends.
                 float rock = Wobbly ? cabinShake : Mathf.Clamp01((shakeUntil - Time.time) / 1.5f) * cabinShake;
                 cabins[i].localRotation = Quaternion.Euler(0, 0, (Mathf.PerlinNoise(Time.time * 3f, i * 1.7f) * 2f - 1f) * rock);
@@ -439,7 +440,7 @@ public class FerrisWheel : MonoBehaviour
         // Flung cabins fall until they hit the ground.
         for (int i = 0; i < cabins.Count; i++)
         {
-            float landed = RaisedFloor.Height(cabins[i].position) + 0.9f * Scale; // a cabin hangs from its top
+            float landed = RaisedFloor.Height(cabins[i].position) + cabinDrop * Scale; // a cabin hangs from its knob
             if (cabins[i].position.y <= landed && cabinVelocity[i].y <= 0) continue;
             cabinVelocity[i] += Vector3.down * 15f * Time.deltaTime;
             Vector3 p = cabins[i].position + cabinVelocity[i] * Time.deltaTime;

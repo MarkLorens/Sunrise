@@ -2278,7 +2278,7 @@ Transform:
   m_GameObject: {fileID: 700000100}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -2.48, y: 0.82, z: 18.29}
+  m_LocalPosition: {x: -2.48, y: 0, z: 18.29}
   m_LocalScale: {x: 2.7, y: 2.7, z: 2.7}
   m_ConstrainProportionsScale: 1
   m_Children:
@@ -2299,10 +2299,28 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FerrisWheel
   wheel: {fileID: 700000107}
-  cabinSprite: {fileID: 21300000, guid: 11ba348fb71046dfa1113427d0d65047, type: 3}
-  cabinCount: 12
-  cabinRadius: 3.4
-  wheelRadius: 3.5
+  cabinSprites:
+  - {fileID: 21300000, guid: 9940fc3956e1c4bca83daf8029874fdd, type: 3}
+  - {fileID: 21300000, guid: 8b98aa153d17f4b0299945205154b0d7, type: 3}
+  - {fileID: 21300000, guid: 75f77ea3e97c0449cbf4353314a9cb4a, type: 3}
+  - {fileID: 21300000, guid: 531f65876a9ee4a1e98bd63f9b56f719, type: 3}
+  - {fileID: 21300000, guid: 757545412fe6f42afadac9960ee8ba51, type: 3}
+  - {fileID: 21300000, guid: d794685556bee4eea89a132807434335, type: 3}
+  - {fileID: 21300000, guid: d2b5e80c71efd435aaad7ed30b3c0655, type: 3}
+  - {fileID: 21300000, guid: 0456cd7ab6d014dc4adbe6e4dd9bc890, type: 3}
+  - {fileID: 21300000, guid: bfa1f1b66f7aa49dbb6ae98649ad4c29, type: 3}
+  cabinMounts:
+  - {x: 3.2422223, y: 0.5511111}
+  - {x: 1.9222223, y: 2.3222222}
+  - {x: 0.04222222, y: 2.9444444}
+  - {x: -1.8844445, y: 2.1666667}
+  - {x: -2.8977778, y: 0.27333334}
+  - {x: -2.7244444, y: -1.6666666}
+  - {x: -1.0066667, y: -3.1466668}
+  - {x: 1.0955555, y: -2.8488889}
+  - {x: 2.5355556, y: -1.5155555}
+  cabinDrop: 1.45
+  wheelRadius: 3.1
   normalSpeed: 12
   windDownTime: 5
   electricalBoxOffset: {x: -3.4407, y: 0, z: 1}
@@ -2334,6 +2352,8 @@ MonoBehaviour:
   rollSpeed: 6
   rollDistance: 22
   rollDirection: {x: 1, y: 0, z: 0}
+  gawkers: 4
+  doomedShouts: 3
 --- !u!1 &700000103
 GameObject:
   m_ObjectHideFlags: 0
@@ -2362,7 +2382,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0.1}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 1, y: 1.1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 700000101}
@@ -2416,7 +2436,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 04d35eeb26634817941516454cc4265b, type: 3}
+  m_Sprite: {fileID: 21300000, guid: a170ab1eafead4332b27cc6bedf7109e, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -2453,7 +2473,7 @@ Transform:
   m_GameObject: {fileID: 700000106}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 4.5, z: 0}
+  m_LocalPosition: {x: 0, y: 4.83, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2508,7 +2528,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: e4a94f5396ee4694b1be6e1f1de18f8a, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 2686329b36d04420ebb0f10bb8def270, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -2943,6 +2963,7 @@ MonoBehaviour:
   panicFace: 0
   panicBody: 0
   dance: 0
+  dozing: 0
 --- !u!114 &700000126
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7885,6 +7906,8 @@ MonoBehaviour:
   announceEvery: {x: 60, y: 20}
   closedSignHeight: 0.6
   closedSignLift: 1.1
+  startInStandLine: {x: 0, y: 2}
+  standLineGap: 0.6
 --- !u!1 &1910860604
 GameObject:
   m_ObjectHideFlags: 0

@@ -7,10 +7,10 @@ using UnityEngine.Tilemaps;
 // Night at the carnival, laid over the day scene at runtime (no new art, no scene changes): the sun becomes a dim
 // moon, the ambient light drops to a cool blue-grey (the park's own colours still read), the sky goes dark, a night grade goes over the
 // post-processing, and the park's own lights come on - warm pools under every lamp post, the stalls lit, chasing
-// bulbs round the Ferris wheel rim and a glow in every cabin. The wheel's bulbs race in overdrive and the whole ride
+// bulbs at the Ferris wheel's cabin joints and mini lights across every cabin's bowl. The wheel's bulbs race in overdrive and the whole ride
 // goes dark when it breaks. A soft spirit glow follows whoever you control so you never lose yourself in the dark. It
-// lights only them and the ground (a rendering layer of their own, SpiritLayer): props and people they walk past stay
-// as the night has them.
+// lights only them (a rendering layer of their own, SpiritLayer), in their own colours: the ground, props and people
+// they walk past stay as the night has them.
 // Everything it lights is a lit sprite (SpriteLit3D), so people walking under a lamp catch its light.
 // Untick the component in Play mode to compare with day: everything it changed goes back. Values are read every
 // frame, so they can be tuned live. GameHud adds it at runtime; put it on a scene object instead to keep tuned values.
@@ -62,14 +62,21 @@ public class NightLighting : MonoBehaviour
     public float stallRange = 6f;
 
     [Header("Ferris wheel")]
-    public int rimBulbs = 36;
+    public float jointBulbSize = 0.55f; // the bulb where each cabin hangs
+    public float cabinGlowDrop = 1.0f;  // how far below its knob a cabin's lights hang: on the coloured bowl
+    public int cabinLights = 3;         // mini lights strung across each bowl
+    public float cabinLightSpread = 0.42f; // from the middle one out to the end ones
+    public float cabinLightSag = 0.08f; // how much lower the middle of the string hangs
+    public float cabinLightSize = 0.32f;
     public Color[] bulbColors = { new(1f, 0.85f, 0.4f), new(1f, 0.45f, 0.75f), new(0.45f, 0.85f, 1f) };
     public float chaseSpeed = 4f;     // bulb steps per second (three times that in overdrive)
     public float rideIntensity = 2.5f; // the coloured wash on the platform
 
     [Header("Player")]
-    public Color playerColor = new(1f, 0.62f, 0.18f); // a warm glow off the spirit
-    public float playerIntensity = 6f;
+    // Lights whoever you control in their own colours, as if out of the night (a touch warm, not orange), and nothing
+    // else: not the ground (seen through a building's see-through hole it tinted the building), not props or people.
+    public Color playerColor = new(1f, 0.96f, 0.9f);
+    public float playerIntensity = 3.5f;
     public float playerRange = 4.5f; // it sits above and in front: shorter and it misses the spirit
 
     class Lamp
@@ -93,7 +100,7 @@ public class NightLighting : MonoBehaviour
     bool built;
     Transform root;
     Light sun, player;
-    // The spirit glow's own rendering layer: it lights only what's on it (the ground, and whoever you control).
+    // The spirit glow's own rendering layer: it lights only what's on it (whoever you control).
     // Everything stays on the Default layer too, so the park's other lights see it as before.
     const int SpiritLayerBit = 7;
     const uint SpiritLayer = 1u << SpiritLayerBit;
@@ -258,25 +265,32 @@ public class NightLighting : MonoBehaviour
         foreach (var w in FerrisWheel.All) rides.Add(LightUp(w));
 
         player = PointLight("Spirit Glow", root, Vector3.zero);
-        player.renderingLayerMask = (int)SpiritLayer;
-        foreach (var tr in FindObjectsByType<UnityEngine.Tilemaps.TilemapRenderer>(FindObjectsSortMode.None))
-            if (tr.name == "Ground") tr.renderingLayerMask |= SpiritLayer; // the floor takes the glow
+        // URP reads a light's layers off its UniversalAdditionalLightData, not Light.renderingLayerMask.
+        if (!player.TryGetComponent(out UnityEngine.Rendering.Universal.UniversalAdditionalLightData extra))
+            extra = player.gameObject.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalLightData>();
+        extra.renderingLayers = SpiritLayer;
     }
 
-    // Bulbs chase round the rim (in the wheel's own plane, so they spin with it), every cabin glows, and two
-    // coloured lights wash over the platform.
+    // A bulb at every joint where a cabin hangs (on the cabin's knob, which is drawn over the arm's end), chasing round
+    // the wheel; a string of mini lights across every cabin's coloured bowl; and two coloured lights wash over the platform.
     Ride LightUp(FerrisWheel w)
     {
         var ride = new Ride { wheel = w };
-        float r = w.wheelRadius * 0.94f; // on the outer truss, just inside the cabin hooks
-        for (int i = 0; i < rimBulbs; i++)
-        {
-            float a = i * Mathf.PI * 2f / rimBulbs;
-            ride.bulbs.Add(Glow("Rim Bulb", w.wheel, new Vector3(Mathf.Cos(a) * r, Mathf.Sin(a) * r, -0.02f), 0.4f, Bulb(i), 1f));
-        }
         ride.glows.Add(Glow("Hub Glow", w.wheel, new Vector3(0f, 0f, -0.03f), 1.4f, bulbColors[0], 0.7f));
         for (int i = 0; i < w.Cabins.Count; i++)
-            ride.glows.Add(Glow("Cabin Glow", w.Cabins[i], new Vector3(0f, -0.52f, -0.03f), 0.9f, Bulb(i), 0.6f)); // in the window
+        {
+            ride.bulbs.Add(Glow("Joint Bulb", w.Cabins[i], new Vector3(0f, 0f, -0.04f), jointBulbSize, Bulb(i), 1f));
+            // A little string of lights across the bowl, sagging in the middle like lights on a Christmas tree. Centred
+            // on the cabin's picture (drawn in the middle of its canvas), not its knob, which can sit off to one side.
+            var art = w.Cabins[i].GetComponent<SpriteRenderer>().sprite;
+            float middle = art != null ? art.bounds.center.x : 0f;
+            for (int k = 0; k < cabinLights; k++)
+            {
+                float t = cabinLights > 1 ? k / (cabinLights - 1f) * 2f - 1f : 0f; // -1 (left) .. 1 (right)
+                var at = new Vector3(middle + t * cabinLightSpread, -cabinGlowDrop - (1f - t * t) * cabinLightSag, -0.03f);
+                ride.glows.Add(Glow("Cabin Light", w.Cabins[i], at, cabinLightSize, Bulb(i * cabinLights + k), 0.9f));
+            }
+        }
 
         Vector3 foot = new(w.wheel.position.x, w.transform.position.y, w.wheel.position.z); // on its platform
         float scale = w.transform.lossyScale.x;
