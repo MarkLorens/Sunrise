@@ -296,6 +296,56 @@ public static class GameText
         }),
     };
 
+    // The announcer at the information booth, over the PA (VisitorSpawner): like the gossip, each event adds its lines
+    // for the rest of the game, and the more uneasy the park (Unease), the more often they come.
+    public static readonly (Mischief.Task after, string[] lines)[] Announcements =
+    {
+        (Mischief.Task.TutorialToilet, new[]
+        {
+            "Attention guests: the restrooms are temporarily closed. We apologise for any... splashing.",
+        }),
+        (Mischief.Task.Electrocute, new[]
+        {
+            "Guests are kindly asked to stay away from the drinking fountains.",
+            "Please do not dance near standing water. Thank you.",
+            "The dance area is closed until further notice.",
+        }),
+        (Mischief.Task.CutPower, new[]
+        {
+            "The Ferris wheel is taking a short break. Riders, please stay seated.",
+            "Our technicians are on their way. Please remain calm.",
+        }),
+        (Mischief.Task.Explode, new[]
+        {
+            "The hot dog stand is closed for the rest of the evening.",
+            "Guests, please keep clear of any gas canisters.",
+        }),
+        (Mischief.Task.LockerFire, new[]
+        {
+            "Please stay away from the locker room. The fire department has been called.",
+            "There is no cause for alarm. Please continue to enjoy the park.",
+        }),
+        (Mischief.Task.WheelRolled, new[]
+        {
+            "Please make your way calmly to the nearest exit.",
+            "Remain calm. Everything is under control.",
+            "Woohoo Land will be closing early tonight. We hope you had a magical time.",
+        }),
+    };
+
+    // Visitors crowding the information booth to complain (BoothCrowd); the angry ones join once the park's very uneasy.
+    public static readonly string[] Complaints =
+    {
+        "What's going on?!", "Do something!", "Is anyone in charge here?", "Is it safe here?",
+        "Why is nobody telling us anything?", "Where's the manager?", "Hello?! Anyone?!",
+    };
+
+    public static readonly string[] AngryComplaints =
+    {
+        "People are DYING out there!", "Shut the park down!", "I want a refund!", "This place is cursed!",
+        "Call the police!", "How is this still open?!",
+    };
+
     // The hot dog man, out loud
     public const string HotDogGuard = "Hey! Hands off my fan!";
     public const string HotDogRats = "RATS! RAAATS!";

@@ -6,7 +6,9 @@ using FMOD.Studio;
 // the game hears from (the listener's attenuation object). Its two crowd loops sound all round you; its scatterers
 // (shouts and laughs, screams and gasps) spring up around you. Two of its parameters follow the visitors near you:
 //   Crowd: how many there are (0 = nobody within hearRadius, 1 = about fullCrowd of them right next to you).
-//   Panic: how many of them are running scared (State.Panic), plus how close something frightening is (ParkChaos).
+//   Panic: how many of them are running scared (State.Panic), plus how close something frightening is (ParkChaos),
+//          and never below how uneasy the whole park is by now (Unease, times uneasePanic): after enough has gone
+//          wrong, the crowd stays nervous wherever you are.
 // Each visitor counts for more the closer they are, so people walking in and out of range fade the sound rather than
 // step it; and both numbers ease toward where they're headed (panic rising quickly and dying away slowly), so the
 // sound never jumps. GameHud puts it on the player.
@@ -22,6 +24,8 @@ public class ParkCrowd : MonoBehaviour
     [Tooltip("Metres: a frightening place (ParkChaos) whose edge is this close adds to Panic, up to chaosPanic when you're in it.")]
     public float chaosRange = 10f;
     [Range(0f, 1f)] public float chaosPanic = 0.35f;
+    [Tooltip("Panic never drops below the park's Unease times this: at 0.5, a park where everything's gone wrong murmurs at half panic all the time.")]
+    [Range(0f, 1f)] public float uneasePanic = 0.5f;
 
     [Header("Easing (per second)")]
     public float crowdSpeed = 0.4f;  // ~2.5 s from empty to packed
@@ -101,7 +105,7 @@ public class ParkCrowd : MonoBehaviour
         }
 
         crowdTarget = Mathf.Clamp01(people / fullCrowd);
-        panicTarget = Mathf.Clamp01(scared / fullPanic + chaos);
+        panicTarget = Mathf.Clamp01(Mathf.Max(scared / fullPanic + chaos, Unease.Level * uneasePanic));
     }
 
     void OnDestroy()

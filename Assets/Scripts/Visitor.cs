@@ -118,6 +118,13 @@ public class Visitor : MonoBehaviour
             return;
         }
 
+        // Complaining at the information booth (BoothCrowd): there they stand (scares and the rest still come first).
+        if (protestSpot.HasValue && Current is State.Idle or State.Wander)
+        {
+            Protest();
+            return;
+        }
+
         switch (Current)
         {
             case State.Idle:
@@ -352,6 +359,38 @@ public class Visitor : MonoBehaviour
         if (Current != State.Idle) SetState(State.Idle);
         walker.move = Vector2.zero;
         Look.Face(transform.position + (lead.Look.FacingLeft ? Vector3.left : Vector3.right));
+    }
+
+    // ---------------------------------------------------------------- complaining (BoothCrowd)
+
+    Vector3? protestSpot;
+    Vector3 protestFacing;
+
+    public bool Protesting => protestSpot.HasValue;
+    public bool AtProtest => protestSpot.HasValue && Current == State.Idle;
+
+    // Off to `spot` in front of the information booth to stand facing `facing` and complain, until told otherwise.
+    public void Protest(Vector3 spot, Vector3 facing)
+    {
+        Group?.Leave(this);
+        protestSpot = spot;
+        protestFacing = facing;
+    }
+
+    public void StopProtesting() => protestSpot = null;
+
+    void Protest()
+    {
+        Vector3 d = protestSpot.Value - transform.position;
+        d.y = 0f;
+        if (d.magnitude > 0.4f)
+        {
+            if (Current != State.Wander) SetState(State.Wander);
+            if (WalkTo(protestSpot.Value)) return;
+        }
+        if (Current != State.Idle) SetState(State.Idle);
+        walker.move = Vector2.zero;
+        Look.Face(protestFacing);
     }
 
     // ---------------------------------------------------------------- gawking (Aftermath)

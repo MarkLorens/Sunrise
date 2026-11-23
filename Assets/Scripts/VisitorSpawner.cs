@@ -65,13 +65,43 @@ public class VisitorSpawner : MonoBehaviour
 
     public Vector2 gossipEvery = new(5f, 10f); // seconds between someone near the player gossiping (GameText.Gossip)
     public float gossipRange = 12f;
+    // Seconds between the announcer's PA announcements (GameText.Announcements): the first while the park's calm,
+    // the second once everything's gone wrong (Unease), in between on the way.
+    public Vector2 announceEvery = new(60f, 20f);
 
     const string VisitorName = "Visitor";
-    float nextGossip;
+    float nextGossip, nextAnnouncement;
     readonly List<string> heard = new();
+    Visitor announcer;
+    string lastAnnouncement;
+
+    void Update()
+    {
+        Announce();
+        Gossip();
+    }
+
+    // After an event, the announcer at the information booth speaks up about it now and then: more often the more
+    // uneasy the park.
+    void Announce()
+    {
+        if (announcer == null || Time.time < nextAnnouncement) return;
+        float unease = Unease.Level;
+        nextAnnouncement = Time.time + Mathf.Lerp(announceEvery.x, announceEvery.y, unease) * Random.Range(0.8f, 1.2f);
+        heard.Clear();
+        var prank = FindAnyObjectByType<ToiletPrank>();
+        foreach (var (after, lines) in GameText.Announcements)
+            if (Mischief.IsDone(after) && (after != Mischief.Task.TutorialToilet || prank != null && prank.Erupted))
+                heard.AddRange(lines);
+        if (heard.Count > 1) heard.Remove(lastAnnouncement); // never the same twice running
+        if (heard.Count == 0) return;
+        lastAnnouncement = heard[Random.Range(0, heard.Count)];
+        GameHud.Hush(announcer.transform); // a new announcement cuts off the last
+        GameHud.Shout(announcer.transform, lastAnnouncement, 4f, true);
+    }
 
     // After an event, now and then someone near the player talks about it.
-    void Update()
+    void Gossip()
     {
         if (Time.time < nextGossip || Possession.Instance == null) return;
         nextGossip = Time.time + Random.Range(gossipEvery.x, gossipEvery.y);
@@ -187,7 +217,11 @@ public class VisitorSpawner : MonoBehaviour
         {
             if (r.sprite == null || !r.sprite.name.StartsWith("park_stand_PA")) continue;
             var at = new Vector3(r.transform.position.x, 0f, r.transform.position.z + announcerBack); // the picture's own spot
-            Staff<Vendor>(announcerName, at, announcerCharacter, v => v.inside = true).Look.Sink(announcerDrop);
+            announcer = Staff<Vendor>(announcerName, at, announcerCharacter, v => v.inside = true);
+            announcer.Look.Sink(announcerDrop);
+            var complaints = gameObject.AddComponent<BoothCrowd>(); // the crowd that gathers there once things go wrong
+            complaints.booth = r;
+            nextAnnouncement = Time.time + announceEvery.x * 0.5f; // not straight away
             return;
         }
     }
