@@ -39,10 +39,20 @@ public static class AudioBuses
         Apply(Sfx);
     }
 
+    // A puzzle's payoff (AudioManager.MusicOff): the Music group at `level` (0..1) of its slider's volume.
+    static float musicLevel = 1f;
+    public static void MusicLevel(float level)
+    {
+        if (Mathf.Approximately(level, musicLevel)) return;
+        musicLevel = level;
+        Apply(Music);
+    }
+
     static bool Apply(string path)
     {
         float volume = setting.TryGetValue(path, out float v) ? v : 1f;
         if (path == Music || path == Sfx) volume *= duck;
+        if (path == Music) volume *= musicLevel;
         try
         {
             return RuntimeManager.GetBus(path).setVolume(volume) == FMOD.RESULT.OK; // starts FMOD up if it isn't yet

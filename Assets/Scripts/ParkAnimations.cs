@@ -12,8 +12,12 @@ public class ParkAnimations : MonoBehaviour
     const float FountainFps = 3.5f; // frames a second: a calm trickle
     const string FountainSprite = "drinking_fountain", StandFront = "hot_dog_stand_front";
 
+    // Each hot dog stand's grill flames, so the hot dog man can put them out and light them again (HotDogMan).
+    public static readonly System.Collections.Generic.List<SpriteRenderer> Grills = new();
+
     void Start()
     {
+        Grills.Clear(); // the last level's
         var fountain = Frames("Park/Anim/drinking_fountain_", 4);
         var fire = Frames("Park/Anim/hot_dog_fire_", 2);
 
@@ -55,6 +59,7 @@ public class ParkAnimations : MonoBehaviour
         r.sortingOrder = front.sortingOrder;
         r.sprite = frames[0];
         r.gameObject.AddComponent<SpriteFlipbook>().Play(frames, 8f, 0.35f);
+        Grills.Add(r);
     }
 
     static Sprite[] Frames(string path, int n)

@@ -8,9 +8,15 @@ using FMODUnity;
 [RequireComponent(typeof(CharacterSprite))]
 public class Footsteps : MonoBehaviour
 {
+    // How far away a visitor running (npcRun) is heard, in metres from the player: full volume within the first,
+    // silent past the second. Shorter than the event's own 1 to 20, so a crowd bolting far off isn't heard.
+    const float RunFullWithin = 1f;
+    const float RunSilentPast = 8f;
+
     CharacterSprite look;
     Visitor visitor;
     LoopingSound steps;
+    bool runRange; // steps has RunFullWithin/RunSilentPast on it
 
     void Awake()
     {
@@ -32,6 +38,12 @@ public class Footsteps : MonoBehaviour
         bool possessed = visitor != null && possession != null && possession.Host == visitor;
         // Running on their own (panicking, or the tutorial's "Gotta go!" dash): the running sound, if it's set up.
         bool run = !possessed && look.running && !events.npcRun.IsNull;
+        if (run != runRange)
+        {
+            if (run) steps.SetRange(RunFullWithin, RunSilentPast);
+            else steps.ClearRange(); // walking: the footsteps event's own range
+            runRange = run;
+        }
         steps.Play(possessed ? HostSteps(events) : run ? events.npcRun : events.npcFootsteps);
         steps.SetParameter("Pace", look.running ? 1f : 0f);
     }

@@ -222,6 +222,7 @@ public static class GameText
     public static string PickFanAimed() => ThinkFanAimed[UnityEngine.Random.Range(0, ThinkFanAimed.Length)];
     public const string ThinkGasBlownAway = "I gotta get that fan off, or no boom.";                // gas reaching the stand with its fan on
     public const string ThinkCloud = "Let's spark that fire now Sausage Boy!"; // the cloud is full
+    public const string ThinkCloudGrillOn = "Hook, line, and sinker";                                // the cloud is full round his lit grill
     public const string ThinkBoom = "KABOOM. Good morning!";                                         // after the explosion
     public const string ThinkPlatform = "Only his fingers open this. Good thing I have them";        // scanning as the technician
     public const string ThinkHinge = "Lefty loosey...";                                               // loosening the hinge
@@ -350,6 +351,7 @@ public static class GameText
     public const string HotDogRats = "RATS! RAAATS!";
     public const string HotDogBack = "Okay... they're gone. Back to work. Who wants a dog?";
     public const string HotDogStove = "Let's fire up the grill!";
+    public const string HotDogSmell = "Hm? What's that smell?";   // the gas fills up round his grill while it's lit
     public const string PhoneRing = "*Ring ring*";     // the technician's phone, over his booth
     public const string TechnicianSnore = "zzz...";    // sleeping through it
     public const string TechnicianWake = "WHA- WHAT WAS THAT?!";

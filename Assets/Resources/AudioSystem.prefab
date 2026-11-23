@@ -112,7 +112,7 @@ MonoBehaviour:
       Data2: 1100042892
       Data3: -316655486
       Data4: 62232473
-    Path: event:/Ferris Wheel/Ferris Wheel (Normal Speed)
+    Path: event:/Ferris Wheel/Ferris Wheel
   <ferrisPowerOff>k__BackingField:
     Guid:
       Data1: 1531511369

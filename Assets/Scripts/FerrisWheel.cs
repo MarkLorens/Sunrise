@@ -42,9 +42,9 @@ public class FerrisWheel : MonoBehaviour
     public float watchExodus = 5f;          // seconds watching them run out
     public float glideHome = 3f;            // seconds back to the player
     public float finaleZoom = 0.5f;         // how far in the camera zooms on the player at the end (CameraRig.Zoom)
-    public float irisCloseTime = 1.5f;      // seconds for the black to close in
+    public float irisCloseTime = 0.5f;      // seconds for the black to close in
     [Range(0.01f, 1f)] public float irisSoftness = 0.35f; // how soft the edge of the black is
-    public float finaleHold = 5f;           // seconds on the player, gloating (their last word's up meanwhile)
+    public float finaleHold = 3f;           // seconds on the player, gloating (their last word's up meanwhile)
     public float irisShrinkTime = 0.5f;     // then seconds for the circle to shrink away to black
     public float blackHold = 0.5f;          // and seconds of black before the main menu
     public int screamingCabins = 4;   // cabins shouting in turns (GameText.CabinScreams, or CabinScreamsWobbly) in a payoff
@@ -133,12 +133,14 @@ public class FerrisWheel : MonoBehaviour
     IEnumerator WobblyPayoff()
     {
         Possession.InputBlocked = true;
+        AudioManager.MusicOff = true;
         CameraRig.Spotlight(wheel, 999f, (wheelRadius + cabinDrop) * Scale, payoffPullBack); // down to the lowest cabin
         ScreamIn(GameText.CabinScreamsWobbly);
         yield return new WaitForSeconds(1.5f);
         Fx.Shake(0.15f, payoffTime - 1.5f);
         yield return new WaitForSeconds(payoffTime - 1.5f);
         CameraRig.EndSpotlight();
+        AudioManager.MusicOff = false;
         yield return new WaitForSeconds(1f); // the camera easing back
         Possession.InputBlocked = false;
         GameHud.Think(GameHud.ThoughtPriority.Action, GameText.ThinkWobble);
@@ -157,6 +159,7 @@ public class FerrisWheel : MonoBehaviour
     IEnumerator Payoff()
     {
         Possession.InputBlocked = true;
+        AudioManager.MusicOff = true;
         CameraRig.Spotlight(wheel, 999f, (wheelRadius + cabinDrop) * Scale, payoffPullBack); // down to the lowest cabin
         shakeUntil = Time.time + payoffTime;
 
@@ -171,6 +174,7 @@ public class FerrisWheel : MonoBehaviour
                 break;
             }
         CameraRig.EndSpotlight();
+        AudioManager.MusicOff = false;
         yield return new WaitForSeconds(1f); // the camera easing back
         Possession.InputBlocked = false;
     }
@@ -305,6 +309,7 @@ public class FerrisWheel : MonoBehaviour
     IEnumerator MaxSpeedPayoff()
     {
         Possession.InputBlocked = true;
+        AudioManager.MusicOff = true;
         CameraRig.Spotlight(wheel, 999f, (wheelRadius + cabinDrop) * Scale, payoffPullBack); // down to the lowest cabin
         ScreamIn(GameText.CabinScreamsWobbly);
         while (Current != State.Wrecked) yield return null;
