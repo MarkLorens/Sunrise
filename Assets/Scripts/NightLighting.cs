@@ -9,8 +9,8 @@ using UnityEngine.Tilemaps;
 // post-processing, and the park's own lights come on - warm pools under every lamp post, the stalls lit, chasing
 // bulbs round the Ferris wheel rim and a glow in every cabin. The wheel's bulbs race in overdrive and the whole ride
 // goes dark when it breaks. A soft spirit glow follows whoever you control so you never lose yourself in the dark. It
-// lights only them and the ground (a rendering layer of their own, SpiritLayer): props and people they walk past stay
-// as the night has them.
+// lights only them (a rendering layer of their own, SpiritLayer), in their own colours: the ground, props and people
+// they walk past stay as the night has them.
 // Everything it lights is a lit sprite (SpriteLit3D), so people walking under a lamp catch its light.
 // Untick the component in Play mode to compare with day: everything it changed goes back. Values are read every
 // frame, so they can be tuned live. GameHud adds it at runtime; put it on a scene object instead to keep tuned values.
@@ -68,8 +68,10 @@ public class NightLighting : MonoBehaviour
     public float rideIntensity = 2.5f; // the coloured wash on the platform
 
     [Header("Player")]
-    public Color playerColor = new(1f, 0.62f, 0.18f); // a warm glow off the spirit
-    public float playerIntensity = 6f;
+    // Lights whoever you control in their own colours, as if out of the night (a touch warm, not orange), and nothing
+    // else: not the ground (seen through a building's see-through hole it tinted the building), not props or people.
+    public Color playerColor = new(1f, 0.96f, 0.9f);
+    public float playerIntensity = 3.5f;
     public float playerRange = 4.5f; // it sits above and in front: shorter and it misses the spirit
 
     class Lamp
@@ -93,7 +95,7 @@ public class NightLighting : MonoBehaviour
     bool built;
     Transform root;
     Light sun, player;
-    // The spirit glow's own rendering layer: it lights only what's on it (the ground, and whoever you control).
+    // The spirit glow's own rendering layer: it lights only what's on it (whoever you control).
     // Everything stays on the Default layer too, so the park's other lights see it as before.
     const int SpiritLayerBit = 7;
     const uint SpiritLayer = 1u << SpiritLayerBit;
@@ -258,9 +260,10 @@ public class NightLighting : MonoBehaviour
         foreach (var w in FerrisWheel.All) rides.Add(LightUp(w));
 
         player = PointLight("Spirit Glow", root, Vector3.zero);
-        player.renderingLayerMask = (int)SpiritLayer;
-        foreach (var tr in FindObjectsByType<UnityEngine.Tilemaps.TilemapRenderer>(FindObjectsSortMode.None))
-            if (tr.name == "Ground") tr.renderingLayerMask |= SpiritLayer; // the floor takes the glow
+        // URP reads a light's layers off its UniversalAdditionalLightData, not Light.renderingLayerMask.
+        if (!player.TryGetComponent(out UnityEngine.Rendering.Universal.UniversalAdditionalLightData extra))
+            extra = player.gameObject.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalLightData>();
+        extra.renderingLayers = SpiritLayer;
     }
 
     // Bulbs chase round the rim (in the wheel's own plane, so they spin with it), every cabin glows, and two

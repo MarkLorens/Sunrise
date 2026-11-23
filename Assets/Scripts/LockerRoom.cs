@@ -65,7 +65,7 @@ public class LockerRoom : MonoBehaviour
 
         foreach (var o in RideOperator.All)
         {
-            o.GoToFire(Rally);
+            o.GoToFire(Rally, transform.position);
             CameraRig.Spotlight(o.transform, 999f, 1.5f);
             CutsceneLight.On(o);
             GameHud.Shout(o.transform, GameText.OperatorFire, 2.5f);
@@ -82,6 +82,6 @@ public class LockerRoom : MonoBehaviour
     {
         if (!Mischief.IsDone(Mischief.Task.LockerFire)) return;
         Ignite(true);
-        foreach (var o in RideOperator.All) o.GoToFire(Rally, true);
+        foreach (var o in RideOperator.All) o.GoToFire(Rally, transform.position, true);
     }
 }
