@@ -11,6 +11,10 @@ public interface IInteraction
     void Interact(Visitor host);
 }
 
+// An IInteraction that plays a sound of its own when used (the water valve, the Out of Order sign): K doesn't add
+// the menu click.
+public interface IOwnSound { }
+
 // Anything the player can press K on. Simple ones hook up onInteract in the Inspector;
 // puzzle pieces add an IInteraction component for rules that depend on who's interacting.
 public class Interactable : MonoBehaviour
@@ -30,6 +34,8 @@ public class Interactable : MonoBehaviour
     void OnDisable() => All.Remove(this);
 
     public string Prompt(Visitor host) => rules?.Prompt(host) ?? prompt;
+
+    public bool OwnSound => rules is IOwnSound; // no menu click when K uses it (PlayerInteractor)
 
     public string Blocked(Visitor host)
     {

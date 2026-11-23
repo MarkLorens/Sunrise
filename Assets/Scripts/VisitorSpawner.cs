@@ -44,6 +44,10 @@ public class VisitorSpawner : MonoBehaviour
     public string technicianCharacter = "worker_ride_technician";
     public string technicianName = "Technician";
     public Transform technicianPost; // empty = no technician (his booth goes here)
+    public string announcerCharacter = "worker_announcer";
+    public string announcerName = "Announcer";
+    public float announcerBack = 0.3f; // behind the information booth's counter (its park_stand_PA picture)
+    public float announcerDrop = 0f;  // drawn this much lower there (world units), to sit their face under the booth's roof
     public string hotDogManCharacter = "worker_hot_dog";
     public string hotDogManName = "Hot Dog Man";
     public Transform hotDogManPost;  // behind the hot dog stand; empty = no hot dog man
@@ -169,9 +173,23 @@ public class VisitorSpawner : MonoBehaviour
             var tech = Staff<RideTechnician>(technicianName, technicianPost.position, technicianCharacter);
             tech.GrabItem(Item.Create(VisitorItem.Screwdriver, tech.CarryPoint), true);
         }
+        SpawnAnnouncer();
         if (hotDogManPost != null) Staff<HotDogMan>(hotDogManName, hotDogManPost.position, hotDogManCharacter);
         if (mascotPost != null) Staff<Mascot>(mascotName, mascotPost.position, mascotCharacter);
         SpawnVendors();
+    }
+
+    // The information booth (the scene's park_stand_PA picture) has the announcer behind its counter, staying put and
+    // out of reach (a Vendor inside: nobody can possess them there).
+    void SpawnAnnouncer()
+    {
+        foreach (var r in FindObjectsByType<SpriteRenderer>(FindObjectsSortMode.None))
+        {
+            if (r.sprite == null || !r.sprite.name.StartsWith("park_stand_PA")) continue;
+            var at = new Vector3(r.transform.position.x, 0f, r.transform.position.z + announcerBack); // the picture's own spot
+            Staff<Vendor>(announcerName, at, announcerCharacter, v => v.inside = true).Look.Sink(announcerDrop);
+            return;
+        }
     }
 
     // Every ice cream stand tile gets its back layer, a solid box from its front to its back (nobody walks in, from any

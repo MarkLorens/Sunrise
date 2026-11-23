@@ -1,8 +1,9 @@
 using UnityEngine;
 
-// The Out of Order sign in front of the toilet (ToiletPrank): in a body, E takes it down.
+// The Out of Order sign in front of the toilet (ToiletPrank): in a body, K takes it down, with the Take Out the Sign
+// sound (so no menu click: IOwnSound).
 [RequireComponent(typeof(Interactable))]
-public class ToiletSign : MonoBehaviour, IInteraction
+public class ToiletSign : MonoBehaviour, IInteraction, IOwnSound
 {
     ToiletPrank prank;
 

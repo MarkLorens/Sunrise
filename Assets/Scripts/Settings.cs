@@ -19,17 +19,17 @@ public static class Settings
         set { PlayerPrefs.SetFloat("volume", Mathf.Clamp01(value)); ApplyVolume(); }
     }
 
-    // Background music and every other sound, each 0..1 on top of Volume (AudioMix; Sfx for Unity's own clips).
+    // Background music and every other sound, each 0..1 on top of Volume (FMOD's Music, SFX and UI groups via AudioBuses, or AudioMix on banks without them).
     public static float MusicVolume
     {
         get => PlayerPrefs.GetFloat("musicVolume", 1f);
-        set => PlayerPrefs.SetFloat("musicVolume", Mathf.Clamp01(value));
+        set { PlayerPrefs.SetFloat("musicVolume", Mathf.Clamp01(value)); ApplyVolume(); }
     }
 
     public static float SfxVolume
     {
         get => PlayerPrefs.GetFloat("sfxVolume", 1f);
-        set => PlayerPrefs.SetFloat("sfxVolume", Mathf.Clamp01(value));
+        set { PlayerPrefs.SetFloat("sfxVolume", Mathf.Clamp01(value)); ApplyVolume(); }
     }
 
     // Each frame waits for the screen's refresh: no tearing as the camera pans. On unless turned off.
@@ -102,12 +102,11 @@ public static class Settings
 
     static void ApplyVolume()
     {
-        AudioListener.volume = Volume; // the old Sfx clips
-        try
-        {
-            FMODUnity.RuntimeManager.GetBus("bus:/").setVolume(Volume); // starts FMOD up if it isn't yet
-        }
-        catch (System.Exception) { } // no FMOD banks set up
+        AudioListener.volume = Volume; // any Unity AudioSource
+        AudioBuses.SetVolume(AudioBuses.Master, Volume);
+        AudioBuses.SetVolume(AudioBuses.Music, MusicVolume);
+        AudioBuses.SetVolume(AudioBuses.Sfx, SfxVolume);
+        AudioBuses.SetVolume(AudioBuses.Ui, SfxVolume);
     }
 
     // ---------------------------------------------------------------- screen

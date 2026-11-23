@@ -1,7 +1,9 @@
 using UnityEngine;
 
-// Something a visitor carries in their hand: a drink, a water bottle, the mechanic's keys. Possessing someone, you
-// can use what they hold (the mechanic's keys open the electrical box). Someone who panics or goes down lets go of
+// Something a visitor carries in their hand: a drink, a water bottle, the electrician's keys, the technician's
+// screwdriver. Possessing someone, you can use what they hold (the keys open the electrical box and the locker box, the
+// screwdriver loosens the wheel's hinge). The keys and the screwdriver aren't drawn at all (Unseen): carried all the
+// same. Someone who panics or goes down lets go of
 // it, and it tumbles to the ground and stays there.
 [DefaultExecutionOrder(50)] // after CharacterSprite has picked this frame's pose, so it follows the hand exactly
 public class Item : MonoBehaviour
@@ -30,6 +32,9 @@ public class Item : MonoBehaviour
     };
 
     SpriteRenderer sprite, shadow;
+
+    // Carried but never drawn, in a hand or on the ground.
+    bool Unseen => kind is VisitorItem.Keys or VisitorItem.Screwdriver;
     Vector3 velocity;
     bool falling;
 
@@ -57,7 +62,7 @@ public class Item : MonoBehaviour
     {
         Holder = by;
         falling = false;
-        if (!silent) Sfx.Play(Sfx.Grab, 0.6f, 1f, Captions.PickUp);
+        if (!silent) ClosedCaptions.Show(Captions.PickUp);
     }
 
     // Let go of: it tumbles to the ground.
@@ -67,7 +72,7 @@ public class Item : MonoBehaviour
         transform.position = at;
         velocity = Vector3.up * 2f;
         falling = true;
-        Sfx.Play(Sfx.Drop, 0.5f, 1f, Captions.DropItem);
+        ClosedCaptions.Show(Captions.DropItem);
     }
 
     // Eaten, poured out...
@@ -75,6 +80,11 @@ public class Item : MonoBehaviour
 
     void LateUpdate()
     {
+        if (Unseen)
+        {
+            sprite.enabled = shadow.enabled = false;
+            return;
+        }
         var shadowHolder = shadow.transform.parent;
         if (Holder != null)
         {

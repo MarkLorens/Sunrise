@@ -21,6 +21,7 @@ public class LoadingScreen : MonoBehaviour
     public static void Load(int buildIndex)
     {
         if (running != null) return;
+        if (AudioManager.instance != null) AudioManager.instance.StopGameplaySounds(); // nothing carries over
         var canvas = MainMenu.Screen("Loading Screen", 1000); // over everything
         DontDestroyOnLoad(canvas.gameObject);
         var bg = MainMenu.Ui("Blue", canvas);
