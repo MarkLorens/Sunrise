@@ -1058,9 +1058,9 @@ Transform:
   m_GameObject: {fileID: 407931830}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -21.55, y: 0, z: -7.75}
-  m_LocalScale: {x: 0.50964767, y: 0.50964767, z: 0.50964767}
-  m_ConstrainProportionsScale: 0
+  m_LocalPosition: {x: -21.55, y: -0.02, z: -7.75}
+  m_LocalScale: {x: 0.79999995, y: 0.79999995, z: 0.79999995}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -2793,7 +2793,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -8.879999, y: 0.94, z: 15.640001}
-  m_LocalScale: {x: 1.35, y: 1.35, z: 1.35}
+  m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -2916,7 +2916,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cec690ab62064b3da841993ec2bd1a41, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterSprite
-  character: operator
+  character: worker_ride_operator
   waddleAngle: 7
   waddleRate: 0.6
   waddlePerSpeed: 0.5
@@ -3199,9 +3199,9 @@ Transform:
   m_GameObject: {fileID: 758648200}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 8.77, y: 1.35, z: -5.8}
-  m_LocalScale: {x: 0.50964767, y: 0.50964767, z: 0.50964767}
-  m_ConstrainProportionsScale: 0
+  m_LocalPosition: {x: 8.77, y: 2.15, z: -5.8}
+  m_LocalScale: {x: 0.8000001, y: 0.8000001, z: 0.8000001}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 1155094895}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -8046,6 +8046,10 @@ MonoBehaviour:
   technicianCharacter: worker_ride_technician
   technicianName: Technician Bambang
   technicianPost: {fileID: 407931831}
+  announcerCharacter: worker_announcer
+  announcerName: Announcer
+  announcerBack: 0.3
+  announcerDrop: 0
   hotDogManCharacter: worker_hot_dog
   hotDogManName: Hot Dog Man
   hotDogManPost: {fileID: 1214822903}

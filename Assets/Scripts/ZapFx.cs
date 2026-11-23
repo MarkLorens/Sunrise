@@ -12,6 +12,7 @@ public class ZapFx : MonoBehaviour
     // picture's own units (its pixels / pixels per unit): measured off electrical_box.PNG.
     static readonly Vector2 BoltInTile = new(70.5f / 450f, 763.5f / 450f);
     const float BoltHeightInTile = 295f / 450f;
+    const float TilePixels = 450f; // the tile picture's pixels per unit: how it's recognised on a sprite
 
     IEnumerator Start()
     {
@@ -20,9 +21,18 @@ public class ZapFx : MonoBehaviour
         {
             var box = GetComponentInChildren<SpriteRenderer>();
             if (box == null) yield break;
-            Bounds b = box.bounds;
-            at = new Vector3(b.center.x, b.max.y + 0.3f, b.center.z);
-            height = 0.6f;
+            if (box.sprite != null && Mathf.Approximately(box.sprite.pixelsPerUnit, TilePixels))
+            {
+                // The tile's own picture on a sprite (the Ferris wheel's box): the bolt where it was drawn, as on the tiles.
+                at = box.transform.TransformPoint(new Vector3(BoltInTile.x, BoltInTile.y, 0f));
+                height = BoltHeightInTile * box.transform.lossyScale.y;
+            }
+            else
+            {
+                Bounds b = box.bounds;
+                at = new Vector3(b.center.x, b.max.y + 0.15f, b.center.z); // low over the lid
+                height = 0.6f;
+            }
         }
         at.z -= 0.1f; // just in front of the box
         ElectricBolt.Make("Box Bolt", null, at, height, 0f).Blink = false; // always lit, just shaking

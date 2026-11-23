@@ -96,7 +96,7 @@ public class Gutter : MonoBehaviour, IInteraction
         var pack = new List<Transform>();
         for (int i = 0; i < rats; i++)
         {
-            var r = ParkArt.Lit(ParkArt.Make("Rat", null, "Props/rat", 0.35f, Color.white));
+            var r = ParkArt.Lit(ParkArt.Make("Rat", null, $"Props/rat_{Random.Range(1, 4)}", 0.35f, Color.white));
             r.transform.position = transform.position + new Vector3(Random.Range(-0.3f, 0.3f), 0.17f, Random.Range(-0.3f, 0.3f));
             pack.Add(r.transform);
         }

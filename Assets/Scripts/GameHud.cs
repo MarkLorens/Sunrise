@@ -58,7 +58,7 @@ public class GameHud : MonoBehaviour
     const float ObjectiveWidth = 540f, TitleHeight = 104f, TitlePad = 34f, StepsNarrower = 11f, StepsInset = 4f;
     // The objective's name in Atma at the design's 24 (under the type scale's smallest Atma, as the design draws it);
     // the steps in Arvo Body.
-    static readonly int TitleSize = Mathf.RoundToInt(24f * Figma.K), StepSize = Figma.Type.ArvoBody;
+    static readonly int TitleSize = Mathf.RoundToInt(32f * Figma.K), StepSize = Figma.Type.ArvoBody;
     readonly List<StepRow> stepRows = new();
     int shownPart = -2; // index into Mischief.Parts, -1 when every step is done
     const float StepHeight = 36f;

@@ -135,6 +135,7 @@ public class Tutorial : MonoBehaviour
         ShowGuide(false);
         CameraRig.EndSpotlight();
         CameraRig.EndZoom(); // skipped on step 1
+        CameraRig.EndTilt(); // skipped mid-geyser
         // ParkTour.Play(); // off for now; uncomment to show the Ferris wheel after the tutorial (played through or skipped)
     }
 
@@ -241,7 +242,7 @@ public class Tutorial : MonoBehaviour
             yield return null;
         }
         ShowGuide(false);
-        FocusOn(prank.Picture); // the valve's drawn on the block, so light the block
+        FocusOn(prank.ValveArt != null ? prank.ValveArt : prank.Picture, prank.PipeArt); // the valve wheel and its pipe
         Say(GameText.TutorialValveSays);
         while (!prank.Maxed)
         {
@@ -692,7 +693,7 @@ public class Tutorial : MonoBehaviour
         cardGroup.alpha = Mathf.MoveTowards(cardGroup.alpha, show ? 1f : 0f, dt * 5f);
 
         Vector2 half = canvas.rect.size * 0.5f, size = card.rect.size;
-        const float Gap = 34f, Margin = 24f;
+        const float Gap = 16f, Margin = 24f;
         Vector2 want = new(0f, -half.y + 120f + size.y * 0.5f);
         int pointer = 0; // +1: the card's under what's lit, pointing up; -1: over it, pointing down
         Rect? lit = Active && !switching && (worldDim > 0.5f || dim > 0.5f) ? LitRect() : null;

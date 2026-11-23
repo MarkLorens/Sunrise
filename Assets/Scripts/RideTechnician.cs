@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// The ride technician: on call for the Ferris wheel, actually fast asleep in his booth. Ring him (the operator does
-// when the wheel loses power) and all you get is a snore. Something loud enough (the hot dog stand blowing up,
-// PropaneTank) wakes him, but he stays shut in his booth (out of sight, so out of reach: nobody can possess him)
-// until he picks up the call about the wheel. Then he comes out and goes to fiddle with its electrical box, where he
+// The ride technician: on call for the Ferris wheel, actually fast asleep at his stand (behind its counter, his sleeping
+// face on: Resources/Workers/worker_face_sleep). Ring him (the operator does when the wheel loses power) and all you get
+// is a snore. Something loud enough (the hot dog stand blowing up, PropaneTank) wakes him, but he stays at his stand
+// (out of reach: nobody can possess him there) until he picks up the call about the wheel. Then he comes out and goes to fiddle with its electrical box, where he
 // can be possessed like other staff (this script is switched off while he is); he carries a screwdriver, and only
 // his fingerprint opens the wheel's platform (FingerprintArea).
 [RequireComponent(typeof(GroundWalker), typeof(CharacterSprite))]
@@ -13,6 +13,8 @@ public class RideTechnician : MonoBehaviour
     public static readonly List<RideTechnician> All = new();
 
     public float snoreHeight = 2.6f; // where the Zzz floats, over his booth
+    public float standBack = 0.3f;   // behind his stand's counter (the Technician Post's picture), from its spot
+    public float standSink = 0f;     // drawn this much lower there (world units), to sit his face under the stand's roof
 
     public bool IsAwake { get; private set; }
 
@@ -23,6 +25,7 @@ public class RideTechnician : MonoBehaviour
     Vector3 door;
     bool called; // picked up the call: off to the electrical box
     bool outside; // out of his booth
+    bool faceAwake; // his sleeping face swapped back for his own
 
     void OnEnable() => All.Add(this);
     void OnDisable() => All.Remove(this);
@@ -39,20 +42,30 @@ public class RideTechnician : MonoBehaviour
     void Start()
     {
 
-        // He naps inside his booth (the Technician Post's sprite, in the scene) and comes out its door.
+        // He naps behind his stand's counter (the Technician Post's sprite, in the scene), out of reach, and comes out
+        // its front.
         booth = new GameObject("Technician Snore").transform;
         booth.position = transform.position;
         door = transform.position + Vector3.back * 0.9f;
+        var rb = GetComponent<Rigidbody>();
+        rb.position = transform.position = transform.position + Vector3.forward * standBack;
         zzz = Snore();
-        look.SetVisible(false);
+        body.possessable = false;
+        look.Expression("sleep", 0f);
+        look.Sink(standSink);
     }
 
     void Update()
     {
         if (!outside)
         {
-            look.SetVisible(false); // behind the booth door
+            look.Face(transform.position + Vector3.back); // facing out over the counter
             if (!IsAwake) zzz.localPosition = new Vector3(0.6f, snoreHeight + Mathf.Sin(Time.time * 2f) * 0.08f, -0.05f);
+            else if (!faceAwake)
+            {
+                faceAwake = true;
+                look.ClearExpression();
+            }
             return;
         }
         if (!Box(out var box)) return;
@@ -169,6 +182,8 @@ public class RideTechnician : MonoBehaviour
     void ComeOut()
     {
         outside = true;
+        body.possessable = true; // out from behind the counter: like any other staff
+        look.Sink(0f);
         var rb = GetComponent<Rigidbody>();
         rb.position = transform.position = new Vector3(door.x, transform.position.y, door.z);
         look.SetVisible(true);
