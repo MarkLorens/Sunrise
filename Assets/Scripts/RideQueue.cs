@@ -5,7 +5,7 @@ using UnityEngine;
 // runs along `direction`. While the ride has power and its operator is at the post,
 // the person at the front boards every `boardInterval` seconds and comes back out at `exit` later.
 // Only visitors going about their day ride; the spirit can't (a possessed visitor leaves the line).
-public class RideQueue : MonoBehaviour
+public class RideQueue : MonoBehaviour, IVisitorLine
 {
     public static readonly List<RideQueue> All = new();
 
@@ -37,6 +37,12 @@ public class RideQueue : MonoBehaviour
     public void Leave(Visitor v) => line.Remove(v);
 
     public Vector3 SlotPosition(Visitor v) => Slot(Mathf.Max(0, line.IndexOf(v)));
+
+    public bool Faces(out Vector3 point)
+    {
+        point = default;
+        return false; // they look whichever way they walked up
+    }
 
     // The wheel tore off its hinge (FerrisWheel): everyone riding is flung out around `around`. They don't make it.
     public void ThrowOutRiders(Vector3 around, float spread)

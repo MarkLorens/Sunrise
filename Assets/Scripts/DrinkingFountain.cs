@@ -247,9 +247,11 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
         Mischief.Complete(Mischief.Task.LureMechanic);
         if (m == null) yield break; // busy (or possessed): he'll come when he can
         CameraRig.Spotlight(m.transform, 999f);
+        CutsceneLight.On(m); // the park dark round him
         float giveUp = Time.time + 10f; // in case something stops him on the way
         while (m.Current == StaffWorker.State.Going && Time.time < giveUp) yield return null;
         yield return new WaitForSeconds(1f);
+        CutsceneLight.Off();
     }
 
     // A clean-up job; the last one done takes the tape down and puts the music back on.
