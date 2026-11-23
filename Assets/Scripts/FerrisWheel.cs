@@ -373,7 +373,7 @@ public class FerrisWheel : MonoBehaviour
             yield return null;
         }
         yield return new WaitForSeconds(blackHold);
-        LoadingScreen.Load(0); // the main menu, first in Build Settings (as from the pause menu)
+        LoadingScreen.FadeTo(0); // the main menu, first in Build Settings (as from the pause menu)
     }
 
     void Update()

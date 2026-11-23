@@ -7,7 +7,8 @@ using UnityEngine.Rendering.Universal;
 // A fixed-angle Cinemachine camera that stays centred on whoever you control (the spirit, or the visitor it's
 // possessing) and trails them by a hair: it eases into a move and glides to a stop when you do, with no dead zone
 // and no look-ahead, so the player never drifts off-centre. Optionally (framePointsOfInterest) it also eases
-// anything interesting nearby into shot, Untitled Goose Game style. Spotlight hands the shot to an event for a moment.
+// anything interesting nearby into shot, Untitled Goose Game style. Spotlight hands the shot to an event for a moment,
+// gliding over (easing in and out, never a lurch) and framing a spotlit person by their middle, not their feet.
 // Shake is smooth noise (a short sway that settles), not a new random spot every frame.
 // GameHud puts it on the main camera; it builds the Cinemachine pieces itself.
 [DefaultExecutionOrder(-50)] // set up the shot before the brain reads it
@@ -54,8 +55,21 @@ public class CameraRig : MonoBehaviour
     CinemachineTargetGroup group;
     CinemachinePositionComposer body;
     CinemachineCameraOffset shakeOffset;
-    Transform target, spot;
-    float spotUntil, spotPullBack;
+    Transform target, spot; // spot: the point on what's spotlit now (a person's is kept on their middle)
+    float spotUntil;
+    // Everything spotlit: the one now easing in, earlier ones easing out, the player easing the other way. The shot is
+    // their weighted average, so it glides from one to the next. Before, the spot came in at full weight and the
+    // player left at full weight: the camera's damping then set off at its fastest in one frame (metres at once, a jolt
+    // that read as a shake), worse coming back, when the player had faded to nothing and snapped straight back in.
+    class Shot
+    {
+        public Transform on, point; // what was spotlit, and the point the shot uses (a person's middle, or `on` itself)
+        public Visitor person;
+        public float k, pullBack, lift, liftSpeed; // k: how far it's eased in (0..1)
+    }
+    readonly List<Shot> shots = new();
+    Shot spotShot;
+    float playerK = 1f;
     float shake, shakeRate = 1.5f; // current strength, and how much of it fades per second
     CinemachineCamera vcam;
     bool orthographic;
@@ -86,12 +100,29 @@ public class CameraRig : MonoBehaviour
     {
         var rig = Instance;
         if (rig == null || t == null) return;
-        if (rig.spot != null) rig.group.RemoveMember(rig.spot);
-        rig.group.RemoveMember(t); // it may already be in as a point of interest
-        rig.group.AddMember(t, 1f, radius);
-        rig.spot = t;
+        var shot = rig.shots.Find(x => x.on == t); // spotlit again while still easing out: back in it eases
+        if (shot == null)
+        {
+            rig.group.RemoveMember(t); // it may already be in as a point of interest
+            shot = new Shot { on = t, point = t, person = t.GetComponent<Visitor>() };
+            if (shot.person != null)
+            {
+                shot.point = new GameObject("Camera Spot Aim").transform;
+                shot.lift = shot.person.HeadHeight * 0.5f;
+                shot.point.position = t.position + Vector3.up * shot.lift;
+            }
+            rig.shots.Add(shot);
+            rig.group.AddMember(shot.point, 0f, radius);
+        }
+        else
+        {
+            int m = rig.group.FindMember(shot.point);
+            if (m >= 0) rig.group.Targets[m].Radius = radius;
+        }
+        shot.pullBack = pullBack;
+        rig.spotShot = shot;
+        rig.spot = shot.point;
         rig.spotUntil = Time.unscaledTime + seconds;
-        rig.spotPullBack = pullBack;
     }
 
     // Hands the shot back to the player now (it eases back over fadeTime).
@@ -161,6 +192,10 @@ public class CameraRig : MonoBehaviour
 
         if (!TryGetComponent(out CinemachineBrain brain)) brain = gameObject.AddComponent<CinemachineBrain>();
         brain.IgnoreTimeScale = true; // keeps moving through hit-stop / slow-mo like the old rig
+        // Every frame, after everyone's moved: all the bodies are interpolated, so they move smoothly every frame. Left
+        // on SmartUpdate it now and then did the shot on a physics step instead, and the camera held still for a frame
+        // and then caught up: a hitch.
+        brain.UpdateMethod = CinemachineBrain.UpdateMethods.LateUpdate;
         var lens = LensSettings.FromCamera(GetComponent<Camera>());
         orthographic = GetComponent<Camera>().orthographic;
         baseLens = orthographic ? lens.OrthographicSize : lens.FieldOfView;
@@ -168,6 +203,8 @@ public class CameraRig : MonoBehaviour
         ApplyAntiAliasing();
 
         group =new GameObject("Camera Target Group").AddComponent<CinemachineTargetGroup>();
+        // The weighted average of who's in shot (not the middle of their bounds), so easing the weights glides it.
+        group.PositionMode = CinemachineTargetGroup.PositionModes.GroupAverage;
 
         var go = new GameObject("Framing Camera");
         go.transform.rotation = Quaternion.LookRotation(-offset, Vector3.up); // fixed angle: no aim component
@@ -210,6 +247,8 @@ public class CameraRig : MonoBehaviour
     {
         if (group != null) Destroy(group.gameObject);
         if (aim != null) Destroy(aim.gameObject);
+        foreach (var x in shots)
+            if (x.person != null && x.point != null) Destroy(x.point.gameObject);
         if (shakeOffset != null) Destroy(shakeOffset.gameObject);
         if (dofProfile != null) Destroy(dofProfile);
     }
@@ -218,8 +257,14 @@ public class CameraRig : MonoBehaviour
     {
         var spirit = Possession.Instance;
         body.Damping = Vector3.one * followDamping; // same on every axis, so moving up/down the screen feels like left/right
-        body.CameraDistance = offset.magnitude + (spot != null ? spotPullBack : 0f); // eased by the damping
         Follow(Aim(spirit));
+        // Further back for something big spotlit, eased with its weight (Cinemachine doesn't damp distance changes).
+        float pullBack = 0f;
+        foreach (var x in shots) pullBack += Ease(x.k) * x.pullBack;
+        body.CameraDistance = offset.magnitude + pullBack;
+        // The group placed now, from where everyone is this frame, before the brain reads it (its own LateUpdate may
+        // come after the brain's).
+        group.DoUpdate();
         Focus();
 
         // Smooth noise, so the camera sways and settles instead of buzzing; wider than tall, like a hit's knock.
@@ -267,11 +312,20 @@ public class CameraRig : MonoBehaviour
         var host = spirit.Host;
         float lift = host != null ? host.HeadHeight * 0.5f : 0f;
         centreLift = Mathf.SmoothDamp(centreLift, lift, ref centreLiftSpeed, followDamping, Mathf.Infinity, Time.unscaledDeltaTime);
-        aim.position = focus.position + Vector3.up * centreLift;
+        // Their height eased on its own: stairs and the platform lift people a step at a time, and followed as it is
+        // that bumped the shot up (or down) on every step. Eased, it glides.
+        Vector3 at = focus.position;
+        if (!aimHeightSet) aimHeight = at.y;
+        aimHeightSet = true;
+        aimHeight = Mathf.SmoothDamp(aimHeight, at.y, ref aimHeightSpeed, HeightSmoothing, Mathf.Infinity, Time.unscaledDeltaTime);
+        aim.position = new Vector3(at.x, aimHeight + centreLift, at.z);
         return aim;
     }
 
     Transform aim, aimed; // the point, and whose middle it is
+    const float HeightSmoothing = 0.3f; // seconds the shot takes to settle on a new height (a stair, the platform)
+    float aimHeight, aimHeightSpeed;
+    bool aimHeightSet;
     float centreLift, centreLiftSpeed;
 
     // Keeps the framing camera's group up to date.
@@ -281,20 +335,61 @@ public class CameraRig : MonoBehaviour
         {
             if (target != null) group.RemoveMember(target);
             target = focus;
-            if (target != null) group.AddMember(target, 1f, 1f);
+            if (target != null) group.AddMember(target, Ease(playerK), 1f);
         }
         if (spot != null && Time.unscaledTime >= spotUntil)
         {
-            group.RemoveMember(spot);
             spot = null;
+            spotShot = null;
         }
+
+        // The spotlit one eases in, earlier ones out (gone once they're out), and the player the other way: all at
+        // the same pace, so the weights always add up to the same and the shot glides between them.
+        float step = Time.unscaledDeltaTime / fadeTime;
+        for (int i = shots.Count - 1; i >= 0; i--)
+        {
+            var x = shots[i];
+            if (x.point == null || x.on == null) // its owner destroyed it (a cutscene's own marker)
+            {
+                if (x.person != null && x.point != null) Destroy(x.point.gameObject);
+                group.Targets.RemoveAll(g => g.Object == null || g.Object == x.point);
+                if (x == spotShot) { spotShot = null; spot = null; }
+                shots.RemoveAt(i);
+                continue;
+            }
+            x.k = Mathf.MoveTowards(x.k, x == spotShot ? 1f : 0f, step);
+            if (x.person != null)
+            {
+                x.lift = Mathf.SmoothDamp(x.lift, x.person.HeadHeight * 0.5f, ref x.liftSpeed, followDamping, Mathf.Infinity, Time.unscaledDeltaTime);
+                x.point.position = x.on.position + Vector3.up * x.lift;
+            }
+            int m = group.FindMember(x.point);
+            if (m >= 0) group.Targets[m].Weight = Ease(x.k);
+            if (x.k <= 0f && x != spotShot)
+            {
+                group.RemoveMember(x.point);
+                if (x.person != null) Destroy(x.point.gameObject);
+                shots.RemoveAt(i);
+            }
+        }
+        playerK = Mathf.MoveTowards(playerK, spot != null ? 0f : 1f, step);
+
         if (target != null)
         {
             // The player fades out of the shot while something is spotlit, and back in afterwards.
-            var me = group.Targets[group.FindMember(target)];
-            me.Weight = Mathf.MoveTowards(me.Weight, spot != null ? 0f : 1f, Time.unscaledDeltaTime / fadeTime);
+            group.Targets[group.FindMember(target)].Weight = Ease(playerK);
             UpdateInterest();
         }
+    }
+
+    // Starts and ends gently: a weight easing in or out of the shot.
+    static float Ease(float k) => Mathf.SmoothStep(0f, 1f, k);
+
+    bool IsShot(Transform t)
+    {
+        foreach (var x in shots)
+            if (x.point == t || x.on == t) return true;
+        return false;
     }
 
     // Focus on the player (or whatever's spotlit) along the view axis.
@@ -319,12 +414,12 @@ public class CameraRig : MonoBehaviour
         if (framePointsOfInterest)
             foreach (var t in Interesting())
             {
-                if (t == target || t == spot || (aimed != null && t.IsChildOf(aimed))) continue; // not the player themselves
+                if (t == target || IsShot(t) || (aimed != null && t.IsChildOf(aimed))) continue; // not the player themselves
                 if (group.FindMember(t) < 0 && Vector3.Distance(here, t.position) < joinRadius) group.AddMember(t, 0f, 0.8f);
             }
 
         int inRangeCount = 0;
-        foreach (var m in group.Targets) if (m.Object != target && m.Object != spot && InRange(m.Object, here)) inRangeCount++;
+        foreach (var m in group.Targets) if (m.Object != target && !IsShot(m.Object) && InRange(m.Object, here)) inRangeCount++;
         // Split the pull between them, so a cluster of ride parts doesn't drag the camera off the player.
         float each = interestWeight / Mathf.Max(1, inRangeCount);
         float step = Time.unscaledDeltaTime / fadeTime;
@@ -333,7 +428,7 @@ public class CameraRig : MonoBehaviour
         for (int i = group.Targets.Count - 1; i >= 0; i--)
         {
             var m = group.Targets[i];
-            if (m.Object == target || m.Object == spot) continue;
+            if (m.Object == target || IsShot(m.Object)) continue;
             bool inRange = framePointsOfInterest && InRange(m.Object, here);
             m.Weight = Mathf.MoveTowards(m.Weight, inRange && spot == null ? each : 0f, step * each);
             if (m.Weight <= 0f && !inRange) group.Targets.RemoveAt(i);

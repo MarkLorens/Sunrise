@@ -79,12 +79,12 @@ public class GroundWalker : MonoBehaviour
         // Each axis alone can be clear while the diagonal step cuts the corner into a tree: don't.
         if (!OnTile(new Vector3(v.x, 0, v.y))) v.y = 0;
 
-        rb.linearVelocity = new Vector3(v.x, 0f, v.y);
-
-        // Up and down stairs: no gravity, so the height is placed by hand.
+        // Up and down stairs: no gravity, so the height is set by hand, as a speed. Placing the body there instead
+        // (rb.position) switches its interpolation off for that step: the body, and the camera on it, jumped a whole
+        // step's height in one frame, a bump on every stair.
         Vector3 at = rb.position;
         float y = Mathf.MoveTowards(at.y, RaisedFloor.Height(at) + hover, ClimbSpeed * Time.fixedDeltaTime);
-        if (y != at.y) rb.position = new Vector3(at.x, y, at.z);
+        rb.linearVelocity = new Vector3(v.x, (y - at.y) / Time.fixedDeltaTime, v.y);
     }
 
     // Switched back on (out of a possession, or a body teleported somewhere): straight to the floor's height.
@@ -200,7 +200,20 @@ public class GroundWalker : MonoBehaviour
         return false;
     }
 
-    static bool Within(Rect r, Vector3 p, float radius) =>
+    // Every box NearObstacle checks right now (the objects' and the props'), for NavGrid to map the squares around each.
+    public static void ObstacleBoxes(List<Rect> into)
+    {
+        into.Clear();
+        into.AddRange(footprints);
+        foreach (Collider c in props)
+        {
+            if (c == null || !c.enabled || !c.gameObject.activeInHierarchy) continue;
+            Bounds b = c.bounds;
+            into.Add(Rect.MinMaxRect(b.min.x, b.min.z, b.max.x, b.max.z));
+        }
+    }
+
+    public static bool Within(Rect r, Vector3 p, float radius) =>
         p.x > r.xMin - radius && p.x < r.xMax + radius && p.z > r.yMin - radius && p.z < r.yMax + radius;
 
     // Would stepping from `from` to `to` walk into an object or a prop?

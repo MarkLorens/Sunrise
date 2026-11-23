@@ -27,7 +27,7 @@ public static class Mischief
 
     public static readonly (string title, (Task task, string label)[] steps)[] Parts =
     {
-        ("Toilet Trouble", new[]
+        ("Exploding Diarrhea", new[]
         {
             (Task.TutorialPossess, "Possess a visitor"),
             (Task.TutorialSign, "Take down the Out of Order sign"),
@@ -36,7 +36,7 @@ public static class Mischief
             (Task.TutorialToilet, "Wait for someone to use the toilet..."),
         }),
         // After the tutorial. Done by getting to the box (ElectricalBox), which starts the puzzle.
-        ("0. Ferris Wheel Chaos", new[]
+        ("0. Opening Night", new[]
         {
             (Task.ReachBox, "Go to the Ferris Wheel and open the electrical box"),
         }),
@@ -55,12 +55,12 @@ public static class Mischief
         {
             (Task.RestartWheel, "Start the Ferris Wheel again."),
         }),
-        ("4. Burn the Locker Room", new[]
+        ("4. Staffy Situation", new[]
         {
             (Task.SmellMascot, "Stink out The Mascot."),
             (Task.LockerFire, "Set the locker room on fire."),
         }),
-        ("5. Max Speed", new[]
+        ("5. A Wheely Bad Day", new[]
         {
             (Task.MaxSpeed, "Turn the Ferris Wheel up to max speed."),
             (Task.WheelRolled, "Watch it roll away!"),

@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -77,6 +78,22 @@ public class CharacterSprite : MonoBehaviour
     SpriteRenderer face;
     Sprite faceOpen, faceClosed, facePanic;
     static Sprite[] panicFaces;
+
+    // The people's art, read in ahead by the loading screen (while the park waits to be switched to), a folder a frame:
+    // the crowd's all made at once as the park starts (VisitorSpawner), and reading it from disk there and then held
+    // that frame up. Kept here so it's not let go before they ask for it (Resources.Load then finds it loaded).
+    static readonly string[] PreloadFolders = { "ArtLineartHead", "ArtLineartHeadPanic", "ArtLineartTorso", "Workers" };
+    static readonly List<Sprite> preloaded = new();
+
+    public static IEnumerator Preload()
+    {
+        if (preloaded.Count > 0) yield break;
+        foreach (var folder in PreloadFolders)
+        {
+            preloaded.AddRange(Resources.LoadAll<Sprite>(folder));
+            yield return null;
+        }
+    }
     float nextBlink, blinkUntil;
     readonly List<(SpriteRenderer r, Color c)> headParts = new();
 

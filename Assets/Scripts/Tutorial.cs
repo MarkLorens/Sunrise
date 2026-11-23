@@ -26,6 +26,12 @@ public class Tutorial : MonoBehaviour
     public static bool Active { get; private set; }
     // A card is up: the spirit keeps its lines to itself meanwhile (here and GameHud's thoughts).
     public static bool CardShowing { get; private set; }
+    // The HUD's key prompts only show for what the tutorial has got to: none at first, J over someone to possess once
+    // it's pointed one out (step 4), K over things to use once you're at the sign (step 8). Outside it, all of them.
+    public static bool ShowPossessPrompts => !Active || taught >= 1;
+    public static bool ShowUsePrompts => !Active || taught >= 2;
+    static int taught;
+    bool hidingObjectives; // step 1: the objectives aren't there yet (they come in with step 2)
 
     const float Dim = 0.82f;       // how dark the HUD gets around the piece being pointed at
     // How dark the park gets around who or what's lit. The shade is blended in linear colour, so it looks lighter than
@@ -79,6 +85,16 @@ public class Tutorial : MonoBehaviour
     static readonly Vector2 CornerAt = new(-16f, 10f); // the corner keys' right edge and middle, from the card's corner
     Vector2 cardAt;
     bool cardPlaced;
+    // The card is placed by what's lit (anchor: its middle on screen, followed exactly, so it never trails the camera)
+    // plus an offset that eases (SmoothDamp: starts and stops gently) when it moves somewhere new.
+    const float CardGlide = 0.22f; // seconds, roughly, to glide over to a new spot
+    Vector2 cardOffset, cardOffsetSpeed;
+    int cardAnchorOf = int.MinValue;
+    int litVersion; // goes up each time a step wants something new lit
+    // Each lit thing's size round its own position, measured once per spotlight: its sprites animate (the spirit bobs
+    // and its flame flickers, people waddle), and measured every frame the card wobbled along with them.
+    readonly List<(Transform t, Bounds around)> litShapes = new();
+    int litShapesOf = -1;
     CanvasGroup cardGroup;
     string cardShown;
     float cardAge;
@@ -109,6 +125,10 @@ public class Tutorial : MonoBehaviour
         }
         Build();
         Active = true;
+        taught = 0;
+        // Gone from the start, not faded out: step 1 is just the spirit.
+        GameHud.HideObjectives = hidingObjectives = true;
+        GameHud.Instance.ObjectivesPanel.GetComponent<CanvasGroup>().alpha = 0f;
         flow = StartCoroutine(Run());
     }
 
@@ -127,6 +147,7 @@ public class Tutorial : MonoBehaviour
         CardShowing = false;
         ending = true;
         Possession.InputBlocked = false;
+        if (hidingObjectives) GameHud.HideObjectives = hidingObjectives = false; // skipped on step 1
         AudioManager.MusicOff = false; // skipped mid-geyser
         if (held != null)
         {
@@ -190,8 +211,9 @@ public class Tutorial : MonoBehaviour
         Card(GameText.TutorialMe, next: true);
         yield return Next();
 
-        // 2. The objectives (the camera eases back out).
+        // 2. The objectives (the camera eases back out), coming in now.
         CameraRig.EndZoom();
+        GameHud.HideObjectives = hidingObjectives = false;
         FocusOn(GameHud.Instance.ObjectivesPanel, 18f);
         Say(GameText.TutorialGoalSays);
         Card(GameText.TutorialGoal, next: true);
@@ -214,6 +236,7 @@ public class Tutorial : MonoBehaviour
         yield return new WaitForSeconds(0.3f);
 
         // 4. Someone to possess: the nearest visitor stops where they are.
+        taught = 1;
         Card(GameText.TutorialVisitor);
         Say(GameText.TutorialVisitorSays);
         while (spirit.Host == null)
@@ -252,6 +275,7 @@ public class Tutorial : MonoBehaviour
         ShowGuide(false);
 
         // 8. The sign.
+        taught = 2;
         FocusOn(prank.Sign);
         Say(GameText.TutorialSignSays);
         while (!prank.SignDown)
@@ -552,6 +576,7 @@ public class Tutorial : MonoBehaviour
         wantBreathing = ui;
         wantFocus = rect;
         switching = true;
+        litVersion++; // the card heads over to it now, while the dark crossfades
     }
 
     // Who or what is lit, as sprites for TutorialSpotlight (gathered once per spotlight, not every frame).
@@ -773,7 +798,10 @@ public class Tutorial : MonoBehaviour
         const float Gap = 16f, Margin = 24f;
         Vector2 want = new(0f, -half.y + 120f + size.y * 0.5f);
         int pointer = 0; // +1: the card's under what's lit, pointing up; -1: over it, pointing down
-        Rect? lit = Active && !switching && (worldDim > 0.5f || dim > 0.5f) ? LitRect() : null;
+        // By what the step wants lit, straight away, while the dark crossfades to it. (Waiting for the dark to come up
+        // on it first left the card sitting there, then heading off late, by way of the bottom of the screen.)
+        Rect? lit = Active ? LitRect() : null;
+        bool litUp = lit.HasValue && !switching && (worldDim > 0.5f || dim > 0.5f);
         if (lit.HasValue)
         {
             Rect t = lit.Value;
@@ -784,8 +812,17 @@ public class Tutorial : MonoBehaviour
             else want = new Vector2(Mathf.Clamp(t.xMax + Gap + size.x * 0.5f, -half.x + Margin + size.x * 0.5f, half.x - Margin - size.x * 0.5f),
                                     Mathf.Clamp(t.center.y, -half.y + Margin + size.y * 0.5f, half.y - Margin - size.y * 0.5f));
         }
-        if (!cardPlaced || cardGroup.alpha <= 0.01f) cardAt = want; // appears in place, then glides
-        cardAt = Vector2.Lerp(cardAt, want, 1f - Mathf.Exp(-10f * dt));
+        Vector2 anchor = lit.HasValue ? lit.Value.center : new Vector2(0f, -half.y);
+        int anchorOf = lit.HasValue ? litVersion : -1;
+        if (!cardPlaced || cardGroup.alpha <= 0.01f)
+        {
+            cardOffset = want - anchor; // appears in place, then glides
+            cardOffsetSpeed = Vector2.zero;
+        }
+        else if (anchorOf != cardAnchorOf) cardOffset = cardAt - anchor; // by something new: from where it is now
+        cardAnchorOf = anchorOf;
+        cardOffset = Vector2.SmoothDamp(cardOffset, want - anchor, ref cardOffsetSpeed, CardGlide, Mathf.Infinity, dt);
+        cardAt = anchor + cardOffset;
         cardPlaced = true;
 
         // Each new card pops in from a little lower.
@@ -795,7 +832,7 @@ public class Tutorial : MonoBehaviour
         // Pointing at something: wait until the light's on it (it moves over a few frames), so the card doesn't flick
         // from the box to the bubble as it comes in.
         bool pointing = wantFocus != null || wantLighting.Count > 0;
-        if (show && (lit.HasValue || !pointing)) SetCardArt(lit.HasValue ? pointer : 0);
+        if (show && (litUp || !pointing)) SetCardArt(litUp ? pointer : 0);
     }
 
     // The bubble (tail at what's lit) or the plain box; the words keep inside the drawn line either way.
@@ -823,20 +860,42 @@ public class Tutorial : MonoBehaviour
     }
 
     // What's lit, in HUD units centred like the canvas: the HUD piece's box, or round the lit sprites on screen.
+    // How big each lit thing is round its own position, from its sprites as they are now (tried again next frame if
+    // none are showing yet).
+    void MeasureLit()
+    {
+        litShapes.Clear();
+        foreach (var t in wantLighting)
+        {
+            if (t == null) continue;
+            bool any = false;
+            var b = new Bounds();
+            foreach (var r in t.GetComponentsInChildren<SpriteRenderer>())
+            {
+                if (!r.enabled || r.sprite == null || r.transform.name == "Flat") continue; // not shadows lying flat
+                if (any) b.Encapsulate(r.bounds);
+                else { b = r.bounds; any = true; }
+            }
+            if (any) litShapes.Add((t, new Bounds(b.center - t.position, b.size)));
+        }
+        if (litShapes.Count > 0) litShapesOf = litVersion;
+    }
+
     Rect? LitRect()
     {
         float s = canvasComponent.scaleFactor;
         Vector2 half = canvas.rect.size * 0.5f;
-        Rect? screen = focus?.Invoke();
-        if (!screen.HasValue && TutorialSpotlight.Lit.Count > 0)
+        Rect? screen = wantFocus?.Invoke();
+        if (!screen.HasValue && wantLighting.Count > 0)
         {
             var cam = Camera.main;
             if (cam == null) return null;
+            if (litShapesOf != litVersion) MeasureLit();
             Vector2 min = new(float.MaxValue, float.MaxValue), max = new(float.MinValue, float.MinValue);
-            foreach (var r in TutorialSpotlight.Lit)
+            foreach (var (t, around) in litShapes)
             {
-                if (r == null || !r.enabled || !r.gameObject.activeInHierarchy) continue;
-                Bounds b = r.bounds;
+                if (t == null || !t.gameObject.activeInHierarchy) continue;
+                var b = new Bounds(t.position + around.center, around.size);
                 for (int i = 0; i < 8; i++)
                 {
                     Vector3 corner = b.center + Vector3.Scale(b.extents, new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1));
