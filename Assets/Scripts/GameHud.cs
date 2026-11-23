@@ -945,7 +945,7 @@ public class GameHud : MonoBehaviour
         Place(prompt, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0f), Vector2.zero, new Vector2(10f, 10f));
         var body = Ui("Body", prompt);
         Place(body, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), Vector2.zero, Vector2.zero);
-        Img(body, "UI/pill", new Color(0.12f, 0.08f, 0.12f, 0.88f));
+        // Img(body, "UI/pill", new Color(0.12f, 0.08f, 0.12f, 0.88f));
         Row(body, 10f, new RectOffset(10, 22, 6, 6));
         Fit(body);
         promptKey = KeyCap.Make(body, "K", new Key[0], 40f);

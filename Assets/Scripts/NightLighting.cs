@@ -36,7 +36,7 @@ public class NightLighting : MonoBehaviour
 
     [Header("Park lights")]
     public string lampSprite = "lamp"; // tiles drawn with this sprite get a light in their lantern
-    public float lanternHeight = 0.87f; // where the lantern is, as a fraction of the lamp's height
+    public float lanternHeight = 0.905f; // where the lantern is, as a fraction of the lamp's height
     // The lamps take these in turn (lamp 1 the first, lamp 2 the second, ...). Add or remove colours freely.
     public Color[] lampColors =
     {
