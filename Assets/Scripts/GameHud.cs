@@ -132,6 +132,8 @@ public class GameHud : MonoBehaviour
         if (GetComponent<ActionOutline>() == null) gameObject.AddComponent<ActionOutline>();
         if (GetComponent<PauseMenu>() == null) gameObject.AddComponent<PauseMenu>();
         if (GetComponent<Tutorial>() == null) gameObject.AddComponent<Tutorial>();
+        if (GetComponent<ParkCrowd>() == null) gameObject.AddComponent<ParkCrowd>(); // the crowd all round you
+        if (GetComponent<PossessedMusic>() == null) gameObject.AddComponent<PossessedMusic>(); // the theme slows in a body
         Build();
         foreach (var line in pending) AddEvent(line);
         pending.Clear();
@@ -190,6 +192,7 @@ public class GameHud : MonoBehaviour
     public static void Refuse(Transform by, string why, bool person = false)
     {
         if (Instance == null || by == null || string.IsNullOrEmpty(why)) return;
+        AudioManager.TryPlay(e => e.disabledAction); // G-06
         Instance.refusedBy = by;
         Instance.refusedPerson = person;
         Instance.refusal = why;
@@ -255,6 +258,7 @@ public class GameHud : MonoBehaviour
         thoughtAge = 0f;
         showingPriority = priority;
         showing = true;
+        AudioManager.TryPlay(e => e.chatBubble); // RU-01, as each line pops up
     }
 
     // Someone (or something) shouting: a speech bubble over `over` for `seconds`. Any number at once.
@@ -423,6 +427,7 @@ public class GameHud : MonoBehaviour
                 {
                     SetPuzzleWords(PartTitle(shownPart));
                     puzzleAge = 0f;
+                    AudioManager.TryPlayOverOthers(e => e.objectiveCompleted); // G-07, everything else turned down
                 }
                 else ShowPart(part);
             }

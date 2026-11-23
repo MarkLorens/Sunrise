@@ -108,7 +108,7 @@ public static class Mischief
     public static void Complete(Task t)
     {
         if (!done.Add(t)) return;
-        Sfx.Play(Sfx.TaskDone, 0.7f, 1f, Captions.StepDone);
+        ClosedCaptions.Show(Captions.StepDone);
         GameHud.StepDone(GameText.StepDone(t)); // the events, top right
         if (Listed(t)) SaveGame.AutoSave = true; // a step crossed off the objectives: save (GameHud does, when it can)
     }

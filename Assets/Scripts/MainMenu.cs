@@ -40,21 +40,37 @@ public class MainMenu : MonoBehaviour
 
         var column = Column(canvas);
         column.anchoredPosition = new Vector2(0f, (Figma.Height * 0.5f - 715.2f) * Figma.K);
-        var first = Button(column, "New Game", NewGame);
+        var first = Button(column, "New Game", NewGame, sound: e => e.newOrLoadGame);
         loadButton = Button(column, "Load Game", OpenLoad);
         loadButton.interactable = SaveGame.Exists; // greyed out with no save yet
         optionsButton = Button(column, "Options", OpenOptions);
         creditsButton = Button(column, "Credits", OpenCredits);
         Button(column, "Exit", Quit);
         Select(first);
+        if (AudioManager.instance != null && FMODEvents.instance != null)
+            AudioManager.instance.PlayMusic(FMODEvents.instance.lobbyMusic); // G-01
+    }
+
+    // Leaving for the park (or quitting): the lobby music fades out.
+    void OnDestroy()
+    {
+        if (AudioManager.instance != null) AudioManager.instance.StopMusic();
     }
 
     void NewGame() => StartIn(SaveGame.FirstEmpty); // a slot of its own, however many saves there are
+
+    // New Game or a Load Game slot picked: the lobby music stops dead as "Loading...." comes up, leaving the
+    // New / Load Game sound on its own.
+    public static void CutLobbyMusic()
+    {
+        if (AudioManager.instance != null) AudioManager.instance.StopMusic(now: true);
+    }
 
     // A new game in `slot` (Save Game in the pause menu saves into it).
     public static void StartIn(int slot)
     {
         SaveGame.Slot = slot;
+        CutLobbyMusic();
         LoadingScreen.Load(SceneManager.GetActiveScene().buildIndex + 1);
     }
 
@@ -121,8 +137,10 @@ public class MainMenu : MonoBehaviour
     }
 
     // A word to pick: `ink` on its own, bold and dark on the yellow brush stroke while hovered or picked with the keys.
+    // `sound` is what clicking it plays: the usual click (G-03) unless given, e.g. e => e.backButton.
     // Sizes off the design (Main Menu): a word every 49.7 design px, Arvo 28; the stroke 418.6 x 77.8, a touch low.
-    public static Button Button(RectTransform parent, string text, UnityAction onClick, float width = 430f, Color? ink = null)
+    public static Button Button(RectTransform parent, string text, UnityAction onClick, float width = 430f, Color? ink = null,
+        System.Func<FMODEvents, FMODUnity.EventReference> sound = null)
     {
         var rt = Ui(text, parent);
         Size(rt, width, 49.7f * Figma.K);
@@ -138,7 +156,7 @@ public class MainMenu : MonoBehaviour
         var button = rt.gameObject.AddComponent<Button>();
         button.targetGraphic = hit;
         button.transition = Selectable.Transition.None;
-        if (onClick != null) button.onClick.AddListener(onClick);
+        OnClick(button, onClick, sound);
 
         var label = Label(Ui("Label", rt), text, Figma.Type.ArvoSubtitle, ink ?? Soft, ParkArt.Font);
         Stretch((RectTransform)label.transform);
@@ -152,7 +170,9 @@ public class MainMenu : MonoBehaviour
 
     // A small hand-drawn pill (Delete Slot, Back, Cancel, Yes, No): light blue (UI Asset/Buttons/Button1_Idle), yellow
     // while hovered or picked (Button1_Active), as in the design.
-    public static Button Pill(RectTransform parent, string text, UnityAction onClick, float width = 210f, float height = 58f)
+    // `sound` is what clicking it plays: the usual click (G-03) unless given, e.g. e => e.backButton.
+    public static Button Pill(RectTransform parent, string text, UnityAction onClick, float width = 210f, float height = 58f,
+        System.Func<FMODEvents, FMODUnity.EventReference> sound = null)
     {
         var rt = Ui(text, parent);
         rt.sizeDelta = new Vector2(width, height);
@@ -168,7 +188,7 @@ public class MainMenu : MonoBehaviour
         var swap = button.spriteState;
         swap.highlightedSprite = swap.selectedSprite = swap.pressedSprite = UiArt.Get("Buttons/Button1_Active");
         button.spriteState = swap;
-        if (onClick != null) button.onClick.AddListener(onClick);
+        OnClick(button, onClick, sound);
         var label = Label(Ui("Label", rt), text, Figma.Type.ArvoSubtitle, Ink, ParkArt.Font);
         Stretch((RectTransform)label.transform);
         ((RectTransform)label.transform).offsetMin = new Vector2(0f, 3f);
@@ -176,7 +196,24 @@ public class MainMenu : MonoBehaviour
         return button;
     }
 
-    public static void Select(Selectable s) => EventSystem.current?.SetSelectedGameObject(s != null ? s.gameObject : null);
+    // The click sound (G-03 unless given), then what the button does: before it opens a scene or screen.
+    static void OnClick(Button button, UnityAction onClick, System.Func<FMODEvents, FMODUnity.EventReference> sound)
+    {
+        if (onClick == null) return;
+        var click = sound ?? (e => e.menuClick);
+        button.onClick.AddListener(() => AudioManager.TryPlay(click));
+        button.onClick.AddListener(onClick);
+    }
+
+    // Picks a button for the player (a screen opening): no hover sound, they didn't move to it.
+    public static void Select(Selectable s)
+    {
+        quietSelect = true;
+        EventSystem.current?.SetSelectedGameObject(s != null ? s.gameObject : null);
+        quietSelect = false;
+    }
+
+    static bool quietSelect;
 
     // ---------------------------------------------------------------- UI helpers
 
@@ -226,11 +263,19 @@ public class MainMenu : MonoBehaviour
     }
 
     // Hovering something selects it, so mouse and keys share one highlight.
-    public class HoverSelects : MonoBehaviour, IPointerEnterHandler
+    // Moving the highlight onto it, with the mouse or the keys, plays the hover sound (G-02), unless it's `quiet`.
+    public class HoverSelects : MonoBehaviour, IPointerEnterHandler, ISelectHandler
     {
+        public bool quiet; // no hover sound (Options' tabs: they only sound when clicked)
+
         public void OnPointerEnter(PointerEventData e)
         {
             if (TryGetComponent(out Selectable s) && s.interactable) EventSystem.current?.SetSelectedGameObject(gameObject);
+        }
+
+        public void OnSelect(BaseEventData e)
+        {
+            if (!quietSelect && !quiet) AudioManager.TryPlay(ev => ev.menuHover);
         }
     }
 

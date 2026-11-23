@@ -11,11 +11,27 @@ public class LoopingSound
     readonly Rigidbody body;
     EventInstance instance;
     FMOD.GUID loaded; // which event `instance` is
+    Vector2? range; // (full volume up to, silent past) in metres from the player; null = the event's own from FMOD Studio
 
     public LoopingSound(GameObject owner, Rigidbody body = null)
     {
         this.owner = owner;
         this.body = body;
+    }
+
+    // How far away it can be heard: full volume within `fullVolumeWithin` metres, fading out to silent at `silentPast`.
+    // Overrides the event's 3D min/max distance from FMOD Studio (its default is 1 to 20).
+    public void SetRange(float fullVolumeWithin, float silentPast)
+    {
+        range = new Vector2(fullVolumeWithin, Mathf.Max(fullVolumeWithin, silentPast));
+        ApplyRange();
+    }
+
+    void ApplyRange()
+    {
+        if (range == null || !instance.isValid()) return;
+        instance.setProperty(EVENT_PROPERTY.MINIMUM_DISTANCE, range.Value.x);
+        instance.setProperty(EVENT_PROPERTY.MAXIMUM_DISTANCE, range.Value.y);
     }
 
     public void Play(EventReference sound)
@@ -30,6 +46,8 @@ public class LoopingSound
         {
             instance = AudioManager.instance.CreateInstance(sound);
             loaded = sound.Guid;
+            if (!instance.isValid()) return; // not in the built banks
+            ApplyRange();
         }
 
         instance.getPlaybackState(out PLAYBACK_STATE state);

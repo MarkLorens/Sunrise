@@ -118,8 +118,8 @@ public class SettingsMenu : MonoBehaviour
                 var b = art.gameObject.AddComponent<Button>();
                 b.transition = Selectable.Transition.None;
                 int which = i;
-                b.onClick.AddListener(() => { if (which != tab) ShowTab(which); });
-                art.gameObject.AddComponent<MainMenu.HoverSelects>();
+                b.onClick.AddListener(() => TurnTo(which));
+                art.gameObject.AddComponent<MainMenu.HoverSelects>().quiet = true;
                 art.gameObject.AddComponent<TabKeys>().menu = this;
                 tabButtons.Add(b);
                 string[] lines = TabNames[i].Split('\n');
@@ -142,13 +142,22 @@ public class SettingsMenu : MonoBehaviour
         MainMenu.Select(rows.Count > 0 ? rows[0].button : firstControl != null ? firstControl : tabButtons[^1]);
     }
 
+    // The player turning to a tab (clicked, or left / right on the tabs): the menu click (G-03), then the page.
+    // Clicked: the menu click (G-03). With the arrow keys: the hover sound (G-02), as moving along a menu.
+    void TurnTo(int t, bool keys = false)
+    {
+        if (keys) AudioManager.TryPlay(e => e.menuHover);
+        else AudioManager.TryPlay(e => e.menuClick);
+        if (t != tab) ShowTab(t);
+    }
+
     class TabKeys : MonoBehaviour, IMoveHandler
     {
         public SettingsMenu menu;
         public void OnMove(AxisEventData e)
         {
-            if (e.moveDir == MoveDirection.Left && menu.tab > 0) menu.ShowTab(menu.tab - 1);
-            else if (e.moveDir == MoveDirection.Right && menu.tab < 3) menu.ShowTab(menu.tab + 1);
+            if (e.moveDir == MoveDirection.Left && menu.tab > 0) menu.TurnTo(menu.tab - 1, keys: true);
+            else if (e.moveDir == MoveDirection.Right && menu.tab < 3) menu.TurnTo(menu.tab + 1, keys: true);
             else if (e.moveDir == MoveDirection.Down && menu.rows.Count > 0) MainMenu.Select(menu.rows[0].button);
             else if (e.moveDir == MoveDirection.Down && menu.cards[0] != null) MainMenu.Select(menu.cards[0]);
         }
@@ -156,9 +165,15 @@ public class SettingsMenu : MonoBehaviour
 
     // ---------------------------------------------------------------- the pages
 
+    // The languages the game has words for. Only one: Language can't change, so its arrows give the disabled sound
+    // (G-06); with more than one they step through them with the toggle sound (S-04).
+    static readonly string[] Languages = { "English" };
+    static int language;
+
     void General()
     {
-        ArrowRow(0, 146f, "Language", 650f, 862.5f, 756f, () => "English", _ => { });
+        ArrowRow(0, 146f, "Language", 650f, 862.5f, 756f, () => Languages[language], d => language = Wrap(language + d, Languages.Length),
+            Languages.Length > 1 ? e => e.toggle : e => e.disabledAction);
         ArrowRow(1, 146f, "Closed Caption", 650f, 862.5f, 756f, () => Settings.ClosedCaptions ? "ON" : "OFF", _ => Settings.ClosedCaptions = !Settings.ClosedCaptions);
     }
 
@@ -196,22 +211,29 @@ public class SettingsMenu : MonoBehaviour
         r.button = hit.gameObject.AddComponent<Button>();
         r.button.targetGraphic = img;
         r.button.transition = Selectable.Transition.None;
-        hit.gameObject.AddComponent<MainMenu.HoverSelects>();
+        hit.gameObject.AddComponent<MainMenu.HoverSelects>(); // the hover sound (G-02) as it's picked
         hit.gameObject.AddComponent<RowKeys>().row = r;
         r.label = Left(page, name, labelX, y, Figma.Type.ArvoSubtitle);
         rows.Add(r);
         return r;
     }
 
-    void ArrowRow(int index, float labelX, string name, float leftX, float rightX, float valueX, Func<string> shown, Action<int> step)
+    // Clicking an arrow (or left / right, or Enter) plays `sound`: the toggle sound (S-04) unless given.
+    void ArrowRow(int index, float labelX, string name, float leftX, float rightX, float valueX, Func<string> shown, Action<int> step,
+        Func<FMODEvents, FMODUnity.EventReference> sound = null)
     {
+        sound ??= e => e.toggle;
         var r = NewRow(index, labelX, name);
         float y = RowY + RowStep * index;
         r.left = Figma.Picture(page, "Left", "Buttons/Arrows/LeftArrow_Idle", leftX, y + 1.5f, 47f, 47f);
         r.right = Figma.Picture(page, "Right", "Buttons/Arrows/RightArrow_Idle", rightX, y, 47f, 47f);
         r.value = Figma.Words(page, shown(), valueX, y, Figma.Type.ArvoSubtitle, Ink, ParkArt.Font);
         r.shown = shown;
-        r.step = step;
+        r.step = d =>
+        {
+            AudioManager.TryPlay(sound);
+            step(d);
+        };
         ArrowClick(r.left, r, -1);
         ArrowClick(r.right, r, 1);
     }
@@ -247,6 +269,7 @@ public class SettingsMenu : MonoBehaviour
 
     void PillRow(int index, string name, string[] options, Func<int> current, Action<int> set)
     {
+        set = Clicked(set);
         var r = NewRow(index, 152f, name);
         float y = RowY + RowStep * index - 4.5f;
         r.pills = new Image[options.Length];
@@ -267,6 +290,13 @@ public class SettingsMenu : MonoBehaviour
         r.step = d => set(Mathf.Clamp(current() + d, 0, options.Length - 1));
     }
 
+    // A pill clicked (or left / right on its row): the toggle sound (S-04).
+    static Action<int> Clicked(Action<int> set) => i =>
+    {
+        AudioManager.TryPlay(e => e.toggle);
+        set(i);
+    };
+
     // `set` takes 0..100; left / right go to the next ten.
     void SliderRow(int index, string name, Func<float> amount, Action<float> set)
     {
@@ -276,7 +306,13 @@ public class SettingsMenu : MonoBehaviour
         r.knob = Figma.Picture(page, "Knob", "Volume/VolumeSelecter_Idle", 0f, y, 24.7f, 54f);
         r.value = Figma.Words(page, "", 1174f, y, Figma.Type.ArvoSubtitle, Ink, ParkArt.Font);
         r.amount = amount;
-        r.step = d => set(Mathf.Clamp(Mathf.Round(amount() / 10f + d) * 10f, 0f, 100f));
+        r.step = d =>
+        {
+            // A tenth up or down, its sound at the new volume: the toggle sound (S-04). Already at 0 or 100: quiet.
+            float was = amount();
+            set(Mathf.Clamp(Mathf.Round(was / 10f + d) * 10f, 0f, 100f));
+            if (!Mathf.Approximately(amount(), was)) AudioManager.TryPlay(e => e.toggle);
+        };
         foreach (var img in new[] { r.bar, r.knob })
         {
             img.raycastTarget = true;
@@ -288,7 +324,8 @@ public class SettingsMenu : MonoBehaviour
     }
 
     // Pressing on a volume bar (or its knob) puts the knob there, to the nearest whole number; dragging slides it.
-    class SliderDrag : MonoBehaviour, IPointerDownHandler, IDragHandler, IInitializePotentialDragHandler
+    // Letting go plays the toggle sound (S-04), at the volume just picked.
+    class SliderDrag : MonoBehaviour, IPointerDownHandler, IDragHandler, IPointerUpHandler, IInitializePotentialDragHandler
     {
         public SettingsMenu menu;
         public Row row;
@@ -296,6 +333,10 @@ public class SettingsMenu : MonoBehaviour
 
         public void OnPointerDown(PointerEventData e) => Move(e);
         public void OnDrag(PointerEventData e) => Move(e);
+        public void OnPointerUp(PointerEventData e)
+        {
+            if (e.button == PointerEventData.InputButton.Left) AudioManager.TryPlay(ev => ev.toggle);
+        }
         public void OnInitializePotentialDrag(PointerEventData e) => e.useDragThreshold = false; // follows at once
 
         void Move(PointerEventData e)
@@ -395,7 +436,7 @@ public class SettingsMenu : MonoBehaviour
     {
         resetButton = BottomPill("Reset", 819.5f, 213f, Reset);
         applyButton = BottomPill("Apply Changes", 1072f, 260f, Apply);
-        backButton = BottomPill("Back", 1324.5f, 213f, Back);
+        backButton = BottomPill("Back", 1324.5f, 213f, Back, e => e.backButton); // S-06
         // Up from them: the page's last row (or last key on Game Control, or the tab); left / right along them.
         Selectable leftUp = rows.Count > 0 ? rows[^1].button : pills.Count > 0 ? pills[LeftBinds.Length - 1] : tabButtons[^1];
         Selectable rightUp = rows.Count > 0 ? rows[^1].button : pills.Count > 0 ? pills[^1] : tabButtons[^1];
@@ -412,9 +453,10 @@ public class SettingsMenu : MonoBehaviour
             }
     }
 
-    Button BottomPill(string words, float x, float w, UnityEngine.Events.UnityAction onClick)
+    Button BottomPill(string words, float x, float w, UnityEngine.Events.UnityAction onClick,
+        Func<FMODEvents, FMODUnity.EventReference> sound = null)
     {
-        var b = MainMenu.Pill(page, words, onClick);
+        var b = MainMenu.Pill(page, words, onClick, sound: sound);
         Figma.Place((RectTransform)b.transform, x, 897.5f, w, 63f);
         b.GetComponent<Image>().sprite = UiArt.Get("Buttons/Button2_Idle");
         var swap = b.spriteState;
@@ -693,6 +735,7 @@ public class SettingsMenu : MonoBehaviour
     void PickScheme(int s)
     {
         if (listening >= 0) return;
+        AudioManager.TryPlay(e => e.menuClick); // G-03
         KeyBindings.UseScheme(s);
         RebuildControls(() => cards[s]);
     }
@@ -711,6 +754,7 @@ public class SettingsMenu : MonoBehaviour
     void Listen(int i)
     {
         if (listening >= 0 || Time.frameCount <= listenEndFrame + 1) return; // the key just put on isn't a pick too
+        AudioManager.TryPlay(e => e.toggle); // S-04
         listening = i;
         listenFrame = Time.frameCount;
         PillText(pills[i], "PRESS A KEY");
@@ -729,10 +773,19 @@ public class SettingsMenu : MonoBehaviour
                 if (k == null || k.keyCode == Key.None || !k.wasPressedThisFrame) continue;
                 var bind = pillBinds[listening];
                 if (k.keyCode != Key.Escape || bind == KeyBindings.Bind.Pause) KeyBindings.Set(bind, k.keyCode);
+                AudioManager.TryPlay(e => e.menuClick); // G-03: the key's taken
                 StopListening();
                 return;
             }
-        if (mouse != null && mouse.leftButton.wasPressedThisFrame) StopListening(); // a click elsewhere: never mind
+        if (mouse != null && mouse.leftButton.wasPressedThisFrame)
+        {
+            // A click on the "PRESS A KEY" pill itself puts it back with the toggle sound (S-04), as clicking it
+            // started it; a click elsewhere just stops waiting.
+            var pill = (RectTransform)pills[listening].transform;
+            if (RectTransformUtility.RectangleContainsScreenPoint(pill, mouse.position.ReadValue(), null))
+                AudioManager.TryPlay(e => e.toggle);
+            StopListening();
+        }
     }
 
     void StopListening()
@@ -847,7 +900,11 @@ public class SettingsMenu : MonoBehaviour
             lastPicked = picked;
             Refresh();
         }
-        if (Time.frameCount != openedFrame && Time.frameCount > listenEndFrame && global::Controls.Back) Back();
+        if (Time.frameCount != openedFrame && Time.frameCount > listenEndFrame && global::Controls.Back)
+        {
+            AudioManager.TryPlay(e => e.backButton); // S-06, as if Back was clicked
+            Back();
+        }
     }
 
     void Close()

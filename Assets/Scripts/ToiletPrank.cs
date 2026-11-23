@@ -200,7 +200,7 @@ public class ToiletPrank : MonoBehaviour
             {
                 next = t + Mathf.Lerp(0.35f, 0.12f, k);
                 Fx.Shake(Mathf.Lerp(0.05f, 0.18f, k));
-                Sfx.Play(Sfx.HitSoft, Mathf.Lerp(0.25f, 0.6f, k), Random.Range(0.6f, 0.8f), Captions.ToiletRumble);
+                ClosedCaptions.Show(Captions.ToiletRumble);
             }
             yield return null;
         }
@@ -275,7 +275,8 @@ public class ToiletPrank : MonoBehaviour
     {
         if (SignDown) return;
         SignDown = true;
-        Sfx.Play(Sfx.Grab, 0.7f, 1f, Captions.SignOff);
+        AudioManager.TryPlay(e => e.outOfOrderSign, Sign.position); // TT-03 Take Out the Sign, from the sign
+        ClosedCaptions.Show(Captions.SignOff);
         Fx.Burst("Fx/puff", Sign.position + Vector3.up * 0.6f, 8, Color.white, 2f, 0.35f, 0.5f);
         Sign.gameObject.SetActive(false); // its collider goes with it: the door's clear
         Mischief.Complete(Mischief.Task.TutorialSign);
@@ -286,7 +287,8 @@ public class ToiletPrank : MonoBehaviour
         if (Maxed) return;
         Pressure++;
         valveTarget -= ValveTurn; // clockwise
-        Sfx.Play(Sfx.HitWood, 0.6f, 1f + 0.15f * Pressure, Captions.Valve);
+        AudioManager.TryPlay(e => e.valveCrank, handle); // TT-04 Water Valve, from the handle: each of the 3 cranks
+        ClosedCaptions.Show(Captions.Valve);
         Fx.Burst("Fx/sparkle", handle, 3 + Pressure * 2, Water, 1.5f + Pressure * 0.5f, 0.2f, 0.4f);
         Fx.Shake(0.04f * Pressure);
         if (!Maxed) return;
@@ -294,12 +296,21 @@ public class ToiletPrank : MonoBehaviour
         Mischief.Complete(Mischief.Task.TutorialValve);
     }
 
+    bool explosionPlaying;
+
+    // TT-06 Toilet Explosion, from the block: started the moment the visitor goes in (Tutorial), so its build-up runs
+    // under the quiet and the rumble before the geyser.
+    public void StartExplosionSound()
+    {
+        if (!explosionPlaying) explosionPlaying = AudioManager.TryPlay(e => e.toiletGeyser, Block.center);
+    }
+
     // The payoff: a geyser of poop bursts out of the toilet, and whoever was in there runs out covered in it. The
     // spray is soft and a little blurry (big, see-through puffs over smaller ones), so it reads without being gross.
     public IEnumerator Geyser(Visitor victim)
     {
         Settle();
-        Sfx.Play(Sfx.Crash, 1f, 0.9f, Captions.ToiletGeyser);
+        ClosedCaptions.Show(Captions.ToiletGeyser);
         Fx.Shake(0.45f, 0.6f);
         // Out of the hole in the broken roof and up. In front of the block's picture (level with it, the puffs would
         // hide behind it), but slid straight toward the camera so on screen it still comes out of the hole.
@@ -411,7 +422,7 @@ public class ToiletPrank : MonoBehaviour
         }
         Sign.gameObject.SetActive(true);
         Sign.GetComponent<Interactable>().enabled = false;
-        Sfx.Play(Sfx.HitWood, 0.6f, 1.1f, Captions.SignBack);
+        ClosedCaptions.Show(Captions.SignBack);
         Fx.Burst("Fx/puff", Sign.position + Vector3.up * 0.6f, 8, Color.white, 2f, 0.35f, 0.5f);
     }
 }

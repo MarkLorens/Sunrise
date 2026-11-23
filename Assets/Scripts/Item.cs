@@ -62,7 +62,7 @@ public class Item : MonoBehaviour
     {
         Holder = by;
         falling = false;
-        if (!silent) Sfx.Play(Sfx.Grab, 0.6f, 1f, Captions.PickUp);
+        if (!silent) ClosedCaptions.Show(Captions.PickUp);
     }
 
     // Let go of: it tumbles to the ground.
@@ -72,7 +72,7 @@ public class Item : MonoBehaviour
         transform.position = at;
         velocity = Vector3.up * 2f;
         falling = true;
-        Sfx.Play(Sfx.Drop, 0.5f, 1f, Captions.DropItem);
+        ClosedCaptions.Show(Captions.DropItem);
     }
 
     // Eaten, poured out...

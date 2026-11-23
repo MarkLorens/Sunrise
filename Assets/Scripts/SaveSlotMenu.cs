@@ -66,7 +66,7 @@ public class SaveSlotMenu : MonoBehaviour
 
         foreach (var slot in SaveGame.Saved()) rows.Add(MakeRow(slot, true));
         rows.Add(MakeRow(SaveGame.FirstEmpty, false));
-        cancel = MainMenu.Pill(panel, "Cancel", Cancel, 205f, 56f);
+        cancel = MainMenu.Pill(panel, "Cancel", Cancel, 205f, 56f, e => e.backButton); // S-06: it backs out
         Place((RectTransform)cancel.transform, new Vector2(0f, CancelY), new Vector2(205f, 56f));
 
         // Start on the slot being played, or [NEW SLOT] if it hasn't been saved yet.
@@ -94,7 +94,7 @@ public class SaveSlotMenu : MonoBehaviour
         r.button = r.rt.gameObject.AddComponent<Button>();
         r.button.targetGraphic = hit;
         r.button.transition = Selectable.Transition.None;
-        r.button.onClick.AddListener(() => Pick(r));
+        r.button.onClick.AddListener(() => Pick(r)); // its sound: Pick
         r.rt.gameObject.AddComponent<MainMenu.HoverSelects>();
         r.rt.gameObject.AddComponent<RowKeys>().menu = this;
 
@@ -173,6 +173,8 @@ public class SaveSlotMenu : MonoBehaviour
         }
     }
 
+    // Saving straight away plays the Save Button sound once it's saved (SaveInto); asking first plays the click (G-03),
+    // and Yes is quiet until the save's done.
     void Pick(Row r)
     {
         if (!r.saved || r.slot == SaveGame.Slot)
@@ -180,19 +182,22 @@ public class SaveSlotMenu : MonoBehaviour
             SaveInto(r.saved ? r.slot : SaveGame.FirstEmpty);
             return;
         }
+        AudioManager.TryPlay(e => e.menuClick);
         ConfirmDialog.Open(order + 1, "OVERWRITE SLOT", "Are you sure?", yes =>
         {
             confirmClosedFrame = Time.frameCount;
             if (yes) SaveInto(r.slot);
             else MainMenu.Select(r.button);
-        });
+        }, yesSound: e => default);
     }
 
-    // From now on that's the slot being played (and auto saved into).
+    // From now on that's the slot being played (and auto saved into). Saved: the Save Button sound (S-07).
     void SaveInto(int slot)
     {
         SaveGame.Slot = slot;
-        Finish(SaveGame.Save(shot));
+        bool saved = SaveGame.Save(shot);
+        if (saved) AudioManager.TryPlay(e => e.saveButton);
+        Finish(saved);
     }
 
     void Cancel() => Finish(null);
@@ -228,7 +233,11 @@ public class SaveSlotMenu : MonoBehaviour
             MainMenu.Select(rows[current].button);
         }
 
-        if (Controls.Back) Cancel();
+        if (Controls.Back)
+        {
+            AudioManager.TryPlay(e => e.backButton); // S-06, as if Cancel was clicked
+            Cancel();
+        }
     }
 
     void OnDestroy()

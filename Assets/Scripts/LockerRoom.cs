@@ -52,7 +52,7 @@ public class LockerRoom : MonoBehaviour
             var art = paBooth.GetComponentInChildren<SpriteRenderer>();
             CameraRig.Spotlight(art != null ? art.transform : paBooth, 999f, 2f);
             yield return new WaitForSeconds(1.2f); // the camera getting there
-            Sfx.Play(Sfx.Spotted, 0.8f, 0.7f, Captions.PaScreech);
+            ClosedCaptions.Show(Captions.PaScreech);
             GameHud.Shout(paBooth, GameText.PAFire, 3.5f);
             yield return new WaitForSeconds(3.7f);
         }
