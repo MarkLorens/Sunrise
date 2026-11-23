@@ -225,8 +225,11 @@ public class NightLighting : MonoBehaviour
             {
                 var s = map.GetSprite(cell);
                 if (s == null || s.name != lampSprite) continue;
-                // Props stand upright on their cell with their feet at its centre.
-                Vector3 foot = map.GetCellCenterWorld(cell);
+                // Props stand upright on their cell with their feet at its centre (measured against the drawn post: the
+                // cell's front edge puts the glow half a tile towards the camera), plus any nudge painted onto the tile
+                // itself (its transform), turned upright the way the tilemap turns the tile.
+                Vector3 nudge = map.orientationMatrix.MultiplyVector(map.GetTransformMatrix(cell).GetPosition());
+                Vector3 foot = map.GetCellCenterWorld(cell) + map.transform.TransformVector(nudge);
                 Vector3 lantern = foot + Vector3.up * (s.bounds.max.y * map.transform.lossyScale.y * lanternHeight);
                 Color lampColor = LampColor(lamps.Count);
                 // Well in front of the lantern, so it lights the lamp and the people near it without burning the glass white.

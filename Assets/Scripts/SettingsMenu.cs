@@ -59,6 +59,7 @@ public class SettingsMenu : MonoBehaviour
         public Func<int> current;           // pill rows: which pill's on
         public Func<string> shown;          // arrow rows: the value's words
         public Func<float> amount;          // slider rows: 0..100
+        public float shift;                 // slider rows: design px left (-) or right of where the volume bars sit
         public Action<int> step;
     }
 
@@ -184,7 +185,7 @@ public class SettingsMenu : MonoBehaviour
         PillRow(2, "Screen Shake", new[] { "Full", "Half", "Off" }, () => 2 - Settings.Shake, i => Settings.Shake = 2 - i);
         ArrowRow(3, 152f, "Resolution", 574f, 786.4f, 679.5f, () => $"{Settings.CurrentResolution.x} x {Settings.CurrentResolution.y}",
             d => Settings.Resolution = Settings.StepResolution(d));
-        ArrowRow(4, 152f, "Depth of field", 574f, 786.4f, 679.5f, () => Settings.DepthOfField ? "ON" : "OFF", _ => Settings.DepthOfField = !Settings.DepthOfField);
+        SliderRow(4, "DoF Range", () => Mathf.Round(Settings.DepthOfField * 100f), v => Settings.DepthOfField = v / 100f, 152f, -130f); // how far back the blur starts; its bar starts where the arrows do
         ArrowRow(5, 152f, "Vertical Sync", 574f, 786.4f, 679.5f, () => Settings.VSync ? "ON" : "OFF", _ => Settings.VSync = !Settings.VSync);
         ArrowRow(6, 152f, "Anti-Aliasing", 574f, 786.4f, 679.5f, () => Settings.AntiAliasing ? "ON" : "OFF", _ => Settings.AntiAliasing = !Settings.AntiAliasing);
     }
@@ -298,14 +299,15 @@ public class SettingsMenu : MonoBehaviour
     };
 
     // `set` takes 0..100; left / right go to the next ten.
-    void SliderRow(int index, string name, Func<float> amount, Action<float> set)
+    void SliderRow(int index, string name, Func<float> amount, Action<float> set, float labelX = 146f, float shift = 0f)
     {
-        var r = NewRow(index, 146f, name);
+        var r = NewRow(index, labelX, name);
         float y = RowY + RowStep * index;
-        r.bar = Figma.Picture(page, "Bar", "Volume/VolumeBar_Idle", 891.5f, y, 422f, 46.9f);
+        r.bar = Figma.Picture(page, "Bar", "Volume/VolumeBar_Idle", 891.5f + shift, y, 422f, 46.9f);
         r.knob = Figma.Picture(page, "Knob", "Volume/VolumeSelecter_Idle", 0f, y, 24.7f, 54f);
-        r.value = Figma.Words(page, "", 1174f, y, Figma.Type.ArvoSubtitle, Ink, ParkArt.Font);
+        r.value = Figma.Words(page, "", 1174f + shift, y, Figma.Type.ArvoSubtitle, Ink, ParkArt.Font);
         r.amount = amount;
+        r.shift = shift;
         r.step = d =>
         {
             // A tenth up or down, its sound at the new volume: the toggle sound (S-04). Already at 0 or 100: quiet.
@@ -344,7 +346,7 @@ public class SettingsMenu : MonoBehaviour
             var page = menu.page;
             if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(page, e.position, e.pressEventCamera, out var local)) return;
             float x = (local.x - page.rect.center.x) / Figma.K + Figma.Width * 0.5f; // in design px, as the knob's placed
-            set(Mathf.Clamp(Mathf.Round((x - 700f) / 3.86f), 0f, 100f));
+            set(Mathf.Clamp(Mathf.Round((x - 700f - row.shift) / 3.86f), 0f, 100f));
             MainMenu.Select(row.button);
             menu.Refresh();
         }
@@ -424,7 +426,7 @@ public class SettingsMenu : MonoBehaviour
                 r.knob.sprite = UiArt.Get(on ? "Volume/VolumeSelecter_Active" : "Volume/VolumeSelecter_Idle");
                 var k = r.knob.rectTransform;
                 // Along the bar's line, as the design places 50 (its middle at 700 + 3.86 per step).
-                k.anchoredPosition = new Vector2((700f + v * 3.86f - Figma.Width * 0.5f) * Figma.K, k.anchoredPosition.y);
+                k.anchoredPosition = new Vector2((700f + r.shift + v * 3.86f - Figma.Width * 0.5f) * Figma.K, k.anchoredPosition.y);
             }
         }
     }
@@ -508,30 +510,47 @@ public class SettingsMenu : MonoBehaviour
     // Everything Options changes: to tell whether anything's changed since it was kept, and to put it back.
     class State
     {
-        public bool fullscreen, dof, captions, vsync, antiAliasing;
+        public bool fullscreen, captions, vsync, antiAliasing;
         public int quality, shake;
-        public float volume, music, sfx;
+        public float volume, music, sfx, dof;
         public Vector2Int resolution;
         public Key[] keys;
 
         public static State Now() => new()
         {
-            fullscreen = Settings.Fullscreen, dof = Settings.DepthOfField, captions = Settings.ClosedCaptions,
-            vsync = Settings.VSync, antiAliasing = Settings.AntiAliasing, quality = (int)Settings.Graphics,
-            shake = Settings.Shake, music = Settings.MusicVolume, sfx = Settings.SfxVolume, volume = Settings.Volume,
-            resolution = Settings.Resolution, keys = KeyBindings.Current(),
+            fullscreen = Settings.Fullscreen,
+            dof = Settings.DepthOfField,
+            captions = Settings.ClosedCaptions,
+            vsync = Settings.VSync,
+            antiAliasing = Settings.AntiAliasing,
+            quality = (int)Settings.Graphics,
+            shake = Settings.Shake,
+            music = Settings.MusicVolume,
+            sfx = Settings.SfxVolume,
+            volume = Settings.Volume,
+            resolution = Settings.Resolution,
+            keys = KeyBindings.Current(),
         };
 
         // How the game first starts (Settings' and KeyBindings' own defaults).
         public static State Defaults() => new()
         {
-            fullscreen = true, dof = true, captions = false, vsync = true, antiAliasing = true,
-            quality = (int)Settings.Quality.High, shake = 2, music = 1f, sfx = 1f, volume = 1f,
-            resolution = Vector2Int.zero, keys = KeyBindings.Defaults(),
+            fullscreen = true,
+            dof = Settings.DefaultDepthOfField,
+            captions = false,
+            vsync = true,
+            antiAliasing = true,
+            quality = (int)Settings.Quality.High,
+            shake = 2,
+            music = 1f,
+            sfx = 1f,
+            volume = 1f,
+            resolution = Vector2Int.zero,
+            keys = KeyBindings.Defaults(),
         };
 
         public bool Same(State o) =>
-            fullscreen == o.fullscreen && dof == o.dof && captions == o.captions && vsync == o.vsync &&
+            fullscreen == o.fullscreen && Mathf.Approximately(dof, o.dof) && captions == o.captions && vsync == o.vsync &&
             antiAliasing == o.antiAliasing && quality == o.quality && shake == o.shake &&
             Mathf.Approximately(music, o.music) && Mathf.Approximately(sfx, o.sfx) && Mathf.Approximately(volume, o.volume) && resolution == o.resolution &&
             System.Linq.Enumerable.SequenceEqual(keys, o.keys);
@@ -542,7 +561,7 @@ public class SettingsMenu : MonoBehaviour
             var now = Now();
             if (now.fullscreen != fullscreen) Settings.Fullscreen = fullscreen;
             if (now.resolution != resolution) Settings.Resolution = resolution;
-            if (now.dof != dof) Settings.DepthOfField = dof;
+            if (!Mathf.Approximately(now.dof, dof)) Settings.DepthOfField = dof;
             if (now.captions != captions) Settings.ClosedCaptions = captions;
             if (now.quality != quality) Settings.Graphics = (Settings.Quality)quality;
             if (now.shake != shake) Settings.Shake = shake;
