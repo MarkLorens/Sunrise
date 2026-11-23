@@ -1019,6 +1019,7 @@ public class GameHud : MonoBehaviour
         t.raycastTarget = false;
         if (bold) t.fontStyle = FontStyle.Bold;
         t.text = text;
+        InkWeight.On(t); // as heavy as in the design
         return t;
     }
 
