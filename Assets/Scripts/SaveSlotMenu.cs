@@ -26,12 +26,13 @@ public class SaveSlotMenu : MonoBehaviour
         public Text title, played;
     }
 
-    // Measured off the design: the title 192 above the panel's middle; the list's top 158 above it, the picked row 164
-    // tall (its stroke 121, a touch above its middle), the others 64; names at -276 in Atma 35, dates at +127 in
-    // Arvo 21; Cancel 197 below.
+    // The title 192 above the panel's middle; the list's top 158 above it. The picked row is as tall as its stroke
+    // (the yellow brush, 860 x 140) with its name in Atma 40 and date in Arvo 24; the others 72 tall, Atma 32 and Arvo 20,
+    // so the gaps above and below the picked one match wherever it is. Names from -350, dates from +100 (inside the
+    // stroke at Arvo 24); Cancel 197 below.
     const int Visible = 3;
-    const float PanelW = 880f, PanelH = 600f, TitleY = 192f, ListTop = 158f, RowH = 64f, PickedH = 164f;
-    const float NameX = -276f, DateX = 127f, StrokeW = 824f, StrokeH = 121f, CancelY = -197f;
+    const float PanelW = 880f, PanelH = 600f, TitleY = 192f, ListTop = 158f, RowH = 72f, PickedH = 140f;
+    const float NameX = -350f, NameW = 440f, DateX = 100f, DateW = 290f, StrokeW = 860f, StrokeH = 140f, CancelY = -197f;
     static readonly Color Pale = new(180f / 255f, 182f / 255f, 230f / 255f);
 
     readonly List<Row> rows = new();
@@ -98,15 +99,17 @@ public class SaveSlotMenu : MonoBehaviour
         r.rt.gameObject.AddComponent<MainMenu.HoverSelects>();
         r.rt.gameObject.AddComponent<RowKeys>().menu = this;
 
-        var stroke = Place(MainMenu.Ui("Stroke", r.rt), new Vector2(0f, 3f), new Vector2(StrokeW, StrokeH));
+        var stroke = Place(MainMenu.Ui("Stroke", r.rt), Vector2.zero, new Vector2(StrokeW, StrokeH));
         r.stroke = MainMenu.Img(stroke, null, Color.white);
         r.stroke.sprite = UiArt.Get("Buttons/Button3_Active"); // the artist's yellow stroke, stretched along the row
 
         var info = saved ? SaveGame.Read(slot) : null;
         if (info?.picture != null) Destroy(info.picture); // no pictures here
-        r.title = MainMenu.Label(Line(r.rt, "Objective", NameX, 420f), info == null ? "[NEW SLOT]" : string.IsNullOrEmpty(info.title) ? "Saved game" : info.title, Figma.Type.AtmaBody, Pale, ParkArt.TitleFont);
-        r.played = MainMenu.Label(Line(r.rt, "Played", DateX, 260f), info == null ? "" : info.played.ToString("d MMM yyyy, HH:mm"), Figma.Type.ArvoBody, Pale, ParkArt.Font);
+        r.title = MainMenu.Label(Line(r.rt, "Objective", NameX, NameW), info == null ? "[NEW SLOT]" : string.IsNullOrEmpty(info.title) ? "Saved game" : info.title, Figma.Type.AtmaBody, Pale, ParkArt.TitleFont);
+        r.played = MainMenu.Label(Line(r.rt, "Played", DateX, DateW), info == null ? "" : info.played.ToString("d MMM yyyy, HH:mm"), Figma.Type.ArvoBody, Pale, ParkArt.Font);
         r.title.alignment = r.played.alignment = TextAnchor.MiddleLeft;
+        r.title.resizeTextForBestFit = true; // a long objective name shrinks to fit before it reaches the date
+        r.title.resizeTextMinSize = Figma.Type.ArvoBody;
         return r;
     }
 
@@ -117,7 +120,7 @@ public class SaveSlotMenu : MonoBehaviour
         rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
         rt.pivot = new Vector2(0f, 0.5f);
         rt.anchoredPosition = new Vector2(x, 0f);
-        rt.sizeDelta = new Vector2(width, 50f);
+        rt.sizeDelta = new Vector2(width, 60f);
         return rt;
     }
 
@@ -140,6 +143,8 @@ public class SaveSlotMenu : MonoBehaviour
             }
             r.stroke.enabled = on;
             r.title.color = r.played.color = on ? MainMenu.Ink : Pale;
+            r.title.fontSize = r.title.resizeTextMaxSize = on ? Figma.Type.AtmaSpecial : Figma.Type.AtmaBody; // 40 / 32
+            r.played.fontSize = on ? Figma.Type.ArvoSubtitle : Figma.Type.ArvoBody;                          // 24 / 20
             r.button.navigation = new Navigation { mode = Navigation.Mode.None }; // up/down: RowKeys
         }
         cancel.navigation = new Navigation { mode = Navigation.Mode.Explicit, selectOnUp = rows[current].button };

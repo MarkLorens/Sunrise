@@ -259,6 +259,7 @@ public class MainMenu : MonoBehaviour
         t.verticalOverflow = VerticalWrapMode.Overflow;
         t.raycastTarget = false;
         t.text = text;
+        InkWeight.On(t); // as heavy as in the design
         return t;
     }
 

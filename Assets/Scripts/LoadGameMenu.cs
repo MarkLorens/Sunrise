@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 // Load Game, from the main menu: a card for every save (SaveGame.Saved), on the dark blue, and [NEW GAME] cards to
 // make up Visible when there are fewer saves than that. Visible cards show at once, a carousel: the arrows either side
-// (UI/Buttons/key_back, flipped for the right one), or the left/right keys past the end, slide along one at a time.
+// (UI Asset/Buttons/Arrows, as in Options: yellow while the mouse is on one), or the left/right keys past the end, slide along one at a time.
 // A saved card shows the objective you were on, when you last played and a round picture of the park. The card picked
 // is yellow (UI/Menu/bg_selected), the others blue (bg_main). Picking a card loads that slot, or starts a new game in
 // it. Delete Slot sits under the picked card when it has a save, and asks first (ConfirmDialog).
@@ -30,11 +30,12 @@ public class LoadGameMenu : MonoBehaviour
     // Measured off the design: the cards side by side in the middle of the screen, the picked one 6% bigger; on each,
     // the picture's middle 90 above the card's, the objective's two lines round 120 below, the date 192 below.
     const int Visible = 3;
-    const float CardW = 460f, CardH = 634f, CardY = 0f, CardGap = 458f, PickedScale = 1.06f;
+    const float CardW = 460f, CardH = 634f, CardY = 68f, CardGap = 512f, PickedScale = 1.06f;
     const float TitleY = -120f, EmptyTitleY = -100f, PlayedY = -192f;
     // The cards' insides (inside the drawn edge) sit 8.5 px of their 370 px art left of the middle: the picture with them.
     const float PictureX = -11f;
-    const float ArrowX = CardGap + CardW * 0.5f + 80f, ArrowW = 100f, ArrowH = 80f;
+    // The arrows near the screen's sides, 120 tall; Delete Slot 437 under the picked card's middle; Back bottom right.
+    const float ArrowX = 826f, ArrowH = 120f, DeleteBelow = 437f;
     static readonly Color Empty = new(0.85f, 0.85f, 0.85f);
     static Texture2D disc;
 
@@ -62,11 +63,11 @@ public class LoadGameMenu : MonoBehaviour
         this.canvas = canvas;
         var bg = MainMenu.Ui("Background", canvas);
         MainMenu.Stretch(bg);
-        MainMenu.Img(bg, null, MainMenu.Night).raycastTarget = true; // nothing behind it gets clicked
+        MainMenu.Img(bg, null, MainMenu.Paper).raycastTarget = true; // nothing behind it gets clicked
 
-        deleteButton = MainMenu.Pill(canvas, "Delete Slot", AskDelete, 285f, 56f);
+        deleteButton = MainMenu.Pill(canvas, "Delete Slot", AskDelete, 330f, 66f); // the words as before, more pill round them
         backButton = MainMenu.Pill(canvas, "Back", Close, 205f, 56f, e => e.backButton); // S-06, like the other Backs
-        Place(backButton.transform, new Vector2(650f, -435f));
+        Place(backButton.transform, new Vector2(700f, -490f));
         leftArrow = Arrow(-1);
         rightArrow = Arrow(1);
         MakeCards();
@@ -85,18 +86,18 @@ public class LoadGameMenu : MonoBehaviour
     {
         var rt = MainMenu.Ui(dir < 0 ? "Left" : "Right", canvas);
         Place(rt, new Vector2(dir * ArrowX, CardY));
-        rt.sizeDelta = new Vector2(ArrowW, ArrowH);
-        rt.localScale = new Vector3(-dir, 1f, 1f);
-        var img = MainMenu.Img(rt, "UI/Buttons/key_back", Color.white);
-        img.type = Image.Type.Simple;
+        rt.sizeDelta = new Vector2(ArrowH, ArrowH);
+        string name = dir < 0 ? "Buttons/Arrows/LeftArrow" : "Buttons/Arrows/RightArrow";
+        var img = rt.gameObject.AddComponent<Image>();
+        img.sprite = UiArt.Get(name + "_Idle");
         img.preserveAspect = true;
         img.raycastTarget = true;
         var button = rt.gameObject.AddComponent<Button>();
         button.targetGraphic = img;
-        var colors = button.colors;
-        colors.highlightedColor = new Color(1f, 1f, 1f, 0.8f);
-        colors.pressedColor = new Color(0.85f, 0.85f, 0.85f);
-        button.colors = colors;
+        button.transition = Selectable.Transition.SpriteSwap;
+        var swap = button.spriteState;
+        swap.highlightedSprite = swap.pressedSprite = UiArt.Get(name + "_Active");
+        button.spriteState = swap;
         button.navigation = new Navigation { mode = Navigation.Mode.None }; // the keys slide with left/right on a card
         button.onClick.AddListener(() => AudioManager.TryPlay(e => e.toggle)); // S-04
         button.onClick.AddListener(() => Slide(dir));
@@ -274,7 +275,7 @@ public class LoadGameMenu : MonoBehaviour
 
         var card = cards[current];
         deleteButton.gameObject.SetActive(card.saved);
-        Place(deleteButton.transform, new Vector2(card.rt.anchoredPosition.x, CardY - CardH * 0.5f - 70f));
+        Place(deleteButton.transform, new Vector2(card.rt.anchoredPosition.x, CardY - DeleteBelow));
         deleteButton.navigation = new Navigation { mode = Navigation.Mode.Explicit, selectOnUp = card.button, selectOnRight = backButton };
         backButton.navigation = new Navigation { mode = Navigation.Mode.Explicit, selectOnUp = card.button, selectOnLeft = card.saved ? deleteButton : card.button };
     }
