@@ -44,6 +44,10 @@ public class VisitorSpawner : MonoBehaviour
     public string technicianCharacter = "worker_ride_technician";
     public string technicianName = "Technician";
     public Transform technicianPost; // empty = no technician (his booth goes here)
+    public string announcerCharacter = "worker_announcer";
+    public string announcerName = "Announcer";
+    public float announcerBack = 0.3f; // behind the information booth's counter (its park_stand_PA picture)
+    public float announcerDrop = 0f;  // drawn this much lower there (world units), to sit their face under the booth's roof
     public string hotDogManCharacter = "worker_hot_dog";
     public string hotDogManName = "Hot Dog Man";
     public Transform hotDogManPost;  // behind the hot dog stand; empty = no hot dog man
@@ -61,13 +65,62 @@ public class VisitorSpawner : MonoBehaviour
 
     public Vector2 gossipEvery = new(5f, 10f); // seconds between someone near the player gossiping (GameText.Gossip)
     public float gossipRange = 12f;
+    // Seconds between the announcer's PA announcements (GameText.Announcements): the first while the park's calm,
+    // the second once everything's gone wrong (Unease), in between on the way.
+    public Vector2 announceEvery = new(60f, 20f);
+    // The finale (once the locker room's burned): the ice cream sellers are gone and their stands closed, a sign
+    // (Props/toilet_sign, "CLOSED") this tall hung this high on each counter.
+    public float closedSignHeight = 0.8f, closedSignLift = 1.1f;
 
     const string VisitorName = "Visitor";
-    float nextGossip;
+    float nextGossip, nextAnnouncement;
     readonly List<string> heard = new();
+    Visitor announcer;
+    readonly List<(Visitor seller, Vector3 signAt)> stalls = new();
+    bool stallsClosed;
+    string lastAnnouncement;
+
+    void Update()
+    {
+        if (!stallsClosed && Mischief.IsDone(Mischief.Task.LockerFire)) CloseStalls();
+        Announce();
+        Gossip();
+    }
+
+    // The finale: the sellers have fled their stands (the hot dog man is going nowhere: he burned in his) and a CLOSED
+    // sign hangs on each. Worked out from the locker fire, so a loaded game is the same.
+    void CloseStalls()
+    {
+        stallsClosed = true;
+        foreach (var (seller, signAt) in stalls)
+        {
+            if (seller != null) seller.gameObject.SetActive(false);
+            var sign = ParkArt.Lit(ParkArt.Make("Closed Sign", null, "Props/toilet_sign", closedSignHeight, Color.white));
+            sign.transform.position = signAt;
+        }
+    }
+
+    // After an event, the announcer at the information booth speaks up about it now and then: more often the more
+    // uneasy the park.
+    void Announce()
+    {
+        if (announcer == null || Time.time < nextAnnouncement) return;
+        float unease = Unease.Level;
+        nextAnnouncement = Time.time + Mathf.Lerp(announceEvery.x, announceEvery.y, unease) * Random.Range(0.8f, 1.2f);
+        heard.Clear();
+        var prank = FindAnyObjectByType<ToiletPrank>();
+        foreach (var (after, lines) in GameText.Announcements)
+            if (Mischief.IsDone(after) && (after != Mischief.Task.TutorialToilet || prank != null && prank.Erupted))
+                heard.AddRange(lines);
+        if (heard.Count > 1) heard.Remove(lastAnnouncement); // never the same twice running
+        if (heard.Count == 0) return;
+        lastAnnouncement = heard[Random.Range(0, heard.Count)];
+        GameHud.Hush(announcer.transform); // a new announcement cuts off the last
+        GameHud.Shout(announcer.transform, lastAnnouncement, 4f, true);
+    }
 
     // After an event, now and then someone near the player talks about it.
-    void Update()
+    void Gossip()
     {
         if (Time.time < nextGossip || Possession.Instance == null) return;
         nextGossip = Time.time + Random.Range(gossipEvery.x, gossipEvery.y);
@@ -117,6 +170,30 @@ public class VisitorSpawner : MonoBehaviour
         }
         MakeGroups(roaming);
         SpawnStaff();
+        StartCoroutine(FillStandLines(roaming));
+    }
+
+    // A few people already in the stands' lines when the park opens (startInStandLine each), so it looks busy from the
+    // start: visitors on their own, taken from where they were standing.
+    public Vector2Int startInStandLine = new(0, 2);
+
+    System.Collections.IEnumerator FillStandLines(List<Visitor> roaming)
+    {
+        yield return null; // every prop made in its own Start first (the lines keep clear of them: StandQueue)
+        foreach (var line in StandQueue.All) line.KeepAway();
+        var free = roaming.FindAll(v => v != null && v.Group == null && v.brain == null && v.Current is Visitor.State.Idle or Visitor.State.Wander);
+        foreach (var line in StandQueue.All)
+        {
+            int n = Random.Range(startInStandLine.x, startInStandLine.y + 1);
+            for (int i = 0; i < n && free.Count > 0; i++)
+            {
+                var v = free[Random.Range(0, free.Count)];
+                free.Remove(v);
+                if (!line.Join(v)) break;
+                v.EnterQueue(line);
+                v.transform.position = line.SlotPosition(v); // already standing in line
+            }
+        }
     }
 
     // Some of the roaming visitors came with friends: 2-4 of them, standing together, walking at the leader's pace.
@@ -169,9 +246,27 @@ public class VisitorSpawner : MonoBehaviour
             var tech = Staff<RideTechnician>(technicianName, technicianPost.position, technicianCharacter);
             tech.GrabItem(Item.Create(VisitorItem.Screwdriver, tech.CarryPoint), true);
         }
+        SpawnAnnouncer();
         if (hotDogManPost != null) Staff<HotDogMan>(hotDogManName, hotDogManPost.position, hotDogManCharacter);
         if (mascotPost != null) Staff<Mascot>(mascotName, mascotPost.position, mascotCharacter);
         SpawnVendors();
+    }
+
+    // The information booth (the scene's park_stand_PA picture) has the announcer behind its counter, staying put and
+    // out of reach (a Vendor inside: nobody can possess them there).
+    void SpawnAnnouncer()
+    {
+        foreach (var r in FindObjectsByType<SpriteRenderer>(FindObjectsSortMode.None))
+        {
+            if (r.sprite == null || !r.sprite.name.StartsWith("park_stand_PA")) continue;
+            var at = new Vector3(r.transform.position.x, 0f, r.transform.position.z + announcerBack); // the picture's own spot
+            announcer = Staff<Vendor>(announcerName, at, announcerCharacter, v => v.inside = true);
+            announcer.Look.Sink(announcerDrop);
+            var complaints = gameObject.AddComponent<BoothCrowd>(); // the crowd that gathers there once things go wrong
+            complaints.booth = r;
+            nextAnnouncement = Time.time + announceEvery.x * 0.5f; // not straight away
+            return;
+        }
     }
 
     // Every ice cream stand tile gets its back layer, a solid box from its front to its back (nobody walks in, from any
@@ -192,7 +287,11 @@ public class VisitorSpawner : MonoBehaviour
                 GroundWalker.Block("Ice Cream Stand Block", Rect.MinMaxRect(front.xMin, front.yMin, front.xMax, feet.z + iceCreamBackOffset.z + 0.1f));
                 Vector3 slot = feet + iceCreamSlot;
                 float room = Mathf.Max(0f, Mathf.Min(slot.x - front.xMin, front.xMax - slot.x) - 0.45f); // their middle, off the posts
-                Staff<Vendor>("Ice Cream Seller", slot, iceCreamCharacter, v => { v.inside = true; v.paceHalfWidth = room; });
+                var seller = Staff<Vendor>("Ice Cream Seller", slot, iceCreamCharacter, v => { v.inside = true; v.paceHalfWidth = room; });
+                stalls.Add((seller, new Vector3(feet.x, closedSignLift, front.yMin - 0.05f))); // the sign hangs on the counter's front
+                // Its line, from just in front of the counter back toward the camera.
+                StandQueue.Make("Ice Cream Line", transform, new Vector3(slot.x, 0f, front.yMin - standLineGap),
+                    LineDirection(), slot, ground);
             }
             else if (s.name.StartsWith("balloon_stand"))
             {
@@ -200,9 +299,18 @@ public class VisitorSpawner : MonoBehaviour
                 var probe = new Vector3(feet.x - balloonSpot.x, 0f, feet.z + balloonSpot.z);
                 if (GroundWalker.NearObstacle(at, 0.35f) && !GroundWalker.NearObstacle(probe, 0.35f)) at = probe;
                 Staff<Vendor>("Balloon Seller", at, balloonCharacter, _ => { });
+                // Its line, in front of the seller.
+                StandQueue.Make("Balloon Line", transform, at + Vector3.back * (standLineGap + 0.4f), LineDirection(), at, ground);
             }
         }
     }
+
+    // The lines at the stands (StandQueue): from standLineGap in front of the counter, going back toward the camera and
+    // leaning a little to one side, every other stand the other way.
+    public float standLineGap = 0.6f;
+    int lines;
+
+    Vector3 LineDirection() => new(lines++ % 2 == 0 ? 0.2f : -0.2f, 0f, -1f);
 
     // The stand's back: the tile's cut, where the tile is, moved by iceCreamBackOffset and grown by iceCreamBackScale.
     void BackLayer(Tilemap map, Vector3Int cell, Sprite art)

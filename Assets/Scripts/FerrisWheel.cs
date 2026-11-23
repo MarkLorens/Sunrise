@@ -33,6 +33,18 @@ public class FerrisWheel : MonoBehaviour
     public RideQueue queue;
     public float payoffTime = 6f;     // the camera stays on the wheel this long once the power's cut
     public float payoffPullBack = 8f;  // how much further back the camera sits to fit the whole wheel
+    [Header("Finale (max speed)")]
+    public Transform parkEntrance;          // where everyone runs to once the wheel's rolled; the camera goes to look
+    public float entrancePullBack = 3f;     // how far back the camera sits there, to take in the stampede
+    public float glideToEntrance = 7f;      // seconds drifting over from the wreck (past the closed stalls)
+    public float watchExodus = 5f;          // seconds watching them run out
+    public float glideHome = 3f;            // seconds back to the player
+    public float finaleZoom = 0.5f;         // how far in the camera zooms on the player at the end (CameraRig.Zoom)
+    public float irisCloseTime = 1.5f;      // seconds for the black to close in
+    [Range(0.01f, 1f)] public float irisSoftness = 0.35f; // how soft the edge of the black is
+    public float finaleHold = 5f;           // seconds on the player, gloating (their last word's up meanwhile)
+    public float irisShrinkTime = 0.5f;     // then seconds for the circle to shrink away to black
+    public float blackHold = 0.5f;          // and seconds of black before the main menu
     public int screamingCabins = 4;   // cabins shouting in turns (GameText.CabinScreams, or CabinScreamsWobbly) in a payoff
     public float cabinShake = 4f;     // degrees the stuck cabins rock
     public float wobble = 0.08f;      // how far the wheel lurches side to side once the hinge is loose (wheel units)
@@ -43,6 +55,11 @@ public class FerrisWheel : MonoBehaviour
     public float rollSpeed = 6f;
     public float rollDistance = 22f;
     public Vector3 rollDirection = new(1f, 0f, -0.6f); // across the ground; it has to go mostly sideways to read as rolling
+    public int gawkers = 4;           // visitors who wander over to watch it spin flat out, right where it'll land
+    public int doomedShouts = 3;      // how many of those in its way cry out (GameText.WheelDoomed) as it tears loose
+
+    readonly List<Visitor> doomed = new();
+    Vector3 rollStart;
 
     public State Current { get; private set; }
     public bool Powered => Current != State.Unpowered;
@@ -92,6 +109,7 @@ public class FerrisWheel : MonoBehaviour
     {
         Current = State.Unpowered;
         speed = 0f;
+        if (TryGetComponent(out FerrisWheelAudio audio)) audio.RestoreUnpowered();
     }
 
     // Loading a save (SaveGame) with the wheel already started again: running wobbly, no payoff.
@@ -180,8 +198,15 @@ public class FerrisWheel : MonoBehaviour
             string line = lines[Random.Range(0, lines.Length)];
             while (shouting.Contains(line) && shouting.Count < lines.Length) line = lines[Random.Range(0, lines.Length)];
             shouting.Add(line); // nobody else picks it while it's up
-            GameHud.Shout(cabin, line, show);
+            // Where the cabin is as the scream starts, held there: a bubble riding a cabin whipping round a wheel at
+            // full tilt (lurching, rocking, shaking loose) can't be read. Shout puts it 2 up from a bare marker.
+            var r = cabin.GetComponentInChildren<SpriteRenderer>();
+            Bounds b = r != null ? r.bounds : new Bounds(cabin.position, Vector3.zero);
+            var at = new GameObject("Scream").transform;
+            at.position = new Vector3(b.center.x, b.max.y - 2f, b.center.z);
+            GameHud.Shout(at, line, show);
             yield return new WaitForSeconds(show);
+            Destroy(at.gameObject);
             shouting.Remove(line);
             yield return new WaitForSeconds(Random.Range(0.2f, 0.9f));
         }
@@ -261,6 +286,7 @@ public class FerrisWheel : MonoBehaviour
         if (Current != State.Running) return;
         Set(State.Overdrive);
         StartCoroutine(MaxSpeedPayoff());
+        GatherGawkers();
     }
 
     void Set(State s)
@@ -269,7 +295,11 @@ public class FerrisWheel : MonoBehaviour
         stateTime = 0f;
     }
 
-    // The camera stays on the wheel the whole way: spinning up, tearing off, rolling, toppling. Then back to the player.
+    // The finale, and the end of the game for now. The camera stays on the wheel the whole way: spinning up, tearing off,
+    // rolling, toppling. Then everyone still standing, staff and all, runs for the park's entrance (Visitor.Flee) while
+    // the camera drifts over there past the closed stalls and the stampede, watches them go, and comes back to the
+    // player: zoomed in, the screen closing to black round them like an old cartoon's iris, the spirit's last word.
+    // Then the main menu.
     IEnumerator MaxSpeedPayoff()
     {
         Possession.InputBlocked = true;
@@ -277,12 +307,66 @@ public class FerrisWheel : MonoBehaviour
         ScreamIn(GameText.CabinScreamsWobbly);
         while (Current != State.Wrecked) yield return null;
         yield return new WaitForSeconds(2f);
-        CameraRig.EndSpotlight();
-        yield return new WaitForSeconds(1f); // the camera easing back
-        Possession.InputBlocked = false;
         Mischief.Complete(Mischief.Task.WheelRolled);
         Aftermath.Add(new Vector3(wheel.position.x, 0f, wheel.position.z), wheelRadius * Scale + 1f, 9999f);
+
+        GameHud.HideObjectives = true; // the rest is the ending: no objectives or prompts over it
+        Vector3 exit = parkEntrance != null ? parkEntrance.position : wheel.position;
+        foreach (var v in new List<Visitor>(Visitor.All)) v.Flee(exit);
+
+        var shot = new GameObject("Finale Shot").transform;
+        shot.position = wheel.position;
+        float pull = payoffPullBack;
+        IEnumerator Glide(System.Func<Vector3> to, float toPull, float seconds)
+        {
+            Vector3 from = shot.position;
+            float fromPull = pull;
+            for (float t = 0f; t < seconds; t += Time.deltaTime)
+            {
+                float k = Mathf.SmoothStep(0f, 1f, t / seconds);
+                shot.position = Vector3.Lerp(from, to(), k);
+                pull = Mathf.Lerp(fromPull, toPull, k);
+                CameraRig.Spotlight(shot, 999f, 1f, pull);
+                yield return null;
+            }
+        }
+        var spirit = Possession.Instance;
+        yield return Glide(() => exit, entrancePullBack, glideToEntrance);
+        yield return new WaitForSeconds(watchExodus);
+        yield return Glide(() => spirit.Focus.position, 0f, glideHome);
+        CameraRig.EndSpotlight();
+        Destroy(shot.gameObject);
+
+        // The iris: zoomed right in, black closing in round the player while they gloat.
+        CameraRig.Zoom(finaleZoom);
+        var profile = ScriptableObject.CreateInstance<UnityEngine.Rendering.VolumeProfile>();
+        var iris = profile.Add<UnityEngine.Rendering.Universal.Vignette>();
+        iris.color.Override(Color.black);
+        iris.intensity.Override(1f);
+        iris.smoothness.Override(irisSoftness);
+        iris.rounded.Override(true);
+        var volume = new GameObject("Finale Iris").AddComponent<UnityEngine.Rendering.Volume>();
+        volume.isGlobal = true;
+        volume.priority = 40; // over the night's own vignette (NightLighting)
+        volume.sharedProfile = profile;
+        volume.weight = 0f;
+        var dark = profile.Add<UnityEngine.Rendering.Universal.ColorAdjustments>(); // for the very last of the light
+        dark.colorFilter.Override(Color.white);
+        var cam = Camera.main;
         GameHud.Think(GameHud.ThoughtPriority.Critical, GameText.ThinkRolled);
+        for (float t = 0f; t < finaleHold + irisShrinkTime; t += Time.deltaTime)
+        {
+            if (cam != null) iris.center.Override((Vector2)cam.WorldToViewportPoint(spirit.Focus.position + Vector3.up));
+            volume.weight = Mathf.Clamp01(t / irisCloseTime);
+            // Their gloat said, the circle shrinks away to nothing: its edge widening into the middle while what's
+            // left of the picture fades out, black by the end.
+            float shut = Mathf.Clamp01((t - finaleHold) / irisShrinkTime);
+            iris.smoothness.Override(Mathf.Lerp(irisSoftness, 1f, shut));
+            dark.colorFilter.Override(Color.Lerp(Color.white, Color.black, shut * shut));
+            yield return null;
+        }
+        yield return new WaitForSeconds(blackHold);
+        LoadingScreen.Load(0); // the main menu, first in Build Settings (as from the pause menu)
     }
 
     void Update()
@@ -299,7 +383,8 @@ public class FerrisWheel : MonoBehaviour
                 {
                     Set(State.Breaking);
                     Fx.Shake(0.25f, breakDelay);
-                    Sfx.Play(Sfx.HitWood, 1f, 0.5f, Captions.WheelBreaking); // *CREAK*
+                    ClosedCaptions.Show(Captions.WheelBreaking);
+                    StartCoroutine(BraceDoomed());
                 }
                 break;
 
@@ -376,8 +461,7 @@ public class FerrisWheel : MonoBehaviour
         }
         if (queue != null) queue.ThrowOutRiders(transform.position + Vector3.back * 1.5f, 3f);
         Fx.Shake(0.45f, 1f);
-        Sfx.Play(Sfx.Crash, 1f, 1f, Captions.WheelCollapse);
-        Sfx.Play(Sfx.Thud, 1f, 0.6f);
+        ClosedCaptions.Show(Captions.WheelCollapse);
         ParkChaos.Add(transform.position, 12f, 9999f);
     }
 
@@ -410,8 +494,9 @@ public class FerrisWheel : MonoBehaviour
             {
                 Set(State.Wrecked);
                 Fx.Shake(0.4f, 0.8f);
-                Sfx.Play(Sfx.Crash, 0.9f, 0.7f, Captions.WheelWrecked);
+                ClosedCaptions.Show(Captions.WheelWrecked);
                 Fx.Burst("Fx/puff", p, 30, new Color(0.7f, 0.65f, 0.6f), 6f, 1.2f, 1.2f);
+                SquashUnder(p, radius);
                 ParkChaos.Add(p, 12f, 9999f);
             }
         }
@@ -419,17 +504,118 @@ public class FerrisWheel : MonoBehaviour
     }
 
     // Anyone in the wheel's path, under the rim (it's edge-on to its direction of travel, so: a thin band across it).
+    // Visitors go flat as pancakes (Visitor.Squash); staff, and the body the spirit's in, just go down as before.
     static void Flatten(Vector3 center, Vector3 dir, float radius)
     {
         Vector3 side = new(-dir.z, 0f, dir.x);
-        foreach (var v in Visitor.All)
+        foreach (var v in Visitor.All.ToArray())
         {
             if (v.Current is Visitor.State.Down or Visitor.State.Riding || !v.Look.Visible) continue;
             Vector3 d = v.transform.position - center;
             d.y = 0f;
             if (Mathf.Abs(Vector3.Dot(d, dir)) > 0.8f || Mathf.Abs(Vector3.Dot(d, side)) > radius * 0.3f) continue;
-            v.KnockDown();
-            Sfx.Play(Sfx.Crash, 0.6f, Random.Range(0.9f, 1.2f), Captions.Flattened);
+            if (Squashable(v)) v.Squash();
+            else v.KnockDown();
+            ClosedCaptions.Show(Captions.Flattened);
         }
+    }
+
+    // A visitor going about their day (not staff, not the body the spirit's in).
+    static bool Squashable(Visitor v) =>
+        v.brain == null && (Possession.Instance == null || Possession.Instance.Host != v) && v.Current != Visitor.State.Possessed;
+
+    // ---------------------------------------------------------------- the runaway wheel's victims (MaxSpeedPayoff)
+
+    // Where it'll come to rest, lying flat: rollDistance along from where it tears loose.
+    Vector3 RestPoint(Vector3 from) => from + new Vector3(rollDirection.x, 0f, rollDirection.z).normalized * rollDistance;
+
+    // As it spins up, a few visitors nearby wander over to watch, right where it'll end up. They stay put.
+    void GatherGawkers()
+    {
+        Vector3 rest = RestPoint(new Vector3(wheel.position.x, 0f, wheel.position.z));
+        float radius = wheelRadius * Scale;
+        var near = new List<Visitor>();
+        foreach (var v in Visitor.All)
+            if (Squashable(v) && v.Look.Visible && v.Current is Visitor.State.Idle or Visitor.State.Wander or Visitor.State.Stare)
+                near.Add(v);
+        near.Sort((a, b) => Flat(a.transform.position - rest).CompareTo(Flat(b.transform.position - rest)));
+        for (int i = 0; i < near.Count && doomed.Count < gawkers; i++)
+        {
+            var v = near[i];
+            if (Flat(v.transform.position - rest) > 18f) break;
+            var walker = v.GetComponent<GroundWalker>();
+            for (int tries = 0; tries < 8; tries++)
+            {
+                Vector2 r = Random.insideUnitCircle * radius * 0.6f;
+                Vector3 spot = rest + new Vector3(r.x, 0f, r.y);
+                // Ground to stand on, clear of props (the route there goes round whatever's in the way).
+                Vector3Int cell = walker.ground.WorldToCell(spot);
+                cell.z = 0;
+                if (!walker.ground.HasTile(cell) || GroundWalker.NearObstacle(spot, 0.35f)) continue;
+                v.SendTo(spot);
+                doomed.Add(v);
+                break;
+            }
+        }
+    }
+
+    static float Flat(Vector3 d) => new Vector2(d.x, d.z).magnitude;
+
+    // It tears loose: everyone in its way (on its path, or where it'll lie) freezes, staring at it, panic-faced, and a
+    // few cry out. Then it comes.
+    IEnumerator BraceDoomed()
+    {
+        rollStart = new Vector3(wheel.position.x, 0f, wheel.position.z);
+        Vector3 rest = RestPoint(rollStart);
+        Vector3 dir = new Vector3(rollDirection.x, 0f, rollDirection.z).normalized, side = new(-dir.z, 0f, dir.x);
+        float radius = wheelRadius * Scale;
+        foreach (var v in Visitor.All)
+        {
+            if (!Squashable(v) || !v.Look.Visible || v.Current is Visitor.State.Down or Visitor.State.Riding || doomed.Contains(v)) continue;
+            Vector3 d = v.transform.position - rollStart;
+            d.y = 0f;
+            float along = Vector3.Dot(d, dir), off = Mathf.Abs(Vector3.Dot(d, side));
+            bool onPath = along > -radius * 0.3f && along < rollDistance + radius && off <= radius * 0.3f + 0.5f;
+            if (onPath || Flat(v.transform.position - rest) <= radius) doomed.Add(v);
+        }
+        doomed.RemoveAll(v => v == null || v.Current is Visitor.State.Down or Visitor.State.Riding or Visitor.State.Possessed);
+        foreach (var v in doomed)
+        {
+            v.Hold(); // frozen to the spot
+            v.Look.panicFace = true;
+            v.Look.Face(wheel.position);
+        }
+        // A few cry out, one after another, each something different.
+        var lines = new List<string>(GameText.WheelDoomed);
+        var shouters = new List<Visitor>(doomed);
+        shouters.Sort((a, b) => Flat(a.transform.position - rollStart).CompareTo(Flat(b.transform.position - rollStart)));
+        for (int i = 0; i < shouters.Count && i < doomedShouts && lines.Count > 0; i++)
+        {
+            var v = shouters[i];
+            if (v.Current == Visitor.State.Down) continue;
+            int pick = Random.Range(0, lines.Count);
+            GameHud.Shout(v.transform, lines[pick], 2.4f);
+            lines.RemoveAt(pick);
+            yield return new WaitForSeconds(0.45f);
+        }
+    }
+
+    // Lying flat at last: anyone under it is squashed; whoever it missed comes to and runs.
+    void SquashUnder(Vector3 center, float radius)
+    {
+        foreach (var v in Visitor.All.ToArray())
+        {
+            if (!Squashable(v) || !v.Look.Visible || v.Current is Visitor.State.Down or Visitor.State.Riding) continue;
+            if (Flat(v.transform.position - center) > radius * 0.95f) continue;
+            v.Squash();
+            ClosedCaptions.Show(Captions.Flattened);
+        }
+        foreach (var v in doomed)
+        {
+            if (v == null || v.Current == Visitor.State.Down) continue;
+            v.Free();
+            v.Panic(center, 4f);
+        }
+        doomed.Clear();
     }
 }

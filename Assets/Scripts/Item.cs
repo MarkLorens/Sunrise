@@ -1,8 +1,11 @@
 using UnityEngine;
 
-// Something a visitor carries in their hand: a drink, a water bottle, the mechanic's keys. Possessing someone, you
-// can use what they hold (the mechanic's keys open the electrical box). Someone who panics or goes down lets go of
-// it, and it tumbles to the ground and stays there.
+// Something a visitor carries in their hand: a drink, a water bottle, the electrician's keys, the technician's
+// screwdriver. Possessing someone, you can use what they hold (the keys open the electrical box and the locker box, the
+// screwdriver loosens the wheel's hinge). The keys and the screwdriver aren't drawn at all (Unseen): carried all the
+// same. Someone who panics or goes down lets go of
+// it, and it tumbles to the ground and stays there: some land standing, some on their side (TipChance), and a drink
+// or water bottle on its side leaks, a puddle spreading out from its open end over a few seconds (Leak).
 [DefaultExecutionOrder(50)] // after CharacterSprite has picked this frame's pose, so it follows the hand exactly
 public class Item : MonoBehaviour
 {
@@ -29,7 +32,17 @@ public class Item : MonoBehaviour
         _ => "thing",
     };
 
-    SpriteRenderer sprite, shadow;
+    SpriteRenderer sprite, shadow, spill;
+
+    const float TipChance = 0.5f;                    // of landing on its side rather than standing
+    const float SpillTime = 3f;                      // seconds for a spill to spread
+    static readonly Vector2 SpillSize = new(0.7f, 1.2f); // how wide a spill ends up, smallest and biggest
+    bool Leaks => kind is VisitorItem.Drink or VisitorItem.WaterBottle;
+    // What runs out: cola, or water.
+    Color SpillColor => kind == VisitorItem.Drink ? new Color(0.42f, 0.2f, 0.1f, 0.6f) : new Color(0.75f, 0.9f, 1f, 0.6f);
+
+    // Carried but never drawn, in a hand or on the ground.
+    bool Unseen => kind is VisitorItem.Keys or VisitorItem.Screwdriver;
     Vector3 velocity;
     bool falling;
 
@@ -57,7 +70,7 @@ public class Item : MonoBehaviour
     {
         Holder = by;
         falling = false;
-        if (!silent) Sfx.Play(Sfx.Grab, 0.6f, 1f, Captions.PickUp);
+        if (!silent) ClosedCaptions.Show(Captions.PickUp);
     }
 
     // Let go of: it tumbles to the ground.
@@ -67,7 +80,7 @@ public class Item : MonoBehaviour
         transform.position = at;
         velocity = Vector3.up * 2f;
         falling = true;
-        Sfx.Play(Sfx.Drop, 0.5f, 1f, Captions.DropItem);
+        ClosedCaptions.Show(Captions.DropItem);
     }
 
     // Eaten, poured out...
@@ -75,6 +88,11 @@ public class Item : MonoBehaviour
 
     void LateUpdate()
     {
+        if (Unseen)
+        {
+            sprite.enabled = shadow.enabled = false;
+            return;
+        }
         var shadowHolder = shadow.transform.parent;
         if (Holder != null)
         {
@@ -103,9 +121,52 @@ public class Item : MonoBehaviour
 
     void Land()
     {
-        transform.position = new Vector3(transform.position.x, RaisedFloor.Height(transform.position) + Size * 0.5f, transform.position.z);
-        transform.rotation = Quaternion.identity;
         velocity = Vector3.zero;
         falling = false;
+        float ground = RaisedFloor.Height(transform.position);
+        if (Random.value >= TipChance)
+        {
+            // Standing.
+            transform.rotation = Quaternion.identity;
+            transform.position = new Vector3(transform.position.x, ground + Size * 0.5f, transform.position.z);
+            return;
+        }
+        // On its side, top to the left or the right, lying as low as it's wide.
+        float side = Random.value < 0.5f ? 1f : -1f;
+        transform.rotation = Quaternion.identity;
+        float halfWide = sprite.bounds.size.x * 0.5f;
+        transform.rotation = Quaternion.Euler(0f, 0f, side * 90f);
+        transform.position = new Vector3(transform.position.x, ground + halfWide, transform.position.z);
+        if (Leaks) StartCoroutine(Leak(-side, ground));
+    }
+
+    // A puddle spreading out from its open end (toward `toward` across the screen), easing to a stop.
+    System.Collections.IEnumerator Leak(float toward, float ground)
+    {
+        Vector3 mouth = transform.position + Vector3.right * toward * Size * 0.45f;
+        var fountain = FindAnyObjectByType<DrinkingFountain>();
+        spill = ParkArt.Make("Spill", null, "Markers/shadow", 0.01f, SpillColor, ParkArt.DecalOrder, true);
+        if (fountain != null && fountain.puddleArt != null)
+        {
+            spill.sprite = fountain.puddleArt; // the artist's puddle, tinted to whatever's running out
+            spill.color = kind == VisitorItem.Drink ? new Color(0.75f, 0.45f, 0.3f, 0.85f) : new Color(1f, 1f, 1f, 0.7f);
+        }
+        var holder = spill.transform.parent;
+        holder.rotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f); // not the same blob every time
+        float size = Random.Range(SpillSize.x, SpillSize.y);
+        for (float t = 0f; t < SpillTime; t += Time.deltaTime)
+        {
+            if (spill == null) yield break;
+            float k = 1f - Mathf.Pow(1f - t / SpillTime, 3f); // fast at first, slowing to a stop
+            ParkArt.Fit(spill, Mathf.Max(0.01f, size * k));
+            // Its middle creeps out from the mouth as it grows, so it stays round the opening.
+            holder.position = new Vector3(mouth.x + toward * size * 0.4f * k, ground + 0.015f, mouth.z);
+            yield return null;
+        }
+    }
+
+    void OnDestroy()
+    {
+        if (spill != null) Destroy(spill.transform.parent.gameObject);
     }
 }

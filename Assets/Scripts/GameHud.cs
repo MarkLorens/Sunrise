@@ -12,7 +12,7 @@ using UnityEngine.UI;
 public class GameHud : MonoBehaviour
 {
     public static GameHud Instance { get; private set; }
-    public static bool HideObjectives; // the objectives (top left) stay out of the way (the park tour, ParkTour)
+    public static bool HideObjectives; // the objectives (top left) and the key prompts stay out of the way (ParkTour, the finale)
 
 
     static readonly Color PanelDark = new(0.12f, 0.08f, 0.12f, 0.8f);
@@ -58,7 +58,7 @@ public class GameHud : MonoBehaviour
     const float ObjectiveWidth = 540f, TitleHeight = 104f, TitlePad = 34f, StepsNarrower = 11f, StepsInset = 4f;
     // The objective's name in Atma at the design's 24 (under the type scale's smallest Atma, as the design draws it);
     // the steps in Arvo Body.
-    static readonly int TitleSize = Mathf.RoundToInt(24f * Figma.K), StepSize = Figma.Type.ArvoBody;
+    static readonly int TitleSize = Mathf.RoundToInt(32f * Figma.K), StepSize = Figma.Type.ArvoBody;
     readonly List<StepRow> stepRows = new();
     int shownPart = -2; // index into Mischief.Parts, -1 when every step is done
     const float StepHeight = 36f;
@@ -137,6 +137,8 @@ public class GameHud : MonoBehaviour
         if (GetComponent<ActionOutline>() == null) gameObject.AddComponent<ActionOutline>();
         if (GetComponent<PauseMenu>() == null) gameObject.AddComponent<PauseMenu>();
         if (GetComponent<Tutorial>() == null) gameObject.AddComponent<Tutorial>();
+        if (GetComponent<ParkCrowd>() == null) gameObject.AddComponent<ParkCrowd>(); // the crowd all round you
+        if (GetComponent<PossessedMusic>() == null) gameObject.AddComponent<PossessedMusic>(); // the theme slows in a body
         Build();
         foreach (var line in pending) AddEvent(line);
         pending.Clear();
@@ -195,6 +197,7 @@ public class GameHud : MonoBehaviour
     public static void Refuse(Transform by, string why, bool person = false)
     {
         if (Instance == null || by == null || string.IsNullOrEmpty(why)) return;
+        AudioManager.TryPlay(e => e.disabledAction); // G-06
         Instance.refusedBy = by;
         Instance.refusedPerson = person;
         Instance.refusal = why;
@@ -260,6 +263,7 @@ public class GameHud : MonoBehaviour
         thoughtAge = 0f;
         showingPriority = priority;
         showing = true;
+        AudioManager.TryPlay(e => e.chatBubble); // RU-01, as each line pops up
     }
 
     // Someone (or something) shouting: a speech bubble over `over` for `seconds`. Any number at once.
@@ -428,6 +432,7 @@ public class GameHud : MonoBehaviour
                 {
                     SetPuzzleWords(PartTitle(shownPart));
                     puzzleAge = 0f;
+                    AudioManager.TryPlayOverOthers(e => e.objectiveCompleted); // G-07, everything else turned down
                 }
                 else ShowPart(part);
             }
@@ -680,7 +685,8 @@ public class GameHud : MonoBehaviour
         string key = "", text = "";
         var host = spirit.Host;
 
-        if (refusedBy != null && Time.unscaledTime - refusedAt < RefusalTime)
+        if (HideObjectives) { } // a cutscene's showing: no prompts over it
+        else if (refusedBy != null && Time.unscaledTime - refusedAt < RefusalTime)
         {
             // E was just refused: say why, over whatever said no.
             anchor = refusedPerson ? PersonTop(refusedBy) : ThingTop(refusedBy);
@@ -767,11 +773,12 @@ public class GameHud : MonoBehaviour
         puzzleBanner = Figma.Picture(canvas, "Objective Completed", "Logo/Mission_cloud", 780.3f, 532.8f, 736.4f, 621.6f).rectTransform;
         puzzleGroup = puzzleBanner.gameObject.AddComponent<CanvasGroup>();
         puzzleGroup.alpha = 0f;
-        // The words over the cloud's body (x 120..1130, y 190..790 of its 1301 x 1098 picture), as the art writes them:
+        // The words over the cloud's body (x 120..1130, y 230..830 of its 1301 x 1098 picture: its middle, a touch
+        // below the picture's, where the cloud is fullest), as the art writes them:
         // yellow capitals in Atma, a thick dark line round them and a drop shadow.
         var words = Ui("Words", puzzleBanner);
-        words.anchorMin = new Vector2(120f / 1301f, (1098f - 790f) / 1098f);
-        words.anchorMax = new Vector2(1130f / 1301f, (1098f - 190f) / 1098f);
+        words.anchorMin = new Vector2(120f / 1301f, (1098f - 830f) / 1098f);
+        words.anchorMax = new Vector2(1130f / 1301f, (1098f - 230f) / 1098f);
         words.offsetMin = words.offsetMax = Vector2.zero;
         puzzleWords = words.gameObject.AddComponent<Text>();
         puzzleWords.font = ParkArt.TitleFont;
@@ -950,7 +957,7 @@ public class GameHud : MonoBehaviour
         Place(prompt, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0f), Vector2.zero, new Vector2(10f, 10f));
         var body = Ui("Body", prompt);
         Place(body, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), Vector2.zero, Vector2.zero);
-        Img(body, "UI/pill", new Color(0.12f, 0.08f, 0.12f, 0.88f));
+        // Img(body, "UI/pill", new Color(0.12f, 0.08f, 0.12f, 0.88f));
         Row(body, 10f, new RectOffset(10, 22, 6, 6));
         Fit(body);
         promptKey = KeyCap.Make(body, "K", new Key[0], 40f);
@@ -1019,6 +1026,7 @@ public class GameHud : MonoBehaviour
         t.raycastTarget = false;
         if (bold) t.fontStyle = FontStyle.Bold;
         t.text = text;
+        InkWeight.On(t); // as heavy as in the design
         return t;
     }
 

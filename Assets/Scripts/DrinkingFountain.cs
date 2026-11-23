@@ -29,6 +29,8 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     public float spreadSpeed = 0.45f; // how fast the water creeps out after a press (radius per second)
     public Sprite puddleArt;         // empty = a tinted round blob
     [Range(0f, 1f)] public float puddleOpacity = 0.6f;
+    [Tooltip("Metres from the player: the leak is at full volume within the first number and fades out to silent at the second.")]
+    public Vector2 leakRange = new(1f, 6f);
 
     // Under the fountain while small, sliding out to puddleOffset as it grows.
     public Vector3 PuddleCenter => new Vector3(transform.position.x, 0f, transform.position.z)
@@ -45,11 +47,22 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     int presses, jobsLeft;
     Vector3 scene; // the taped-off puddle being cleaned up
 
+    LoopingSound leak; // AL-03, until the mechanic fixes it
+
     void OnEnable() => All.Add(this);
-    void OnDisable() => All.Remove(this);
+
+    void OnDisable()
+    {
+        All.Remove(this);
+        leak?.Stop();
+    }
+
+    void OnDestroy() => leak?.Release();
 
     void Start()
     {
+        leak = new LoopingSound(gameObject);
+        leak.SetRange(leakRange.x, leakRange.y);
         puddle = ParkArt.Make("Puddle", null, "Markers/shadow", 1f, new Color(Water.r, Water.g, Water.b, 0.55f), ParkArt.DecalOrder, true);
         if (puddleArt != null)
         {
@@ -62,6 +75,10 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
 
     void Update()
     {
+        var events = FMODEvents.instance;
+        if (Fixed || events == null) leak.Stop();
+        else leak.Play(events.waterLeak);
+
         if (Radius < target)
         {
             SetRadius(Mathf.MoveTowards(Radius, target, spreadSpeed * Time.deltaTime));
@@ -121,7 +138,8 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
         if (presses < lines.Length) GameHud.Think(GameHud.ThoughtPriority.Action, lines[presses]);
         presses++;
         target = Mathf.Min(maxRadius, Mathf.Max(target, startRadius) + (maxRadius - startRadius) / tapsToFull); // Update lets it creep out
-        Sfx.Play(Sfx.HitSoft, 0.6f, 1.4f, Captions.FountainPress);
+        ClosedCaptions.Show(Captions.FountainPress);
+        AudioManager.TryPlay(e => e.fountainPress, transform.position); // AL-02
         Fx.Burst("Fx/puff", transform.position + Vector3.up * 0.8f, 6, Water, 2f, 0.35f, 0.5f);
         GameHud.Say(GameText.PressedFountain);
     }
@@ -136,6 +154,14 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     }
 
     // ---------------------------------------------------------------- a live cable in the water
+
+    // The FMOD electrocution sound where the cable hit the water; the old one if that isn't set up.
+    void PlayZap(Vector3 at)
+    {
+        ClosedCaptions.Show(Captions.Electrocution);
+        var events = FMODEvents.instance;
+        if (events != null && !events.electrocution.IsNull && AudioManager.instance != null) AudioManager.instance.PlayOneShot(events.electrocution, at);
+    }
 
     public void Electrify(Vector3 from)
     {
@@ -221,9 +247,11 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
         Mischief.Complete(Mischief.Task.LureMechanic);
         if (m == null) yield break; // busy (or possessed): he'll come when he can
         CameraRig.Spotlight(m.transform, 999f);
+        CutsceneLight.On(m); // the park dark round him
         float giveUp = Time.time + 10f; // in case something stops him on the way
         while (m.Current == StaffWorker.State.Going && Time.time < giveUp) yield return null;
         yield return new WaitForSeconds(1f);
+        CutsceneLight.Off();
     }
 
     // A clean-up job; the last one done takes the tape down and puts the music back on.
@@ -291,7 +319,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
 
     void Zap(Vector3 from, List<Visitor> zapped, float shake, float shakeFor = 0f)
     {
-        Sfx.Play(Sfx.Crash, 1f, 1.6f, Captions.Electrocution);
+        PlayZap(from);
         Fx.Burst("Fx/sparkle", from, 20, Spark, 5f, 0.4f, 0.6f);
         Fx.Shake(shake, shakeFor);
         foreach (var v in zapped) Fx.Burst("Fx/sparkle", v.HeadPoint, 10, Spark, 3f, 0.3f, 0.5f);
@@ -342,6 +370,6 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     void Fix()
     {
         Fixed = true;
-        Sfx.Play(Sfx.HitWood, 0.8f, 1f, Captions.FountainFixed);
+        ClosedCaptions.Show(Captions.FountainFixed);
     }
 }

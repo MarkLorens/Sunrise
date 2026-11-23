@@ -19,17 +19,17 @@ public static class Settings
         set { PlayerPrefs.SetFloat("volume", Mathf.Clamp01(value)); ApplyVolume(); }
     }
 
-    // Background music and every other sound, each 0..1 on top of Volume (AudioMix; Sfx for Unity's own clips).
+    // Background music and every other sound, each 0..1 on top of Volume (FMOD's Music, SFX and UI groups via AudioBuses, or AudioMix on banks without them).
     public static float MusicVolume
     {
         get => PlayerPrefs.GetFloat("musicVolume", 1f);
-        set => PlayerPrefs.SetFloat("musicVolume", Mathf.Clamp01(value));
+        set { PlayerPrefs.SetFloat("musicVolume", Mathf.Clamp01(value)); ApplyVolume(); }
     }
 
     public static float SfxVolume
     {
         get => PlayerPrefs.GetFloat("sfxVolume", 1f);
-        set => PlayerPrefs.SetFloat("sfxVolume", Mathf.Clamp01(value));
+        set { PlayerPrefs.SetFloat("sfxVolume", Mathf.Clamp01(value)); ApplyVolume(); }
     }
 
     // Each frame waits for the screen's refresh: no tearing as the camera pans. On unless turned off.
@@ -82,10 +82,13 @@ public static class Settings
         set => PlayerPrefs.SetInt("captions", value ? 1 : 0);
     }
 
-    public static bool DepthOfField
+    // How far behind the player the blur starts, 0 (just behind them) to 1 (CameraRig.blurStartFarthest, as good as
+    // none). The default is the look the game always had (2 units behind, of 20).
+    public const float DefaultDepthOfField = 0.1f;
+    public static float DepthOfField
     {
-        get => PlayerPrefs.GetInt("dof", 1) == 1;
-        set => PlayerPrefs.SetInt("dof", value ? 1 : 0);
+        get => PlayerPrefs.GetFloat("dofRange", DefaultDepthOfField);
+        set => PlayerPrefs.SetFloat("dofRange", Mathf.Clamp01(value));
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -102,12 +105,11 @@ public static class Settings
 
     static void ApplyVolume()
     {
-        AudioListener.volume = Volume; // the old Sfx clips
-        try
-        {
-            FMODUnity.RuntimeManager.GetBus("bus:/").setVolume(Volume); // starts FMOD up if it isn't yet
-        }
-        catch (System.Exception) { } // no FMOD banks set up
+        AudioListener.volume = Volume; // any Unity AudioSource
+        AudioBuses.SetVolume(AudioBuses.Master, Volume);
+        AudioBuses.SetVolume(AudioBuses.Music, MusicVolume);
+        AudioBuses.SetVolume(AudioBuses.Sfx, SfxVolume);
+        AudioBuses.SetVolume(AudioBuses.Ui, SfxVolume);
     }
 
     // ---------------------------------------------------------------- screen

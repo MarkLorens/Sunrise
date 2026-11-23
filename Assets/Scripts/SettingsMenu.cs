@@ -23,15 +23,17 @@ public class SettingsMenu : MonoBehaviour
     public static bool IsOpen => open != null;
     static SettingsMenu open;
 
-    static readonly string[] TabNames = { "General", "Display", "Audio", "Game\nControl" };
-    // Each page's tabs (where their words' middles are, across), as the design draws them: the open one is wider.
-    static readonly float[][] TabX =
+    static readonly string[] TabNames = { "General", "Display", "Audio", "Control" };
+    // Where each tab's words' middle is across, on page `open`: the tabs side by side from TabLeft with the same TabGap
+    // between every two (the open one is wider, ActiveTabW, the others IdleTabW).
+    const float TabLeft = 67f, TabGap = 22f, ActiveTabW = 243.5f, IdleTabW = 197f;
+
+    static float TabX(int open, int i)
     {
-        new[] { 188.5f, 398f, 579.5f, 766f },
-        new[] { 170f, 376.5f, 582.5f, 766f },
-        new[] { 170f, 352f, 557.5f, 766f },
-        new[] { 168f, 350f, 534.5f, 742f },
-    };
+        float x = TabLeft;
+        for (int k = 0; k < i; k++) x += (k == open ? ActiveTabW : IdleTabW) + TabGap;
+        return x + (i == open ? ActiveTabW : IdleTabW) * 0.5f - (i == open ? 2f : 0f); // the open tab's art sits 2 right of its words
+    }
     static readonly Color Yellow = new Color32(254, 208, 62, 255), Ink = new Color32(13, 9, 11, 255);
     const float RowY = 392f, RowStep = 70f, ContentTop = 330f;
     const float ActiveLift = 16f; // the open tab sits this much higher than the design draws it (its top under the header)
@@ -59,6 +61,7 @@ public class SettingsMenu : MonoBehaviour
         public Func<int> current;           // pill rows: which pill's on
         public Func<string> shown;          // arrow rows: the value's words
         public Func<float> amount;          // slider rows: 0..100
+        public float shift;                 // slider rows: design px left (-) or right of where the volume bars sit
         public Action<int> step;
     }
 
@@ -111,15 +114,15 @@ public class SettingsMenu : MonoBehaviour
             {
                 bool on = i == t;
                 if (on != (pass == 1)) continue;
-                float x = TabX[t][i];
+                float x = TabX(t, i);
                 var art = Figma.Picture(page, "Tab " + TabNames[i], on ? "Tab_Active" : "Tab_Idle",
                     on ? x + 2f : x, on ? 250.3f - ActiveLift : 222.2f, on ? 243.5f : 197f, on ? 159f : 105.5f);
                 art.raycastTarget = true;
                 var b = art.gameObject.AddComponent<Button>();
                 b.transition = Selectable.Transition.None;
                 int which = i;
-                b.onClick.AddListener(() => { if (which != tab) ShowTab(which); });
-                art.gameObject.AddComponent<MainMenu.HoverSelects>();
+                b.onClick.AddListener(() => TurnTo(which));
+                art.gameObject.AddComponent<MainMenu.HoverSelects>().quiet = true;
                 art.gameObject.AddComponent<TabKeys>().menu = this;
                 tabButtons.Add(b);
                 string[] lines = TabNames[i].Split('\n');
@@ -142,13 +145,22 @@ public class SettingsMenu : MonoBehaviour
         MainMenu.Select(rows.Count > 0 ? rows[0].button : firstControl != null ? firstControl : tabButtons[^1]);
     }
 
+    // The player turning to a tab (clicked, or left / right on the tabs): the menu click (G-03), then the page.
+    // Clicked: the menu click (G-03). With the arrow keys: the hover sound (G-02), as moving along a menu.
+    void TurnTo(int t, bool keys = false)
+    {
+        if (keys) AudioManager.TryPlay(e => e.menuHover);
+        else AudioManager.TryPlay(e => e.menuClick);
+        if (t != tab) ShowTab(t);
+    }
+
     class TabKeys : MonoBehaviour, IMoveHandler
     {
         public SettingsMenu menu;
         public void OnMove(AxisEventData e)
         {
-            if (e.moveDir == MoveDirection.Left && menu.tab > 0) menu.ShowTab(menu.tab - 1);
-            else if (e.moveDir == MoveDirection.Right && menu.tab < 3) menu.ShowTab(menu.tab + 1);
+            if (e.moveDir == MoveDirection.Left && menu.tab > 0) menu.TurnTo(menu.tab - 1, keys: true);
+            else if (e.moveDir == MoveDirection.Right && menu.tab < 3) menu.TurnTo(menu.tab + 1, keys: true);
             else if (e.moveDir == MoveDirection.Down && menu.rows.Count > 0) MainMenu.Select(menu.rows[0].button);
             else if (e.moveDir == MoveDirection.Down && menu.cards[0] != null) MainMenu.Select(menu.cards[0]);
         }
@@ -156,9 +168,15 @@ public class SettingsMenu : MonoBehaviour
 
     // ---------------------------------------------------------------- the pages
 
+    // The languages the game has words for. Only one: Language can't change, so its arrows give the disabled sound
+    // (G-06); with more than one they step through them with the toggle sound (S-04).
+    static readonly string[] Languages = { "English" };
+    static int language;
+
     void General()
     {
-        ArrowRow(0, 146f, "Language", 650f, 862.5f, 756f, () => "English", _ => { });
+        ArrowRow(0, 146f, "Language", 650f, 862.5f, 756f, () => Languages[language], d => language = Wrap(language + d, Languages.Length),
+            Languages.Length > 1 ? e => e.toggle : e => e.disabledAction);
         ArrowRow(1, 146f, "Closed Caption", 650f, 862.5f, 756f, () => Settings.ClosedCaptions ? "ON" : "OFF", _ => Settings.ClosedCaptions = !Settings.ClosedCaptions);
     }
 
@@ -169,7 +187,7 @@ public class SettingsMenu : MonoBehaviour
         PillRow(2, "Screen Shake", new[] { "Full", "Half", "Off" }, () => 2 - Settings.Shake, i => Settings.Shake = 2 - i);
         ArrowRow(3, 152f, "Resolution", 574f, 786.4f, 679.5f, () => $"{Settings.CurrentResolution.x} x {Settings.CurrentResolution.y}",
             d => Settings.Resolution = Settings.StepResolution(d));
-        ArrowRow(4, 152f, "Depth of field", 574f, 786.4f, 679.5f, () => Settings.DepthOfField ? "ON" : "OFF", _ => Settings.DepthOfField = !Settings.DepthOfField);
+        SliderRow(4, "DoF Range", () => Mathf.Round(Settings.DepthOfField * 100f), v => Settings.DepthOfField = v / 100f, 152f, -130f); // how far back the blur starts; its bar starts where the arrows do
         ArrowRow(5, 152f, "Vertical Sync", 574f, 786.4f, 679.5f, () => Settings.VSync ? "ON" : "OFF", _ => Settings.VSync = !Settings.VSync);
         ArrowRow(6, 152f, "Anti-Aliasing", 574f, 786.4f, 679.5f, () => Settings.AntiAliasing ? "ON" : "OFF", _ => Settings.AntiAliasing = !Settings.AntiAliasing);
     }
@@ -196,22 +214,29 @@ public class SettingsMenu : MonoBehaviour
         r.button = hit.gameObject.AddComponent<Button>();
         r.button.targetGraphic = img;
         r.button.transition = Selectable.Transition.None;
-        hit.gameObject.AddComponent<MainMenu.HoverSelects>();
+        hit.gameObject.AddComponent<MainMenu.HoverSelects>(); // the hover sound (G-02) as it's picked
         hit.gameObject.AddComponent<RowKeys>().row = r;
         r.label = Left(page, name, labelX, y, Figma.Type.ArvoSubtitle);
         rows.Add(r);
         return r;
     }
 
-    void ArrowRow(int index, float labelX, string name, float leftX, float rightX, float valueX, Func<string> shown, Action<int> step)
+    // Clicking an arrow (or left / right, or Enter) plays `sound`: the toggle sound (S-04) unless given.
+    void ArrowRow(int index, float labelX, string name, float leftX, float rightX, float valueX, Func<string> shown, Action<int> step,
+        Func<FMODEvents, FMODUnity.EventReference> sound = null)
     {
+        sound ??= e => e.toggle;
         var r = NewRow(index, labelX, name);
         float y = RowY + RowStep * index;
         r.left = Figma.Picture(page, "Left", "Buttons/Arrows/LeftArrow_Idle", leftX, y + 1.5f, 47f, 47f);
         r.right = Figma.Picture(page, "Right", "Buttons/Arrows/RightArrow_Idle", rightX, y, 47f, 47f);
         r.value = Figma.Words(page, shown(), valueX, y, Figma.Type.ArvoSubtitle, Ink, ParkArt.Font);
         r.shown = shown;
-        r.step = step;
+        r.step = d =>
+        {
+            AudioManager.TryPlay(sound);
+            step(d);
+        };
         ArrowClick(r.left, r, -1);
         ArrowClick(r.right, r, 1);
     }
@@ -247,6 +272,7 @@ public class SettingsMenu : MonoBehaviour
 
     void PillRow(int index, string name, string[] options, Func<int> current, Action<int> set)
     {
+        set = Clicked(set);
         var r = NewRow(index, 152f, name);
         float y = RowY + RowStep * index - 4.5f;
         r.pills = new Image[options.Length];
@@ -267,16 +293,30 @@ public class SettingsMenu : MonoBehaviour
         r.step = d => set(Mathf.Clamp(current() + d, 0, options.Length - 1));
     }
 
-    // `set` takes 0..100; left / right go to the next ten.
-    void SliderRow(int index, string name, Func<float> amount, Action<float> set)
+    // A pill clicked (or left / right on its row): the toggle sound (S-04).
+    static Action<int> Clicked(Action<int> set) => i =>
     {
-        var r = NewRow(index, 146f, name);
+        AudioManager.TryPlay(e => e.toggle);
+        set(i);
+    };
+
+    // `set` takes 0..100; left / right go to the next ten.
+    void SliderRow(int index, string name, Func<float> amount, Action<float> set, float labelX = 146f, float shift = 0f)
+    {
+        var r = NewRow(index, labelX, name);
         float y = RowY + RowStep * index;
-        r.bar = Figma.Picture(page, "Bar", "Volume/VolumeBar_Idle", 891.5f, y, 422f, 46.9f);
+        r.bar = Figma.Picture(page, "Bar", "Volume/VolumeBar_Idle", 891.5f + shift, y, 422f, 46.9f);
         r.knob = Figma.Picture(page, "Knob", "Volume/VolumeSelecter_Idle", 0f, y, 24.7f, 54f);
-        r.value = Figma.Words(page, "", 1174f, y, Figma.Type.ArvoSubtitle, Ink, ParkArt.Font);
+        r.value = Figma.Words(page, "", 1174f + shift, y, Figma.Type.ArvoSubtitle, Ink, ParkArt.Font);
         r.amount = amount;
-        r.step = d => set(Mathf.Clamp(Mathf.Round(amount() / 10f + d) * 10f, 0f, 100f));
+        r.shift = shift;
+        r.step = d =>
+        {
+            // A tenth up or down, its sound at the new volume: the toggle sound (S-04). Already at 0 or 100: quiet.
+            float was = amount();
+            set(Mathf.Clamp(Mathf.Round(was / 10f + d) * 10f, 0f, 100f));
+            if (!Mathf.Approximately(amount(), was)) AudioManager.TryPlay(e => e.toggle);
+        };
         foreach (var img in new[] { r.bar, r.knob })
         {
             img.raycastTarget = true;
@@ -288,7 +328,8 @@ public class SettingsMenu : MonoBehaviour
     }
 
     // Pressing on a volume bar (or its knob) puts the knob there, to the nearest whole number; dragging slides it.
-    class SliderDrag : MonoBehaviour, IPointerDownHandler, IDragHandler, IInitializePotentialDragHandler
+    // Letting go plays the toggle sound (S-04), at the volume just picked.
+    class SliderDrag : MonoBehaviour, IPointerDownHandler, IDragHandler, IPointerUpHandler, IInitializePotentialDragHandler
     {
         public SettingsMenu menu;
         public Row row;
@@ -296,6 +337,10 @@ public class SettingsMenu : MonoBehaviour
 
         public void OnPointerDown(PointerEventData e) => Move(e);
         public void OnDrag(PointerEventData e) => Move(e);
+        public void OnPointerUp(PointerEventData e)
+        {
+            if (e.button == PointerEventData.InputButton.Left) AudioManager.TryPlay(ev => ev.toggle);
+        }
         public void OnInitializePotentialDrag(PointerEventData e) => e.useDragThreshold = false; // follows at once
 
         void Move(PointerEventData e)
@@ -303,7 +348,7 @@ public class SettingsMenu : MonoBehaviour
             var page = menu.page;
             if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(page, e.position, e.pressEventCamera, out var local)) return;
             float x = (local.x - page.rect.center.x) / Figma.K + Figma.Width * 0.5f; // in design px, as the knob's placed
-            set(Mathf.Clamp(Mathf.Round((x - 700f) / 3.86f), 0f, 100f));
+            set(Mathf.Clamp(Mathf.Round((x - 700f - row.shift) / 3.86f), 0f, 100f));
             MainMenu.Select(row.button);
             menu.Refresh();
         }
@@ -347,7 +392,7 @@ public class SettingsMenu : MonoBehaviour
             {
                 mode = Navigation.Mode.Explicit,
                 selectOnUp = i > 0 ? rows[i - 1].button : tabButtons[^1],
-                selectOnDown = i < rows.Count - 1 ? rows[i + 1].button : applyButton,
+                selectOnDown = i < rows.Count - 1 ? rows[i + 1].button : resetButton,
             };
         foreach (var b in tabButtons) b.navigation = new Navigation { mode = Navigation.Mode.None }; // TabKeys
         Refresh();
@@ -383,7 +428,7 @@ public class SettingsMenu : MonoBehaviour
                 r.knob.sprite = UiArt.Get(on ? "Volume/VolumeSelecter_Active" : "Volume/VolumeSelecter_Idle");
                 var k = r.knob.rectTransform;
                 // Along the bar's line, as the design places 50 (its middle at 700 + 3.86 per step).
-                k.anchoredPosition = new Vector2((700f + v * 3.86f - Figma.Width * 0.5f) * Figma.K, k.anchoredPosition.y);
+                k.anchoredPosition = new Vector2((700f + r.shift + v * 3.86f - Figma.Width * 0.5f) * Figma.K, k.anchoredPosition.y);
             }
         }
     }
@@ -393,28 +438,46 @@ public class SettingsMenu : MonoBehaviour
     // Bottom right, Back where Credits has it and the other two to its left, in the same light blue pills.
     void Buttons()
     {
-        resetButton = BottomPill("Reset", 819.5f, 213f, Reset);
-        applyButton = BottomPill("Apply Changes", 1072f, 260f, Apply);
-        backButton = BottomPill("Back", 1324.5f, 213f, Back);
-        // Up from them: the page's last row (or last key on Game Control, or the tab); left / right along them.
-        Selectable leftUp = rows.Count > 0 ? rows[^1].button : pills.Count > 0 ? pills[LeftBinds.Length - 1] : tabButtons[^1];
-        Selectable rightUp = rows.Count > 0 ? rows[^1].button : pills.Count > 0 ? pills[^1] : tabButtons[^1];
-        resetButton.navigation = new Navigation { mode = Navigation.Mode.Explicit, selectOnUp = leftUp, selectOnRight = applyButton };
-        applyButton.navigation = new Navigation { mode = Navigation.Mode.Explicit, selectOnUp = rightUp, selectOnLeft = resetButton, selectOnRight = backButton };
-        backButton.navigation = new Navigation { mode = Navigation.Mode.Explicit, selectOnUp = rightUp, selectOnLeft = applyButton };
-        // Down from the bottom of each column of keys.
+        applyButton = BottomPill("Apply Changes", 843f, 260f, Apply);
+        resetButton = BottomPill("Reset", 1095.5f, 213f, Reset);
+        backButton = BottomPill("Back", 1324.5f, 213f, Back, e => e.backButton); // S-06
+        // Down from the bottom of each column of keys: Reset (always there).
         foreach (var i in new[] { LeftBinds.Length - 1, pills.Count - 1 })
             if (i >= 0 && i < pills.Count)
             {
                 var nav = pills[i].navigation;
-                nav.selectOnDown = applyButton;
+                nav.selectOnDown = resetButton;
                 pills[i].navigation = nav;
             }
+        applyShown = null;
+        ShowApply();
     }
 
-    Button BottomPill(string words, float x, float w, UnityEngine.Events.UnityAction onClick)
+    bool? applyShown;
+
+    // Apply Changes shows only while something's changed since Options opened or last applied; the keys step along the
+    // buttons that are there.
+    void ShowApply()
     {
-        var b = MainMenu.Pill(page, words, onClick);
+        if (applyButton == null) return;
+        bool show = !kept.Same(State.Now());
+        if (show == applyShown) return;
+        applyShown = show;
+        if (!show && EventSystem.current != null && EventSystem.current.currentSelectedGameObject == applyButton.gameObject)
+            MainMenu.Select(resetButton); // it was picked: Reset takes over
+        applyButton.gameObject.SetActive(show);
+        // Up from them: the page's last row (or last key on Control, or the tab); left / right along them.
+        Selectable leftUp = rows.Count > 0 ? rows[^1].button : pills.Count > 0 ? pills[LeftBinds.Length - 1] : tabButtons[^1];
+        Selectable rightUp = rows.Count > 0 ? rows[^1].button : pills.Count > 0 ? pills[^1] : tabButtons[^1];
+        applyButton.navigation = new Navigation { mode = Navigation.Mode.Explicit, selectOnUp = leftUp, selectOnRight = resetButton };
+        resetButton.navigation = new Navigation { mode = Navigation.Mode.Explicit, selectOnUp = show ? rightUp : leftUp, selectOnLeft = show ? applyButton : null, selectOnRight = backButton };
+        backButton.navigation = new Navigation { mode = Navigation.Mode.Explicit, selectOnUp = rightUp, selectOnLeft = resetButton };
+    }
+
+    Button BottomPill(string words, float x, float w, UnityEngine.Events.UnityAction onClick,
+        Func<FMODEvents, FMODUnity.EventReference> sound = null)
+    {
+        var b = MainMenu.Pill(page, words, onClick, sound: sound);
         Figma.Place((RectTransform)b.transform, x, 897.5f, w, 63f);
         b.GetComponent<Image>().sprite = UiArt.Get("Buttons/Button2_Idle");
         var swap = b.spriteState;
@@ -424,10 +487,20 @@ public class SettingsMenu : MonoBehaviour
         return b;
     }
 
-    // Every setting back to how the game first starts (not kept until applied).
+    // Every setting back to how the game first starts (not kept until applied), once the player says so.
     void Reset()
     {
         if (listening >= 0) return;
+        ConfirmDialog.Open(order + 1, "RESET TO DEFAULT", "Are you sure?", yes =>
+        {
+            confirmClosedFrame = Time.frameCount;
+            if (yes) ResetNow();
+            else MainMenu.Select(resetButton);
+        });
+    }
+
+    void ResetNow()
+    {
         State.Defaults().Restore();
         var at = controlsContent != null ? controlsContent.anchoredPosition : Vector2.zero;
         ShowTab(tab);
@@ -440,6 +513,7 @@ public class SettingsMenu : MonoBehaviour
         if (listening >= 0) return;
         kept = State.Now();
         PlayerPrefs.Save();
+        ShowApply(); // applied: it goes
     }
 
     // Leaves, asking first if there are changes not applied: Yes puts them back as they were kept.
@@ -466,30 +540,47 @@ public class SettingsMenu : MonoBehaviour
     // Everything Options changes: to tell whether anything's changed since it was kept, and to put it back.
     class State
     {
-        public bool fullscreen, dof, captions, vsync, antiAliasing;
+        public bool fullscreen, captions, vsync, antiAliasing;
         public int quality, shake;
-        public float volume, music, sfx;
+        public float volume, music, sfx, dof;
         public Vector2Int resolution;
         public Key[] keys;
 
         public static State Now() => new()
         {
-            fullscreen = Settings.Fullscreen, dof = Settings.DepthOfField, captions = Settings.ClosedCaptions,
-            vsync = Settings.VSync, antiAliasing = Settings.AntiAliasing, quality = (int)Settings.Graphics,
-            shake = Settings.Shake, music = Settings.MusicVolume, sfx = Settings.SfxVolume, volume = Settings.Volume,
-            resolution = Settings.Resolution, keys = KeyBindings.Current(),
+            fullscreen = Settings.Fullscreen,
+            dof = Settings.DepthOfField,
+            captions = Settings.ClosedCaptions,
+            vsync = Settings.VSync,
+            antiAliasing = Settings.AntiAliasing,
+            quality = (int)Settings.Graphics,
+            shake = Settings.Shake,
+            music = Settings.MusicVolume,
+            sfx = Settings.SfxVolume,
+            volume = Settings.Volume,
+            resolution = Settings.Resolution,
+            keys = KeyBindings.Current(),
         };
 
         // How the game first starts (Settings' and KeyBindings' own defaults).
         public static State Defaults() => new()
         {
-            fullscreen = true, dof = true, captions = false, vsync = true, antiAliasing = true,
-            quality = (int)Settings.Quality.High, shake = 2, music = 1f, sfx = 1f, volume = 1f,
-            resolution = Vector2Int.zero, keys = KeyBindings.Defaults(),
+            fullscreen = true,
+            dof = Settings.DefaultDepthOfField,
+            captions = false,
+            vsync = true,
+            antiAliasing = true,
+            quality = (int)Settings.Quality.High,
+            shake = 2,
+            music = 1f,
+            sfx = 1f,
+            volume = 1f,
+            resolution = Vector2Int.zero,
+            keys = KeyBindings.Defaults(),
         };
 
         public bool Same(State o) =>
-            fullscreen == o.fullscreen && dof == o.dof && captions == o.captions && vsync == o.vsync &&
+            fullscreen == o.fullscreen && Mathf.Approximately(dof, o.dof) && captions == o.captions && vsync == o.vsync &&
             antiAliasing == o.antiAliasing && quality == o.quality && shake == o.shake &&
             Mathf.Approximately(music, o.music) && Mathf.Approximately(sfx, o.sfx) && Mathf.Approximately(volume, o.volume) && resolution == o.resolution &&
             System.Linq.Enumerable.SequenceEqual(keys, o.keys);
@@ -500,7 +591,7 @@ public class SettingsMenu : MonoBehaviour
             var now = Now();
             if (now.fullscreen != fullscreen) Settings.Fullscreen = fullscreen;
             if (now.resolution != resolution) Settings.Resolution = resolution;
-            if (now.dof != dof) Settings.DepthOfField = dof;
+            if (!Mathf.Approximately(now.dof, dof)) Settings.DepthOfField = dof;
             if (now.captions != captions) Settings.ClosedCaptions = captions;
             if (now.quality != quality) Settings.Graphics = (Settings.Quality)quality;
             if (now.shake != shake) Settings.Shake = shake;
@@ -560,7 +651,8 @@ public class SettingsMenu : MonoBehaviour
 
         var content = MainMenu.Ui("Content", view);
         content.anchorMin = content.anchorMax = content.pivot = new Vector2(0.5f, 1f);
-        content.sizeDelta = new Vector2(Figma.Width * Figma.K, (1298f - ContentTop + 40f) * Figma.K);
+        // Down to just under the last key row (Interact, its pill's bottom at 1169), so the list stops scrolling there.
+        content.sizeDelta = new Vector2(Figma.Width * Figma.K, (1169f + 30f - ContentTop) * Figma.K);
         controlsContent = content;
 
         scroll = page.gameObject.AddComponent<ScrollRect>();
@@ -609,7 +701,7 @@ public class SettingsMenu : MonoBehaviour
 
         // The scroll bar (the design's, fixed on the right), driving the list.
         var barRt = MainMenu.Ui("Scroll Bar", page);
-        Figma.Place(barRt, 1462f, 589.5f, 56f, 738f);
+        Figma.Place(barRt, 1462f, (220.5f + 856f) * 0.5f, 56f, 856f - 220.5f); // ends where the list does
         var barImg = barRt.gameObject.AddComponent<Image>();
         barImg.sprite = UiArt.Get("Scroll/ScrollBar");
         // The thumb slides along the track as drawn (ScrollBar.png: x 17..55, y 18..1072 of 86 x 1136), so at the top
@@ -693,6 +785,7 @@ public class SettingsMenu : MonoBehaviour
     void PickScheme(int s)
     {
         if (listening >= 0) return;
+        AudioManager.TryPlay(e => e.menuClick); // G-03
         KeyBindings.UseScheme(s);
         RebuildControls(() => cards[s]);
     }
@@ -711,6 +804,7 @@ public class SettingsMenu : MonoBehaviour
     void Listen(int i)
     {
         if (listening >= 0 || Time.frameCount <= listenEndFrame + 1) return; // the key just put on isn't a pick too
+        AudioManager.TryPlay(e => e.toggle); // S-04
         listening = i;
         listenFrame = Time.frameCount;
         PillText(pills[i], "PRESS A KEY");
@@ -729,10 +823,19 @@ public class SettingsMenu : MonoBehaviour
                 if (k == null || k.keyCode == Key.None || !k.wasPressedThisFrame) continue;
                 var bind = pillBinds[listening];
                 if (k.keyCode != Key.Escape || bind == KeyBindings.Bind.Pause) KeyBindings.Set(bind, k.keyCode);
+                AudioManager.TryPlay(e => e.menuClick); // G-03: the key's taken
                 StopListening();
                 return;
             }
-        if (mouse != null && mouse.leftButton.wasPressedThisFrame) StopListening(); // a click elsewhere: never mind
+        if (mouse != null && mouse.leftButton.wasPressedThisFrame)
+        {
+            // A click on the "PRESS A KEY" pill itself puts it back with the toggle sound (S-04), as clicking it
+            // started it; a click elsewhere just stops waiting.
+            var pill = (RectTransform)pills[listening].transform;
+            if (RectTransformUtility.RectangleContainsScreenPoint(pill, mouse.position.ReadValue(), null))
+                AudioManager.TryPlay(e => e.toggle);
+            StopListening();
+        }
     }
 
     void StopListening()
@@ -836,6 +939,7 @@ public class SettingsMenu : MonoBehaviour
         }
         if (es != null && !es.sendNavigationEvents && Time.frameCount > listenEndFrame) es.sendNavigationEvents = true;
         if (ConfirmDialog.IsOpen || Time.frameCount == confirmClosedFrame) return;
+        ShowApply();
         var picked = es != null ? es.currentSelectedGameObject : null;
         if (picked == null && es != null)
         {
@@ -847,7 +951,11 @@ public class SettingsMenu : MonoBehaviour
             lastPicked = picked;
             Refresh();
         }
-        if (Time.frameCount != openedFrame && Time.frameCount > listenEndFrame && global::Controls.Back) Back();
+        if (Time.frameCount != openedFrame && Time.frameCount > listenEndFrame && global::Controls.Back)
+        {
+            AudioManager.TryPlay(e => e.backButton); // S-06, as if Back was clicked
+            Back();
+        }
     }
 
     void Close()

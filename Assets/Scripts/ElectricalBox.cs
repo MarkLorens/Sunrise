@@ -57,7 +57,7 @@ public class ElectricalBox : MonoBehaviour, IInteraction
         if (!wheel.Powered)
         {
             wheel.Restart();
-            Sfx.Play(Sfx.HitWood, 0.7f, 0.8f, Captions.PowerBackOn);
+            ClosedCaptions.Show(Captions.PowerBackOn);
             GameHud.Say(GameText.RestartedWheel);
             Mischief.Complete(Mischief.Task.RestartWheel);
             return;
@@ -70,7 +70,7 @@ public class ElectricalBox : MonoBehaviour, IInteraction
         if (!Unlocked)
         {
             Unlocked = true;
-            Sfx.Play(Sfx.HitWood, 0.7f, 1.5f, Captions.BoxUnlocked);
+            ClosedCaptions.Show(Captions.BoxUnlocked);
             if (host.brain is Mechanic) GameHud.Think(GameHud.ThoughtPriority.Action, GameText.ThinkBoxMechanic);
             GameHud.Say(GameText.UnlockedBox);
             Mischief.Complete(Mischief.Task.UnlockBox);
@@ -109,12 +109,14 @@ public class ElectricalBox : MonoBehaviour, IInteraction
         lights.Sputtering = lamp;
         m.Take(new StaffWorker.Job { spot = spot, at = post, seconds = tinkerTime, done = () => lights.Sputtering = -1 });
         CameraRig.Spotlight(m.transform, 999f);
+        CutsceneLight.On(m); // the park dark round him
 
         // Fixes the lamp, then walks back behind the staff door. Timed out in case something pulls him away.
         float giveUp = Time.time + tinkerTime + 25f;
         while (m.Current != StaffWorker.State.Inside && Time.time < giveUp) yield return null;
         lights.Sputtering = -1;
 
+        CutsceneLight.Off();
         CameraRig.EndSpotlight();
         yield return new WaitForSeconds(1f); // the camera easing back
         Possession.InputBlocked = false;

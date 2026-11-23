@@ -33,16 +33,21 @@ public class CameraRig : MonoBehaviour
     [Header("Zoom")]
     public float zoomTime = 0.5f; // roughly how long Zoom / EndZoom take to ease in and out: higher = slower
 
+    [Header("Tilt")]
+    public float tiltTime = 0.6f; // roughly how long Tilt / EndTilt take to ease in and out: higher = slower
+
     [Header("Depth of field")]
     // Diorama look: the player stays sharp and what's behind them blurs. Focus follows whoever you control (and the
     // dolly). Only behind: what's in front of the player stays sharp, because that's what the see-through hole
     // (SeeThrough.cs) opens up. Blurred too (the old Bokeh mode), its blur spread over the hole and filled it with
     // a frosted grey disc.
     public bool depthOfField = true;
-    [Tooltip("World units behind the player where the blur starts.")]
-    public float blurStart = 2f;
-    [Tooltip("World units behind the player where the blur is full.")]
-    public float blurEnd = 12f;
+    [Tooltip("World units behind the player where the blur starts with Depth of Field (Options) all the way down.")]
+    public float blurStartNearest = 0f;
+    [Tooltip("World units behind the player where the blur starts with Depth of Field all the way up.")]
+    public float blurStartFarthest = 20f;
+    [Tooltip("World units past the start where the blur is full.")]
+    public float blurSpan = 10f;
     [Range(0.5f, 1.5f), Tooltip("How strong the full blur is.")]
     public float blurRadius = 1f;
 
@@ -56,6 +61,8 @@ public class CameraRig : MonoBehaviour
     bool orthographic;
     float baseLens; // the scene camera's field of view (or orthographic size)
     float zoom = 1f, zoomTarget = 1f, zoomVelocity;
+    CinemachineRecomposer recomposer; // turns the finished shot (Tilt) without moving the camera
+    float tilt, tiltTarget, tiltVelocity;
 
     VolumeProfile dofProfile;
     DepthOfField dof;
@@ -102,6 +109,15 @@ public class CameraRig : MonoBehaviour
 
     public static void EndZoom() => Zoom(1f);
 
+    // Smoothly tips the camera up by `degrees` (negative tips it down), turning on the spot: it stays where it is and
+    // just looks up, at something shooting up into the sky. Stays until EndTilt, which eases back to the usual angle.
+    public static void Tilt(float degrees)
+    {
+        if (Instance != null) Instance.tiltTarget = degrees;
+    }
+
+    public static void EndTilt() => Tilt(0f);
+
     // Something else has the shot (a spotlight, a zoom) or the camera's still easing back to the player after one.
     public static bool Busy
     {
@@ -109,7 +125,7 @@ public class CameraRig : MonoBehaviour
         {
             var rig = Instance;
             if (rig == null) return false;
-            if (rig.spot != null || rig.zoomTarget != 1f || rig.zoom != 1f) return true;
+            if (rig.spot != null || rig.zoomTarget != 1f || rig.zoom != 1f || rig.tiltTarget != 0f || rig.tilt != 0f) return true;
             int me = rig.target != null ? rig.group.FindMember(rig.target) : -1;
             return me >= 0 && rig.group.Targets[me].Weight < 1f;
         }
@@ -171,6 +187,14 @@ public class CameraRig : MonoBehaviour
 
         shakeOffset = go.AddComponent<CinemachineCameraOffset>();
 
+        // Tilt: turns the camera after everything else has placed it. Every field set by hand: its defaults are only
+        // filled in when it's added in the editor, and left at 0 the zoom and the follow would go to nothing.
+        recomposer = go.AddComponent<CinemachineRecomposer>();
+        recomposer.ApplyAfter = CinemachineCore.Stage.Finalize;
+        recomposer.Tilt = recomposer.Pan = recomposer.Dutch = 0f;
+        recomposer.ZoomScale = 1f;
+        recomposer.FollowAttachment = recomposer.LookAtAttachment = 1f;
+
         dofProfile = ScriptableObject.CreateInstance<VolumeProfile>();
         dof = dofProfile.Add<DepthOfField>();
         dof.mode.Override(DepthOfFieldMode.Gaussian); // far blur only (Bokeh blurs in front of the focus too)
@@ -205,6 +229,17 @@ public class CameraRig : MonoBehaviour
         shakeOffset.Offset = sway * (shake * shakeDistance);
 
         Lens();
+        Pitch();
+    }
+
+    // Eases the camera's angle toward tiltTarget (Tilt / EndTilt), starting and stopping gently. Only the view turns
+    // (the recomposer works on the finished shot), so the camera stays put and the framing isn't thrown off.
+    void Pitch()
+    {
+        if (tilt == tiltTarget) return;
+        tilt = Mathf.SmoothDamp(tilt, tiltTarget, ref tiltVelocity, tiltTime, Mathf.Infinity, Time.unscaledDeltaTime);
+        if (Mathf.Abs(tilt - tiltTarget) < 0.01f) tilt = tiltTarget;
+        recomposer.Tilt = -tilt; // the recomposer's positive tilt looks down
     }
 
     // Eases the lens toward zoomTarget (Zoom / EndZoom), starting and stopping gently.
@@ -265,13 +300,14 @@ public class CameraRig : MonoBehaviour
     // Focus on the player (or whatever's spotlit) along the view axis.
     void Focus()
     {
-        dof.active = depthOfField && Settings.DepthOfField && target != null;
+        dof.active = depthOfField && target != null;
         if (!dof.active) return;
         var cam = transform; // the brain places the main camera
         var on = spot != null ? spot : target;
         float focus = Mathf.Max(0.5f, Vector3.Dot(on.position - cam.position, cam.forward));
-        dof.gaussianStart.Override(focus + blurStart);
-        dof.gaussianEnd.Override(focus + Mathf.Max(blurEnd, blurStart + 0.1f));
+        float start = focus + Mathf.Lerp(blurStartNearest, blurStartFarthest, Settings.DepthOfField);
+        dof.gaussianStart.Override(start);
+        dof.gaussianEnd.Override(start + Mathf.Max(blurSpan, 0.1f));
         dof.gaussianMaxRadius.Override(blurRadius);
     }
 

@@ -7,7 +7,9 @@ using UnityEngine.Tilemaps;
 // up (ToiletValve), and the next visitor who goes in comes back out in a geyser, sending everyone nearby running.
 // The block's left broken (Props/toilet_broken), and a Reset Agent comes and puts up a caution sign
 // (Props/toilet_sign_caution), for good. Made by Tutorial, on a new game only.
-// The valve is drawn into the block's own tile (its left side), so the valve part is just an invisible spot to press K.
+// The pipe and its valve stand beside the block (Props/toilet_pipe, toilet_valve: cut from the artist's picture of the
+// block, so they line up with its tile); the valve wheel turns as it's cranked. The valve part is an invisible spot to
+// press K by it. Every other toilet block gets the same pipe and valve, just for show.
 public class ToiletPrank : MonoBehaviour
 {
     public const int Turns = 3; // cranks to max the pressure
@@ -17,25 +19,41 @@ public class ToiletPrank : MonoBehaviour
     // Light enough to read at night (the puff picture is soft and see-through, so it comes out darker than this).
     static readonly Color[] Poop = { new(0.78f, 0.52f, 0.26f), new(0.62f, 0.4f, 0.18f), new(0.88f, 0.66f, 0.38f), new(0.5f, 0.3f, 0.12f) };
     static readonly Color SignRed = new(0.85f, 0.28f, 0.24f);
-    // The middle of the hole in the broken roof (Props/toilet_broken), as a share of the picture's width and height
-    // from its bottom middle (where its feet are): the geyser comes out here.
-    static readonly Vector2 RoofHole = new(0.09f, 0.68f);
+    // Where the geyser picture's bottom middle goes on the broken block (Props/toilet_broken), as a share of the
+    // block's width and height from its bottom middle (where its feet are). Matched to the artist's mock-up: the
+    // stream (a little left of the geyser picture's middle) stands in the roof's hole.
+    static readonly Vector2 RoofHole = new(0.098f, 0.694f);
+    // The geyser's shot (Geyser): the camera stays put and looks up this many degrees, enough to see the top of the
+    // spray from where the tutorial frames the block; meanwhile a beat of slow motion.
+    const float ShotTilt = 18f;
+    const float SlowScale = 0.3f, SlowHold = 0.35f, SlowEase = 0.6f; // time speed, real seconds at it, seconds back
+    bool slowing;
+    // The pipe's and the valve's middles from the block's feet (the tile's bottom middle), in its picture's units
+    // (297 pixels each, as the block, its pipe and valve are imported): measured off the artist's picture.
+    static readonly Vector3 PipeAt = new(-2.4596f, 0.6801f, -0.01f), ValveAt = new(-2.1684f, 0.9411f, -0.02f);
+    const float ValveTurn = 180f; // each crank turns the wheel this far (clockwise)
 
     public Transform Sign { get; private set; }
     public Transform Valve { get; private set; }
+    public Transform ValveArt => valveWheel; // the drawn wheel (and the pipe beside it), for the tutorial to light up
+    public Transform PipeArt { get; private set; }
     public Vector3 Door { get; private set; }          // where a visitor stands to go in
     public Bounds Block { get; private set; }          // the toilet block's picture, for the tutorial to light up
     public Transform Middle { get; private set; }      // its middle, for the camera
     public Transform Picture { get; private set; }     // a copy of its tile that never draws, for the tutorial's light
     public bool SignDown { get; private set; }
     public bool Erupted { get; private set; }
-    public float geyserHeight = 6f;                    // the drawn geyser (Fx/poop_geyser_1, _2), out of the roof          // the geyser went off (not just skipped past: gossip's about it)
+    // The drawn geyser (Fx/poop_geyser_1, _2), out of the roof: drawn at the block's pixel size (297 a unit), as in
+    // the artist's mock-up, ~2470 pixels tall.
+    public float geyserHeight = 8.3f;
     public float panicRadius = 8f;                     // everyone this close runs from the geyser
     public float panicTime = 6f;
     public int Pressure { get; private set; }
     public bool Maxed => Pressure >= Turns;
 
-    Vector3 handle; // the drawn valve's handle, where the crank's splashes come out
+    Vector3 handle; // the valve wheel's middle, where the crank's splashes come out
+    Transform valveWheel;
+    float valveAngle, valveTarget;
     // The block's tile, put back after the copy has stood in for it while it rumbles.
     Tilemap tiles;
     Vector3Int cell;
@@ -46,18 +64,79 @@ public class ToiletPrank : MonoBehaviour
     // Finds the toilet block and sets the prank up at it; null if this park has none.
     public static ToiletPrank Create()
     {
+        ToiletPrank prank = null;
         foreach (var map in FindObjectsByType<Tilemap>(FindObjectsSortMode.None))
             foreach (var cell in map.cellBounds.allPositionsWithin)
             {
                 var s = map.GetSprite(cell);
                 if (s == null || !s.name.StartsWith("bathroom")) continue;
-                var prank = new GameObject("Toilet Prank").AddComponent<ToiletPrank>();
+                if (prank != null)
+                {
+                    // Another block: its pipe and valve, for show.
+                    var space = new GameObject("Toilet Pipe").transform;
+                    Matrix4x4 m = TileMatrix(map, cell);
+                    space.SetPositionAndRotation(m.GetColumn(3), m.rotation);
+                    space.localScale = m.lossyScale;
+                    Plumbing(space, map);
+                    continue;
+                }
+                prank = new GameObject("Toilet Prank").AddComponent<ToiletPrank>();
                 // Props stand upright on their cell with their feet at its centre.
                 prank.Build(map.GetCellCenterWorld(cell), s.bounds.size * map.transform.lossyScale.x);
                 prank.Copy(map, cell, s);
-                return prank;
+                prank.PlaceValve(Plumbing(prank.Picture, map));
             }
-        return null;
+        return prank;
+    }
+
+    // Where a tile's picture is drawn: the tilemap's own placing of that cell.
+    static Matrix4x4 TileMatrix(Tilemap map, Vector3Int cell) =>
+        map.transform.localToWorldMatrix
+        * Matrix4x4.Translate(map.CellToLocalInterpolated(cell + map.tileAnchor))
+        * map.orientationMatrix * map.GetTransformMatrix(cell);
+
+    // The pipe and the valve wheel on it, in a block's picture space (the tile's place, size and turn), drawn like the
+    // tile and a hair in front of it. Returns the wheel.
+    static Transform Plumbing(Transform space, Tilemap map)
+    {
+        var tr = map.GetComponent<TilemapRenderer>();
+        SpriteRenderer Piece(string name, string sprite, Vector3 at)
+        {
+            var r = new GameObject(name).AddComponent<SpriteRenderer>();
+            r.transform.SetParent(space, false);
+            r.transform.localPosition = at;
+            r.sprite = ParkArt.Get(sprite);
+            if (tr != null)
+            {
+                r.sharedMaterial = tr.sharedMaterial;
+                r.sortingLayerID = tr.sortingLayerID;
+                r.sortingOrder = tr.sortingOrder;
+                r.shadowCastingMode = tr.shadowCastingMode;
+                r.receiveShadows = tr.receiveShadows;
+            }
+            return r;
+        }
+        Piece("Pipe", "Props/toilet_pipe", PipeAt); // found beside the wheel (PipeArt)
+        return Piece("Valve Wheel", "Props/toilet_valve", ValveAt).transform;
+    }
+
+    // The spot to crank it from: on the floor in front of the wheel.
+    void PlaceValve(Transform wheel)
+    {
+        valveWheel = wheel;
+        PipeArt = wheel.parent.Find("Pipe");
+        Vector3 at = wheel.position;
+        Valve = Part<ToiletValve>("Water Valve", new Vector3(at.x, transform.position.y, transform.position.z - 0.5f), null, 0f, default).transform;
+        handle = at + Vector3.back * 0.1f;
+    }
+
+    // The wheel eases round to where the cranks have turned it.
+    void Update()
+    {
+        if (valveWheel == null || Mathf.Approximately(valveAngle, valveTarget)) return;
+        valveAngle = Mathf.Lerp(valveAngle, valveTarget, 1f - Mathf.Exp(-9f * Time.deltaTime));
+        if (Mathf.Abs(valveTarget - valveAngle) < 0.5f) valveAngle = valveTarget;
+        valveWheel.localRotation = Quaternion.Euler(0f, 0f, valveAngle);
     }
 
     void Build(Vector3 feet, Vector2 size)
@@ -73,18 +152,13 @@ public class ToiletPrank : MonoBehaviour
         Sign = Part<ToiletSign>("Out Of Order Sign", Door + new Vector3(0.35f, 1f, 0.8f), "Props/toilet_sign", 1.1f, SignRed).transform;
         if (ParkArt.Get("Props/toilet_sign") == null) Label(Sign, "OUT OF\nORDER", 1.1f);
 
-        // The pipe and valve drawn at the tile's left, ~15% in from its edge, handle ~23% up (bathroom.PNG).
-        Valve = Part<ToiletValve>("Water Valve", feet + new Vector3(-size.x * 0.35f, 0f, -0.5f), null, 0f, default).transform;
-        handle = new Vector3(Valve.position.x, feet.y + size.y * 0.23f, feet.z - 0.1f);
     }
 
     // The toilet block is a tile, drawn with the rest of its tilemap: this copy sits exactly where the tile is drawn, so
     // the tutorial's light (which lights sprites in their own shape) has a shape to light. It never draws itself.
     void Copy(Tilemap map, Vector3Int cell, Sprite sprite)
     {
-        Matrix4x4 m = map.transform.localToWorldMatrix
-                      * Matrix4x4.Translate(map.CellToLocalInterpolated(cell + map.tileAnchor))
-                      * map.orientationMatrix * map.GetTransformMatrix(cell);
+        Matrix4x4 m = TileMatrix(map, cell);
         var r = new GameObject("Toilet Picture").AddComponent<SpriteRenderer>();
         r.transform.SetParent(transform, true);
         r.transform.SetPositionAndRotation(m.GetColumn(3), m.rotation);
@@ -126,7 +200,7 @@ public class ToiletPrank : MonoBehaviour
             {
                 next = t + Mathf.Lerp(0.35f, 0.12f, k);
                 Fx.Shake(Mathf.Lerp(0.05f, 0.18f, k));
-                Sfx.Play(Sfx.HitSoft, Mathf.Lerp(0.25f, 0.6f, k), Random.Range(0.6f, 0.8f), Captions.ToiletRumble);
+                ClosedCaptions.Show(Captions.ToiletRumble);
             }
             yield return null;
         }
@@ -145,6 +219,7 @@ public class ToiletPrank : MonoBehaviour
     void OnDestroy()
     {
         if (Picture != null && !broken) Settle(); // skipped mid-rumble: the toilet comes back
+        if (slowing) Time.timeScale = 1f;          // skipped mid-burst: never leave the game in slow motion
     }
 
     // Blown open: the copy stays in the tile's place, showing the broken block, for good.
@@ -200,7 +275,8 @@ public class ToiletPrank : MonoBehaviour
     {
         if (SignDown) return;
         SignDown = true;
-        Sfx.Play(Sfx.Grab, 0.7f, 1f, Captions.SignOff);
+        AudioManager.TryPlay(e => e.outOfOrderSign, Sign.position); // TT-03 Take Out the Sign, from the sign
+        ClosedCaptions.Show(Captions.SignOff);
         Fx.Burst("Fx/puff", Sign.position + Vector3.up * 0.6f, 8, Color.white, 2f, 0.35f, 0.5f);
         Sign.gameObject.SetActive(false); // its collider goes with it: the door's clear
         Mischief.Complete(Mischief.Task.TutorialSign);
@@ -210,7 +286,9 @@ public class ToiletPrank : MonoBehaviour
     {
         if (Maxed) return;
         Pressure++;
-        Sfx.Play(Sfx.HitWood, 0.6f, 1f + 0.15f * Pressure, Captions.Valve);
+        valveTarget -= ValveTurn; // clockwise
+        AudioManager.TryPlay(e => e.valveCrank, handle); // TT-04 Water Valve, from the handle: each of the 3 cranks
+        ClosedCaptions.Show(Captions.Valve);
         Fx.Burst("Fx/sparkle", handle, 3 + Pressure * 2, Water, 1.5f + Pressure * 0.5f, 0.2f, 0.4f);
         Fx.Shake(0.04f * Pressure);
         if (!Maxed) return;
@@ -218,19 +296,26 @@ public class ToiletPrank : MonoBehaviour
         Mischief.Complete(Mischief.Task.TutorialValve);
     }
 
+    bool explosionPlaying;
+
+    // TT-06 Toilet Explosion, from the block: started the moment the visitor goes in (Tutorial), so its build-up runs
+    // under the quiet and the rumble before the geyser.
+    public void StartExplosionSound()
+    {
+        if (!explosionPlaying) explosionPlaying = AudioManager.TryPlay(e => e.toiletGeyser, Block.center);
+    }
+
     // The payoff: a geyser of poop bursts out of the toilet, and whoever was in there runs out covered in it. The
     // spray is soft and a little blurry (big, see-through puffs over smaller ones), so it reads without being gross.
     public IEnumerator Geyser(Visitor victim)
     {
         Settle();
-        Sfx.Play(Sfx.Crash, 1f, 0.9f, Captions.ToiletGeyser);
+        ClosedCaptions.Show(Captions.ToiletGeyser);
         Fx.Shake(0.45f, 0.6f);
         // Out of the hole in the broken roof and up. In front of the block's picture (level with it, the puffs would
         // hide behind it), but slid straight toward the camera so on screen it still comes out of the hole.
         Vector3 hole = transform.position + new Vector3(RoofHole.x * Block.size.x, RoofHole.y * Block.size.y, 0f);
-        var cam = Camera.main;
-        Vector3 toCam = cam != null ? (cam.transform.position - hole).normalized : Vector3.back;
-        Vector3 roof = hole + toCam * 1f;
+        Vector3 roof = InFront(hole);
         var frames = new[] { ParkArt.Get("Fx/poop_geyser_1"), ParkArt.Get("Fx/poop_geyser_2") };
         SpriteRenderer spout = null;
         if (frames[0] != null)
@@ -239,6 +324,12 @@ public class ToiletPrank : MonoBehaviour
             spout.transform.position = roof; // its foot in the hole
         }
         Break();
+
+        // The shot: a beat of slow motion as it bursts, while the camera looks up after the spray (turning on the
+        // spot, at full speed, so the world hangs while it turns); it looks back down once it's over.
+        CameraRig.Tilt(ShotTilt);
+        StartCoroutine(SlowMotion());
+
         for (int i = 0; i < 10; i++)
         {
             if (spout != null)
@@ -263,9 +354,18 @@ public class ToiletPrank : MonoBehaviour
                 victim.Panic(Block.center, 5f);
                 GameHud.Shout(victim.transform, GameText.TutorialSoaked, 2.5f);
             }
-            yield return new WaitForSeconds(0.35f);
+            for (float wait = 0f; wait < 0.35f; wait += Time.deltaTime)
+            {
+                // The camera can still drift (shake, framing), so the spray is kept in front of the hole as seen from
+                // where it is.
+                roof = InFront(hole);
+                if (spout != null) spout.transform.position = roof;
+                yield return null;
+            }
         }
         if (spout != null) Destroy(spout.gameObject);
+
+        CameraRig.EndTilt(); // back down to the usual angle
         Mischief.Complete(Mischief.Task.TutorialToilet);
 
         // Clean-up comes to put the sign back.
@@ -277,6 +377,37 @@ public class ToiletPrank : MonoBehaviour
             shout = GameText.SignBackShout,
             done = PutSignBack,
         });
+    }
+
+    // A point on the block's picture, slid straight toward the camera: in front of the picture (level with it, the
+    // geyser and its puffs would hide behind it), but on screen still right where the point is.
+    static Vector3 InFront(Vector3 onPicture)
+    {
+        var cam = Camera.main;
+        Vector3 toCam = cam != null ? (cam.transform.position - onPicture).normalized : Vector3.back;
+        return onPicture + toCam * 1f;
+    }
+
+    // The burst's beat of slow motion: time slows to SlowScale for SlowHold real seconds, then eases back to full speed.
+    // Hands time back the moment anything else changes it (the pause menu), and never leaves it slowed.
+    IEnumerator SlowMotion()
+    {
+        slowing = true;
+        float set = SlowScale;
+        Time.timeScale = set;
+        for (float t = 0f; t < SlowHold + SlowEase; t += Time.unscaledDeltaTime)
+        {
+            yield return null;
+            if (!Mathf.Approximately(Time.timeScale, set))
+            {
+                slowing = false;
+                yield break;
+            }
+            set = Mathf.Lerp(SlowScale, 1f, Mathf.SmoothStep(0f, 1f, (t - SlowHold) / SlowEase));
+            Time.timeScale = set;
+        }
+        Time.timeScale = 1f;
+        slowing = false;
     }
 
     // Out of order again, and nobody's taking it down this time.
@@ -291,7 +422,7 @@ public class ToiletPrank : MonoBehaviour
         }
         Sign.gameObject.SetActive(true);
         Sign.GetComponent<Interactable>().enabled = false;
-        Sfx.Play(Sfx.HitWood, 0.6f, 1.1f, Captions.SignBack);
+        ClosedCaptions.Show(Captions.SignBack);
         Fx.Burst("Fx/puff", Sign.position + Vector3.up * 0.6f, 8, Color.white, 2f, 0.35f, 0.5f);
     }
 }

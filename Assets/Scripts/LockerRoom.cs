@@ -34,9 +34,11 @@ public class LockerRoom : MonoBehaviour
         bit.life = life;
     }
 
-    void Ignite()
+    // quiet: loading a save, it's already burnt.
+    void Ignite(bool quiet = false)
     {
         Burning = true;
+        Scorch.BurnNear(transform.position, 2f, quiet, "lockers"); // the building's picture, burning (Scorch)
         ParkChaos.Add(transform.position, 6f, 9999f, ParkChaos.Terrifying);
     }
 
@@ -51,8 +53,12 @@ public class LockerRoom : MonoBehaviour
             // The booth's picture is a child, well away from the marker itself: frame the picture.
             var art = paBooth.GetComponentInChildren<SpriteRenderer>();
             CameraRig.Spotlight(art != null ? art.transform : paBooth, 999f, 2f);
+            // The park dark round the booth and the announcer in it.
+            var spawner = FindAnyObjectByType<VisitorSpawner>();
+            var announcer = spawner != null ? Visitor.All.Find(v => v.name == spawner.announcerName) : null;
+            CutsceneLight.On(art != null ? art.transform : paBooth, announcer);
             yield return new WaitForSeconds(1.2f); // the camera getting there
-            Sfx.Play(Sfx.Spotted, 0.8f, 0.7f, Captions.PaScreech);
+            ClosedCaptions.Show(Captions.PaScreech);
             GameHud.Shout(paBooth, GameText.PAFire, 3.5f);
             yield return new WaitForSeconds(3.7f);
         }
@@ -61,10 +67,12 @@ public class LockerRoom : MonoBehaviour
         {
             o.GoToFire(Rally);
             CameraRig.Spotlight(o.transform, 999f, 1.5f);
+            CutsceneLight.On(o);
             GameHud.Shout(o.transform, GameText.OperatorFire, 2.5f);
             yield return new WaitForSeconds(3.5f);
             break;
         }
+        CutsceneLight.Off();
         Mischief.Complete(Mischief.Task.LockerFire);
         Aftermath.Add(transform.position, 6.5f, 9999f); // just outside the fire's own panic zone
     }
@@ -73,7 +81,7 @@ public class LockerRoom : MonoBehaviour
     public void Restore()
     {
         if (!Mischief.IsDone(Mischief.Task.LockerFire)) return;
-        Ignite();
+        Ignite(true);
         foreach (var o in RideOperator.All) o.GoToFire(Rally, true);
     }
 }
