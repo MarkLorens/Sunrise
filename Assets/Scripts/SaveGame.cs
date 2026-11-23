@@ -41,6 +41,7 @@ public static class SaveGame
         public List<Fan> fans = new();  // which way every fan faces
         public string title;            // the objective you were on (the Load Game card)
         public string played;           // when it was saved (round-trip date)
+        [System.NonSerialized] public bool atSpawn; // the spirit stays where the level starts it (DebugStartAt)
     }
 
     // What a Load Game card shows for a slot.
@@ -64,7 +65,26 @@ public static class SaveGame
     // being played as soon as the game can be saved (not mid-cutscene, the tutorial or the pause menu). Any save does.
     public static bool AutoSave { get; set; }
     // The slot being played: New Game takes the first empty one, Load Game the one picked.
-    public static int Slot { get; set; }
+    // Picking one (New Game, Load Game, Save Game) ends a debug run.
+    public static int Slot
+    {
+        get => slot;
+        set { slot = value; DebugRun = false; }
+    }
+    static int slot;
+
+    // Started from Tools > Puzzle Skipper (DebugStartAt): nothing is saved, so none of the save slots is touched.
+    public static bool DebugRun { get; private set; }
+
+    // Debugging: the park from scratch with `done` already done, put back the way a save would be. The spirit starts
+    // where it always does.
+    public static void DebugStartAt(IEnumerable<Mischief.Task> done, bool shownMechanic)
+    {
+        if (LoadingScreen.Busy) return;
+        DebugRun = true;
+        pending = new Data { scene = 1, done = new List<Mischief.Task>(done), shownMechanic = shownMechanic, atSpawn = true }; // FerrisWheelLevel
+        LoadingScreen.Load(pending.scene);
+    }
 
     static string PathOf(int slot) => System.IO.Path.Combine(Application.persistentDataPath, $"save_{slot}.json");
     static string PictureOf(int slot) => System.IO.Path.Combine(Application.persistentDataPath, $"save_{slot}.png");
@@ -149,7 +169,7 @@ public static class SaveGame
     // Into the slot being played. `screen`: the park as it looked (the pause menu's shot of it), for the card's picture.
     public static bool Save(Texture2D screen = null)
     {
-        if (!CanSave) return false;
+        if (!CanSave || DebugRun) return false;
         var p = Possession.Instance;
         var fountain = Object.FindAnyObjectByType<DrinkingFountain>();
         var box = Object.FindAnyObjectByType<ElectricalBox>();
@@ -255,7 +275,7 @@ public static class SaveGame
         foreach (var s in Object.FindObjectsByType<FingerprintScanner>()) s.Restore();
         foreach (var h in Object.FindObjectsByType<WheelHinge>()) h.Restore();
         foreach (var g in Object.FindObjectsByType<Gutter>()) g.Restore();
-        foreach (var m in Mascot.All) m.Restore(data.mascotWarned);
+        foreach (var m in new List<Mascot>(Mascot.All)) m.Restore(data.mascotWarned); // a copy: leaving takes him off the list
         foreach (var r in Object.FindObjectsByType<LockerRoom>()) r.Restore();
         // ponytail: a save after the wheel has rolled loads it standing, wobbly. Nothing comes after it yet.
 
@@ -287,7 +307,7 @@ public static class SaveGame
                 if (data.hostItem != VisitorItem.None) host.GrabItem(Item.Create(data.hostItem, host.CarryPoint), true);
             }
         }
-        Possession.Instance.Restore(data.player, host);
+        Possession.Instance.Restore(data.atSpawn ? Possession.Instance.transform.position : data.player, host);
     }
 
     // Staff by name; for a visitor, any free one (not taken, not on the ride, not already down).
