@@ -331,6 +331,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     IEnumerator Payoff(Vector3 from, List<Visitor> zapped, bool mechanic)
     {
         Possession.InputBlocked = true;
+        AudioManager.MusicOff = true;
         Vector3 middle = Vector3.zero;
         foreach (var v in zapped) middle += v.transform.position;
         var shot = new GameObject("Zap Payoff").transform;
@@ -349,6 +350,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
         yield return new WaitForSeconds(1.5f); // they drop, everyone else runs
         if (mechanic) yield return MechanicComes();
         CameraRig.EndSpotlight();
+        AudioManager.MusicOff = false;
         yield return new WaitForSeconds(1f); // the camera easing back
         Possession.InputBlocked = false;
         Destroy(shot.gameObject);

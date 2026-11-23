@@ -127,6 +127,7 @@ public class Tutorial : MonoBehaviour
         CardShowing = false;
         ending = true;
         Possession.InputBlocked = false;
+        AudioManager.MusicOff = false; // skipped mid-geyser
         if (held != null)
         {
             held.Look.SetVisible(true); // skipped while they were in the toilet
@@ -267,6 +268,7 @@ public class Tutorial : MonoBehaviour
         // 11. Someone else, from a little way off, comes running for the toilet; the camera runs with them. In they
         // go, the block rumbles harder and harder, and up it goes.
         Possession.InputBlocked = true;
+        AudioManager.MusicOff = true;
         Say(null);
         Card(GameText.TutorialWatch);
         Unfocus(); // the payoff in plain view: no dark, no light
@@ -298,6 +300,7 @@ public class Tutorial : MonoBehaviour
         Say(GameText.TutorialLaughSays);
         yield return new WaitForSeconds(2.2f);
         CameraRig.EndSpotlight();
+        AudioManager.MusicOff = false;
 
         // 12. The pop-up, holding the geyser's line while you read.
         string line = GameText.StepDone(Mischief.Task.TutorialToilet);
