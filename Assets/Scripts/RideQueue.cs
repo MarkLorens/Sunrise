@@ -2,8 +2,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // A line of visitors waiting for a ride. The first slot is at this object's position and the line
-// runs along `direction`. While the ride has power and its operator is at the post,
-// the person at the front boards every `boardInterval` seconds and comes back out at `exit` later.
+// runs along `direction`. While the ride has power and its operator is at the post, the person at the front
+// boards every `boardInterval` seconds: up the platform to `boardPoint` behind the wheel, where they get on and
+// disappear, and come back out at `exit` rideTime later.
 // Only visitors going about their day ride; the spirit can't (a possessed visitor leaves the line).
 public class RideQueue : MonoBehaviour
 {
@@ -12,6 +13,7 @@ public class RideQueue : MonoBehaviour
     public FerrisWheel ride;
     public RideOperator rideOperator;
     public Transform exit;
+    public Transform boardPoint; // where riders walk to and get on (left empty: they get on straight from the line)
     public Vector3 direction = new(0.25f, 0f, -1f);
     public float spacing = 0.9f;
     public int capacity = 8;
@@ -20,6 +22,7 @@ public class RideQueue : MonoBehaviour
 
     readonly List<Visitor> line = new();
     readonly List<(Visitor who, float until)> riders = new();
+    readonly List<Visitor> boarding = new(); // on their way up to boardPoint
     float nextBoard;
 
     public bool HasRoom => line.Count < capacity;
@@ -50,10 +53,25 @@ public class RideQueue : MonoBehaviour
         riders.Clear();
     }
 
+    // Walking up to get on: once there, into a cabin. Anyone scared off on the way (Visitor.SetState) isn't coming.
+    void UpdateBoarding()
+    {
+        for (int i = boarding.Count - 1; i >= 0; i--)
+        {
+            var v = boarding[i];
+            if (v == null || !v.Boarding) { boarding.RemoveAt(i); continue; }
+            if (!v.AtBoardingSpot) continue;
+            boarding.RemoveAt(i);
+            v.StartRide();
+            riders.Add((v, Time.time + rideTime));
+        }
+    }
+
     Vector3 Slot(int i) => transform.position + direction.normalized * spacing * i;
 
     void Update()
     {
+        UpdateBoarding();
         // No power: riders are stuck up in their cabins and the line waits for it to come back.
         if (ride.Current != FerrisWheel.State.Running) return; // and nobody gets on a wheel at max speed
 
@@ -72,8 +90,16 @@ public class RideQueue : MonoBehaviour
         if (d.magnitude > 0.5f) return; // still walking up
 
         line.RemoveAt(0);
-        front.StartRide();
-        riders.Add((front, Time.time + rideTime));
+        if (boardPoint != null)
+        {
+            front.Board(boardPoint.position);
+            boarding.Add(front);
+        }
+        else
+        {
+            front.StartRide();
+            riders.Add((front, Time.time + rideTime));
+        }
         nextBoard = Time.time + boardInterval;
     }
 
@@ -81,5 +107,6 @@ public class RideQueue : MonoBehaviour
     {
         Gizmos.color = Color.yellow;
         for (int i = 0; i < capacity; i++) Gizmos.DrawWireSphere(Slot(i), 0.25f);
+        if (boardPoint != null) Gizmos.DrawWireCube(boardPoint.position, Vector3.one * 0.5f);
     }
 }

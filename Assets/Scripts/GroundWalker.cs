@@ -24,7 +24,7 @@ public class GroundWalker : MonoBehaviour
     [HideInInspector] public bool ignoreObstacles;
 
     // The most anyone steps up or down at once: a stair, not the side of a raised floor (RaisedFloor).
-    public const float MaxStep = 0.9f; // the Ferris wheel platform's steps are ~0.22 high, its sides 1.71
+    public const float MaxStep = 0.45f; // PlatformFW2's stairs rise up to 0.35 between NavGrid squares; off their sides onto the deck is 0.55 or more
     const float ClimbSpeed = 6f; // how fast you rise or sink to the floor's height on stairs
 
     Rigidbody rb;
@@ -104,11 +104,17 @@ public class GroundWalker : MonoBehaviour
         cell.z = 0; // height above the floor doesn't matter
         return ground.HasTile(cell)
             && Mathf.Abs(RaisedFloor.Height(worldPos) - RaisedFloor.Height(transform.position)) <= MaxStep // stairs, not the sides
+            && !RaisedFloor.Railed(transform.position, worldPos) // nor off the side of a flight halfway up
             && (ignoreObstacles || !BumpsIntoObject(transform.position, worldPos))
             && StaffArea.Allows(Body, transform.position, worldPos)
             && FingerprintArea.Allows(Body, transform.position, worldPos)
-            && Aftermath.Allows(Body, transform.position, worldPos);
+            && Aftermath.Allows(Body, transform.position, worldPos)
+            && (!WanderingVisitor || RaisedFloor.Height(worldPos) <= RaisedFloor.Height(transform.position) + 0.01f); // the stairs sample as a gentle slope: no climbing at all
     }
+
+    // A visitor going about their day (not possessed, not boarding a ride): they never climb onto the platform, though
+    // one left up there can come down. Staff and the spirit's hosts go up as they like.
+    bool WanderingVisitor => Body != null && Body.brain == null && !Body.Boarding && Body.Current != Visitor.State.Possessed;
 
     bool OnTile(Vector3 velocity) => IsWalkable(rb.position + velocity * Time.fixedDeltaTime);
 
@@ -123,8 +129,8 @@ public class GroundWalker : MonoBehaviour
             move = Vector2.zero;
             return false;
         }
-        bool staff = Body == null || Body.brain != null;
-        Vector3 d = route.Next(ground, transform.position, p, staff) - transform.position;
+        bool staff = Body == null || Body.brain != null || Body.Boarding; // boarding visitors may use the platform too
+        Vector3 d = route.Next(ground, transform.position, p, staff, Body) - transform.position;
         move = new Vector2(d.x, d.z).normalized;
         return true;
     }
