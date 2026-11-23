@@ -19,8 +19,17 @@ public class FingerprintArea : MonoBehaviour
 
     public bool Open { get; set; }
 
-    void OnEnable() => All.Add(this);
-    void OnDisable() => All.Remove(this);
+    void OnEnable()
+    {
+        All.Add(this);
+        NavGrid.Invalidate(); // routes go round it
+    }
+
+    void OnDisable()
+    {
+        All.Remove(this);
+        NavGrid.Invalidate();
+    }
 
     void Start()
     {
@@ -59,7 +68,7 @@ public class FingerprintArea : MonoBehaviour
 
     public bool IsOwner(Visitor v) => v != null && (owner == Staff.Technician ? v.brain is RideTechnician : v.brain is RideOperator);
 
-    bool Lets(Visitor v)
+    public bool Lets(Visitor v)
     {
         if (v == null) return !keepSpiritOut;
         return IsOwner(v) && (Open || v.Current != Visitor.State.Possessed);

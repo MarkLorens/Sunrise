@@ -21,6 +21,9 @@ public static class NavGrid
     static int width, height;
     static float originX, originZ;
     static bool[] blocked, staffOnly;
+    static FingerprintArea[] fenced; // each square's scan-in area, if any: only those it lets in route through it
+    static Visitor walker;           // who's being routed right now (FindPath)
+    static FingerprintArea startedIn; // and the scan-in area they're standing in: they can always route out
     // Open, but some of the square is within Clearance of something: a straight line cutting across it could scrape
     // what the walker bumps into (a centre 0.5 away, a line through the square's edge 0.34 away). Routes still go
     // through these squares, just not as shortcuts across them (Clear).
@@ -40,7 +43,7 @@ public static class NavGrid
 
     // Corners to walk past on the way from `from` to `to`, the last one being `to` itself. Staff may cut through
     // staff-only areas; so may anyone already standing in one, to get out.
-    public static Result FindPath(Tilemap ground, Vector3 from, Vector3 to, bool staff, List<Vector3> corners)
+    public static Result FindPath(Tilemap ground, Vector3 from, Vector3 to, bool staff, List<Vector3> corners, Visitor who = null)
     {
         if (Time.frameCount != searchFrame)
         {
@@ -52,7 +55,9 @@ public static class NavGrid
         if (dirty || builtFor != ground) Build(ground);
 
         corners.Clear();
+        walker = who;
         int here = ToCell(from);
+        startedIn = here >= 0 ? fenced[here] : null;
         bool mayUseStaff = staff || (here >= 0 && staffOnly[here]);
         int start = Nearest(from, mayUseStaff), goal = Nearest(to, mayUseStaff);
         if (start < 0 || goal < 0 || !Search(start, goal, mayUseStaff)) return Result.NoRoute;
@@ -93,6 +98,7 @@ public static class NavGrid
         int n = width * height;
         blocked = new bool[n];
         staffOnly = new bool[n];
+        fenced = new FingerprintArea[n];
         tight = new bool[n];
         floor = new float[n];
         cost = new float[n];
@@ -110,13 +116,38 @@ public static class NavGrid
             floor[i] = RaisedFloor.Height(p);
             foreach (var area in StaffArea.All)
                 if (area.Contains(p)) staffOnly[i] = true;
+            foreach (var area in FingerprintArea.All)
+                if (area.Contains(p)) fenced[i] = area;
+            if (floor[i] > RaisedFloor.Ground) staffOnly[i] = true; // up on the platform: visitors only go there to board (GroundWalker)
         }
     }
 
-    static bool Open(int i, bool mayUseStaff) => !blocked[i] && (mayUseStaff || !staffOnly[i]);
+    static bool Open(int i, bool mayUseStaff) =>
+        !blocked[i] && (mayUseStaff || !staffOnly[i]) && (fenced[i] == null || fenced[i] == startedIn || fenced[i].Lets(walker));
 
     // Up or down a stair at most, never off the side of a raised floor.
-    static bool Step(int a, int b) => Mathf.Abs(floor[a] - floor[b]) <= GroundWalker.MaxStep;
+    static bool Step(int a, int b) => Mathf.Abs(floor[a] - floor[b]) <= GroundWalker.MaxStep && NoLedge(Center(a), Center(b));
+
+    // Walking straight from a to b, sampled as finely as the floor is mapped (RaisedFloor) the way GroundWalker steps it:
+    // never a rise or drop of more than a stair. Squares are coarser than stairs are narrow, so comparing just their
+    // middles can miss the side of a flight right beside you.
+    public static bool NoLedge(Vector3 a, Vector3 b)
+    {
+        Vector3 d = b - a;
+        d.y = 0;
+        int steps = Mathf.CeilToInt(d.magnitude / RaisedFloor.Cell);
+        Vector3 at = a;
+        float last = RaisedFloor.Height(a);
+        for (int s = 1; s <= steps; s++)
+        {
+            Vector3 p = a + d * (s / (float)steps);
+            float h = RaisedFloor.Height(p);
+            if (Mathf.Abs(h - last) > GroundWalker.MaxStep || RaisedFloor.Railed(at, p)) return false;
+            at = p;
+            last = h;
+        }
+        return true;
+    }
 
     static Vector3 Center(int i) => new(originX + (i % width + 0.5f) * CellSize, 0f, originZ + (i / width + 0.5f) * CellSize);
 
@@ -126,7 +157,8 @@ public static class NavGrid
         return x < 0 || z < 0 || x >= width || z >= height ? -1 : z * width + x;
     }
 
-    // The open square nearest `p`: its own, or one close by (a destination right up against a bench, say).
+    // The open square nearest `p` on its own level: its own, or one close by (a destination right up against a bench, say;
+    // someone at the very edge of a flight of stairs, whose square's middle is up on the deck beside it).
     static int Nearest(Vector3 p, bool mayUseStaff)
     {
         int px = Mathf.Clamp(Mathf.FloorToInt((p.x - originX) / CellSize), 0, width - 1);
@@ -140,7 +172,7 @@ public static class NavGrid
                     if (Mathf.Max(Mathf.Abs(x - px), Mathf.Abs(z - pz)) != r) continue; // only this ring
                     if (x < 0 || z < 0 || x >= width || z >= height) continue;
                     int i = z * width + x;
-                    if (!Open(i, mayUseStaff)) continue;
+                    if (!Open(i, mayUseStaff) || !NoLedge(p, Center(i))) continue; // not one up or down a ledge from you
                     Vector3 d = Center(i) - p;
                     float distance = d.x * d.x + d.z * d.z;
                     if (distance < bestDistance)
@@ -165,7 +197,7 @@ public static class NavGrid
             if (i < 0 || !Open(i, mayUseStaff) || tight[i] && i != first && i != last || prev >= 0 && !Step(prev, i)) return false;
             prev = i;
         }
-        return true;
+        return NoLedge(a, b);
     }
 
     // A*: always grow the route from the square with the lowest (distance so far + straight-line guess to the goal).
@@ -262,18 +294,19 @@ public class Route
     bool planned;
     float retryAt, closest, progressAt;
 
-    public Vector3 Next(Tilemap ground, Vector3 from, Vector3 to, bool staff)
+    public Vector3 Next(Tilemap ground, Vector3 from, Vector3 to, bool staff, Visitor who)
     {
         Vector3 moved = to - goal;
         moved.y = 0;
         bool stuck = corners.Count > 0 && Time.time - progressAt > StuckTime;
         bool noRoute = planned && corners.Count == 0;
-        if ((!planned || moved.magnitude > ReplanDistance || stuck || noRoute) && Time.time >= retryAt) Plan(ground, from, to, staff);
+        if ((!planned || moved.magnitude > ReplanDistance || stuck || noRoute) && Time.time >= retryAt) Plan(ground, from, to, staff, who);
         if (corners.Count == 0) return to; // no route (or not worked out yet): head straight there
 
-        while (next < corners.Count - 1 && Flat(corners[next] - from) < 0.35f)
+        // Passed a corner: on to the next, once it's a straight walk from here (not cutting a corner on the stairs into a ledge).
+        while (next < corners.Count - 1 && Flat(corners[next] - from) < 0.35f && NavGrid.NoLedge(from, corners[next + 1]))
         {
-            next++; // passed a corner: on to the next one
+            next++;
             closest = float.MaxValue;
         }
         float distance = Flat(corners[next] - from);
@@ -287,9 +320,9 @@ public class Route
         return next == corners.Count - 1 ? to : corners[next];
     }
 
-    void Plan(Tilemap ground, Vector3 from, Vector3 to, bool staff)
+    void Plan(Tilemap ground, Vector3 from, Vector3 to, bool staff, Visitor who)
     {
-        var result = NavGrid.FindPath(ground, from, to, staff, corners);
+        var result = NavGrid.FindPath(ground, from, to, staff, corners, who);
         if (result == NavGrid.Result.Busy) return; // too many searches this frame: try again next frame
         goal = to;
         planned = true;

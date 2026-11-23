@@ -40,10 +40,11 @@ public class StaffArea : MonoBehaviour
         return d.magnitude < watchRadius;
     }
 
-    // Can this person step from `from` to `to`? Only visitors are kept out; staff and the spirit go where they like.
+    // Can this person step from `from` to `to`? Only visitors are kept out; staff and the spirit go where they like, and
+    // so do riders on their way to get on (RideQueue.boardPoint is behind the wheel).
     public static bool Allows(Visitor v, Vector3 from, Vector3 to)
     {
-        if (v == null || v.brain != null) return true;
+        if (v == null || v.brain != null || v.Boarding) return true;
         foreach (var a in All)
         {
             if (!a.Contains(to) || a.Contains(from)) continue;

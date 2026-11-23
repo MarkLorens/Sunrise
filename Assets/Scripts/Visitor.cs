@@ -138,6 +138,10 @@ public class Visitor : MonoBehaviour
                 WalkTo(queue.SlotPosition(this));
                 break;
 
+            case State.Riding: // still on the way up to get on (Board); once on, nothing to do till the ride's over
+                if (Boarding && !atBoardingSpot && !WalkTo(boardingSpot)) atBoardingSpot = true;
+                break;
+
             case State.Stare:
             case State.Confused:
                 if (Time.time >= stateEndsAt) Idle();
@@ -278,9 +282,27 @@ public class Visitor : MonoBehaviour
         queue = null;
     }
 
+    // Their turn (RideQueue): up the platform to `spot` behind the wheel, where they get on (StartRide). Nobody can
+    // possess them on the way: they're as good as riding.
+    public bool Boarding { get; private set; }
+    public bool AtBoardingSpot => Boarding && atBoardingSpot;
+    Vector3 boardingSpot;
+    bool atBoardingSpot;
+
+    public void Board(Vector3 spot)
+    {
+        queue = null; // the queue already took us off the line
+        Group?.Leave(this);
+        SetState(State.Riding);
+        Boarding = true;
+        boardingSpot = spot;
+        atBoardingSpot = false;
+    }
+
     // Into a cabin (out of sight until the ride's over). Only visitors going about their day ride, never the spirit.
     public void StartRide()
     {
+        Boarding = false;
         queue = null; // the queue already took us off the line
         SetState(State.Riding);
         walker.move = Vector2.zero;
@@ -538,6 +560,7 @@ public class Visitor : MonoBehaviour
 
     void SetState(State s)
     {
+        if (s != State.Riding) Boarding = false; // scared off, sent off or worse on the way up: not getting on after all
         Current = s;
         walker.speed = s switch
         {
