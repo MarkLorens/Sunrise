@@ -768,11 +768,12 @@ public class GameHud : MonoBehaviour
         puzzleBanner = Figma.Picture(canvas, "Objective Completed", "Logo/Mission_cloud", 780.3f, 532.8f, 736.4f, 621.6f).rectTransform;
         puzzleGroup = puzzleBanner.gameObject.AddComponent<CanvasGroup>();
         puzzleGroup.alpha = 0f;
-        // The words over the cloud's body (x 120..1130, y 190..790 of its 1301 x 1098 picture), as the art writes them:
+        // The words over the cloud's body (x 120..1130, y 230..830 of its 1301 x 1098 picture: its middle, a touch
+        // below the picture's, where the cloud is fullest), as the art writes them:
         // yellow capitals in Atma, a thick dark line round them and a drop shadow.
         var words = Ui("Words", puzzleBanner);
-        words.anchorMin = new Vector2(120f / 1301f, (1098f - 790f) / 1098f);
-        words.anchorMax = new Vector2(1130f / 1301f, (1098f - 190f) / 1098f);
+        words.anchorMin = new Vector2(120f / 1301f, (1098f - 830f) / 1098f);
+        words.anchorMax = new Vector2(1130f / 1301f, (1098f - 230f) / 1098f);
         words.offsetMin = words.offsetMax = Vector2.zero;
         puzzleWords = words.gameObject.AddComponent<Text>();
         puzzleWords.font = ParkArt.TitleFont;

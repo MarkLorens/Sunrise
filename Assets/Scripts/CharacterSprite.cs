@@ -37,6 +37,18 @@ public class CharacterSprite : MonoBehaviour
     [HideInInspector] public bool panicFace, panicBody;
     // Rocking from side to side on the spot, as if walking (the mascot showing off in a pose).
     [HideInInspector] public bool dance;
+    // Asleep on their feet (the ride technician in his booth): slow deep breaths, the head lolling side to side, and now
+    // and then nodding right off and jerking back up.
+    [HideInInspector] public bool dozing;
+    // Squashed flat (the Ferris wheel rolled over them): slammed down, then lying flat on the ground like a paper cutout,
+    // a little wider, arms up, with a boing. Squash() starts it; for good.
+    public bool Flat { get; private set; }
+    // Toppled over (electrocuted: Visitor.Die zapped): falling stiff as a plank round their feet onto their side, a
+    // little bounce as they hit the ground, then lying there. FallOver() starts it; for good.
+    public bool Fallen { get; private set; }
+    float fallSince, fallSide;
+    float flatSince, flatTilt;
+    float nodAt = -1f; // when the next nod starts
     // True while they're walking (moving, visible, not held in a pose): Footsteps plays while this is on.
     public bool Stepping { get; private set; }
 
@@ -549,9 +561,109 @@ public class CharacterSprite : MonoBehaviour
             sy = Random.Range(0.85f, 1.15f);
             if (Random.value < 0.15f) facingLeft = !facingLeft;
         }
+        else if (dozing && !moving) Doze(ref lean, ref sx, ref sy);
+        if (Flat) Pancake(ref lean, ref sx, ref sy);
+        if (Fallen) Topple(ref lean);
         // Facing is a negative x scale, not flipX: the lit shader draws flipped asymmetric sprites washed out.
         float flip = facingLeft != drawnFacingLeft ? -1f : 1f;
         drawn.localScale = new Vector3(flip * sx, sy, 1f);
         drawn.localRotation = Quaternion.Euler(0f, 0f, lean); // the shadow's on the root: it stays flat on the ground
+        if (Flat) drawn.localRotation = Quaternion.Euler(flatTilt, 0f, 0f);
+    }
+
+    // Over they go: `quiet` (loading a save), already lying there.
+    public void FallOver(bool quiet = false)
+    {
+        Load();
+        Fallen = true;
+        fallSince = quiet ? -10f : Time.time;
+        fallSide = Random.value < 0.5f ? 1f : -1f;
+        dance = running = dozing = false;
+    }
+
+    // Slowly at first, then faster (a stiff body tipping), 90 degrees over FallTime; then a small bounce off the ground.
+    const float FallTime = 0.9f, BounceTime = 0.35f, BounceTilt = 9f;
+
+    void Topple(ref float lean)
+    {
+        float t = Time.time - fallSince;
+        float angle;
+        if (t < FallTime)
+        {
+            float k = t / FallTime;
+            angle = 90f * k * k;
+        }
+        else
+        {
+            float u = Mathf.Clamp01((t - FallTime) / BounceTime);
+            angle = 90f - BounceTilt * Mathf.Sin(u * Mathf.PI) * (1f - u * 0.5f);
+        }
+        lean = fallSide * angle;
+        // Turning round their feet would sink half of them under the ground: lifted by however far their side reaches
+        // down as they turn, so they lie on top of it.
+        float half = body.sprite != null ? body.sprite.bounds.extents.x * FlatWidthOnSide : 0f;
+        drawn.localPosition = new Vector3(0f, Mathf.Sin(angle * Mathf.Deg2Rad) * half, 0f);
+    }
+
+    const float FlatWidthOnSide = 0.8f; // the drawn body is narrower than its picture (see-through round it)
+
+    // Squashed flat: `quiet` (loading a save) skips the boing.
+    public void Squash(bool quiet = false)
+    {
+        Load();
+        Flat = true;
+        flatSince = quiet ? -10f : Time.time;
+        drawn.localPosition = new Vector3(0f, 0.02f / Mathf.Max(0.01f, transform.lossyScale.y), 0f); // just off the ground
+        pose = null;
+        panicBody = panicFace = true; // arms up, eyes wide: caught by surprise
+        dance = running = dozing = false;
+    }
+
+    // Slammed down in a blink (SlamTime) to a squat FlatHeight of their height and FlatWidth as wide, still standing
+    // (a cartoon squash), wobbling like jelly a moment before they settle.
+    const float SlamTime = 0.15f, WobbleTime = 0.6f, FlatWidth = 1.45f, FlatHeight = 0.32f;
+
+    void Pancake(ref float lean, ref float sx, ref float sy)
+    {
+        float t = Time.time - flatSince;
+        lean = 0f;
+        flatTilt = 0f; // still on their feet
+        if (t < SlamTime)
+        {
+            float k = t / SlamTime;
+            sy = Mathf.Lerp(1f, FlatHeight * 0.6f, k); // slammed a little past it...
+            sx = Mathf.Lerp(1f, FlatWidth, k);
+            return;
+        }
+        float w = Mathf.Clamp01((t - SlamTime) / WobbleTime);
+        float jelly = Mathf.Sin(w * Mathf.PI * 4f) * (1f - w) * 0.25f; // ...and boinging back up to it
+        sx = FlatWidth * (1f - jelly * 0.5f);
+        sy = FlatHeight * (1f + jelly);
+    }
+
+    // Breathing in (taller and a touch narrower) and out over about 3.5 seconds; a slow sway; and every 6 to 10 seconds a
+    // nod: drooping forward for a second and a half, then a quick jerk back upright.
+    const float BreathTime = 3.5f, Breath = 0.035f, Sway = 2.5f, NodTilt = 9f, NodDroop = 1.5f, NodSnap = 0.25f;
+
+    void Doze(ref float lean, ref float sx, ref float sy)
+    {
+        float t = Time.time;
+        float breath = Mathf.Sin(t * Mathf.PI * 2f / BreathTime);
+        sy *= 1f + breath * Breath;
+        sx *= 1f - breath * Breath * 0.4f;
+        lean += Mathf.Sin(t * 0.6f) * Sway;
+
+        if (nodAt < 0f) nodAt = t + Random.Range(3f, 6f);
+        float into = t - nodAt;
+        if (into >= NodDroop + NodSnap) nodAt = t + Random.Range(6f, 10f);
+        else if (into > 0f)
+        {
+            float k = into < NodDroop
+                ? Mathf.SmoothStep(0f, 1f, into / NodDroop)       // drooping off...
+                : 1f - (into - NodDroop) / NodSnap;               // ...and snapping back up
+            float forward = facingLeft ? 1f : -1f;                // tipping toward the way they face
+            lean += forward * NodTilt * k;
+            sy *= 1f - 0.03f * k;                                 // and sinking a little
+        }
     }
 }

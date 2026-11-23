@@ -32,6 +32,8 @@ public class PropaneTank : MonoBehaviour, IInteraction
 
     public bool Ready => level >= 1f && !spent;
     bool HotDogStand => burns == null;
+    const float StandScorchRadius = 4f;                           // the hot dog stand's pictures, round where it blows
+    static readonly string[] StandPictures = { "hot_dog_stand" };
 
     bool leaking, spent, thoughtBlown;
     float level, nextWisp;
@@ -133,18 +135,18 @@ public class PropaneTank : MonoBehaviour, IInteraction
         // The haze round the target, breathing a little.
         for (int i = 0; i < puffs.Length; i++)
         {
-            puffs[i].color = new Color(Gas.r, Gas.g, Gas.b, level * 0.22f);
+            puffs[i].color = new Color(Gas.r, Gas.g, Gas.b, level * 0.4f);
             puffs[i].transform.position = puffSpots[i] + new Vector3(Mathf.Sin(Time.time * 0.7f + i), Mathf.Sin(Time.time * 0.5f + i * 2f) * 0.3f, 0f) * 0.25f;
         }
 
         // Gas wisps drifting along every leg of its way: fan to fan, to the target or off to nowhere.
         if (Time.time < nextWisp) return;
-        nextWisp = Time.time + 0.3f;
+        nextWisp = Time.time + 0.15f;
         for (int i = 0; i + 1 < path.Count; i++)
         {
             Vector3 leg = path[i + 1] - path[i];
             leg.y = 0f;
-            var w = ParkArt.Make("Wisp", null, "Fx/puff", 0.5f, new Color(Gas.r, Gas.g, Gas.b, 0.45f), ParkArt.OverheadOrder);
+            var w = ParkArt.Make("Wisp", null, "Fx/puff", 0.9f, new Color(Gas.r, Gas.g, Gas.b, 0.8f), ParkArt.OverheadOrder);
             w.transform.position = path[i] + Vector3.up * 1.2f;
             var bit = w.gameObject.AddComponent<FxBit>();
             bit.drag = 0f;
@@ -178,7 +180,10 @@ public class PropaneTank : MonoBehaviour, IInteraction
         spent = true;
         foreach (var p in puffs) p.enabled = false;
         if (HotDogStand)
+        {
             foreach (var h in HotDogMan.All) h.Char();
+            Scorch.BurnNear(Center, StandScorchRadius, false, StandPictures); // the stand, burning
+        }
         StartCoroutine(Payoff());
     }
 
@@ -229,6 +234,9 @@ public class PropaneTank : MonoBehaviour, IInteraction
         leaking = Mischief.IsDone(leakTask);
         level = !spent && Mischief.IsDone(cloudTask) ? 1f : 0f;
         if (spent && HotDogStand)
+        {
             foreach (var h in HotDogMan.All) h.Char();
+            Scorch.BurnNear(Center, StandScorchRadius, true, StandPictures); // already burnt
+        }
     }
 }

@@ -19,10 +19,12 @@ public class FerrisWheel : MonoBehaviour
     public enum State { Running, Unpowered, Overdrive, Breaking, Rolling, Wrecked }
 
     public Transform wheel;
-    public Sprite cabinSprite;
-    public int cabinCount = 12;
-    public float cabinRadius = 3.4f; // where cabins hang from, in wheel units
-    public float wheelRadius = 3.5f; // outer rim, where the light bulbs go
+    // One cabin per arm: its picture (pivot at the knob it hangs from) and where on the wheel's picture that arm's bulb
+    // is, in wheel units from the hub with the wheel unturned. The two lists go round in the same order.
+    public Sprite[] cabinSprites;
+    public Vector2[] cabinMounts;
+    public float cabinDrop = 1.45f; // from a cabin's knob down to the bottom of its bowl, in wheel units
+    public float wheelRadius = 3.1f; // outer rim (what it rolls on), where the light bulbs go
     public float normalSpeed = 12f;  // degrees per second
     public float windDownTime = 5f;  // seconds to coast to a stop once the power's cut
     public Vector3 electricalBoxOffset = new(-3.3f, 0f, -0.6f);
@@ -55,6 +57,11 @@ public class FerrisWheel : MonoBehaviour
     public float rollSpeed = 6f;
     public float rollDistance = 22f;
     public Vector3 rollDirection = new(1f, 0f, -0.6f); // across the ground; it has to go mostly sideways to read as rolling
+    public int gawkers = 4;           // visitors who wander over to watch it spin flat out, right where it'll land
+    public int doomedShouts = 3;      // how many of those in its way cry out (GameText.WheelDoomed) as it tears loose
+
+    readonly List<Visitor> doomed = new();
+    Vector3 rollStart;
 
     public State Current { get; private set; }
     public bool Powered => Current != State.Unpowered;
@@ -87,12 +94,12 @@ public class FerrisWheel : MonoBehaviour
         box.gameObject.AddComponent<ZapFx>(); // live electrics, always buzzing
         box.wheel = this;
         var mat = wheel.GetComponent<SpriteRenderer>().sharedMaterial;
-        for (int i = 0; i < cabinCount; i++)
+        for (int i = 0; i < cabinMounts.Length; i++)
         {
             var go = new GameObject($"Cabin {i + 1}");
             go.transform.SetParent(transform, false);
             var sr = go.AddComponent<SpriteRenderer>();
-            sr.sprite = cabinSprite;
+            sr.sprite = cabinSprites[i % cabinSprites.Length];
             sr.sharedMaterial = mat;
             ParkArt.CastShadows(sr);
             cabins.Add(go.transform);
@@ -126,7 +133,7 @@ public class FerrisWheel : MonoBehaviour
     IEnumerator WobblyPayoff()
     {
         Possession.InputBlocked = true;
-        CameraRig.Spotlight(wheel, 999f, (wheelRadius + 1f) * Scale, payoffPullBack);
+        CameraRig.Spotlight(wheel, 999f, (wheelRadius + cabinDrop) * Scale, payoffPullBack); // down to the lowest cabin
         ScreamIn(GameText.CabinScreamsWobbly);
         yield return new WaitForSeconds(1.5f);
         Fx.Shake(0.15f, payoffTime - 1.5f);
@@ -150,7 +157,7 @@ public class FerrisWheel : MonoBehaviour
     IEnumerator Payoff()
     {
         Possession.InputBlocked = true;
-        CameraRig.Spotlight(wheel, 999f, (wheelRadius + 1f) * Scale, payoffPullBack);
+        CameraRig.Spotlight(wheel, 999f, (wheelRadius + cabinDrop) * Scale, payoffPullBack); // down to the lowest cabin
         shakeUntil = Time.time + payoffTime;
 
         ScreamIn(GameText.CabinScreams);
@@ -281,6 +288,7 @@ public class FerrisWheel : MonoBehaviour
         if (Current != State.Running) return;
         Set(State.Overdrive);
         StartCoroutine(MaxSpeedPayoff());
+        GatherGawkers();
     }
 
     void Set(State s)
@@ -297,7 +305,7 @@ public class FerrisWheel : MonoBehaviour
     IEnumerator MaxSpeedPayoff()
     {
         Possession.InputBlocked = true;
-        CameraRig.Spotlight(wheel, 999f, (wheelRadius + 1f) * Scale, payoffPullBack);
+        CameraRig.Spotlight(wheel, 999f, (wheelRadius + cabinDrop) * Scale, payoffPullBack); // down to the lowest cabin
         ScreamIn(GameText.CabinScreamsWobbly);
         while (Current != State.Wrecked) yield return null;
         yield return new WaitForSeconds(2f);
@@ -378,6 +386,7 @@ public class FerrisWheel : MonoBehaviour
                     Set(State.Breaking);
                     Fx.Shake(0.25f, breakDelay);
                     ClosedCaptions.Show(Captions.WheelBreaking);
+                    StartCoroutine(BraceDoomed());
                 }
                 break;
 
@@ -417,11 +426,10 @@ public class FerrisWheel : MonoBehaviour
     {
         if (Current < State.Rolling)
         {
-            // Hang upright from evenly spaced points on the spinning rim.
+            // Hang upright from the arms' bulbs as the wheel turns.
             for (int i = 0; i < cabins.Count; i++)
             {
-                float a = (angle + i * 360f / cabins.Count) * Mathf.Deg2Rad;
-                cabins[i].position = wheel.position + new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0) * cabinRadius * Scale + new Vector3(0, 0, -0.05f);
+                cabins[i].position = wheel.TransformPoint(cabinMounts[i]) + new Vector3(0, 0, -0.05f);
                 // Stuck cabins rock, each to its own rhythm, settling as the payoff ends.
                 float rock = Wobbly ? cabinShake : Mathf.Clamp01((shakeUntil - Time.time) / 1.5f) * cabinShake;
                 cabins[i].localRotation = Quaternion.Euler(0, 0, (Mathf.PerlinNoise(Time.time * 3f, i * 1.7f) * 2f - 1f) * rock);
@@ -432,7 +440,7 @@ public class FerrisWheel : MonoBehaviour
         // Flung cabins fall until they hit the ground.
         for (int i = 0; i < cabins.Count; i++)
         {
-            float landed = RaisedFloor.Height(cabins[i].position) + 0.9f * Scale; // a cabin hangs from its top
+            float landed = RaisedFloor.Height(cabins[i].position) + cabinDrop * Scale; // a cabin hangs from its knob
             if (cabins[i].position.y <= landed && cabinVelocity[i].y <= 0) continue;
             cabinVelocity[i] += Vector3.down * 15f * Time.deltaTime;
             Vector3 p = cabins[i].position + cabinVelocity[i] * Time.deltaTime;
@@ -489,6 +497,7 @@ public class FerrisWheel : MonoBehaviour
                 Fx.Shake(0.4f, 0.8f);
                 ClosedCaptions.Show(Captions.WheelWrecked);
                 Fx.Burst("Fx/puff", p, 30, new Color(0.7f, 0.65f, 0.6f), 6f, 1.2f, 1.2f);
+                SquashUnder(p, radius);
                 ParkChaos.Add(p, 12f, 9999f);
             }
         }
@@ -496,17 +505,118 @@ public class FerrisWheel : MonoBehaviour
     }
 
     // Anyone in the wheel's path, under the rim (it's edge-on to its direction of travel, so: a thin band across it).
+    // Visitors go flat as pancakes (Visitor.Squash); staff, and the body the spirit's in, just go down as before.
     static void Flatten(Vector3 center, Vector3 dir, float radius)
     {
         Vector3 side = new(-dir.z, 0f, dir.x);
-        foreach (var v in Visitor.All)
+        foreach (var v in Visitor.All.ToArray())
         {
             if (v.Current is Visitor.State.Down or Visitor.State.Riding || !v.Look.Visible) continue;
             Vector3 d = v.transform.position - center;
             d.y = 0f;
             if (Mathf.Abs(Vector3.Dot(d, dir)) > 0.8f || Mathf.Abs(Vector3.Dot(d, side)) > radius * 0.3f) continue;
-            v.KnockDown();
+            if (Squashable(v)) v.Squash();
+            else v.KnockDown();
             ClosedCaptions.Show(Captions.Flattened);
         }
+    }
+
+    // A visitor going about their day (not staff, not the body the spirit's in).
+    static bool Squashable(Visitor v) =>
+        v.brain == null && (Possession.Instance == null || Possession.Instance.Host != v) && v.Current != Visitor.State.Possessed;
+
+    // ---------------------------------------------------------------- the runaway wheel's victims (MaxSpeedPayoff)
+
+    // Where it'll come to rest, lying flat: rollDistance along from where it tears loose.
+    Vector3 RestPoint(Vector3 from) => from + new Vector3(rollDirection.x, 0f, rollDirection.z).normalized * rollDistance;
+
+    // As it spins up, a few visitors nearby wander over to watch, right where it'll end up. They stay put.
+    void GatherGawkers()
+    {
+        Vector3 rest = RestPoint(new Vector3(wheel.position.x, 0f, wheel.position.z));
+        float radius = wheelRadius * Scale;
+        var near = new List<Visitor>();
+        foreach (var v in Visitor.All)
+            if (Squashable(v) && v.Look.Visible && v.Current is Visitor.State.Idle or Visitor.State.Wander or Visitor.State.Stare)
+                near.Add(v);
+        near.Sort((a, b) => Flat(a.transform.position - rest).CompareTo(Flat(b.transform.position - rest)));
+        for (int i = 0; i < near.Count && doomed.Count < gawkers; i++)
+        {
+            var v = near[i];
+            if (Flat(v.transform.position - rest) > 18f) break;
+            var walker = v.GetComponent<GroundWalker>();
+            for (int tries = 0; tries < 8; tries++)
+            {
+                Vector2 r = Random.insideUnitCircle * radius * 0.6f;
+                Vector3 spot = rest + new Vector3(r.x, 0f, r.y);
+                // Ground to stand on, clear of props (the route there goes round whatever's in the way).
+                Vector3Int cell = walker.ground.WorldToCell(spot);
+                cell.z = 0;
+                if (!walker.ground.HasTile(cell) || GroundWalker.NearObstacle(spot, 0.35f)) continue;
+                v.SendTo(spot);
+                doomed.Add(v);
+                break;
+            }
+        }
+    }
+
+    static float Flat(Vector3 d) => new Vector2(d.x, d.z).magnitude;
+
+    // It tears loose: everyone in its way (on its path, or where it'll lie) freezes, staring at it, panic-faced, and a
+    // few cry out. Then it comes.
+    IEnumerator BraceDoomed()
+    {
+        rollStart = new Vector3(wheel.position.x, 0f, wheel.position.z);
+        Vector3 rest = RestPoint(rollStart);
+        Vector3 dir = new Vector3(rollDirection.x, 0f, rollDirection.z).normalized, side = new(-dir.z, 0f, dir.x);
+        float radius = wheelRadius * Scale;
+        foreach (var v in Visitor.All)
+        {
+            if (!Squashable(v) || !v.Look.Visible || v.Current is Visitor.State.Down or Visitor.State.Riding || doomed.Contains(v)) continue;
+            Vector3 d = v.transform.position - rollStart;
+            d.y = 0f;
+            float along = Vector3.Dot(d, dir), off = Mathf.Abs(Vector3.Dot(d, side));
+            bool onPath = along > -radius * 0.3f && along < rollDistance + radius && off <= radius * 0.3f + 0.5f;
+            if (onPath || Flat(v.transform.position - rest) <= radius) doomed.Add(v);
+        }
+        doomed.RemoveAll(v => v == null || v.Current is Visitor.State.Down or Visitor.State.Riding or Visitor.State.Possessed);
+        foreach (var v in doomed)
+        {
+            v.Hold(); // frozen to the spot
+            v.Look.panicFace = true;
+            v.Look.Face(wheel.position);
+        }
+        // A few cry out, one after another, each something different.
+        var lines = new List<string>(GameText.WheelDoomed);
+        var shouters = new List<Visitor>(doomed);
+        shouters.Sort((a, b) => Flat(a.transform.position - rollStart).CompareTo(Flat(b.transform.position - rollStart)));
+        for (int i = 0; i < shouters.Count && i < doomedShouts && lines.Count > 0; i++)
+        {
+            var v = shouters[i];
+            if (v.Current == Visitor.State.Down) continue;
+            int pick = Random.Range(0, lines.Count);
+            GameHud.Shout(v.transform, lines[pick], 2.4f);
+            lines.RemoveAt(pick);
+            yield return new WaitForSeconds(0.45f);
+        }
+    }
+
+    // Lying flat at last: anyone under it is squashed; whoever it missed comes to and runs.
+    void SquashUnder(Vector3 center, float radius)
+    {
+        foreach (var v in Visitor.All.ToArray())
+        {
+            if (!Squashable(v) || !v.Look.Visible || v.Current is Visitor.State.Down or Visitor.State.Riding) continue;
+            if (Flat(v.transform.position - center) > radius * 0.95f) continue;
+            v.Squash();
+            ClosedCaptions.Show(Captions.Flattened);
+        }
+        foreach (var v in doomed)
+        {
+            if (v == null || v.Current == Visitor.State.Down) continue;
+            v.Free();
+            v.Panic(center, 4f);
+        }
+        doomed.Clear();
     }
 }
