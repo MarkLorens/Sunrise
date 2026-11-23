@@ -170,6 +170,30 @@ public class VisitorSpawner : MonoBehaviour
         }
         MakeGroups(roaming);
         SpawnStaff();
+        StartCoroutine(FillStandLines(roaming));
+    }
+
+    // A few people already in the stands' lines when the park opens (startInStandLine each), so it looks busy from the
+    // start: visitors on their own, taken from where they were standing.
+    public Vector2Int startInStandLine = new(0, 2);
+
+    System.Collections.IEnumerator FillStandLines(List<Visitor> roaming)
+    {
+        yield return null; // every prop made in its own Start first (the lines keep clear of them: StandQueue)
+        foreach (var line in StandQueue.All) line.KeepAway();
+        var free = roaming.FindAll(v => v != null && v.Group == null && v.brain == null && v.Current is Visitor.State.Idle or Visitor.State.Wander);
+        foreach (var line in StandQueue.All)
+        {
+            int n = Random.Range(startInStandLine.x, startInStandLine.y + 1);
+            for (int i = 0; i < n && free.Count > 0; i++)
+            {
+                var v = free[Random.Range(0, free.Count)];
+                free.Remove(v);
+                if (!line.Join(v)) break;
+                v.EnterQueue(line);
+                v.transform.position = line.SlotPosition(v); // already standing in line
+            }
+        }
     }
 
     // Some of the roaming visitors came with friends: 2-4 of them, standing together, walking at the leader's pace.
@@ -265,6 +289,9 @@ public class VisitorSpawner : MonoBehaviour
                 float room = Mathf.Max(0f, Mathf.Min(slot.x - front.xMin, front.xMax - slot.x) - 0.45f); // their middle, off the posts
                 var seller = Staff<Vendor>("Ice Cream Seller", slot, iceCreamCharacter, v => { v.inside = true; v.paceHalfWidth = room; });
                 stalls.Add((seller, new Vector3(feet.x, closedSignLift, front.yMin - 0.05f))); // the sign hangs on the counter's front
+                // Its line, from just in front of the counter back toward the camera.
+                StandQueue.Make("Ice Cream Line", transform, new Vector3(slot.x, 0f, front.yMin - standLineGap),
+                    LineDirection(), slot, ground);
             }
             else if (s.name.StartsWith("balloon_stand"))
             {
@@ -272,9 +299,18 @@ public class VisitorSpawner : MonoBehaviour
                 var probe = new Vector3(feet.x - balloonSpot.x, 0f, feet.z + balloonSpot.z);
                 if (GroundWalker.NearObstacle(at, 0.35f) && !GroundWalker.NearObstacle(probe, 0.35f)) at = probe;
                 Staff<Vendor>("Balloon Seller", at, balloonCharacter, _ => { });
+                // Its line, in front of the seller.
+                StandQueue.Make("Balloon Line", transform, at + Vector3.back * (standLineGap + 0.4f), LineDirection(), at, ground);
             }
         }
     }
+
+    // The lines at the stands (StandQueue): from standLineGap in front of the counter, going back toward the camera and
+    // leaning a little to one side, every other stand the other way.
+    public float standLineGap = 0.6f;
+    int lines;
+
+    Vector3 LineDirection() => new(lines++ % 2 == 0 ? 0.2f : -0.2f, 0f, -1f);
 
     // The stand's back: the tile's cut, where the tile is, moved by iceCreamBackOffset and grown by iceCreamBackScale.
     void BackLayer(Tilemap map, Vector3Int cell, Sprite art)

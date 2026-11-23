@@ -5,8 +5,8 @@ using UnityEngine;
 // Values are fixed because they're saved in the scene (the stall's goods, the spawner's items).
 public enum VisitorItem { None = 0, Drink = 3, Keys = 4, WaterBottle = 5, Screwdriver = 6 }
 
-// A park visitor going about their day: wandering, buying drinks at the stall, lining up for the Ferris wheel,
-// carrying their things in their hand. They stop and stare at someone acting possessed, and scream and run when
+// A park visitor going about their day: wandering, buying drinks at the stall, lining up for the Ferris wheel or at
+// a stand (StandQueue), having their photo taken with the mascot (Mascot), carrying their things in their hand. They stop and stare at someone acting possessed, and scream and run when
 // something terrible happens nearby (ParkChaos). When the spirit leaves they stand around confused for a few seconds.
 // After an event they gawk at the scene from outside its police line (Aftermath); Reset Agents move them along.
 [RequireComponent(typeof(GroundWalker), typeof(CharacterSprite))]
@@ -29,6 +29,12 @@ public class Visitor : MonoBehaviour
     public float confusedTime = 3f;
     [Range(0, 1)] public float queueChance = 0.15f; // per stop, chance to go line up for a ride
     [Range(0, 1)] public float shopChance = 0.35f;  // per stop with empty hands, chance to go buy something
+    [Range(0, 1)] public float standChance = 0.25f; // per stop, chance to line up at a stand with room (StandQueue)
+    public float standRange = 25f;                   // how far off a stand they'll go to
+    public Vector2 standAgain = new(30f, 60f);       // seconds after being served before they'll line up again
+    [Range(0, 1)] public float photoChance = 0.15f; // per stop near the mascot, chance to go have a photo with him
+    public float photoRange = 16f;
+    public Vector2 photoAgain = new(90f, 150f);      // seconds before they'd want another
     public Color possessedTint = new(0.75f, 0.55f, 1f);
 
     // Places people like to hang around (benches, views). Empty = just roam.
@@ -67,7 +73,10 @@ public class Visitor : MonoBehaviour
 
     GroundWalker walker;
     Rigidbody rb;
-    RideQueue queue;
+    IVisitorLine queue;
+    float giveUpAt = -1f; // walking to their spot in a stand's line: past this they give up (they can't get there)
+    float nextStand, nextPhoto;
+    Mascot photoWith;     // heading over for a photo with him
     Vector3 target;
     Vector3? gawkAt; // heading to gawk at this scene (Aftermath)
     public Vector3 Target => target; // where they're walking to
@@ -149,12 +158,17 @@ public class Visitor : MonoBehaviour
                 if (!WalkTo(target))
                 {
                     TryShop();
-                    if (!Gawk()) Idle();
+                    if (!Photo() && !Gawk()) Idle();
                 }
                 else if (Time.time >= stateEndsAt) Idle();
                 break;
 
             case State.Queueing:
+                if (queue is StandQueue)
+                {
+                    StandInLine();
+                    break;
+                }
                 WalkTo(queue.SlotPosition(this));
                 break;
 
@@ -177,6 +191,7 @@ public class Visitor : MonoBehaviour
     public void Hold()
     {
         Group?.Leave(this); // a cutscene's taken them
+        LeaveQueue();
         scripted = true;
         scriptedSpot = null;
         Idle();
@@ -238,6 +253,8 @@ public class Visitor : MonoBehaviour
             EnterQueue(q);
             return;
         }
+        if (Group == null && Time.time >= nextStand && Random.value < standChance && JoinStand()) return;
+        if (Time.time >= nextPhoto && Random.value < photoChance && HeadToPhoto()) return;
         if (Held == null && Stall.All.Count > 0 && Random.value < shopChance)
         {
             var stall = Stall.All[Random.Range(0, Stall.All.Count)];
@@ -282,6 +299,7 @@ public class Visitor : MonoBehaviour
     bool Head(Vector3 spot)
     {
         gawkAt = null;
+        photoWith = null;
         if (!walker.IsWalkable(spot) || ParkChaos.Threat(spot, false, out _)) return false;
         target = spot;
         SetState(State.Wander);
@@ -307,16 +325,129 @@ public class Visitor : MonoBehaviour
     }
 
     // Called by the queue (or the spawner) once a spot in line is reserved.
-    public void EnterQueue(RideQueue q)
+    public void EnterQueue(IVisitorLine q)
     {
         queue = q;
+        giveUpAt = -1f;
         SetState(State.Queueing);
+    }
+
+    // ---------------------------------------------------------------- a stand's line (StandQueue)
+
+    // The nearest stand within standRange with room in its line: in it.
+    bool JoinStand()
+    {
+        StandQueue best = null;
+        float bestD = standRange;
+        foreach (var s in StandQueue.All)
+        {
+            float d = Distance(s);
+            if (d >= bestD || !s.HasRoom) continue;
+            best = s;
+            bestD = d;
+        }
+        if (best == null || !best.Join(this)) return false;
+        EnterQueue(best);
+        return true;
+    }
+
+    // To their spot, then facing the counter. Frightened (something terrible nearby), they bolt; if they can't get to
+    // their spot in good time (something in the way, a police line round the stand) they give up on it.
+    void StandInLine()
+    {
+        if (queue is StandQueue stand && !stand.Has(this))
+        {
+            queue = null; // the line got shorter (StandQueue.KeepAway): on with their day
+            Idle();
+            return;
+        }
+        if (ParkChaos.Threat(transform.position, false, out Vector3 horror))
+        {
+            Panic(horror, Random.Range(3f, 5f)); // out of the line
+            return;
+        }
+        Vector3 slot = queue.SlotPosition(this);
+        if (WalkTo(slot))
+        {
+            if (giveUpAt < 0f) giveUpAt = Time.time + Vector3.Distance(transform.position, slot) / wanderSpeed * 2f + 3f;
+            else if (Time.time > giveUpAt)
+            {
+                LeaveQueue();
+                nextStand = Time.time + Random.Range(standAgain.x, standAgain.y);
+                Idle();
+            }
+            return;
+        }
+        giveUpAt = -1f;
+        if (queue.Faces(out Vector3 counter)) Look.Face(counter);
+    }
+
+    // Served at the front of a stand's line (StandQueue): pleased, off they go.
+    public void Served()
+    {
+        queue = null;
+        giveUpAt = -1f;
+        nextStand = Time.time + Random.Range(standAgain.x, standAgain.y);
+        if (Current != State.Queueing) return;
+        Look.Cheer(0.5f);
+        PickTarget();
+    }
+
+    // ---------------------------------------------------------------- a photo with the mascot (Mascot)
+
+    // The mascot nearby, if he's free: over to stand beside him.
+    bool HeadToPhoto()
+    {
+        var m = Mascot.ForPhoto(transform.position, photoRange);
+        if (m == null || !m.Reserve(this, 30f)) return false; // he stops where he is to wait for them
+        if (!Head(m.PhotoSpot(transform.position)))
+        {
+            m.Release(this);
+            return false;
+        }
+        m.Reserve(this, Vector3.Distance(transform.position, target) / wanderSpeed * 2f + 4f);
+        photoWith = m;
+        nextPhoto = Time.time + Random.Range(photoAgain.x, photoAgain.y);
+        return true;
+    }
+
+    // Beside him: he strikes a pose, they throw their arms up, a flash, and that's the photo.
+    bool Photo()
+    {
+        var m = photoWith;
+        photoWith = null;
+        if (m == null || !m.ReservedFor(this)) return false;
+        SetState(State.Stare); // standing still (and not staring at anyone else meanwhile)
+        walker.move = Vector2.zero;
+        stateEndsAt = Time.time + 6f; // the longest it takes
+        Look.Face(m.transform.position);
+        StartCoroutine(TakePhoto(m));
+        return true;
+    }
+
+    IEnumerator TakePhoto(Mascot m)
+    {
+        m.Pose(this);
+        GameHud.Shout(transform, GameText.SayCheese, 1.4f, true);
+        for (float t = 0f; !m.Posing && t < 3f; t += Time.deltaTime)
+        {
+            if (Current != State.Stare || !m.Guarding) yield break; // something came up
+            yield return null;
+        }
+        if (Current != State.Stare || !m.Guarding) yield break;
+        Look.Face(m.transform.position);
+        Look.Cheer(1.2f);
+        Vector3 between = (transform.position + m.transform.position) * 0.5f + Vector3.up * 1.6f;
+        Fx.Burst("Fx/sparkle", between, 12, Color.white, 3.5f, 0.35f, 0.35f); // the camera's flash
+        yield return new WaitForSeconds(1.3f);
+        if (Current == State.Stare) stateEndsAt = Time.time; // done: on with their day
     }
 
     void LeaveQueue()
     {
         if (queue != null) queue.Leave(this);
         queue = null;
+        giveUpAt = -1f;
     }
 
     // Their turn (RideQueue): up the platform to `spot` behind the wheel, where they get on (StartRide). Nobody can
@@ -562,6 +693,30 @@ public class Visitor : MonoBehaviour
 
     // Flattened by something big.
     public void KnockDown() => Die();
+
+    // Squashed flat as a pancake (the Ferris wheel rolling over them): down for good like Die, but drawn flat
+    // (CharacterSprite.Squash), with a puff of dust and stars. quiet: loading a save, already lying there.
+    public void Squash(bool quiet = false)
+    {
+        Group?.Leave(this);
+        if (Current == State.Down) return;
+        if (brain != null) brain.enabled = false;
+        scripted = false;
+        scriptedSpot = null;
+        LeaveQueue();
+        DropHeld();
+        walker.readKeyboard = false;
+        walker.move = Vector2.zero;
+        Look.SetVisible(true);
+        SetState(State.Down);
+        Look.Squash(quiet);
+        if (quiet) return;
+        Fx.Burst("Fx/puff", transform.position + Vector3.up * 0.2f, 10, new Color(0.75f, 0.7f, 0.65f), 3f, 0.5f, 0.6f);
+        Fx.Burst("Fx/sparkle", transform.position + Vector3.up * 0.6f, 6, Fx.Gold, 2f, 0.25f, 0.8f); // seeing stars
+        ParkChaos.Add(transform.position, 9f, 30f, ParkChaos.Terrifying);
+    }
+
+    public bool Flat => Look.Flat;
 
     // ---------------------------------------------------------------- panic
 

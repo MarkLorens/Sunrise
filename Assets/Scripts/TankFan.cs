@@ -43,7 +43,6 @@ public class TankFan : MonoBehaviour, IInteraction
     BoxCollider box;
     float spin, frameClock;
     bool secondFrame;
-    Transform arrow;
     float nextGust;
     bool thoughtGuarded;
 
@@ -55,9 +54,6 @@ public class TankFan : MonoBehaviour, IInteraction
         art = ParkArt.Solid(transform, Picture(), Height, new Color(0.6f, 0.65f, 0.7f));
         box = art.GetComponent<BoxCollider>();
         blades = ParkArt.Lit(ParkArt.Make("Blades", art.transform, null, 1f, Color.white, art.sortingOrder + 1));
-        var a = ParkArt.Make("Facing", transform, "Markers/arrow", 0.9f, new Color(1f, 1f, 1f, 0.7f), ParkArt.DecalOrder + 2, true);
-        arrow = a.transform.parent;
-        arrow.localPosition = Vector3.up * 0.03f;
         Face();
     }
 
@@ -68,7 +64,7 @@ public class TankFan : MonoBehaviour, IInteraction
         _ => "Props/Fan/fan_side",
     };
 
-    // Its picture for the way it faces (the side's drawn blowing left); the arrow at its feet points the way it blows.
+    // Its picture for the way it faces (the side's drawn blowing left).
     void Face()
     {
         art.sprite = ParkArt.Get(Picture());
@@ -85,9 +81,6 @@ public class TankFan : MonoBehaviour, IInteraction
             box.size = new Vector3(b.size.x, b.size.y, 0.2f);
         }
         TurnBlades();
-        arrow.rotation = Quaternion.LookRotation(Wind); // the arrow sprite points up, which lies flat as away from the camera
-        arrow.localPosition = (Wind * 0.6f + Vector3.up * 0.03f) / own;
-        arrow.localScale = Vector3.one / own; // the arrow too
     }
 
     // Is `p` in this fan's stream: ahead of it, within `reach`, and no more than `lane` off to the side?

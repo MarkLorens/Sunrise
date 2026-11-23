@@ -31,6 +31,7 @@ public class RideOperator : MonoBehaviour
     {
         Set(State.AtFire);
         fire = spot;
+        look.Expression("surprised_2", 0f); // panicking at the fire, for good
         walker.speed = walkSpeed * 2f;
         look.running = true;
         if (!quiet) return;
