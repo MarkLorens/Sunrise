@@ -654,8 +654,11 @@ public class Visitor : MonoBehaviour
     // Frozen on the spot at once; with a twitch, they stand still for `wait`, jolt for `twitch` seconds, then drop.
     // zapped: electrocuted (DrinkingFountain): face and body panic at once (arms up while they jolt), and the face
     // stays that way once they're down.
+    public bool Zapped { get; private set; } // electrocuted: lying where they toppled (SaveGame keeps it)
+
     public void Die(float wait = 0f, float twitch = 0f, bool zapped = false)
     {
+        if (Current != State.Down) Zapped = zapped;
         Group?.Leave(this);
         if (Current == State.Down) return;
         if (brain != null) brain.enabled = false;
@@ -683,12 +686,44 @@ public class Visitor : MonoBehaviour
         Collapse();
     }
 
-    // Down, greyed out, and anyone nearby runs (ParkChaos sets them panicking).
+    // Down, greyed out, and anyone nearby runs (ParkChaos sets them panicking). Electrocuted, they're singed darker and
+    // topple over, smoking, the odd spark still crackling off them.
     void Collapse()
     {
-        Look.SetTint(new Color(0.6f, 0.6f, 0.65f));
+        Look.SetTint(Zapped ? new Color(0.5f, 0.47f, 0.47f) : new Color(0.6f, 0.6f, 0.65f));
         Look.pose = Look.fallDown;
+        if (Zapped)
+        {
+            Look.FallOver();
+            StartCoroutine(Smoulder());
+        }
         ParkChaos.Add(transform.position, 9f, 30f, ParkChaos.Terrifying);
+    }
+
+    // Wisps of smoke curling up off them, and a few last sparks, for a few seconds.
+    IEnumerator Smoulder()
+    {
+        for (float t = 0f; t < 5f; t += 0.25f)
+        {
+            Vector3 at = transform.position + Vector3.up * Random.Range(0.2f, 0.6f) + Vector3.back * 0.1f;
+            var r = ParkArt.Make("Smoke", null, "Fx/puff", Random.Range(0.35f, 0.6f), new Color(0.2f, 0.2f, 0.22f, 0.5f), ParkArt.OverheadOrder - 2);
+            r.transform.position = at;
+            var bit = r.gameObject.AddComponent<FxBit>();
+            bit.velocity = new Vector3(Random.Range(-0.15f, 0.15f), Random.Range(0.6f, 1f), 0f);
+            bit.life = Random.Range(1.2f, 2f);
+            if (t < 2.5f && Random.value < 0.35f)
+                Fx.Burst("Fx/sparkle", at, 3, new Color(0.7f, 0.85f, 1f), 2.5f, 0.15f, 0.3f);
+            yield return new WaitForSeconds(0.25f);
+        }
+    }
+
+    // Loading a save: electrocuted, already lying there.
+    public void LieZapped()
+    {
+        Zapped = true;
+        Look.panicBody = true;
+        Look.SetTint(new Color(0.5f, 0.47f, 0.47f));
+        Look.FallOver(true);
     }
 
     // Flattened by something big.

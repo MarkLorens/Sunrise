@@ -21,6 +21,7 @@ public static class SaveGame
         public string name;
         public Vector3 at;
         public bool flat; // squashed under the Ferris wheel (Visitor.Squash)
+        public bool zapped; // electrocuted, lying toppled over (Visitor.Die zapped)
     }
 
     [System.Serializable]
@@ -173,7 +174,7 @@ public static class SaveGame
             if (v.CarriedOff) data.gone.Add(v.name);
         foreach (var v in Visitor.All)
             if (v.Current == Visitor.State.Down)
-                data.dead.Add(new Body { name = v.name, at = v.transform.position, flat = v.Flat });
+                data.dead.Add(new Body { name = v.name, at = v.transform.position, flat = v.Flat, zapped = v.Zapped });
         File.WriteAllText(PathOf(Slot), JsonUtility.ToJson(data, true));
         AutoSave = false;
         if (screen != null) File.WriteAllBytes(PictureOf(Slot), RoundPicture(screen, 256).EncodeToPNG());
@@ -267,7 +268,11 @@ public static class SaveGame
             if (v == null) continue;
             Place(v, d.at);
             if (d.flat) v.Squash(true);
-            else v.Die();
+            else
+            {
+                v.Die();
+                if (d.zapped) v.LieZapped();
+            }
         }
         ParkChaos.Reset(); // nobody panics at bodies that have been lying there all along
 

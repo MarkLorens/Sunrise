@@ -43,6 +43,10 @@ public class CharacterSprite : MonoBehaviour
     // Squashed flat (the Ferris wheel rolled over them): slammed down, then lying flat on the ground like a paper cutout,
     // a little wider, arms up, with a boing. Squash() starts it; for good.
     public bool Flat { get; private set; }
+    // Toppled over (electrocuted: Visitor.Die zapped): falling stiff as a plank round their feet onto their side, a
+    // little bounce as they hit the ground, then lying there. FallOver() starts it; for good.
+    public bool Fallen { get; private set; }
+    float fallSince, fallSide;
     float flatSince, flatTilt;
     float nodAt = -1f; // when the next nod starts
     // True while they're walking (moving, visible, not held in a pose): Footsteps plays while this is on.
@@ -559,12 +563,49 @@ public class CharacterSprite : MonoBehaviour
         }
         else if (dozing && !moving) Doze(ref lean, ref sx, ref sy);
         if (Flat) Pancake(ref lean, ref sx, ref sy);
+        if (Fallen) Topple(ref lean);
         // Facing is a negative x scale, not flipX: the lit shader draws flipped asymmetric sprites washed out.
         float flip = facingLeft != drawnFacingLeft ? -1f : 1f;
         drawn.localScale = new Vector3(flip * sx, sy, 1f);
         drawn.localRotation = Quaternion.Euler(0f, 0f, lean); // the shadow's on the root: it stays flat on the ground
         if (Flat) drawn.localRotation = Quaternion.Euler(flatTilt, 0f, 0f);
     }
+
+    // Over they go: `quiet` (loading a save), already lying there.
+    public void FallOver(bool quiet = false)
+    {
+        Load();
+        Fallen = true;
+        fallSince = quiet ? -10f : Time.time;
+        fallSide = Random.value < 0.5f ? 1f : -1f;
+        dance = running = dozing = false;
+    }
+
+    // Slowly at first, then faster (a stiff body tipping), 90 degrees over FallTime; then a small bounce off the ground.
+    const float FallTime = 0.9f, BounceTime = 0.35f, BounceTilt = 9f;
+
+    void Topple(ref float lean)
+    {
+        float t = Time.time - fallSince;
+        float angle;
+        if (t < FallTime)
+        {
+            float k = t / FallTime;
+            angle = 90f * k * k;
+        }
+        else
+        {
+            float u = Mathf.Clamp01((t - FallTime) / BounceTime);
+            angle = 90f - BounceTilt * Mathf.Sin(u * Mathf.PI) * (1f - u * 0.5f);
+        }
+        lean = fallSide * angle;
+        // Turning round their feet would sink half of them under the ground: lifted by however far their side reaches
+        // down as they turn, so they lie on top of it.
+        float half = body.sprite != null ? body.sprite.bounds.extents.x * FlatWidthOnSide : 0f;
+        drawn.localPosition = new Vector3(0f, Mathf.Sin(angle * Mathf.Deg2Rad) * half, 0f);
+    }
+
+    const float FlatWidthOnSide = 0.8f; // the drawn body is narrower than its picture (see-through round it)
 
     // Squashed flat: `quiet` (loading a save) skips the boing.
     public void Squash(bool quiet = false)
