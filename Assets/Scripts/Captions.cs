@@ -35,6 +35,7 @@ public static class Captions
     public const string PowerOff = "[Power cuts out]";
     public const string WheelHum = "[Ferris wheel machinery hums]";  // while it runs, when you're near
     public const string CabinCreak = "[Cabins creaking]";             // stuck, or wobbly, when you're near
+    public const string WheelWobble = "[Wheel wobbles with springy boings]"; // running on the loosened hinge, when you're near
     public const string ControlPanel = "[Control panel sparks]";
     public const string HingeLoose = "[Hinge creaks loose]";
     public const string WheelBreaking = "[Wheel groans loudly]";
