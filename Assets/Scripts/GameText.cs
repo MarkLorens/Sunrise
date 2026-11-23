@@ -241,7 +241,7 @@ public static class GameText
     public const string ThinkFire = "Shoddy Construction, really. Now's my chance with the operator"; // after the fire payoff
     public const string ThinkBooth = "Nice fingers. Don't mind if I do.";                             // scanning as the operator
     public const string ThinkMaxSpeed = "Faster... FASTER!";                                          // maxing the wheel
-    public const string ThinkRolled = "Fare-thee-wheel... Hehehe";                                    // after the wheel's rolled
+    public const string ThinkRolled = "Fare-thee-wheel. Hehehe…";                                     // the last word, after the wheel's rolled (FerrisWheel)
 
     // Out loud
     public const string MascotGuard = "*angry mascot noises* (Don't touch the fan!)";

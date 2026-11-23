@@ -68,17 +68,36 @@ public class VisitorSpawner : MonoBehaviour
     // Seconds between the announcer's PA announcements (GameText.Announcements): the first while the park's calm,
     // the second once everything's gone wrong (Unease), in between on the way.
     public Vector2 announceEvery = new(60f, 20f);
+    // The finale (once the locker room's burned): the ice cream sellers are gone and their stands closed, a sign
+    // (Props/toilet_sign, "CLOSED") this tall hung this high on each counter.
+    public float closedSignHeight = 0.8f, closedSignLift = 1.1f;
 
     const string VisitorName = "Visitor";
     float nextGossip, nextAnnouncement;
     readonly List<string> heard = new();
     Visitor announcer;
+    readonly List<(Visitor seller, Vector3 signAt)> stalls = new();
+    bool stallsClosed;
     string lastAnnouncement;
 
     void Update()
     {
+        if (!stallsClosed && Mischief.IsDone(Mischief.Task.LockerFire)) CloseStalls();
         Announce();
         Gossip();
+    }
+
+    // The finale: the sellers have fled their stands (the hot dog man is going nowhere: he burned in his) and a CLOSED
+    // sign hangs on each. Worked out from the locker fire, so a loaded game is the same.
+    void CloseStalls()
+    {
+        stallsClosed = true;
+        foreach (var (seller, signAt) in stalls)
+        {
+            if (seller != null) seller.gameObject.SetActive(false);
+            var sign = ParkArt.Lit(ParkArt.Make("Closed Sign", null, "Props/toilet_sign", closedSignHeight, Color.white));
+            sign.transform.position = signAt;
+        }
     }
 
     // After an event, the announcer at the information booth speaks up about it now and then: more often the more
@@ -244,7 +263,8 @@ public class VisitorSpawner : MonoBehaviour
                 GroundWalker.Block("Ice Cream Stand Block", Rect.MinMaxRect(front.xMin, front.yMin, front.xMax, feet.z + iceCreamBackOffset.z + 0.1f));
                 Vector3 slot = feet + iceCreamSlot;
                 float room = Mathf.Max(0f, Mathf.Min(slot.x - front.xMin, front.xMax - slot.x) - 0.45f); // their middle, off the posts
-                Staff<Vendor>("Ice Cream Seller", slot, iceCreamCharacter, v => { v.inside = true; v.paceHalfWidth = room; });
+                var seller = Staff<Vendor>("Ice Cream Seller", slot, iceCreamCharacter, v => { v.inside = true; v.paceHalfWidth = room; });
+                stalls.Add((seller, new Vector3(feet.x, closedSignLift, front.yMin - 0.05f))); // the sign hangs on the counter's front
             }
             else if (s.name.StartsWith("balloon_stand"))
             {

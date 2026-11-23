@@ -96,8 +96,21 @@ public class Visitor : MonoBehaviour
         if (brain != null && Current != State.Possessed) return;
         if (scripted && Current != State.Possessed)
         {
-            if (scriptedSpot.HasValue && !WalkTo(scriptedSpot.Value)) scriptedSpot = null; // there
+            if (scriptedSpot.HasValue && !WalkTo(scriptedSpot.Value))
+            {
+                scriptedSpot = null; // there
+                if (fleeing) gameObject.SetActive(false); // out of the park (Flee)
+            }
             if (!scriptedSpot.HasValue) walker.move = Vector2.zero;
+            return;
+        }
+
+        // The park's gone mad (Unease.Mayhem): nobody's calm any more, not even in the queue. Running nowhere in
+        // particular, turning this way and that (RunAway), and off again as soon as they stop.
+        if (brain == null && Current is State.Idle or State.Wander or State.Stare or State.Confused or State.Queueing && Unease.Mayhem)
+        {
+            Vector2 r = Random.insideUnitCircle.normalized * 3f;
+            Panic(transform.position + new Vector3(r.x, 0f, r.y), Random.Range(2f, 4f));
             return;
         }
 
@@ -177,6 +190,23 @@ public class Visitor : MonoBehaviour
         scripted = true;
         scriptedSpot = spot;
         SetState(run ? State.Panic : State.Wander);
+    }
+
+    // The finale (FerrisWheel): drop everything, staff included, and run for `exit`, gone once there.
+    bool fleeing;
+
+    public void Flee(Vector3 exit)
+    {
+        if (Current is State.Down or State.Possessed || !gameObject.activeInHierarchy || !Look.Visible) return; // not the mascot gone home
+        if (brain != null) // a worker's job no longer matters
+        {
+            brain.enabled = false;
+            brain = null;
+        }
+        walker.ignoreObstacles = false; // out from behind any counter like everyone else
+        StopProtesting();
+        fleeing = true;
+        SendTo(exit, true);
     }
 
     public void Free()

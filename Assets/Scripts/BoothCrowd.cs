@@ -29,6 +29,12 @@ public class BoothCrowd : MonoBehaviour
         if (booth == null) return;
         float unease = Unease.Level;
         if (unease < startAt) return;
+        if (Unease.Mayhem) // past complaining: everyone's running (Visitor)
+        {
+            foreach (var m in crowd) if (m.who != null) m.who.StopProtesting();
+            crowd.Clear();
+            return;
+        }
 
         crowd.RemoveAll(m => m.who == null || m.who.CarriedOff || m.who.Current is Visitor.State.Down or Visitor.State.Riding
                              || !m.who.AtProtest && Time.time - m.since > giveUpAfter && Stop(m.who));

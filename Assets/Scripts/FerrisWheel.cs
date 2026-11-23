@@ -33,6 +33,18 @@ public class FerrisWheel : MonoBehaviour
     public RideQueue queue;
     public float payoffTime = 6f;     // the camera stays on the wheel this long once the power's cut
     public float payoffPullBack = 8f;  // how much further back the camera sits to fit the whole wheel
+    [Header("Finale (max speed)")]
+    public Transform parkEntrance;          // where everyone runs to once the wheel's rolled; the camera goes to look
+    public float entrancePullBack = 3f;     // how far back the camera sits there, to take in the stampede
+    public float glideToEntrance = 7f;      // seconds drifting over from the wreck (past the closed stalls)
+    public float watchExodus = 5f;          // seconds watching them run out
+    public float glideHome = 3f;            // seconds back to the player
+    public float finaleZoom = 0.5f;         // how far in the camera zooms on the player at the end (CameraRig.Zoom)
+    public float irisCloseTime = 1.5f;      // seconds for the black to close in
+    [Range(0.01f, 1f)] public float irisSoftness = 0.35f; // how soft the edge of the black is
+    public float finaleHold = 5f;           // seconds on the player, gloating (their last word's up meanwhile)
+    public float irisShrinkTime = 0.5f;     // then seconds for the circle to shrink away to black
+    public float blackHold = 0.5f;          // and seconds of black before the main menu
     public int screamingCabins = 4;   // cabins shouting in turns (GameText.CabinScreams, or CabinScreamsWobbly) in a payoff
     public float cabinShake = 4f;     // degrees the stuck cabins rock
     public float wobble = 0.08f;      // how far the wheel lurches side to side once the hinge is loose (wheel units)
@@ -181,8 +193,15 @@ public class FerrisWheel : MonoBehaviour
             string line = lines[Random.Range(0, lines.Length)];
             while (shouting.Contains(line) && shouting.Count < lines.Length) line = lines[Random.Range(0, lines.Length)];
             shouting.Add(line); // nobody else picks it while it's up
-            GameHud.Shout(cabin, line, show);
+            // Where the cabin is as the scream starts, held there: a bubble riding a cabin whipping round a wheel at
+            // full tilt (lurching, rocking, shaking loose) can't be read. Shout puts it 2 up from a bare marker.
+            var r = cabin.GetComponentInChildren<SpriteRenderer>();
+            Bounds b = r != null ? r.bounds : new Bounds(cabin.position, Vector3.zero);
+            var at = new GameObject("Scream").transform;
+            at.position = new Vector3(b.center.x, b.max.y - 2f, b.center.z);
+            GameHud.Shout(at, line, show);
             yield return new WaitForSeconds(show);
+            Destroy(at.gameObject);
             shouting.Remove(line);
             yield return new WaitForSeconds(Random.Range(0.2f, 0.9f));
         }
@@ -270,7 +289,11 @@ public class FerrisWheel : MonoBehaviour
         stateTime = 0f;
     }
 
-    // The camera stays on the wheel the whole way: spinning up, tearing off, rolling, toppling. Then back to the player.
+    // The finale, and the end of the game for now. The camera stays on the wheel the whole way: spinning up, tearing off,
+    // rolling, toppling. Then everyone still standing, staff and all, runs for the park's entrance (Visitor.Flee) while
+    // the camera drifts over there past the closed stalls and the stampede, watches them go, and comes back to the
+    // player: zoomed in, the screen closing to black round them like an old cartoon's iris, the spirit's last word.
+    // Then the main menu.
     IEnumerator MaxSpeedPayoff()
     {
         Possession.InputBlocked = true;
@@ -278,12 +301,66 @@ public class FerrisWheel : MonoBehaviour
         ScreamIn(GameText.CabinScreamsWobbly);
         while (Current != State.Wrecked) yield return null;
         yield return new WaitForSeconds(2f);
-        CameraRig.EndSpotlight();
-        yield return new WaitForSeconds(1f); // the camera easing back
-        Possession.InputBlocked = false;
         Mischief.Complete(Mischief.Task.WheelRolled);
         Aftermath.Add(new Vector3(wheel.position.x, 0f, wheel.position.z), wheelRadius * Scale + 1f, 9999f);
+
+        GameHud.HideObjectives = true; // the rest is the ending: no objectives or prompts over it
+        Vector3 exit = parkEntrance != null ? parkEntrance.position : wheel.position;
+        foreach (var v in new List<Visitor>(Visitor.All)) v.Flee(exit);
+
+        var shot = new GameObject("Finale Shot").transform;
+        shot.position = wheel.position;
+        float pull = payoffPullBack;
+        IEnumerator Glide(System.Func<Vector3> to, float toPull, float seconds)
+        {
+            Vector3 from = shot.position;
+            float fromPull = pull;
+            for (float t = 0f; t < seconds; t += Time.deltaTime)
+            {
+                float k = Mathf.SmoothStep(0f, 1f, t / seconds);
+                shot.position = Vector3.Lerp(from, to(), k);
+                pull = Mathf.Lerp(fromPull, toPull, k);
+                CameraRig.Spotlight(shot, 999f, 1f, pull);
+                yield return null;
+            }
+        }
+        var spirit = Possession.Instance;
+        yield return Glide(() => exit, entrancePullBack, glideToEntrance);
+        yield return new WaitForSeconds(watchExodus);
+        yield return Glide(() => spirit.Focus.position, 0f, glideHome);
+        CameraRig.EndSpotlight();
+        Destroy(shot.gameObject);
+
+        // The iris: zoomed right in, black closing in round the player while they gloat.
+        CameraRig.Zoom(finaleZoom);
+        var profile = ScriptableObject.CreateInstance<UnityEngine.Rendering.VolumeProfile>();
+        var iris = profile.Add<UnityEngine.Rendering.Universal.Vignette>();
+        iris.color.Override(Color.black);
+        iris.intensity.Override(1f);
+        iris.smoothness.Override(irisSoftness);
+        iris.rounded.Override(true);
+        var volume = new GameObject("Finale Iris").AddComponent<UnityEngine.Rendering.Volume>();
+        volume.isGlobal = true;
+        volume.priority = 40; // over the night's own vignette (NightLighting)
+        volume.sharedProfile = profile;
+        volume.weight = 0f;
+        var dark = profile.Add<UnityEngine.Rendering.Universal.ColorAdjustments>(); // for the very last of the light
+        dark.colorFilter.Override(Color.white);
+        var cam = Camera.main;
         GameHud.Think(GameHud.ThoughtPriority.Critical, GameText.ThinkRolled);
+        for (float t = 0f; t < finaleHold + irisShrinkTime; t += Time.deltaTime)
+        {
+            if (cam != null) iris.center.Override((Vector2)cam.WorldToViewportPoint(spirit.Focus.position + Vector3.up));
+            volume.weight = Mathf.Clamp01(t / irisCloseTime);
+            // Their gloat said, the circle shrinks away to nothing: its edge widening into the middle while what's
+            // left of the picture fades out, black by the end.
+            float shut = Mathf.Clamp01((t - finaleHold) / irisShrinkTime);
+            iris.smoothness.Override(Mathf.Lerp(irisSoftness, 1f, shut));
+            dark.colorFilter.Override(Color.Lerp(Color.white, Color.black, shut * shut));
+            yield return null;
+        }
+        yield return new WaitForSeconds(blackHold);
+        LoadingScreen.Load(0); // the main menu, first in Build Settings (as from the pause menu)
     }
 
     void Update()
