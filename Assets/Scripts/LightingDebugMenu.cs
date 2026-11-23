@@ -159,6 +159,7 @@ public class LightingDebugMenu : MonoBehaviour
         else
         {
             BuildMoon(night);
+            BuildGlow(night);
             BuildLamps(night);
         }
 
@@ -180,6 +181,13 @@ public class LightingDebugMenu : MonoBehaviour
         Heading("Moon");
         ColorBlock("Color", () => night.moonColor, c => night.moonColor = c);
         SliderRow("Intensity", night.moonIntensity, 0f, 3f, v => night.moonIntensity = v);
+    }
+
+    void BuildGlow(NightLighting night)
+    {
+        Gap(10f);
+        Heading("Glow");
+        SliderRow("Softness", night.softness, 0f, 1f, v => night.softness = v);
     }
 
     void BuildLamps(NightLighting night)
@@ -586,6 +594,7 @@ public class LightingDebugMenu : MonoBehaviour
         s.AppendLine("Night lighting values. Paste these into NightLighting as the new defaults.");
         s.Append("moonColor = ").Append(Col(night.moonColor)).AppendLine(";");
         Line(s, "moonIntensity", night.moonIntensity);
+        Line(s, "softness", night.softness);
         s.Append("lampColors = new[] { ");
         var colors = night.lampColors;
         if (colors != null)

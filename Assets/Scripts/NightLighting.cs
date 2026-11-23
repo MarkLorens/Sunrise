@@ -34,6 +34,7 @@ public class NightLighting : MonoBehaviour
     [Range(-100, 100)] public float saturation = -20f;
     public Color shadowTint = new(1f, 0.92f, 1.12f); // pushes the darkest tones purple
     public float bloom = 0.8f;
+    [Range(0, 1)] public float softness = 0.7f; // how far a bright light bleeds. 0 stays on the bulb, 1 is a wide haze
     [Range(0, 1)] public float vignette = 0.35f;
 
     [Header("Park lights")]
@@ -353,7 +354,7 @@ public class NightLighting : MonoBehaviour
         tones.shadows.Override(new Vector4(shadowTint.r, shadowTint.g, shadowTint.b, 0f));
         glow.threshold.Override(0.9f);
         glow.intensity.Override(bloom);
-        glow.scatter.Override(0.7f);
+        glow.scatter.Override(softness);
         edges.intensity.Override(vignette);
         edges.smoothness.Override(0.45f);
         edges.color.Override(new Color(0.03f, 0.01f, 0.08f));
