@@ -91,7 +91,6 @@ public static class GameText
     // ---------------------------------------------------------------- refusals: why K didn't work
 
     // Possessing someone
-    public static string CantBePossessed(string who) => $"{who} can't be possessed";
     public static string StillShaken(string who, int s) => $"{who} is still shaken ({s}s)";
     public static string TooWeak(int s) => $"Too weak to possess anyone ({s}s)";
 

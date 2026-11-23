@@ -127,13 +127,13 @@ public class Possession : MonoBehaviour
             if (v.Current is Visitor.State.Down or Visitor.State.Riding || !v.Look.Visible) continue;
             var mascot = v.brain as Mascot;
             if (mascot != null && !mascot.Teasable) continue; // he's said his piece
+            if (mascot == null && !v.possessable) continue; // inside a stall or post: too far away to reach
             float d = Flat(v.transform.position - transform.position).magnitude;
             if (d > best) continue;
             best = d;
             Candidate = v.transform;
             CandidateName = v.name;
             CandidateBlocked = mascot != null ? null // looks possessable; he just won't have it (Mascot.Tease)
-                : !v.CanBePossessed ? GameText.CantBePossessed(v.name)
                 : IsLocked(v, out float left) ? GameText.StillShaken(v.name, Mathf.CeilToInt(left))
                 : CooldownLeft > 0f ? GameText.TooWeak(Mathf.CeilToInt(CooldownLeft))
                 : null;

@@ -82,10 +82,13 @@ public static class Settings
         set => PlayerPrefs.SetInt("captions", value ? 1 : 0);
     }
 
-    public static bool DepthOfField
+    // How far behind the player the blur starts, 0 (just behind them) to 1 (CameraRig.blurStartFarthest, as good as
+    // none). The default is the look the game always had (2 units behind, of 20).
+    public const float DefaultDepthOfField = 0.1f;
+    public static float DepthOfField
     {
-        get => PlayerPrefs.GetInt("dof", 1) == 1;
-        set => PlayerPrefs.SetInt("dof", value ? 1 : 0);
+        get => PlayerPrefs.GetFloat("dofRange", DefaultDepthOfField);
+        set => PlayerPrefs.SetFloat("dofRange", Mathf.Clamp01(value));
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]

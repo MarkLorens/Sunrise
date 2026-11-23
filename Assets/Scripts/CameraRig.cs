@@ -42,10 +42,12 @@ public class CameraRig : MonoBehaviour
     // (SeeThrough.cs) opens up. Blurred too (the old Bokeh mode), its blur spread over the hole and filled it with
     // a frosted grey disc.
     public bool depthOfField = true;
-    [Tooltip("World units behind the player where the blur starts.")]
-    public float blurStart = 2f;
-    [Tooltip("World units behind the player where the blur is full.")]
-    public float blurEnd = 12f;
+    [Tooltip("World units behind the player where the blur starts with Depth of Field (Options) all the way down.")]
+    public float blurStartNearest = 0f;
+    [Tooltip("World units behind the player where the blur starts with Depth of Field all the way up.")]
+    public float blurStartFarthest = 20f;
+    [Tooltip("World units past the start where the blur is full.")]
+    public float blurSpan = 10f;
     [Range(0.5f, 1.5f), Tooltip("How strong the full blur is.")]
     public float blurRadius = 1f;
 
@@ -298,13 +300,14 @@ public class CameraRig : MonoBehaviour
     // Focus on the player (or whatever's spotlit) along the view axis.
     void Focus()
     {
-        dof.active = depthOfField && Settings.DepthOfField && target != null;
+        dof.active = depthOfField && target != null;
         if (!dof.active) return;
         var cam = transform; // the brain places the main camera
         var on = spot != null ? spot : target;
         float focus = Mathf.Max(0.5f, Vector3.Dot(on.position - cam.position, cam.forward));
-        dof.gaussianStart.Override(focus + blurStart);
-        dof.gaussianEnd.Override(focus + Mathf.Max(blurEnd, blurStart + 0.1f));
+        float start = focus + Mathf.Lerp(blurStartNearest, blurStartFarthest, Settings.DepthOfField);
+        dof.gaussianStart.Override(start);
+        dof.gaussianEnd.Override(start + Mathf.Max(blurSpan, 0.1f));
         dof.gaussianMaxRadius.Override(blurRadius);
     }
 
