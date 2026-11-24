@@ -200,11 +200,12 @@ public class SettingsMenu : MonoBehaviour
         PillRow(0, "Window Mode", new[] { "Windowed", "Fullscreen" }, () => Settings.Fullscreen ? 1 : 0, i => Settings.Fullscreen = i == 1);
         PillRow(1, "Graphic", new[] { "Low", "Medium", "High" }, () => (int)Settings.Graphics, i => Settings.Graphics = (Settings.Quality)i);
         PillRow(2, "Screen Shake", new[] { "Full", "Half", "Off" }, () => 2 - Settings.Shake, i => Settings.Shake = 2 - i);
-        ArrowRow(3, 152f, "Resolution", 574f, 786.4f, 679.5f, () => $"{Settings.CurrentResolution.x} x {Settings.CurrentResolution.y}",
+        ArrowRow(3, 152f, "Moody Lighting", 574f, 786.4f, 679.5f, () => Settings.MoodyLighting ? "ON" : "OFF", _ => Settings.MoodyLighting = !Settings.MoodyLighting);
+        ArrowRow(4, 152f, "Resolution", 574f, 786.4f, 679.5f, () => $"{Settings.CurrentResolution.x} x {Settings.CurrentResolution.y}",
             d => Settings.Resolution = Settings.StepResolution(d));
-        SliderRow(4, "DoF Range", () => Mathf.Round(Settings.DepthOfField * 100f), v => Settings.DepthOfField = v / 100f, 152f, -130f); // how far back the blur starts; its bar starts where the arrows do
-        ArrowRow(5, 152f, "Vertical Sync", 574f, 786.4f, 679.5f, () => Settings.VSync ? "ON" : "OFF", _ => Settings.VSync = !Settings.VSync);
-        ArrowRow(6, 152f, "Anti-Aliasing", 574f, 786.4f, 679.5f, () => Settings.AntiAliasing ? "ON" : "OFF", _ => Settings.AntiAliasing = !Settings.AntiAliasing);
+        SliderRow(5, "DoF Range", () => Mathf.Round(Settings.DepthOfField * 100f), v => Settings.DepthOfField = v / 100f, 152f, -130f); // how far back the blur starts; its bar starts where the arrows do
+        ArrowRow(6, 152f, "Vertical Sync", 574f, 786.4f, 679.5f, () => Settings.VSync ? "ON" : "OFF", _ => Settings.VSync = !Settings.VSync);
+        ArrowRow(7, 152f, "Anti-Aliasing", 574f, 786.4f, 679.5f, () => Settings.AntiAliasing ? "ON" : "OFF", _ => Settings.AntiAliasing = !Settings.AntiAliasing);
     }
 
     void Audio()
@@ -559,7 +560,7 @@ public class SettingsMenu : MonoBehaviour
     // Everything Options changes: to tell whether anything's changed since it was kept, and to put it back.
     class State
     {
-        public bool fullscreen, captions, vsync, antiAliasing;
+        public bool fullscreen, captions, vsync, antiAliasing, moodyLighting;
         public int quality, shake;
         public float volume, music, sfx, dof;
         public Vector2Int resolution;
@@ -572,6 +573,7 @@ public class SettingsMenu : MonoBehaviour
             captions = Settings.ClosedCaptions,
             vsync = Settings.VSync,
             antiAliasing = Settings.AntiAliasing,
+            moodyLighting = Settings.MoodyLighting,
             quality = (int)Settings.Graphics,
             shake = Settings.Shake,
             music = Settings.MusicVolume,
@@ -589,6 +591,7 @@ public class SettingsMenu : MonoBehaviour
             captions = false,
             vsync = true,
             antiAliasing = true,
+            moodyLighting = false,
             quality = (int)Settings.Quality.High,
             shake = 2,
             music = 1f,
@@ -600,7 +603,7 @@ public class SettingsMenu : MonoBehaviour
 
         public bool Same(State o) =>
             fullscreen == o.fullscreen && Mathf.Approximately(dof, o.dof) && captions == o.captions && vsync == o.vsync &&
-            antiAliasing == o.antiAliasing && quality == o.quality && shake == o.shake &&
+            antiAliasing == o.antiAliasing && moodyLighting == o.moodyLighting && quality == o.quality && shake == o.shake &&
             Mathf.Approximately(music, o.music) && Mathf.Approximately(sfx, o.sfx) && Mathf.Approximately(volume, o.volume) && resolution == o.resolution &&
             System.Linq.Enumerable.SequenceEqual(keys, o.keys);
 
@@ -614,6 +617,7 @@ public class SettingsMenu : MonoBehaviour
             if (now.captions != captions) Settings.ClosedCaptions = captions;
             if (now.quality != quality) Settings.Graphics = (Settings.Quality)quality;
             if (now.shake != shake) Settings.Shake = shake;
+            if (now.moodyLighting != moodyLighting) Settings.MoodyLighting = moodyLighting;
             if (!Mathf.Approximately(now.volume, volume)) Settings.Volume = volume;
             if (now.vsync != vsync) Settings.VSync = vsync;
             if (now.antiAliasing != antiAliasing) Settings.AntiAliasing = antiAliasing;
