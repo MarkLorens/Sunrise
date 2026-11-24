@@ -43,6 +43,10 @@ public class SettingsMenu : MonoBehaviour
     RectTransform canvas, page;
     int tab;
     readonly List<Button> tabButtons = new();
+    // The open tab while you're on the tabs (up from the first row): yellow (Tab_selected), its words blue.
+    Image openTabPicked;
+    readonly List<Text> openTabWords = new();
+    static readonly Color TabBlue = new Color32(55, 55, 138, 255); // Tab_Active's blue
     readonly List<Row> rows = new();
     ScrollRect scroll;
     int openedFrame, order, confirmClosedFrame = -1;
@@ -90,6 +94,9 @@ public class SettingsMenu : MonoBehaviour
         fit.aspectRatio = 2268f / 1479f;
         Figma.Words(canvas, "OPTIONS", 304.5f, 111.5f, Figma.Type.AtmaPage, Color.white, ParkArt.TitleFont);
         ShowTab(0);
+        // Opened on the tabs: General picked (yellow, its words blue); down reaches the first row.
+        MainMenu.Select(tabButtons[^1]);
+        Refresh();
     }
 
     // ---------------------------------------------------------------- tabs
@@ -101,6 +108,7 @@ public class SettingsMenu : MonoBehaviour
         page = MainMenu.Ui("Tab " + t, canvas);
         MainMenu.Stretch(page);
         tabButtons.Clear();
+        openTabWords.Clear();
         rows.Clear();
         scroll = null;
         firstControl = cards[0] = cards[1] = null;
@@ -125,11 +133,18 @@ public class SettingsMenu : MonoBehaviour
                 art.gameObject.AddComponent<MainMenu.HoverSelects>().quiet = true;
                 art.gameObject.AddComponent<TabKeys>().menu = this;
                 tabButtons.Add(b);
+                if (on)
+                {
+                    // Same width; its picture is taller, the drawn tab 12 px further down it, so its top lines up.
+                    openTabPicked = Figma.Picture(page, "Tab " + TabNames[i] + " Picked", "Tab_selected", x + 2f, 250.3f - ActiveLift + 1f, 243.5f, 177.3f);
+                    openTabPicked.enabled = false;
+                }
                 string[] lines = TabNames[i].Split('\n');
                 for (int l = 0; l < lines.Length; l++)
                 {
                     float y = lines.Length == 1 ? (on ? 257.5f - ActiveLift : 221f) : on ? 218f - ActiveLift + 45f * l : 201f + 30f * l;
-                    Figma.Words(page, lines[l], x, y, on ? Figma.Type.AtmaH1 : Figma.Type.ArvoSubtitle, on ? Yellow : Color.white, on ? ParkArt.TitleFont : ParkArt.Font);
+                    var words = Figma.Words(page, lines[l], x, y, on ? Figma.Type.AtmaH1 : Figma.Type.ArvoSubtitle, on ? Yellow : Color.white, on ? ParkArt.TitleFont : ParkArt.Font);
+                    if (on) openTabWords.Add(words);
                 }
             }
 
@@ -402,6 +417,9 @@ public class SettingsMenu : MonoBehaviour
     void Refresh()
     {
         var picked = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+        bool onTabs = picked != null && tabButtons.Exists(b => b.gameObject == picked);
+        if (openTabPicked != null) openTabPicked.enabled = onTabs;
+        foreach (var w in openTabWords) w.color = onTabs ? TabBlue : Yellow;
         foreach (var r in rows)
         {
             bool on = picked == r.button.gameObject;
@@ -417,7 +435,8 @@ public class SettingsMenu : MonoBehaviour
             }
             if (r.pills != null)
                 for (int i = 0; i < r.pills.Length; i++)
-                    r.pills[i].sprite = UiArt.Get(i == r.current() ? "Buttons/Button2_Active" : "Buttons/Button2_Idle");
+                    // The one that's set: pink (Option_idle), yellow while its row is picked.
+                    r.pills[i].sprite = UiArt.Get(i != r.current() ? "Buttons/Button2_Idle" : on ? "Buttons/Button2_Active" : "Option_idle");
             if (r.amount != null)
             {
                 float v = r.amount();
