@@ -14,6 +14,8 @@ public class FMODEvents : MonoBehaviour
     [field: SerializeField] public EventReference electrocution { get; private set; }
     [field: Tooltip("AL-03: the leaky fountain dripping, until the mechanic fixes it (3D, loops).")]
     [field: SerializeField] public EventReference waterLeak { get; private set; }
+    [field: Tooltip("The leaky fountain's faucet dripping into its puddle, until the mechanic fixes it (3D at the fountain, loops; plays alongside AL-03).")]
+    [field: SerializeField] public EventReference faucetDrip { get; private set; }
     [field: Tooltip("AL-02: pressing the leaky fountain's button.")]
     [field: SerializeField] public EventReference fountainPress { get; private set; }
     [field: Tooltip("AL-05: dipping the live cable in the puddle.")]
@@ -30,6 +32,18 @@ public class FMODEvents : MonoBehaviour
     [field: SerializeField] public EventReference ferrisPowerOff { get; private set; }
     [field: Tooltip("The stuck cabins creaking once the wheel has stopped, or all the way round with a loosened hinge.")]
     [field: SerializeField] public EventReference ferrisCabinCreak { get; private set; }
+
+    [field: Header("Flaming Hot Dogs (HD)")]
+    [field: Tooltip("The phone in the ride technician's booth ringing (3D at his booth, loops until he picks up or the call ends).")]
+    [field: SerializeField] public EventReference phoneRing { get; private set; }
+    [field: Tooltip("The ride technician jolted awake by the hot dog stand blowing up (a one-shot, 3D, following him).")]
+    [field: SerializeField] public EventReference technicianAwake { get; private set; }
+    [field: Tooltip("Gas hissing out of a loosened propane valve, until it blows (3D at the tank, loops).")]
+    [field: SerializeField] public EventReference propaneLeak { get; private set; }
+    [field: Tooltip("A gutter lid sliding open or dropping shut: the rats' gutter by the hot dog stand, and the smelly one by the mascot (a one-shot, 3D at the gutter).")]
+    [field: SerializeField] public EventReference gutterLid { get; private set; }
+    [field: Tooltip("The rats squeaking from the moment the lid's open until they're all back down (3D, follows the pack, loops).")]
+    [field: SerializeField] public EventReference ratSqueaks { get; private set; }
 
     [field: Header("Max Speed on Control Panel (MS)")]
     [field: Tooltip("The control panel set to max speed.")]
@@ -58,11 +72,15 @@ public class FMODEvents : MonoBehaviour
     [field: SerializeField] public EventReference npcSurprised { get; private set; }
     [field: Tooltip("Visitors and staff walking on their own (3D, optional Pace parameter: 0 walk, 1 run).")]
     [field: SerializeField] public EventReference npcFootsteps { get; private set; }
+    [field: Tooltip("The announcer's garbled PA voice, once per announcement bubble (a one-shot, 3D, following the announcer).")]
+    [field: SerializeField] public EventReference paAnnouncer { get; private set; }
+    [field: Tooltip("The ride technician snoring at his booth while he naps (3D at his booth; FMOD spaces the snores out, it runs until he wakes).")]
+    [field: SerializeField] public EventReference technicianSnore { get; private set; }
 
     [field: Header("Ruckus (RU)")]
     [field: Tooltip("RU-01: Ruckus's thought bubble pops up.")]
     [field: SerializeField] public EventReference chatBubble { get; private set; }
-    [field: Tooltip("RU-02: the spirit drifting around. Plays only while the spirit is moving.")]
+    [field: Tooltip("RU-02: the spirit drifting around. Plays the whole time it's out of a body; its Roaming parameter is 1 while it moves, 0 while it stands still.")]
     [field: SerializeField] public EventReference spiritHover { get; private set; }
     [field: Tooltip("RU-03: diving into someone's body.")]
     [field: SerializeField] public EventReference possess { get; private set; }

@@ -111,8 +111,11 @@ public class PropaneTank : MonoBehaviour, IInteraction
         }
     }
 
+    void OnDisable() => hiss?.Release();
+
     void Update()
     {
+        Hiss(leaking && !spent);
         if (!leaking || spent) return;
         bool aimed = Route();
         if (aimed && !Mischief.IsDone(aimTask))
@@ -185,6 +188,30 @@ public class PropaneTank : MonoBehaviour, IInteraction
     const string GasArt = "Fx/gas"; // the artist's curly gas puff (teal), for the wisps and the cloud
 
     // ---------------------------------------------------------------- the valve
+
+    LoopingSound hiss; // the gas hissing out of the valve (FMODEvents.propaneLeak), from the tank
+    float hissRange;   // how far off it's heard (the event's max distance): the caption shows within it
+
+    // Hissing the whole time the valve's open. When the gas goes up it's stopped with FMOD's fade-out: out of its
+    // loop and ended by the event's own release (its volume AHDSR), not cut dead.
+    void Hiss(bool on)
+    {
+        var events = FMODEvents.instance;
+        if (!on || events == null || events.propaneLeak.IsNull)
+        {
+            hiss?.Stop();
+            return;
+        }
+        if (hiss == null)
+        {
+            hiss = new LoopingSound(gameObject);
+            hissRange = 20f; // FMOD's default, if the event can't be looked up
+            if (FMODUnity.RuntimeManager.StudioSystem.getEventByID(events.propaneLeak.Guid, out var sound) == FMOD.RESULT.OK)
+                sound.getMinMaxDistance(out _, out hissRange);
+        }
+        hiss.Play(events.propaneLeak);
+        if (Ears.Near(transform.position, hissRange)) ClosedCaptions.Hold(Captions.GasLeak);
+    }
 
     public string Prompt(Visitor host) => "Loosen the propane valve";
 

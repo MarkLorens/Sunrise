@@ -48,6 +48,8 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     Vector3 scene; // the taped-off puddle being cleaned up
 
     LoopingSound leak; // AL-03, until the mechanic fixes it
+    LoopingSound drip; // the faucet dripping (FMODEvents.faucetDrip), alongside the leak until it's fixed
+    float dripRange;   // how far off the drip is heard (the event's max distance): the caption shows within it
 
     void OnEnable() => All.Add(this);
 
@@ -55,14 +57,20 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     {
         All.Remove(this);
         leak?.Stop();
+        drip?.Stop();
     }
 
-    void OnDestroy() => leak?.Release();
+    void OnDestroy()
+    {
+        leak?.Release();
+        drip?.Release();
+    }
 
     void Start()
     {
         leak = new LoopingSound(gameObject);
         leak.SetRange(leakRange.x, leakRange.y);
+        drip = new LoopingSound(gameObject);
         puddle = ParkArt.Make("Puddle", null, "Markers/shadow", 1f, new Color(Water.r, Water.g, Water.b, 0.55f), ParkArt.DecalOrder, true);
         if (puddleArt != null)
         {
@@ -78,6 +86,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
         var events = FMODEvents.instance;
         if (Fixed || events == null) leak.Stop();
         else leak.Play(events.waterLeak);
+        Drip(!Fixed && events != null && !events.faucetDrip.IsNull);
 
         if (Radius < target)
         {
@@ -94,6 +103,25 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
         if (Time.time < nextDrip) return;
         nextDrip = Time.time + 1.2f;
         Fx.Burst("Fx/sparkle", transform.position + Vector3.up * 0.9f, 2, Water, 1.2f, 0.18f, 0.5f);
+    }
+
+    // The faucet dripping the whole time it leaks, captioned while you're close enough to hear it.
+    void Drip(bool on)
+    {
+        if (!on)
+        {
+            drip.Stop();
+            return;
+        }
+        var sound = FMODEvents.instance.faucetDrip;
+        if (dripRange <= 0f)
+        {
+            dripRange = 20f; // FMOD's default, if the event can't be looked up
+            if (FMODUnity.RuntimeManager.StudioSystem.getEventByID(sound.Guid, out var description) == FMOD.RESULT.OK)
+                description.getMinMaxDistance(out _, out dripRange);
+        }
+        drip.Play(sound);
+        if (Ears.Near(transform.position, dripRange)) ClosedCaptions.Hold(Captions.FaucetDrip);
     }
 
     public bool InPuddle(Vector3 p)

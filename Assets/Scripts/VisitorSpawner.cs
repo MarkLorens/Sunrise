@@ -150,6 +150,7 @@ public class VisitorSpawner : MonoBehaviour
         lastAnnouncement = heard[Random.Range(0, heard.Count)];
         GameHud.Hush(announcer.transform); // a new announcement cuts off the last
         GameHud.Shout(announcer.transform, lastAnnouncement, 4f, true);
+        if (AudioManager.TryPlayOn(e => e.paAnnouncer, announcer.gameObject)) ClosedCaptions.Show(Captions.PaAnnouncement);
     }
 
     // After an event, now and then someone near the player talks about it.

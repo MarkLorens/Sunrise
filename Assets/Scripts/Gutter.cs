@@ -76,6 +76,7 @@ public class Gutter : MonoBehaviour, IInteraction
         if (smellOnly)
         {
             Open();
+            LidSound();
             ClosedCaptions.Show(Captions.GutterOpen);
             Fx.Burst(StinkArt, transform.position + Vector3.up * 0.3f, 8, Stink, 2f, 0.4f, 1f);
             GameHud.Say(GameText.OpenedGutter);
@@ -90,6 +91,7 @@ public class Gutter : MonoBehaviour, IInteraction
         open = true;
         lid.transform.parent.localPosition = new Vector3(0.7f * size, 0.03f, -0.2f); // slid aside
         hole.enabled = true;
+        LidSound();
         ClosedCaptions.Show(Captions.GutterOpen);
         Fx.Burst(StinkArt, transform.position + Vector3.up * 0.3f, 8, Stink, 2f, 0.4f, 1f);
         ParkChaos.Add(transform.position, 4f, 8f, ParkChaos.Scary); // kids don't like rats
@@ -101,6 +103,7 @@ public class Gutter : MonoBehaviour, IInteraction
             r.transform.position = transform.position + new Vector3(Random.Range(-0.3f, 0.3f), 0.17f, Random.Range(-0.3f, 0.3f));
             pack.Add(r.transform);
         }
+        Squeak(pack); // the moment the lid's open
 
         bool scared = false;
         float chaseEnds = float.MaxValue;
@@ -121,6 +124,7 @@ public class Gutter : MonoBehaviour, IInteraction
                     chaseEnds = Time.time + chaseTime;
                 }
             }
+            Squeak(pack);
             yield return null;
         }
 
@@ -134,12 +138,48 @@ public class Gutter : MonoBehaviour, IInteraction
                 Destroy(pack[i].gameObject);
                 pack.RemoveAt(i);
             }
+            Squeak(pack);
             yield return null;
         }
+        squeaks?.Stop(); // all home: fades out on the event's own release
         lid.transform.parent.localPosition = Vector3.up * 0.02f;
         hole.enabled = false;
+        LidSound();
         ClosedCaptions.Show(Captions.GutterShut);
         open = false;
+    }
+
+    // The lid sliding open or dropping shut (FMODEvents.gutterLid), from the gutter.
+    void LidSound() => AudioManager.TryPlay(e => e.gutterLid, transform.position);
+
+    LoopingSound squeaks;  // the rats squeaking (FMODEvents.ratSqueaks) while they're out
+    Transform squeakSpot;  // where it comes from: the middle of the pack
+    float squeakRange;     // how far off it's heard (the event's max distance): the caption shows within it
+
+    // The rats squeaking, following the pack, captioned while you're close enough to hear. Called every frame they're out.
+    void Squeak(List<Transform> pack)
+    {
+        var events = FMODEvents.instance;
+        if (events == null || events.ratSqueaks.IsNull || pack.Count == 0) return;
+        if (squeaks == null)
+        {
+            squeakSpot = new GameObject("Rat Squeaks").transform;
+            squeaks = new LoopingSound(squeakSpot.gameObject);
+            squeakRange = 20f; // FMOD's default, if the event can't be looked up
+            if (FMODUnity.RuntimeManager.StudioSystem.getEventByID(events.ratSqueaks.Guid, out var sound) == FMOD.RESULT.OK)
+                sound.getMinMaxDistance(out _, out squeakRange);
+        }
+        Vector3 middle = Vector3.zero;
+        foreach (var r in pack) middle += r.position;
+        squeakSpot.position = middle / pack.Count;
+        squeaks.Play(events.ratSqueaks);
+        if (Ears.Near(squeakSpot.position, squeakRange)) ClosedCaptions.Hold(Captions.RatSqueaks);
+    }
+
+    void OnDestroy()
+    {
+        squeaks?.Release();
+        if (squeakSpot != null) Destroy(squeakSpot.gameObject);
     }
 
     void Run(Transform rat, Vector3 goal, float speedScale)

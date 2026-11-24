@@ -211,10 +211,10 @@
 			<value>6000</value>
 		</property>
 		<property name="minimumScatterDistance">
-			<value>3</value>
+			<value>5</value>
 		</property>
 		<property name="maximumScatterDistance">
-			<value>15</value>
+			<value>10</value>
 		</property>
 		<property name="volumeRandomization">
 			<value>-4</value>
@@ -563,13 +563,16 @@
 	</object>
 	<object class="SingleSound" id="{368d9a11-c945-4a1a-ae80-823eac34a425}">
 		<property name="volume">
-			<value>-7.5</value>
+			<value>-10</value>
 		</property>
 		<relationship name="audioFile">
 			<destination>{71074f31-9fae-40b0-8474-e822c7fd045c}</destination>
 		</relationship>
 	</object>
 	<object class="SingleSound" id="{fc9afa82-50d3-4847-a140-8bcc028c55ff}">
+		<property name="volume">
+			<value>-5</value>
+		</property>
 		<relationship name="audioFile">
 			<destination>{b45c973e-4d34-473f-8cac-7c88a5cf555d}</destination>
 		</relationship>

@@ -78,6 +78,13 @@ MonoBehaviour:
       Data3: -464565367
       Data4: -493296342
     Path: event:/A-leak-tricity (AL)/Water Leak
+  <faucetDrip>k__BackingField:
+    Guid:
+      Data1: 2083247991
+      Data2: 1322388823
+      Data3: 1988157573
+      Data4: 134858797
+    Path: event:/Park (P)/Water Faucet Droplet
   <fountainPress>k__BackingField:
     Guid:
       Data1: 0
@@ -127,6 +134,41 @@ MonoBehaviour:
       Data3: 0
       Data4: 0
     Path: 
+  <phoneRing>k__BackingField:
+    Guid:
+      Data1: 520174886
+      Data2: 1091605105
+      Data3: 965808774
+      Data4: 81073833
+    Path: event:/Flaming Hot Dogs (HD)/Telephone Ring
+  <technicianAwake>k__BackingField:
+    Guid:
+      Data1: -932374196
+      Data2: 1156482375
+      Data3: -753560416
+      Data4: -150368139
+    Path: event:/Flaming Hot Dogs (HD)/Technician Awake
+  <propaneLeak>k__BackingField:
+    Guid:
+      Data1: 1855191534
+      Data2: 1203636163
+      Data3: -572676732
+      Data4: -611668836
+    Path: event:/Park (P)/Propane Tank Leak
+  <gutterLid>k__BackingField:
+    Guid:
+      Data1: 668755275
+      Data2: 1183650640
+      Data3: -355758402
+      Data4: -293225478
+    Path: event:/Park (P)/Gutter Lid
+  <ratSqueaks>k__BackingField:
+    Guid:
+      Data1: -1222770271
+      Data2: 1250603950
+      Data3: 1410083970
+      Data4: 2128580471
+    Path: event:/Flaming Hot Dogs (HD)/Rats!
   <ferrisMaxSpeed>k__BackingField:
     Guid:
       Data1: 0
@@ -147,7 +189,7 @@ MonoBehaviour:
       Data2: 1076821321
       Data3: 1067315587
       Data4: 1722405110
-    Path: event:/Music and Ambiance (MA)/Lobby Music
+    Path: event:/BGM and Ambiance (BA)/Lobby Music
   <parkCrowd>k__BackingField:
     Guid:
       Data1: 123646366
@@ -204,6 +246,20 @@ MonoBehaviour:
       Data3: 0
       Data4: 0
     Path: 
+  <paAnnouncer>k__BackingField:
+    Guid:
+      Data1: 1663904197
+      Data2: 1262329997
+      Data3: 765132716
+      Data4: -208128071
+    Path: event:/Park (P)/PA Announcer
+  <technicianSnore>k__BackingField:
+    Guid:
+      Data1: 857475498
+      Data2: 1342159231
+      Data3: -1792030046
+      Data4: -74618462
+    Path: event:/Park (P)/Technician Sleeping
   <chatBubble>k__BackingField:
     Guid:
       Data1: 1116057524
