@@ -1,15 +1,37 @@
 using UnityEngine;
 
-// The fingerprint lock on a FingerprintArea: only its owner's finger (the technician's, the operator's) opens it.
+// The lock on a FingerprintArea (it was a fingerprint scanner; now the area's locked gate): only its owner (the
+// technician, the operator) can unlock it.
+// Drawn as the area's metal gate (Props/New/metal_gate_closed, padlocked) in the gap in its front fence; unlocked, it
+// stands open (metal_gate_opened). The spot to use it is where the scanner was.
 [RequireComponent(typeof(Interactable))]
 public class FingerprintScanner : MonoBehaviour, IInteraction
 {
     public FingerprintArea platform;
     public Mischief.Task task = Mischief.Task.OpenPlatform; // the step it ticks off
 
-    void Start() => ParkArt.Solid(transform, "Props/fingerprint_scanner", 1.2f, new Color(0.3f, 0.35f, 0.45f));
+    SpriteRenderer gate;
 
-    public string Prompt(Visitor host) => platform.IsOwner(host) ? "Scan your fingerprint" : "Fingerprint lock";
+    // In its section of the area's front fence, as wide as the fence's other sections (FingerprintArea.GateSection).
+    void Start()
+    {
+        Vector3 at = transform.position;
+        float width = 1.2f;
+        if (platform != null) platform.GateSection(out at, out width, out _);
+        gate = ParkArt.Lit(ParkArt.Make("Gate", null, "Props/New/metal_gate_closed", 1f, Color.white));
+        ParkArt.Fit(gate, width * gate.sprite.bounds.size.y / Mathf.Max(0.01f, gate.sprite.bounds.size.x));
+        gate.transform.SetParent(transform, true);
+        gate.transform.position = at;
+        if (platform != null && platform.Open) ShowOpen();
+    }
+
+    void ShowOpen()
+    {
+        var open = ParkArt.Get("Props/New/metal_gate_opened");
+        if (gate != null && open != null) gate.sprite = open; // the same canvas as the closed one: it opens in place
+    }
+
+    public string Prompt(Visitor host) => platform.IsOwner(host) ? GameText.GateUnlock : GameText.GateLocked;
 
     public string Blocked(Visitor host)
     {
@@ -23,6 +45,7 @@ public class FingerprintScanner : MonoBehaviour, IInteraction
     void Unlock(bool quiet)
     {
         platform.Open = true;
+        ShowOpen();
         if (quiet) return;
         ClosedCaptions.Show(Captions.Scanner);
         Fx.Burst("Fx/sparkle", transform.position + Vector3.up * 1.1f, 8, new Color(0.4f, 1f, 0.6f), 2f, 0.2f, 0.4f);

@@ -22,7 +22,7 @@ public class VisitorSpawner : MonoBehaviour
     // Each entry goes to a different roaming visitor, so the puzzle items are always somewhere in the park.
     public VisitorItem[] guaranteedItems = { VisitorItem.Drink, VisitorItem.Drink, VisitorItem.WaterBottle, VisitorItem.WaterBottle };
     [Range(0, 1)] public float carryChance = 0.4f; // everyone else: chance of one of `carryItems` in hand
-    public VisitorItem[] carryItems = { VisitorItem.Drink, VisitorItem.WaterBottle };
+    public VisitorItem[] carryItems = { VisitorItem.Drink, VisitorItem.WaterBottle, VisitorItem.CottonCandy, VisitorItem.Popcorn }; // what no stand sells
 
     [Range(0, 1)] public float groupChance = 0.35f; // per roaming visitor, chance they start a group with the next few
     public Vector2Int groupSize = new(2, 4);         // smallest and biggest group (VisitorGroup)
@@ -51,6 +51,7 @@ public class VisitorSpawner : MonoBehaviour
     public string hotDogManCharacter = "worker_hot_dog";
     public string hotDogManName = "Hot Dog Man";
     public Transform hotDogManPost;  // behind the hot dog stand; empty = no hot dog man
+    public float hotDogLineOut = 1.4f; // his line starts this far (plus standLineGap) in front of him: past the counter
     // Stand sellers, one per stand tile on the Objects tilemap (no scene objects: paint a stand, it gets a seller).
     public string iceCreamCharacter = "worker_ice_cream";
     public Vector3 iceCreamSlot = new(0f, 0f, 0.25f);   // where the seller stands, from the tile's cell centre: in the gap
@@ -180,6 +181,7 @@ public class VisitorSpawner : MonoBehaviour
     System.Collections.IEnumerator FillStandLines(List<Visitor> roaming)
     {
         yield return null; // every prop made in its own Start first (the lines keep clear of them: StandQueue)
+        ToiletLines();
         foreach (var line in StandQueue.All) line.KeepAway();
         var free = roaming.FindAll(v => v != null && v.Group == null && v.brain == null && v.Current is Visitor.State.Idle or Visitor.State.Wander);
         foreach (var line in StandQueue.All)
@@ -193,6 +195,26 @@ public class VisitorSpawner : MonoBehaviour
                 v.EnterQueue(line);
                 v.transform.position = line.SlotPosition(v); // already standing in line
             }
+        }
+    }
+
+    // Every toilet block but the tutorial's (out of order while it runs, broken after: ToiletPrank) has a line at its
+    // door too, from just in front of it back toward the camera: nothing to buy, just a wait (the line's serve time)
+    // and off they go.
+    void ToiletLines()
+    {
+        var prank = FindAnyObjectByType<ToiletPrank>();
+        foreach (var map in GroundWalker.SolidMaps(ground))
+        foreach (var cell in map.cellBounds.allPositionsWithin)
+        {
+            var s = map.GetSprite(cell);
+            if (s == null || !s.name.StartsWith("bathroom")) continue;
+            Vector3 feet = map.GetCellCenterWorld(cell);
+            if (prank != null && Mathf.Abs(feet.x - prank.Block.center.x) < prank.Block.extents.x && Mathf.Abs(feet.z - prank.Block.center.z) < 1.5f)
+                continue; // the tutorial's
+            Rect front = GroundWalker.FootprintOf(map, cell);
+            var door = new Vector3(front.center.x, 0f, front.yMin);
+            StandQueue.Make("Toilet Line", transform, new Vector3(door.x, 0f, front.yMin - standLineGap), LineDirection(), door, ground);
         }
     }
 
@@ -247,7 +269,20 @@ public class VisitorSpawner : MonoBehaviour
             tech.GrabItem(Item.Create(VisitorItem.Screwdriver, tech.CarryPoint), true);
         }
         SpawnAnnouncer();
-        if (hotDogManPost != null) Staff<HotDogMan>(hotDogManName, hotDogManPost.position, hotDogManCharacter);
+        if (hotDogManPost != null)
+        {
+            Staff<HotDogMan>(hotDogManName, hotDogManPost.position, hotDogManCharacter);
+            // His line, in front of his counter: served while he's behind it (not off after the rats or guarding his
+            // fan), closed for good once the stand's burnt (charred).
+            var line = StandQueue.Make("Hot Dog Line", transform, hotDogManPost.position + Vector3.back * (standLineGap + hotDogLineOut),
+                LineDirection(), hotDogManPost.position, ground);
+            if (line != null)
+            {
+                line.gives = VisitorItem.HotDog;
+                line.serving = () => HotDogMan.All.Exists(h => h.Current == HotDogMan.State.AtStall);
+                line.shut = () => HotDogMan.All.TrueForAll(h => h.Current == HotDogMan.State.Charred);
+            }
+        }
         if (mascotPost != null) Staff<Mascot>(mascotName, mascotPost.position, mascotCharacter);
         SpawnVendors();
     }
@@ -290,8 +325,9 @@ public class VisitorSpawner : MonoBehaviour
                 var seller = Staff<Vendor>("Ice Cream Seller", slot, iceCreamCharacter, v => { v.inside = true; v.paceHalfWidth = room; });
                 stalls.Add((seller, new Vector3(feet.x, closedSignLift, front.yMin - 0.05f))); // the sign hangs on the counter's front
                 // Its line, from just in front of the counter back toward the camera.
-                StandQueue.Make("Ice Cream Line", transform, new Vector3(slot.x, 0f, front.yMin - standLineGap),
+                var line = StandQueue.Make("Ice Cream Line", transform, new Vector3(slot.x, 0f, front.yMin - standLineGap),
                     LineDirection(), slot, ground);
+                if (line != null) line.gives = VisitorItem.IceCream;
             }
             else if (s.name.StartsWith("balloon_stand"))
             {
@@ -300,7 +336,8 @@ public class VisitorSpawner : MonoBehaviour
                 if (GroundWalker.NearObstacle(at, 0.35f) && !GroundWalker.NearObstacle(probe, 0.35f)) at = probe;
                 Staff<Vendor>("Balloon Seller", at, balloonCharacter, _ => { });
                 // Its line, in front of the seller.
-                StandQueue.Make("Balloon Line", transform, at + Vector3.back * (standLineGap + 0.4f), LineDirection(), at, ground);
+                var line = StandQueue.Make("Balloon Line", transform, at + Vector3.back * (standLineGap + 0.4f), LineDirection(), at, ground);
+                if (line != null) line.gives = VisitorItem.Balloon;
             }
         }
     }

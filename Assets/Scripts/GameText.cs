@@ -29,7 +29,10 @@ public static class GameText
     public const string OpenedValve = "You loosened the propane valve";
     public const string SwitchedOffFan = "You switched off the hot dog man's fan";
     public static string TurnedFan(string way) => $"You turned the fan to face {way}";
-    public const string ScannedFinger = "Fingerprint accepted";
+    public const string ScannedFinger = "Gate unlocked";
+    // The locked gates in the fences round the technician's platform and the operator's booth (FingerprintScanner)
+    public const string GateUnlock = "Unlock the gate";   // in the right body
+    public const string GateLocked = "Locked gate";       // in anyone else's
     public const string LoosenedHinge = "You loosened the hinge";
     public const string RestartedWheel = "You started the Ferris wheel";
     public const string OpenedGutter = "You opened the gutter";
@@ -125,15 +128,15 @@ public static class GameText
     public const string FanGuarded = "The hot dog man won't let you touch his fan";
 
     // The technician's platform and the hinge
-    public const string TechnicianOnly = "Fingerprint lock: technician only";
+    public const string TechnicianOnly = "Locked gate: technician only";
     public const string PlatformOpen = "It's open";
-    public const string PlatformLocked = "The platform's locked: fingerprint only";
+    public const string PlatformLocked = "The platform's gate is locked";
     public const string HingeNeedsTechnician = "Only the technician knows this hinge";
     public const string NeedScrewdriver = "You need a screwdriver";
     public const string HingeLoose = "Loose enough. Any looser and it falls off";
     public const string HingeFirst = "Not yet: that hinge first";
     public const string WheelWobbly = "It's running. Barely";
-    public const string OperatorFingerOnly = "Fingerprint lock: operator only";
+    public const string OperatorFingerOnly = "Locked gate: operator only";
     public const string GutterOpen = "It's open. The smell's out";
     public const string SignBackShout = "Who took this sign down?! That toilet is OUT OF ORDER!";
     public const string MascotGuards = "The mascot won't let you near the fan";
@@ -224,7 +227,7 @@ public static class GameText
     public const string ThinkCloud = "Let's spark that fire now Sausage Boy!"; // the cloud is full
     public const string ThinkCloudGrillOn = "Hook, line, and sinker";                                // the cloud is full round his lit grill
     public const string ThinkBoom = "KABOOM. Good morning!";                                         // after the explosion
-    public const string ThinkPlatform = "Only his fingers open this. Good thing I have them";        // scanning as the technician
+    public const string ThinkPlatform = "Only he gets through this gate. Good thing I'm him";        // unlocking it as the technician
     public const string ThinkHinge = "Lefty loosey...";                                               // loosening the hinge
     public const string ThinkWobble = "Hehehe. Structural comedy!";                                   // the wobbly restart
 
@@ -239,7 +242,7 @@ public static class GameText
     public const string ThinkStinkGone = "The fuzzball is just as smelly, to be honest.";           // the mascot runs off
     public const string ThinkLockerCloud = "Locker room's full of gas. Now, the electrician and that cable..."; // the cloud is full
     public const string ThinkFire = "Shoddy Construction, really. Now's my chance with the operator"; // after the fire payoff
-    public const string ThinkBooth = "Nice fingers. Don't mind if I do.";                             // scanning as the operator
+    public const string ThinkBooth = "His gate, his booth. Don't mind if I do.";                     // unlocking it as the operator
     public const string ThinkMaxSpeed = "Faster... FASTER!";                                          // maxing the wheel
     public const string ThinkRolled = "Wheely sorry folks! Come again!";                                     // the last word, after the wheel's rolled (FerrisWheel)
 
