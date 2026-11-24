@@ -33,6 +33,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
     public bool Ready => level >= 1f && !spent;
     bool HotDogStand => burns == null;
     const float StandScorchRadius = 4f;                           // the hot dog stand's pictures, round where it blows
+    const float SurroundScorchRadius = 5f;                        // the ground and whatever stands round it, scorched too
     static readonly string[] StandPictures = { "hot_dog_stand" };
 
     bool leaking, spent, thoughtBlown;
@@ -183,6 +184,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
         {
             foreach (var h in HotDogMan.All) h.Char();
             Scorch.BurnNear(Center, StandScorchRadius, false, StandPictures); // the stand, burning
+            Scorch.BurnAround(Center, SurroundScorchRadius, false); // and the ground and everything round it
         }
         StartCoroutine(Payoff());
     }
@@ -240,6 +242,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
         {
             foreach (var h in HotDogMan.All) h.Char();
             Scorch.BurnNear(Center, StandScorchRadius, true, StandPictures); // already burnt
+            Scorch.BurnAround(Center, SurroundScorchRadius, true);
         }
     }
 }
