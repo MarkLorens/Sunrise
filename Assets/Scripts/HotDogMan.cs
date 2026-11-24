@@ -2,7 +2,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // The hot dog man, behind his stand, guarding the propane tank's fan from anyone who'd touch it. Rats out of the gutter
-// (Gutter) send him running, and he turns his grill off as he goes; he comes back once they're gone and lights it
+// (Gutter) send him running behind his stand (hideOffset), where he's gone from the park for awayTime, and he turns his
+// grill off as he goes; he comes back once they're gone (the camera on him and the player's input held, as the
+// mechanic's walks, so nobody hops into him on the way) and lights it
 // again (relightDelay after he's back over the counter), which is the spark the propane cloud is waiting for
 // (PropaneTank): it goes up catchTime after the flames do. After that he stands there charred and dazed.
 // He works inside his stand, between the counter and the back wall, out of reach: he can only be possessed while he's
@@ -14,10 +16,11 @@ public class HotDogMan : MonoBehaviour
 {
     public static readonly List<HotDogMan> All = new();
 
-    public enum State { AtStall, Hopping, Fleeing, Returning, Charred }
+    public enum State { AtStall, Hopping, Fleeing, Hidden, Returning, Charred }
 
-    public float awayTime = 10f;   // seconds he stays away from the rats
-    public float fleeDistance = 9f;
+    [Tooltip("Seconds he stays hidden behind his stand from the rats (VisitorSpawner sets it: hotDogManHiddenTime).")]
+    public float awayTime = 10f;
+    public Vector3 hideOffset = new(0f, 0f, 1.4f); // where he hides, behind his stand, relative to his post
     public float guardRadius = 12f; // how far from his stall he keeps an eye on the fan
     public Vector3 exitOffset = new(3.2f, 0f, 0f); // where he lands hopping out of the stall, relative to his post
     public float hopTime = 0.45f;
@@ -36,8 +39,9 @@ public class HotDogMan : MonoBehaviour
     Visitor body;
     CharacterSprite look;
     Rigidbody rb;
-    Vector3 post, away;
-    float backAt, stoveAt;
+    Vector3 post;
+    float backAt, stoveAt, hideBy, inputBackAt;
+    bool shot; // the camera on him walking back, the player's input held
     float lightAt, boomAt = float.MaxValue; // the grill going back on, and the gas catching from it
     bool grillOut, announced;
     SpriteRenderer grill;
@@ -48,6 +52,7 @@ public class HotDogMan : MonoBehaviour
     float nextPace;
 
     Vector3 Exit => post + exitOffset;
+    Vector3 HideSpot => post + hideOffset;
 
     void OnEnable() => All.Add(this);
     void OnDisable() => All.Remove(this);
@@ -119,23 +124,15 @@ public class HotDogMan : MonoBehaviour
     // Rats! Off he runs, away from `from`, and stays away for a while.
     public void Scare(Vector3 from)
     {
-        if (Current is State.Fleeing or State.Charred) return;
+        if (Current is State.Fleeing or State.Hidden or State.Charred) return;
+        if (body.Current == Visitor.State.Possessed) Possession.Instance?.Release(); // the player's thrown out first
         SetGrill(false); // turned off on his way out
         stoveAt = boomAt = float.MaxValue;
         announced = false;
-        Vector3 dir = transform.position - from;
-        dir.y = 0f;
-        if (dir.sqrMagnitude < 0.01f) dir = Vector3.right;
-        away = post;
-        for (int i = 0; i < 12; i++)
-        {
-            Vector3 spot = post + Quaternion.Euler(0f, Random.Range(-60f, 60f), 0f) * dir.normalized * fleeDistance;
-            if (walker.IsWalkable(spot)) { away = spot; break; }
-        }
         walker.speed = 4.5f;
         look.running = true;
         look.pose = null;
-        backAt = Time.time + awayTime;
+        hideBy = Time.time + hopTime + 5f; // gone even if something holds him up on the way
         GameHud.Shout(transform, GameText.HotDogRats, 2f);
         look.Expression("surprised_1", awayTime);
         Hop(Exit, State.Fleeing); // over the end of the counter, then off he runs
@@ -160,6 +157,8 @@ public class HotDogMan : MonoBehaviour
     {
         Current = State.Charred;
         walker.move = Vector2.zero;
+        look.SetVisible(true);
+        EndShot();
         if (Current == State.Hopping) Place(hopTo);
         look.running = false;
         look.pose = look.think;
@@ -169,7 +168,12 @@ public class HotDogMan : MonoBehaviour
 
     void Update()
     {
-        body.possessable = Current != State.AtStall;
+        body.possessable = Current == State.Charred; // never from the rats until he's back working
+        if (inputBackAt > 0f && Time.time >= inputBackAt)
+        {
+            inputBackAt = 0f;
+            Possession.InputBlocked = false;
+        }
         switch (Current)
         {
             case State.AtStall:
@@ -212,15 +216,34 @@ public class HotDogMan : MonoBehaviour
                 if (k < 1f) break;
                 Current = afterHop;
                 walker.ignoreObstacles = afterHop == State.AtStall;
-                if (afterHop == State.AtStall) lightAt = Time.time + relightDelay;
+                if (afterHop == State.AtStall)
+                {
+                    lightAt = Time.time + relightDelay;
+                    EndShot();
+                }
                 break;
 
             case State.Fleeing:
-                walker.WalkTo(away);
+                if (walker.WalkTo(HideSpot) && Time.time < hideBy) break;
+                // Behind his stand: gone from the park for a while.
+                Current = State.Hidden;
+                walker.move = Vector2.zero;
+                look.SetVisible(false);
+                backAt = Time.time + awayTime;
+                break;
+
+            case State.Hidden:
                 if (Time.time < backAt) break;
                 Current = State.Returning;
+                look.SetVisible(true);
                 walker.speed = 2f;
                 look.running = false;
+                // The camera on him all the way back to his counter, the player's input held (as the mechanic's walks).
+                shot = true;
+                inputBackAt = 0f;
+                Possession.InputBlocked = true;
+                CameraRig.Spotlight(transform, 999f);
+                CutsceneLight.On(this);
                 GameHud.Shout(transform, GameText.HotDogBack, 2.5f);
                 break;
 
@@ -250,6 +273,16 @@ public class HotDogMan : MonoBehaviour
         if (Time.time < nextPace) return;
         nextPace = Time.time + Random.Range(2f, 5f);
         pacingTo = post + Vector3.right * Random.Range(-paceHalfWidth, paceHalfWidth);
+    }
+
+    // Back at work (or charred on the way): the camera eases back to the player, then their input comes back.
+    void EndShot()
+    {
+        if (!shot) return;
+        shot = false;
+        CutsceneLight.Off();
+        CameraRig.EndSpotlight();
+        inputBackAt = Time.time + 1f; // the camera easing back
     }
 
     void Place(Vector3 p) => rb.position = transform.position = p;

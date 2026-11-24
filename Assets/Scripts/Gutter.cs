@@ -19,7 +19,8 @@ public class Gutter : MonoBehaviour, IInteraction
     // Open and reeking (smellOnly).
     public bool Stinking => smellOnly && open;
 
-    static readonly Color Stink = new(0.6f, 0.75f, 0.3f, 0.6f);
+    static readonly Color Stink = new(1f, 0.42f, 0.22f, 0.6f); // over the teal gas art: a muddy brown
+    const string StinkArt = "Fx/gas"; // the artist's curly gas puff, as the propane's (PropaneTank)
 
     SpriteRenderer lid, hole;
     bool open, nearGutter;
@@ -43,11 +44,11 @@ public class Gutter : MonoBehaviour, IInteraction
         nextStink = Time.time + (Stinking ? 0.2f : 0.8f);
         if (!Stinking || fan == null)
         {
-            Fx.Burst("Fx/puff", transform.position + Vector3.up * 0.3f, 1, Stink, 0.5f, 0.35f, 1.4f);
+            Fx.Burst(StinkArt, transform.position + Vector3.up * 0.3f, 1, Stink, 0.5f, 0.28f, 1.4f);
             return;
         }
         // Open: a stream of stink along the fan's wind.
-        var w = ParkArt.Make("Stink", null, "Fx/puff", 0.6f, Stink, ParkArt.OverheadOrder);
+        var w = ParkArt.Make("Stink", null, StinkArt, 0.48f, Stink, ParkArt.OverheadOrder);
         w.transform.position = transform.position + Vector3.up * 0.5f;
         var bit = w.gameObject.AddComponent<FxBit>();
         bit.velocity = fan.Wind * 3f + Vector3.up * 0.3f;
@@ -76,7 +77,7 @@ public class Gutter : MonoBehaviour, IInteraction
         {
             Open();
             ClosedCaptions.Show(Captions.GutterOpen);
-            Fx.Burst("Fx/puff", transform.position + Vector3.up * 0.3f, 8, Stink, 2f, 0.5f, 1f);
+            Fx.Burst(StinkArt, transform.position + Vector3.up * 0.3f, 8, Stink, 2f, 0.4f, 1f);
             GameHud.Say(GameText.OpenedGutter);
             return;
         }
@@ -90,7 +91,7 @@ public class Gutter : MonoBehaviour, IInteraction
         lid.transform.parent.localPosition = new Vector3(0.7f * size, 0.03f, -0.2f); // slid aside
         hole.enabled = true;
         ClosedCaptions.Show(Captions.GutterOpen);
-        Fx.Burst("Fx/puff", transform.position + Vector3.up * 0.3f, 8, Stink, 2f, 0.5f, 1f);
+        Fx.Burst(StinkArt, transform.position + Vector3.up * 0.3f, 8, Stink, 2f, 0.4f, 1f);
         ParkChaos.Add(transform.position, 4f, 8f, ParkChaos.Scary); // kids don't like rats
 
         var pack = new List<Transform>();

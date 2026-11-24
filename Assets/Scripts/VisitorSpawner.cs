@@ -51,6 +51,8 @@ public class VisitorSpawner : MonoBehaviour
     public string hotDogManCharacter = "worker_hot_dog";
     public string hotDogManName = "Hot Dog Man";
     public Transform hotDogManPost;  // behind the hot dog stand; empty = no hot dog man
+    [Tooltip("Seconds the hot dog man stays hidden behind his stand after the rats chase him off.")]
+    public float hotDogManHiddenTime = 10f;
     public float hotDogLineOut = 1.4f; // his line starts this far (plus standLineGap) in front of him: past the counter
     // Stand sellers, one per stand tile on the Objects tilemap (no scene objects: paint a stand, it gets a seller).
     public string iceCreamCharacter = "worker_ice_cream";
@@ -302,7 +304,7 @@ public class VisitorSpawner : MonoBehaviour
         SpawnAnnouncer();
         if (hotDogManPost != null)
         {
-            Staff<HotDogMan>(hotDogManName, hotDogManPost.position, hotDogManCharacter);
+            Staff<HotDogMan>(hotDogManName, hotDogManPost.position, hotDogManCharacter, h => h.awayTime = hotDogManHiddenTime);
             // His line, in front of his counter: served while he's behind it (not off after the rats or guarding his
             // fan), closed for good once the stand's burnt (charred).
             var line = StandQueue.Make("Hot Dog Line", transform, hotDogManPost.position + Vector3.back * (standLineGap + hotDogLineOut),
