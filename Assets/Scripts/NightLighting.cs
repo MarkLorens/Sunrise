@@ -25,8 +25,8 @@ public class NightLighting : MonoBehaviour
     [Header("Fog")]
     // Fades the park into the night sky with distance, so far things lose contrast and the near ones pop.
     public bool fog = true;
-    public float fogStart = 14f; // metres from the camera (it sits ~12 from the player)
-    public float fogEnd = 45f;
+    public float fogStart = 30f; // metres from the camera (it sits ~12 from the player)
+    public float fogEnd = 60f;
 
     [Header("Grade")]
     public float exposure = -0.1f;
