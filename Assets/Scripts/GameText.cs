@@ -447,6 +447,17 @@ public static class GameText
     public static string ValvePrompt(int turns, int of) => $"Crank up the valve ({turns}/{of})";
     public const string ValveMaxed = "It won't turn any further";
 
+    // The end credits after the finale (EndCredits): the team in order, then the special thanks. Names and roles to
+    // be filled in.
+    public static readonly (string name, string role)[] EndCreditsTeam =
+    {
+        ("Kennard Mahib", "Game/Level Designer"), ("Amanda Dorotea", "Game/UI Designer"), ("Danu Raditya", "Artist, Illustrator"), ("Anthony Martin", "Sound Designer"), ("Aulia Agustina", "Programmer"), ("Mark Pardede", "Programmer"),
+    };
+    public const string EndCreditsThanks = "Special thanks to";
+    public static readonly (string name, string role) EndCreditsThanked = ("Ruanth Thijssen", "Our Mentor and Supporter");
+    public const string EndCreditsAndYou = "And You.";
+    public const string EndCreditsThankYou = "Thank You for Playing!"; // under the studio's logo, the very end
+
     // The loading screen's progress, in the middle of its Ferris wheel (LoadingScreen)
     public static string LoadingPercent(int percent) => $"{percent}%";
 }
