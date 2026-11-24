@@ -28975,6 +28975,7 @@ MonoBehaviour:
   hotDogManCharacter: worker_hot_dog
   hotDogManName: Hot Dog Man
   hotDogManPost: {fileID: 1214822903}
+  hotDogManHiddenTime: 10
   hotDogLineOut: 1.4
   iceCreamCharacter: worker_ice_cream
   iceCreamSlot: {x: 0, y: 0, z: 0.1}
