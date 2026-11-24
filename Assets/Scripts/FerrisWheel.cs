@@ -55,6 +55,7 @@ public class FerrisWheel : MonoBehaviour
     public float rollDistance = 22f;
     public Vector3 rollDirection = new(1f, 0f, -0.6f); // across the ground; it has to go mostly sideways to read as rolling
     public int gawkers = 4;           // visitors who wander over to watch it spin flat out, right where it'll land
+    public int toiletLine = 3;        // and lined up at the toilet there (VisitorSpawner's toilet line), as it spins up
     public int doomedShouts = 3;      // how many of those in its way cry out (GameText.WheelDoomed) as it tears loose
 
     readonly List<Visitor> doomed = new();
@@ -247,7 +248,9 @@ public class FerrisWheel : MonoBehaviour
     static SpriteRenderer Prop(Transform parent, string sprite, float height, Vector3 localFeet)
     {
         var r = ParkArt.Lit(ParkArt.Make("Sprite", parent, sprite, height, Color.white));
-        r.transform.localPosition = localFeet + new Vector3(0f, height * 0.5f, 0f);
+        // Its feet on the ground, wherever its picture's pivot is (the middle for most, the bottom for the barriers).
+        float pivot = r.sprite != null ? r.sprite.pivot.y / r.sprite.rect.height : 0.5f;
+        r.transform.localPosition = localFeet + new Vector3(0f, height * pivot, 0f);
         return r;
     }
 
@@ -525,11 +528,14 @@ public class FerrisWheel : MonoBehaviour
     // Where it'll come to rest, lying flat: rollDistance along from where it tears loose.
     Vector3 RestPoint(Vector3 from) => from + new Vector3(rollDirection.x, 0f, rollDirection.z).normalized * rollDistance;
 
-    // As it spins up, a few visitors nearby wander over to watch, right where it'll end up. They stay put.
+    // As it spins up, a few visitors nearby wander over to watch, right where it'll end up. They stay put. It lands in
+    // a corner of the park, so they may come from a way off (GawkerReach), hurrying from past GawkerWalk.
+    const float GawkerReach = 32f, GawkerWalk = 14f;
     void GatherGawkers()
     {
         Vector3 rest = RestPoint(new Vector3(wheel.position.x, 0f, wheel.position.z));
         float radius = wheelRadius * Scale;
+        LineUpAtToilet(rest, radius);
         var near = new List<Visitor>();
         foreach (var v in Visitor.All)
             if (Squashable(v) && v.Look.Visible && v.Current is Visitor.State.Idle or Visitor.State.Wander or Visitor.State.Stare)
@@ -538,7 +544,8 @@ public class FerrisWheel : MonoBehaviour
         for (int i = 0; i < near.Count && doomed.Count < gawkers; i++)
         {
             var v = near[i];
-            if (Flat(v.transform.position - rest) > 18f) break;
+            float far = Flat(v.transform.position - rest);
+            if (far > GawkerReach) break;
             var walker = v.GetComponent<GroundWalker>();
             for (int tries = 0; tries < 8; tries++)
             {
@@ -548,7 +555,7 @@ public class FerrisWheel : MonoBehaviour
                 Vector3Int cell = walker.ground.WorldToCell(spot);
                 cell.z = 0;
                 if (!walker.ground.HasTile(cell) || GroundWalker.NearObstacle(spot, 0.35f)) continue;
-                v.SendTo(spot);
+                v.SendTo(spot, run: far > GawkerWalk); // from further off, hurrying, to be there in time
                 doomed.Add(v);
                 break;
             }
@@ -556,6 +563,28 @@ public class FerrisWheel : MonoBehaviour
     }
 
     static float Flat(Vector3 d) => new Vector2(d.x, d.z).magnitude;
+
+    // The toilet where it'll land has a line (toiletLine long) when it does: nobody comes out any more, and the
+    // nearest people about make it up to toiletLine, walking over to join it.
+    void LineUpAtToilet(Vector3 rest, float radius)
+    {
+        foreach (var line in StandQueue.All.ToArray())
+        {
+            if (!line.name.StartsWith("Toilet") || Flat(line.transform.position - rest) > radius + 2f) continue;
+            line.serving = () => false;
+            var near = new List<Visitor>();
+            foreach (var v in Visitor.All)
+                if (Squashable(v) && v.Look.Visible && v.Group == null && v.Current is Visitor.State.Idle or Visitor.State.Wander)
+                    near.Add(v);
+            Vector3 at = line.transform.position;
+            near.Sort((a, b) => Flat(a.transform.position - at).CompareTo(Flat(b.transform.position - at)));
+            for (int i = 0; i < near.Count && line.Waiting < toiletLine; i++)
+            {
+                if (!line.Join(near[i])) break;
+                near[i].EnterQueue(line);
+            }
+        }
+    }
 
     // It tears loose: everyone in its way (on its path, or where it'll lie) freezes, staring at it, panic-faced, and a
     // few cry out. Then it comes.

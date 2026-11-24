@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Values are fixed because they're saved in the scene (the stall's goods, the spawner's items).
-public enum VisitorItem { None = 0, Drink = 3, Keys = 4, WaterBottle = 5, Screwdriver = 6 }
+public enum VisitorItem { None = 0, Drink = 3, Keys = 4, WaterBottle = 5, Screwdriver = 6, Balloon = 7, CottonCandy = 8, HotDog = 9, IceCream = 10, Popcorn = 11 }
 
 // A park visitor going about their day: wandering, buying drinks at the stall, lining up for the Ferris wheel or at
 // a stand (StandQueue), having their photo taken with the mascot (Mascot), carrying their things in their hand. They stop and stare at someone acting possessed, and scream and run when
@@ -382,15 +382,33 @@ public class Visitor : MonoBehaviour
         if (queue.Faces(out Vector3 counter)) Look.Face(counter);
     }
 
-    // Served at the front of a stand's line (StandQueue): pleased, off they go.
-    public void Served()
+    // Served at the front of a stand's line (StandQueue): pleased, off they go with what they bought (an ice cream, a
+    // balloon, a hot dog). `pleased` false: the stand closed on them (burnt down), so nothing, and no cheer.
+    public void Served(VisitorItem bought = VisitorItem.None, bool pleased = true)
     {
         queue = null;
         giveUpAt = -1f;
         nextStand = Time.time + Random.Range(standAgain.x, standAgain.y);
         if (Current != State.Queueing) return;
-        Look.Cheer(0.5f);
+        if (pleased)
+        {
+            Buy(bought);
+            Look.Cheer(0.5f);
+        }
         PickTarget();
+    }
+
+    // Into their hand. Something from a stand they were already holding (finished by now) makes way for it; anything
+    // else they keep (a drink or a water bottle, which the puzzles need about the park; staff's keys), going without.
+    void Buy(VisitorItem bought)
+    {
+        if (bought == VisitorItem.None) return;
+        if (Held != null)
+        {
+            if (Held.kind is not (VisitorItem.Balloon or VisitorItem.CottonCandy or VisitorItem.HotDog or VisitorItem.IceCream or VisitorItem.Popcorn)) return;
+            TakeItem();
+        }
+        GrabItem(Item.Create(bought, CarryPoint), true);
     }
 
     // ---------------------------------------------------------------- a photo with the mascot (Mascot)
@@ -747,7 +765,8 @@ public class Visitor : MonoBehaviour
         Look.Squash(quiet);
         if (quiet) return;
         Fx.Burst("Fx/puff", transform.position + Vector3.up * 0.2f, 10, new Color(0.75f, 0.7f, 0.65f), 3f, 0.5f, 0.6f);
-        Fx.Burst("Fx/sparkle", transform.position + Vector3.up * 0.6f, 6, Fx.Gold, 2f, 0.25f, 0.8f); // seeing stars
+        Fx.Burst("Fx/sparkle", transform.position + Vector3.up * 0.6f, 6, Fx.Gold, 2f, 0.25f, 0.8f);
+        DizzyStars.Over(transform, transform.position + Vector3.up * (HeadHeight * 0.32f + 0.45f), 1.2f); // seeing stars
         ParkChaos.Add(transform.position, 9f, 30f, ParkChaos.Terrifying);
     }
 

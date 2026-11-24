@@ -297,7 +297,7 @@ public static class Scorch
         (Mathf.PerlinNoise(x, y) * 0.55f + Mathf.PerlinNoise(x * 2.1f + 17f, y * 2.1f + 3f) * 0.3f
          + Mathf.PerlinNoise(x * 4.3f + 41f, y * 4.3f + 29f) * 0.15f);
 
-    // A building going up in flames: the grill's fire art (Anim/hot_dog_fire_1, _2, cut down to the flames) all over
+    // A building going up in flames: the big fire art (Anim/big_fire_1..3, in turn) all over
     // it, a row of big ones along its lower part and smaller ones higher up, each on a spot of the picture itself. They
     // spring up from its foot outward over CatchTime, flicker (the two frames, at their own pace, and a little
     // stretching), burn while the scorch creeps over it, then die down one by one. Unlit, so they glow at night; a warm
@@ -338,20 +338,23 @@ public static class Scorch
         static Sprite[] Frames()
         {
             if (frames != null) return frames;
-            var a = ParkArt.Get("Anim/hot_dog_fire_1");
-            var b = ParkArt.Get("Anim/hot_dog_fire_2");
-            if (a == null || b == null) return null;
-            frames = new[] { Cut(a), Cut(b) };
+            var cut = new List<Sprite>();
+            for (int i = 1; i <= 3; i++)
+            {
+                var s = ParkArt.Get("Anim/big_fire_" + i);
+                if (s != null) cut.Add(Cut(s));
+            }
+            if (cut.Count == 0) return null;
+            frames = cut.ToArray();
             return frames;
         }
 
-        // The flames, cut out of the frame's canvas and read back (as Make reads a building), their flat bottom (where
-        // they sat on the grill) faded out, so stacked on a building they rise out of it instead of standing on a line.
+        // A frame read back (as Make reads a building) with its flat bottom faded out, so stacked on a building the
+        // flames rise out of it instead of standing on a line. The frames are cut to the same box (their feet at the
+        // bottom middle), so they line up as they take turns.
         static Sprite Cut(Sprite s)
         {
-            // Of its 1785 x 1727 canvas, from the bottom left. The picture is its whole texture (its textureRect is only
-            // the tight bit with something drawn, different in each frame), so the canvas maps straight onto it.
-            var on = new Rect(361f, 82f, 485f, 323f);
+            var on = s.rect;
             var tex = s.texture;
             float k = tex.width / s.rect.width;
             int w = Mathf.RoundToInt(on.width * k), h = Mathf.RoundToInt(on.height * k);

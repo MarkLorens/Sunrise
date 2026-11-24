@@ -12,12 +12,17 @@ public class Item : MonoBehaviour
     const float Size = 0.5f;     // lying on the ground or falling
     const float HeldSize = 0.3f; // in a hand: about one and a half hands tall
 
-    // How big it is in a hand: HeldSize, give or take for things that read too small at that size.
+    // How big it is in a hand: HeldSize, give or take for things that read too small at that size. A balloon is held
+    // by its string's end, floating up over their head.
     float Held => kind switch
     {
         VisitorItem.WaterBottle => HeldSize * 1.3f,
+        VisitorItem.Balloon => BalloonHeight,
         _ => HeldSize,
     };
+    const float BalloonHeight = 1.6f;
+    // Let go of, a balloon floats away instead of falling: up and drifting, swaying on its string, gone after FlyTime.
+    const float FlyTime = 6f, FlyUp = 2.2f;
     const float HeldTilt = 15f;  // degrees a held thing leans in toward the holder's body
     const float Gravity = 18f;
 
@@ -29,6 +34,11 @@ public class Item : MonoBehaviour
         VisitorItem.Keys => "keys",
         VisitorItem.WaterBottle => "water bottle",
         VisitorItem.Screwdriver => "screwdriver",
+        VisitorItem.Balloon => "balloon",
+        VisitorItem.CottonCandy => "cotton candy",
+        VisitorItem.HotDog => "hot dog",
+        VisitorItem.IceCream => "ice cream",
+        VisitorItem.Popcorn => "popcorn",
         _ => "thing",
     };
 
@@ -44,7 +54,8 @@ public class Item : MonoBehaviour
     // Carried but never drawn, in a hand or on the ground.
     bool Unseen => kind is VisitorItem.Keys or VisitorItem.Screwdriver;
     Vector3 velocity;
-    bool falling;
+    bool falling, flying;
+    float flownAt, sway;
 
     public static Item Create(VisitorItem kind, Vector3 position)
     {
@@ -52,7 +63,10 @@ public class Item : MonoBehaviour
         go.transform.position = position;
         var item = go.AddComponent<Item>();
         item.kind = kind;
-        item.sprite = ParkArt.Lit(ParkArt.Make("Sprite", go.transform, "Items/" + kind, Size, Color.white, 1));
+        // Balloons come in three colours (Items/Balloon_1..3, their pivot at the string's end); the rest, Items/<kind>.
+        string art = kind == VisitorItem.Balloon ? "Items/Balloon_" + Random.Range(1, 4) : "Items/" + kind;
+        item.sprite = ParkArt.Lit(ParkArt.Make("Sprite", go.transform, art, Size, Color.white, 1));
+        item.sway = Random.value * 10f;
         if (item.sprite.sprite == null)
         {
             // ponytail: grey block until there's art in Resources/Park/Items/<kind>.png.
@@ -73,9 +87,17 @@ public class Item : MonoBehaviour
         if (!silent) ClosedCaptions.Show(Captions.PickUp);
     }
 
-    // Let go of: it tumbles to the ground.
+    // Let go of: it tumbles to the ground (a balloon floats away, from the hand that held it).
     public void Dropped(Vector3 at)
     {
+        if (kind == VisitorItem.Balloon && Holder != null)
+        {
+            Holder = null;
+            flying = true;
+            flownAt = Time.time;
+            velocity = new Vector3(Random.Range(-0.5f, 0.5f), FlyUp, 0f);
+            return; // no clatter: it just goes
+        }
         Holder = null;
         transform.position = at;
         velocity = Vector3.up * 2f;
@@ -101,10 +123,23 @@ public class Item : MonoBehaviour
             // holder rides). (Lifting it by 0.3 x its size, to stick up out of the fist, sat it above the hand.)
             float held = Held;
             transform.localScale = Vector3.one * (held / Size);
-            var tilt = Quaternion.Euler(0f, 0f, Holder.Look.FacingLeft ? HeldTilt : -HeldTilt);
+            var tilt = kind == VisitorItem.Balloon
+                ? Quaternion.Euler(0f, 0f, Mathf.Sin(Time.time * 1.3f + sway) * 6f) // bobbing on its string
+                : Quaternion.Euler(0f, 0f, Holder.Look.FacingLeft ? HeldTilt : -HeldTilt);
             transform.SetPositionAndRotation(Holder.CarryPoint - Holder.transform.forward * 0.02f, tilt);
             sprite.enabled = Holder.Look.Visible;
             shadow.enabled = false;
+            return;
+        }
+        if (flying)
+        {
+            float t = Time.time - flownAt;
+            transform.position += new Vector3(velocity.x + Mathf.Sin(t * 1.7f + sway) * 0.35f, velocity.y, 0f) * Time.deltaTime;
+            transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Sin(t * 2.1f + sway) * 10f);
+            sprite.enabled = true;
+            shadow.enabled = false;
+            sprite.color = new Color(1f, 1f, 1f, Mathf.Clamp01((FlyTime - t) / 1.5f)); // fading out up high
+            if (t >= FlyTime) Destroy(gameObject);
             return;
         }
         transform.localScale = Vector3.one;

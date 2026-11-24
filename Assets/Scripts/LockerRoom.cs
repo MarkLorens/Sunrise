@@ -39,16 +39,21 @@ public class LockerRoom : MonoBehaviour
     {
         Burning = true;
         Scorch.BurnNear(transform.position, 2f, quiet, "lockers"); // the building's picture, burning (Scorch)
+        Scorch.BurnAround(transform.position, SurroundScorch, quiet); // and the ground and whatever stands round it
         ParkChaos.Add(transform.position, 6f, 9999f, ParkChaos.Terrifying);
     }
 
     // The payoff, after the fireball (PropaneTank): it burns, the PA goes off, the operator runs over.
     const float ShotHold = 5f; // seconds the camera stays on the PA booth, then on the operator, once it's there
+    const float FireWatch = 4.5f; // seconds the camera stays on the locker room going up in flames, before the PA
+    const float SurroundScorch = 5f; // the ground and whatever stands this close, scorched too
 
     public IEnumerator Burn()
     {
         Ignite();
-        yield return new WaitForSeconds(1f);
+        // The camera on it while it goes up in flames: long enough to see them catch all over it and roar.
+        CameraRig.Spotlight(transform, 999f, 3f);
+        yield return new WaitForSeconds(FireWatch);
 
         if (paBooth != null)
         {

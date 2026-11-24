@@ -34,6 +34,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
     bool HotDogStand => burns == null;
     const float StandScorchRadius = 4f;                           // the hot dog stand's pictures, round where it blows
     const float SurroundScorchRadius = 5f;                        // the ground and whatever stands round it, scorched too
+    const float FireWatch = 4f;                                   // more seconds on the hot dog stand, to watch it burn
     static readonly string[] StandPictures = { "hot_dog_stand" };
 
     bool leaking, spent, thoughtBlown;
@@ -210,11 +211,12 @@ public class PropaneTank : MonoBehaviour, IInteraction
             Fx.Burst("Fx/puff", Center + Vector3.up * 1.5f, 4, new Color(0.25f, 0.25f, 0.25f), 2f, 1f, 1.5f);
             yield return new WaitForSeconds(0.3f);
         }
-        Destroy(shot.gameObject);
+        if (HotDogStand) yield return new WaitForSeconds(FireWatch); // the stand going up in flames, in plain view
 
         if (!HotDogStand)
         {
-            yield return burns.Burn(); // the fire, the PA, the operator running over
+            yield return burns.Burn(); // the fire (the camera going over to it), the PA, the operator running over
+            Destroy(shot.gameObject); // only now: handed over, not pulled out from under the camera
             CameraRig.EndSpotlight();
             AudioManager.MusicOff = false;
             yield return new WaitForSeconds(1f);
@@ -223,6 +225,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
             yield break;
         }
 
+        Destroy(shot.gameObject);
         // Across the park, someone's nap is over.
         if (RideTechnician.All.Count > 0) yield return RideTechnician.All[0].WakeUp();
         CameraRig.EndSpotlight();
