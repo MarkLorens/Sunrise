@@ -74,7 +74,7 @@ public class StandQueue : MonoBehaviour, IVisitorLine
             Vector3 p = q.Slot(q.capacity);
             Vector3Int cell = ground.WorldToCell(p);
             cell.z = 0;
-            if (!ground.HasTile(cell) || GroundWalker.NearObstacle(p, 0.3f)) break;
+            if (!GroundWalker.InPark(ground, cell) || GroundWalker.NearObstacle(p, 0.3f)) break;
             q.capacity++;
         }
         q.groundCapacity = q.capacity;
@@ -92,7 +92,7 @@ public class StandQueue : MonoBehaviour, IVisitorLine
         {
             Vector3Int cell = ground.WorldToCell(p);
             cell.z = 0;
-            if (ground.HasTile(cell) && !GroundWalker.NearObstacle(p, 0.3f)) ok.Add(new Vector3(p.x, 0f, p.z));
+            if (GroundWalker.InPark(ground, cell) && !GroundWalker.NearObstacle(p, 0.3f)) ok.Add(new Vector3(p.x, 0f, p.z));
         }
         if (ok.Count == 0) return null;
         var q = new GameObject(name).AddComponent<StandQueue>();

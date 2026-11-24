@@ -10,8 +10,9 @@ using UnityEngine;
 // its back when it blows away, its side (drawn blowing left, flipped for right) otherwise. Its blades are always going
 // round: on the front they spin about the hub, the artist's two drawings swapped as they go so the strokes shimmer; on
 // the side the two side drawings are swapped. From the back there are none to see.
+// It plays its own sound (IOwnSound): the menu click when it turns, only the "can't" sound when it's guarded.
 [RequireComponent(typeof(Interactable))]
-public class TankFan : MonoBehaviour, IInteraction
+public class TankFan : MonoBehaviour, IInteraction, IOwnSound
 {
     public static readonly List<TankFan> All = new();
 
@@ -151,11 +152,12 @@ public class TankFan : MonoBehaviour, IInteraction
         {
             bool mascot = guardedBy == Guard.Mascot;
             GameHud.Shout(guard.transform, mascot ? GameText.MascotGuard : GameText.HotDogGuard, 2f);
-            GameHud.Refuse(transform, mascot ? GameText.MascotGuards : GameText.FanGuarded);
+            GameHud.Refuse(transform, mascot ? GameText.MascotGuards : GameText.FanGuarded); // G-06, no click
             if (!thoughtGuarded) GameHud.Think(mascot ? GameText.ThinkMascot : GameText.PickFanGuarded());
             thoughtGuarded = true;
             return;
         }
+        AudioManager.TryPlay(e => e.menuClick); // G-03: it went through
         facing = (Dir)(((int)facing + 1) % 4);
         Face();
         ClosedCaptions.Show(Captions.FanTurned);

@@ -154,7 +154,21 @@ MonoBehaviour:
       Data2: 1264340901
       Data3: 2014042546
       Data4: -1320014476
-    Path: event:/Music and Ambiance (MA)/Park Crowd
+    Path: event:/BGM and Ambiance (BA)/Park Crowd
+  <iceCreamStall>k__BackingField:
+    Guid:
+      Data1: -1441980255
+      Data2: 1121069622
+      Data3: -205196150
+      Data4: -287404780
+    Path: event:/Park (P)/Ice Cream Stall
+  <balloonSeller>k__BackingField:
+    Guid:
+      Data1: 983133101
+      Data2: 1096577752
+      Data3: -839565431
+      Data4: -1262348889
+    Path: event:/Park (P)/Balloon Seller
   <npcCurious>k__BackingField:
     Guid:
       Data1: -342564235
@@ -199,11 +213,11 @@ MonoBehaviour:
     Path: event:/Ruckus (RU)/Chat Bubble
   <spiritHover>k__BackingField:
     Guid:
-      Data1: 427168090
-      Data2: 1183008178
-      Data3: 1468763313
-      Data4: -830343913
-    Path: event:/Ruckus (RU)/Float
+      Data1: -2013275587
+      Data2: 1158096619
+      Data3: -1953814888
+      Data4: 1557164204
+    Path: event:/Ruckus (RU)/Float New
   <possess>k__BackingField:
     Guid:
       Data1: 1552490166
@@ -220,18 +234,18 @@ MonoBehaviour:
     Path: event:/Ruckus (RU)/Release
   <hostFootsteps>k__BackingField:
     Guid:
-      Data1: 1409630697
-      Data2: 1193589829
-      Data3: 1075666110
-      Data4: -1427162750
-    Path: event:/Ruckus (RU)/Walk (NPC)
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   <mechanicFootsteps>k__BackingField:
     Guid:
-      Data1: 2141263092
-      Data2: 1178611345
-      Data3: -1394648646
-      Data4: -297851235
-    Path: event:/Ruckus (RU)/Walk (Mechanic)
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   <cableManFootsteps>k__BackingField:
     Guid:
       Data1: 0
@@ -309,6 +323,13 @@ MonoBehaviour:
       Data3: 1389114300
       Data4: -1623635216
     Path: event:/User Interface (UI)/Disabled Action
+  <disabledMenu>k__BackingField:
+    Guid:
+      Data1: -1947851260
+      Data2: 1146127311
+      Data3: -1150636366
+      Data4: -1013931256
+    Path: event:/User Interface (UI)/Disabled Menu
   <skipTutorialHold>k__BackingField:
     Guid:
       Data1: 491028991

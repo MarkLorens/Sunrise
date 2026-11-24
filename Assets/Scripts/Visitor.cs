@@ -216,6 +216,7 @@ public class Visitor : MonoBehaviour
     // all squeezed through it together first, then scattering every which way once out (`scatter`: degrees either
     // side of straight on), each to a spot as far off as the exit.
     bool fleeing;
+    public bool Fleeing => fleeing; // out of the park at the end: the only ones who walk out over its grass (GroundWalker)
     Vector3? fleeOut;
     Vector3 fleeAlong;
 
