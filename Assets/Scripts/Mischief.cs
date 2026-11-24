@@ -27,7 +27,7 @@ public static class Mischief
 
     public static readonly (string title, (Task task, string label)[] steps)[] Parts =
     {
-        ("Exploding Diarrhea", new[]
+        ("Explosive Diarrhea", new[]
         {
             (Task.TutorialPossess, "Possess a visitor"),
             (Task.TutorialSign, "Take down the Out of Order sign"),
@@ -100,6 +100,7 @@ public static class Mischief
                 done.Add(Task.ReachBox);
                 break;
             }
+        GameHud.Restored(); // straight to the part you're on: nothing just got finished
     }
 
     // Skipping the tutorial: its steps count as done, with no chime or pop-up.

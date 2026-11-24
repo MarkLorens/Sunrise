@@ -906,7 +906,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d9aa0c4927b9941468ba0f7bdaaccdeb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PicnicTable
-  depth: 1.3
+  depth: 0.7
 --- !u!1 &172700818
 GameObject:
   m_ObjectHideFlags: 0
@@ -1545,8 +1545,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 4.1216, y: 1, z: 1.3}
-  m_Center: {x: 0, y: 0.5, z: 0.65}
+  m_Size: {x: 3.4943998, y: 1, z: 0.7}
+  m_Center: {x: 0, y: 0.5, z: 0.35}
 --- !u!1 &344091409
 GameObject:
   m_ObjectHideFlags: 0
@@ -2642,7 +2642,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d9aa0c4927b9941468ba0f7bdaaccdeb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PicnicTable
-  depth: 1.3
+  depth: 0.7
 --- !u!1 &547964466
 GameObject:
   m_ObjectHideFlags: 0
@@ -3248,7 +3248,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -12.82, y: 0, z: -15.19}
-  m_LocalScale: {x: 0.48828125, y: 0.48828125, z: 0.48828125}
+  m_LocalScale: {x: 0.3530817, y: 0.3530817, z: 0.3530817}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
@@ -3360,7 +3360,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d9aa0c4927b9941468ba0f7bdaaccdeb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PicnicTable
-  depth: 1.3
+  depth: 0.7
 --- !u!1 &700000100
 GameObject:
   m_ObjectHideFlags: 0
@@ -3440,8 +3440,9 @@ MonoBehaviour:
   payoffTime: 6
   payoffPullBack: 8
   parkEntrance: {fileID: 1852579289}
-  entrancePullBack: 3
-  glideToEntrance: 7
+  exodusView: {fileID: 2076424118}
+  entrancePullBack: 7
+  glideToEntrance: 3.5
   watchExodus: 5
   glideHome: 3
   finaleZoom: 0.5
@@ -4517,7 +4518,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 12.82, y: 0, z: -15.19}
-  m_LocalScale: {x: 0.48828125, y: 0.48828125, z: 0.48828125}
+  m_LocalScale: {x: 0.3530817, y: 0.3530817, z: 0.3530817}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
@@ -5235,7 +5236,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: c8e2094e2e3374c38b5ef52592a346f5, type: 2}
+  - {fileID: 2100000, guid: 72fb6efcbec084e44b5edc637bf63dc8, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -6695,8 +6696,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 4.1216, y: 1, z: 1.3}
-  m_Center: {x: 0, y: 0.5, z: 0.65}
+  m_Size: {x: 3.4943998, y: 1, z: 0.7}
+  m_Center: {x: 0, y: 0.5, z: 0.35}
 --- !u!1 &1304725896
 GameObject:
   m_ObjectHideFlags: 0
@@ -6935,7 +6936,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d9aa0c4927b9941468ba0f7bdaaccdeb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PicnicTable
-  depth: 1.3
+  depth: 0.7
 --- !u!1 &1428148187
 GameObject:
   m_ObjectHideFlags: 0
@@ -7091,7 +7092,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -12.82, y: 0, z: 2.27}
-  m_LocalScale: {x: 0.48828125, y: 0.48828125, z: 0.48828125}
+  m_LocalScale: {x: 0.3530817, y: 0.3530817, z: 0.3530817}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
@@ -7321,8 +7322,8 @@ Transform:
   m_GameObject: {fileID: 1494336509}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 12.82, y: 0, z: 2.27}
-  m_LocalScale: {x: 0.48828125, y: 0.48828125, z: 0.48828125}
+  m_LocalPosition: {x: 17.2, y: 0, z: -0.5}
+  m_LocalScale: {x: 0.3530817, y: 0.3530817, z: 0.3530817}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
@@ -7600,8 +7601,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 4.1216, y: 1, z: 1.3}
-  m_Center: {x: 0, y: 0.5, z: 0.65}
+  m_Size: {x: 3.4943998, y: 1, z: 0.7}
+  m_Center: {x: 0, y: 0.5, z: 0.35}
 --- !u!1 &1537049526
 GameObject:
   m_ObjectHideFlags: 0
@@ -13123,6 +13124,37 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
   m_BlendShapeWeights: []
+--- !u!1 &2076424117
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2076424118}
+  m_Layer: 0
+  m_Name: Exodus View
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2076424118
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2076424117}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -3, y: 0, z: -28}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2077144827
 GameObject:
   m_ObjectHideFlags: 0
@@ -350979,8 +351011,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 4.1216, y: 1, z: 1.3}
-  m_Center: {x: 0, y: 0.5, z: 0.65}
+  m_Size: {x: 3.4943998, y: 1, z: 0.7}
+  m_Center: {x: 0, y: 0.5, z: 0.35}
 --- !u!1 &2142983299
 GameObject:
   m_ObjectHideFlags: 0
@@ -351061,3 +351093,4 @@ SceneRoots:
   - {fileID: 1020471823}
   - {fileID: 1581919319}
   - {fileID: 1356994258}
+  - {fileID: 2076424118}
