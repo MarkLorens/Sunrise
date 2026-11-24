@@ -18,6 +18,22 @@ public static class Aftermath
 
     public static void Reset() => sites.Clear();
 
+    // The scene `p` is in (or on the edge of), if any: its middle and police line.
+    public static bool Around(Vector3 p, out Vector3 center, out float keepBack)
+    {
+        foreach (var s in sites)
+        {
+            Vector3 d = p - s.center;
+            if (Time.time > s.until || new Vector2(d.x, d.z).magnitude > s.keepBack + 0.6f) continue;
+            center = s.center;
+            keepBack = s.keepBack;
+            return true;
+        }
+        center = p;
+        keepBack = 0f;
+        return false;
+    }
+
     // A new scene, and a Reset Agent sent to stand watch on its line.
     public static void Add(Vector3 center, float keepBack, float seconds)
     {
@@ -31,6 +47,7 @@ public static class Aftermath
     {
         center.y = 0f;
         sites.RemoveAll(s => (s.center - center).sqrMagnitude < 0.01f);
+        ConstructionTape.Clear(center); // cleaned up: the tape comes down
     }
 
     // Can this person step from `from` to `to`? Only visitors going about their day are kept out; stepping out's fine.

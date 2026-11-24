@@ -65,7 +65,9 @@ public class CameraRig : MonoBehaviour
     {
         public Transform on, point; // what was spotlit, and the point the shot uses (a person's middle, or `on` itself)
         public Visitor person;
-        public float k, pullBack, lift, liftSpeed; // k: how far it's eased in (0..1)
+        public float k, pullBack, lift, liftSpeed, radius; // k: how far it's eased in (0..1)
+        public Vector3 last;   // where its point was last frame
+        public bool standIn;   // its point is ours, standing in for a marker that's gone
     }
     readonly List<Shot> shots = new();
     Shot spotShot;
@@ -112,12 +114,15 @@ public class CameraRig : MonoBehaviour
                 shot.point.position = t.position + Vector3.up * shot.lift;
             }
             rig.shots.Add(shot);
+            shot.radius = radius;
+            shot.last = shot.point.position;
             rig.group.AddMember(shot.point, 0f, radius);
         }
         else
         {
             int m = rig.group.FindMember(shot.point);
             if (m >= 0) rig.group.Targets[m].Radius = radius;
+            shot.radius = radius;
         }
         shot.pullBack = pullBack;
         rig.spotShot = shot;
@@ -349,13 +354,19 @@ public class CameraRig : MonoBehaviour
         for (int i = shots.Count - 1; i >= 0; i--)
         {
             var x = shots[i];
-            if (x.point == null || x.on == null) // its owner destroyed it (a cutscene's own marker)
+            if (x.point == null || x.on == null)
             {
+                // Its owner destroyed it (a cutscene's own marker, a person gone): a stand-in where it last was, easing
+                // out like any other (dropped at once, its weight left the shot in a frame: a lurch).
                 if (x.person != null && x.point != null) Destroy(x.point.gameObject);
                 group.Targets.RemoveAll(g => g.Object == null || g.Object == x.point);
+                var standIn = new GameObject("Camera Spot (gone)").transform;
+                standIn.position = x.last;
+                x.point = x.on = standIn;
+                x.person = null;
+                x.standIn = true;
+                group.AddMember(standIn, Ease(x.k), x.radius);
                 if (x == spotShot) { spotShot = null; spot = null; }
-                shots.RemoveAt(i);
-                continue;
             }
             x.k = Mathf.MoveTowards(x.k, x == spotShot ? 1f : 0f, step);
             if (x.person != null)
@@ -365,10 +376,11 @@ public class CameraRig : MonoBehaviour
             }
             int m = group.FindMember(x.point);
             if (m >= 0) group.Targets[m].Weight = Ease(x.k);
+            x.last = x.point.position;
             if (x.k <= 0f && x != spotShot)
             {
                 group.RemoveMember(x.point);
-                if (x.person != null) Destroy(x.point.gameObject);
+                if (x.person != null || x.standIn) Destroy(x.point.gameObject);
                 shots.RemoveAt(i);
             }
         }

@@ -82,14 +82,16 @@ public static class StandingProps
     {
         var r = prop.Renderer(" (squashed)");
         if (r == null || r.GetComponent<Squashed>() != null) return;
+        float tall = r.bounds.size.y, wide = r.bounds.size.x;
         r.gameObject.AddComponent<Squashed>();
-        Fx.Burst("Fx/puff", prop.at + Vector3.up * 0.3f, 10, new Color(0.7f, 0.65f, 0.6f), 3f, 0.6f, 0.8f);
+        Fx.Burst("Fx/puff", prop.at + Vector3.up * 0.3f, 16, new Color(0.7f, 0.65f, 0.6f), 4f, 0.8f, 0.9f);
+        DizzyStars.Over(null, prop.at + Vector3.up * (tall * 0.32f + 0.4f), Mathf.Min(wide, 3f) * 0.7f); // seeing stars
     }
 
     class Squashed : MonoBehaviour
     {
         // As the people (CharacterSprite.Pancake), a touch less wide: buildings stand close together.
-        const float SlamTime = 0.15f, WobbleTime = 0.6f, FlatWidth = 1.3f, FlatHeight = 0.32f;
+        const float SlamTime = 0.15f, WobbleTime = 0.9f, FlatWidth = 1.3f, FlatHeight = 0.32f, Boing = 0.4f;
 
         Vector3 scale, position;
         float since, feet; // feet: how far its feet are below its position, in its own (unscaled) units
@@ -115,7 +117,7 @@ public static class StandingProps
             else
             {
                 float w = Mathf.Clamp01((t - SlamTime) / WobbleTime);
-                float jelly = Mathf.Sin(w * Mathf.PI * 4f) * (1f - w) * 0.25f; // ...and boinging back up to it
+                float jelly = Mathf.Sin(w * Mathf.PI * 4f) * (1f - w) * Boing; // ...and boinging back up to it, cartoon-big
                 sx = FlatWidth * (1f - jelly * 0.5f);
                 sy = FlatHeight * (1f + jelly);
                 if (w >= 1f) enabled = false;

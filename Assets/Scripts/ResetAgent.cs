@@ -46,9 +46,13 @@ public class ResetAgent : StaffWorker
         foreach (var a in All) a.LeavePost(scene);
     }
 
+    bool taped;
+    Vector3 tapedAt;
+
     protected override void Update()
     {
         base.Update();
+        Tape();
         if (Current != State.Staying || Time.time < nextShout) return;
         nextShout = Time.time + Random.Range(shoutEvery.x, shoutEvery.y);
 
@@ -67,6 +71,34 @@ public class ResetAgent : StaffWorker
         GameHud.Shout(transform, lines[nextLine++ % lines.Length], 2f, true);
     }
 
+    // Construction tape round whatever they're at while they're at it (ConstructionTape): out at the police line round a
+    // scene they're guarding (a stay job: they stand on it), close round anything else.
+    const float TapeIn = 0.4f; // a scene's tape stands this far inside its police line (they guard on the line)
+
+    void Tape()
+    {
+        bool there = OnSite(out var j);
+        Vector3 site = new(j.at.x, 0f, j.at.z);
+        if (there && Aftermath.Around(site, out Vector3 scene, out float keepBack))
+        {
+            // A scene: taped off once, staying up as they go from job to job in it, till it's cleaned up.
+            ConstructionTape.Scene(scene, Mathf.Max(1f, keepBack - TapeIn));
+            if (taped) ConstructionTape.TakeDown(tapedAt);
+            taped = false;
+            return;
+        }
+        if (taped && (!there || !Same(site, tapedAt)))
+        {
+            ConstructionTape.TakeDown(tapedAt);
+            taped = false;
+        }
+        if (!there || taped) return;
+        Vector3 d = j.spot - j.at;
+        ConstructionTape.Put(site, j.stay ? new Vector2(d.x, d.z).magnitude : 0f);
+        taped = true;
+        tapedAt = site;
+    }
+
     protected override void OnEnable()
     {
         All.Add(this);
@@ -76,6 +108,8 @@ public class ResetAgent : StaffWorker
     protected override void OnDisable()
     {
         All.Remove(this);
+        if (taped) ConstructionTape.TakeDown(tapedAt); // possessed, or gone: not holding a ring up
+        taped = false;
         base.OnDisable();
     }
 }
