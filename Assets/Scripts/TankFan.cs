@@ -10,7 +10,7 @@ using UnityEngine;
 // its back when it blows away, its side (drawn blowing left, flipped for right) otherwise. Its blades are always going
 // round: on the front they spin about the hub, the artist's two drawings swapped as they go so the strokes shimmer; on
 // the side the two side drawings are swapped. From the back there are none to see.
-// It plays its own sound (IOwnSound): the menu click when it turns, only the "can't" sound when it's guarded.
+// It plays its own sound (IOwnSound): its head turning when it turns, only the "can't" sound when it's guarded.
 [RequireComponent(typeof(Interactable))]
 public class TankFan : MonoBehaviour, IInteraction, IOwnSound
 {
@@ -48,7 +48,12 @@ public class TankFan : MonoBehaviour, IInteraction, IOwnSound
     bool thoughtGuarded;
 
     void OnEnable() => All.Add(this);
-    void OnDisable() => All.Remove(this);
+    void OnDisable()
+    {
+        All.Remove(this);
+        hum?.Release();
+        humAt = -1f;
+    }
 
     void Start()
     {
@@ -100,9 +105,77 @@ public class TankFan : MonoBehaviour, IInteraction, IOwnSound
     void Update()
     {
         TurnBlades();
+        Hum();
         if (Time.time < nextGust) return;
         nextGust = Time.time + 0.2f;
         Gust(transform.position, Wind);
+    }
+
+    // ---------------------------------------------------------------- its hum
+
+    // Its whirring (FMODEvents.fan, 3D at the fan, loops), panned by which way it faces: the event's "Fan Direction"
+    // parameter, South 0, West 1, North 2, East 3 (each turn clockwise is one more), which FMOD's seek modulator
+    // sweeps to its new value. East to South would sweep back the long way round, through North and West: if the
+    // parameter goes up to 4 (South again) it sweeps on to 4 and is quietly put back to 0 once there; otherwise it
+    // jumps straight to South.
+    const string DirectionParameter = "Fan Direction";
+    LoopingSound hum;
+    float humRange;     // how far off it's heard (the event's max distance): the caption shows within it
+    float humTop = 3f;  // the parameter's maximum in FMOD
+    float humAt = -1f;  // the value last sent (-1: not yet, so the next one is sent straight there, no sweep)
+
+    static float DirectionValue(Dir d) => d switch
+    {
+        Dir.Down => 0f,  // South
+        Dir.Left => 1f,  // West
+        Dir.Up => 2f,    // North
+        _ => 3f,         // East
+    };
+
+    void Hum()
+    {
+        var events = FMODEvents.instance;
+        if (events == null || events.fan.IsNull)
+        {
+            hum?.Stop();
+            return;
+        }
+        if (hum == null)
+        {
+            hum = new LoopingSound(gameObject);
+            humRange = 20f; // FMOD's default, if the event can't be looked up
+            if (FMODUnity.RuntimeManager.StudioSystem.getEventByID(events.fan.Guid, out var sound) == FMOD.RESULT.OK)
+            {
+                sound.getMinMaxDistance(out _, out humRange);
+                if (sound.getParameterDescriptionByName(DirectionParameter, out var p) == FMOD.RESULT.OK) humTop = p.maximum;
+            }
+        }
+        hum.Play(events.fan);
+
+        float want = DirectionValue(facing);
+        if (humAt < 0f)
+            Point(want, true); // just started (or loaded): already facing its way
+        else if (humAt == 4f)
+        {
+            if (want != 0f) // turned on again before the last sweep finished
+            {
+                Point(0f, true);
+                Point(want, false);
+            }
+            else if (hum.GetParameter(DirectionParameter) >= 3.99f) Point(0f, true); // there: back to 0, sounding the same
+        }
+        else if (want != humAt)
+        {
+            if (humAt == 3f && want == 0f) Point(humTop >= 4f ? 4f : 0f, humTop < 4f); // East to South
+            else Point(want, false);
+        }
+        if (Ears.Near(transform.position, humRange)) ClosedCaptions.Hold(Captions.FanWhirring);
+    }
+
+    void Point(float value, bool instant)
+    {
+        hum.SetParameter(DirectionParameter, value, instant);
+        humAt = value;
     }
 
     // Round they go: the front's spun about the hub, the side's two drawings swapped; none from the back.
@@ -158,7 +231,8 @@ public class TankFan : MonoBehaviour, IInteraction, IOwnSound
             thoughtGuarded = true;
             return;
         }
-        AudioManager.TryPlay(e => e.menuClick); // G-03: it went through
+        // Its head turning (3D at the fan); the menu click (G-03) until that sound's set up.
+        if (!AudioManager.TryPlay(e => e.fanTurn, transform.position)) AudioManager.TryPlay(e => e.menuClick);
         facing = (Dir)(((int)facing + 1) % 4);
         Face();
         ClosedCaptions.Show(Captions.FanTurned);
@@ -178,6 +252,7 @@ public class TankFan : MonoBehaviour, IInteraction, IOwnSound
     public void Restore(Dir dir)
     {
         facing = dir;
+        humAt = -1f; // straight to its saved direction, no sweep
         if (art != null) Face();
     }
 }

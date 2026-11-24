@@ -276,8 +276,12 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
         if (m == null) yield break; // busy (or possessed): he'll come when he can
         CameraRig.Spotlight(m.transform, 999f);
         CutsceneLight.On(m); // the park dark round him
+        // His running steps (npcRun) while the camera follows him over; the game hears from the shot (Ears).
+        var steps = m.GetComponent<Footsteps>();
+        if (steps != null) steps.hurrying = true;
         float giveUp = Time.time + 10f; // in case something stops him on the way
         while (m.Current == StaffWorker.State.Going && Time.time < giveUp) yield return null;
+        if (steps != null) steps.hurrying = false;
         yield return new WaitForSeconds(1f);
         CutsceneLight.Off();
     }

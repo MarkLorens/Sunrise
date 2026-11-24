@@ -40,6 +40,12 @@ public class FMODEvents : MonoBehaviour
     [field: SerializeField] public EventReference technicianAwake { get; private set; }
     [field: Tooltip("Gas hissing out of a loosened propane valve, until it blows (3D at the tank, loops).")]
     [field: SerializeField] public EventReference propaneLeak { get; private set; }
+    [field: Tooltip("Turning a propane tank's valve, right before its gas starts leaking (a one-shot, 3D at the tank).")]
+    [field: SerializeField] public EventReference propaneValve { get; private set; }
+    [field: Tooltip("Each cooling fan whirring (TankFan: 3D at the fan, loops). Its Fan Direction parameter (South 0, West 1, North 2, East 3, optionally South again at 4) is set to the way the fan faces; a seek modulator on it sweeps the pan when the fan's turned.")]
+    [field: SerializeField] public EventReference fan { get; private set; }
+    [field: Tooltip("Turning a cooling fan's head a quarter turn (TankFan; a one-shot, 3D at the fan). Empty = the menu click.")]
+    [field: SerializeField] public EventReference fanTurn { get; private set; }
     [field: Tooltip("A gutter lid sliding open or dropping shut: the rats' gutter by the hot dog stand, and the smelly one by the mascot (a one-shot, 3D at the gutter).")]
     [field: SerializeField] public EventReference gutterLid { get; private set; }
     [field: Tooltip("The rats squeaking from the moment the lid's open until they're all back down (3D, follows the pack, loops).")]
@@ -130,6 +136,8 @@ public class FMODEvents : MonoBehaviour
     [field: SerializeField] public EventReference newOrLoadGame { get; private set; }
     [field: Tooltip("G-07: \"Objective Completed!\" pops up after a part is done. Everything else is turned down while it plays.")]
     [field: SerializeField] public EventReference objectiveCompleted { get; private set; }
+    [field: Tooltip("A step on the objectives list getting crossed out.")]
+    [field: SerializeField] public EventReference taskDone { get; private set; }
     [field: Tooltip("S-07: the pause menu's Save Game button.")]
     [field: SerializeField] public EventReference saveButton { get; private set; }
     [field: Tooltip("S-05: Esc opens the pause menu.")]

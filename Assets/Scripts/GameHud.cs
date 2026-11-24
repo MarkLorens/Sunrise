@@ -447,6 +447,8 @@ public class GameHud : MonoBehaviour
                 r.group.alpha = r.appear;
                 r.body.anchoredPosition = new Vector2((r.appear - 1f) * 40f, 0f);
                 if (!Mischief.IsDone(r.task)) continue;
+                // Crossed out in front of the player (not a step already done when the list came in).
+                if (r.appear >= 1f && AudioManager.TryPlay(e => e.taskDone)) ClosedCaptions.Show(Captions.StepDone);
                 r.age = 0f;
                 r.group.alpha = 1f;
                 r.body.anchoredPosition = Vector2.zero;

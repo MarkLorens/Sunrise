@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="ParameterPreset" id="{179bdeb7-b2ab-4308-98ec-1e88bd8a1af2}">
+		<property name="name">
+			<value>Fan Direction</value>
+		</property>
+		<relationship name="folder">
+			<destination>{0c297bad-6fb0-4dec-b708-8b830dd7d1ed}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{97756a96-d562-46bc-b29d-ca0c0fabdf5d}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{97756a96-d562-46bc-b29d-ca0c0fabdf5d}">
+		<property name="maximum">
+			<value>4</value>
+		</property>
+		<property name="initialValue">
+			<value>0</value>
+		</property>
+		<relationship name="modulators">
+			<destination>{3cd9f526-f390-4c52-9601-bf8d29c2d73a}</destination>
+		</relationship>
+	</object>
+	<object class="SeekModulator" id="{3cd9f526-f390-4c52-9601-bf8d29c2d73a}">
+		<property name="nameOfPropertyBeingModulated">
+			<value>cursorPosition</value>
+		</property>
+		<property name="speedAscending">
+			<value>0.25</value>
+		</property>
+	</object>
+</objects>

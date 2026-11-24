@@ -220,6 +220,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
     public void Interact(Visitor host)
     {
         leaking = true;
+        if (AudioManager.TryPlay(e => e.propaneValve, transform.position)) ClosedCaptions.Show(Captions.PropaneValve);
         ClosedCaptions.Show(Captions.GasLeak);
         GameHud.Say(GameText.OpenedValve);
         GameHud.Think(GameHud.ThoughtPriority.Action, GameText.PickValve());

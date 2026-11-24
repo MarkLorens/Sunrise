@@ -120,7 +120,7 @@
 			<value>volume</value>
 		</property>
 		<property name="amount">
-			<value>3</value>
+			<value>1</value>
 		</property>
 	</object>
 	<object class="MixerBusEffectChain" id="{8d665b6c-f2e6-4150-8a75-1f55d6b9e76b}">
@@ -132,7 +132,7 @@
 	<object class="MixerBusPanner" id="{a92981a4-e91c-4445-b1b1-8fc01ffa6786}" />
 	<object class="SingleSound" id="{74bff057-e52b-4588-b463-8af016989bfe}">
 		<property name="volume">
-			<value>-8.5</value>
+			<value>-7.5</value>
 		</property>
 		<relationship name="audioFile">
 			<destination>{c2d54733-53bb-4cdb-81ca-cf7299929968}</destination>
@@ -151,6 +151,9 @@
 	<object class="FlangerEffect" id="{f62d9e98-be2c-4885-bd2a-54c1ec56769a}">
 		<property name="rate">
 			<value>0.879999995</value>
+		</property>
+		<property name="mix">
+			<value>16</value>
 		</property>
 	</object>
 </objects>

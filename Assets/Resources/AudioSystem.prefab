@@ -87,11 +87,11 @@ MonoBehaviour:
     Path: event:/Park (P)/Water Faucet Droplet
   <fountainPress>k__BackingField:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -1221026650
+      Data2: 1320232882
+      Data3: 971543430
+      Data4: 1382208681
+    Path: event:/A-leak-tricity (AL)/Press the Faucet
   <cableDip>k__BackingField:
     Guid:
       Data1: 0
@@ -155,6 +155,27 @@ MonoBehaviour:
       Data3: -572676732
       Data4: -611668836
     Path: event:/Park (P)/Propane Tank Leak
+  <propaneValve>k__BackingField:
+    Guid:
+      Data1: 377711076
+      Data2: 1187065288
+      Data3: -1381200470
+      Data4: 511203369
+    Path: event:/Park (P)/Propane Tank Valve
+  <fan>k__BackingField:
+    Guid:
+      Data1: -457364991
+      Data2: 1096939400
+      Data3: -1790243923
+      Data4: 1988928455
+    Path: event:/Park (P)/Fan
+  <fanTurn>k__BackingField:
+    Guid:
+      Data1: -1007902110
+      Data2: 1236385369
+      Data3: 204678046
+      Data4: -1195798798
+    Path: event:/Park (P)/Turning the Fan
   <gutterLid>k__BackingField:
     Guid:
       Data1: 668755275
@@ -428,6 +449,13 @@ MonoBehaviour:
       Data3: 728029825
       Data4: -1871246493
     Path: event:/User Interface (UI)/Objective Completed
+  <taskDone>k__BackingField:
+    Guid:
+      Data1: -976496809
+      Data2: 1275184538
+      Data3: -2104117613
+      Data4: -1121591174
+    Path: event:/User Interface (UI)/Task Done
   <saveButton>k__BackingField:
     Guid:
       Data1: 1046746670

@@ -53,7 +53,9 @@ public static class Captions
     public const string GutterShut = "[Gutter lid clangs shut]";
     public const string RatSqueaks = "[Rats squeaking]";             // the rats out of the gutter, when you're near
     public const string FanTurned = "[Fan clunks round]";
+    public const string FanWhirring = "[Fan whirring]";               // a fan, when you're near
     public const string HotDogManHop = "[Hot dog man scrambles]";
+    public const string PropaneValve = "[Valve creaks open]";
     public const string GasLeak = "[Gas hissing]";
     public const string Explosion = "[Massive explosion]";
 
