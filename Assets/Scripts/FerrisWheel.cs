@@ -59,7 +59,13 @@ public class FerrisWheel : MonoBehaviour
     public float breakDelay = 1.5f;   // seconds of shuddering before it tears off
     public float rollSpeed = 6f;
     public float rollDistance = 22f;
+    public float rollStopDistance = 6f; // it brakes over this last bit of rollDistance
+    public float stopWobbleTime = 3f;   // then rocks back and forth this many seconds, settling, before it keels over
     public Vector3 rollDirection = new(1f, 0f, -0.6f); // across the ground; it has to go mostly sideways to read as rolling
+    public float veerAfter = 6f;  // it rolls straight across the screen this far (as it was facing) as it comes down
+    public float veerRate = 3f;   // then curves round onto rollDirection, turning this many degrees per unit it rolls
+    public float toppleGravity = 90f;  // degrees/s² it keels over with (times how far over it is): higher = falls faster
+    [Range(0f, 0.6f)] public float toppleBounce = 0.25f; // how much it bounces back up off the ground (0: none)
     public int gawkers = 4;           // visitors who wander over to watch it spin flat out, right where it'll land
     public int toiletLine = 3;        // and lined up at the toilet there (VisitorSpawner's toilet line), as it spins up
     public int picnickers = 3;        // fresh visitors sat at the picnic table there as it spins up (frozen when it comes)
@@ -83,7 +89,12 @@ public class FerrisWheel : MonoBehaviour
     float speed;
     float shakeUntil;
     Vector3 wheelHome;
-    float stateTime, rolled;
+    float stateTime, rolled, wobbled; // wobbled: seconds rocking at the end of the roll
+    bool toppling, landed;   // keeling over (Roll), and hit the ground once
+    float tilt, tiltSpeed;   // how far over it's gone (0 upright, 90 flat) and how fast, degrees
+    float yaw;               // which way it's facing as it rolls (PathAt), degrees: 0 side-on to the camera
+    Vector3 pathFrom;        // where it tore loose (on the ground)
+    Vector3 hinge;           // the bottom of its rim, where it keels over from
     readonly List<Vector3> cabinVelocity = new();
 
     void OnEnable() => All.Add(this);
@@ -289,6 +300,8 @@ public class FerrisWheel : MonoBehaviour
     {
         GoMoody(); // out of shot: the camera's on the wheel
         Possession.InputBlocked = true;
+        // Out of the operator, as the camera goes to the wheel: the ending's iris closes on Ruckus themself.
+        if (Possession.Instance != null) Possession.Instance.Release();
         AudioManager.MusicOff = true;
         CameraRig.Spotlight(wheel, 999f, (wheelRadius + cabinDrop) * Scale, payoffPullBack); // down to the lowest cabin
         ScreamIn(GameText.CabinScreamsWobbly);
@@ -341,10 +354,13 @@ public class FerrisWheel : MonoBehaviour
         var dark = profile.Add<UnityEngine.Rendering.Universal.ColorAdjustments>(); // for the very last of the light
         dark.colorFilter.Override(Color.white);
         var cam = Camera.main;
+        var look = spirit.GetComponent<SpiritSprite>();
         GameHud.Think(GameHud.ThoughtPriority.Critical, GameText.ThinkRolled);
         for (float t = 0f; t < finaleHold + irisShrinkTime; t += Time.deltaTime)
         {
-            if (cam != null) iris.center.Override((Vector2)cam.WorldToViewportPoint(spirit.Focus.position + Vector3.up));
+            // On the middle of Ruckus as drawn (bobbing with them); a person's middle is about 1 up from their feet.
+            Vector3 middle = look != null && look.HasBody ? look.Middle : spirit.Focus.position + Vector3.up;
+            if (cam != null) iris.center.Override((Vector2)cam.WorldToViewportPoint(middle));
             volume.weight = Mathf.Clamp01(t / irisCloseTime);
             // Their gloat said, the circle shrinks away to nothing: its edge widening into the middle while what's
             // left of the picture fades out, black by the end.
@@ -466,51 +482,85 @@ public class FerrisWheel : MonoBehaviour
         }
         if (queue != null) queue.ThrowOutRiders(transform.position + Vector3.back * 1.5f, 3f);
         // Everything standing anywhere it'll roll over or come to lie on (not its own parts).
-        Vector3 dir = new Vector3(rollDirection.x, 0f, rollDirection.z).normalized;
-        Vector3 from = new(wheel.position.x, 0f, wheel.position.z);
-        standing = StandingProps.Near(from + dir * rollDistance * 0.5f, rollDistance * 0.5f + wheelRadius * Scale + 2f,
+        Vector3 from = pathFrom = new(wheel.position.x, 0f, wheel.position.z);
+        standing = StandingProps.Near(from + PathAt(rollDistance, out _) * 0.5f, rollDistance * 0.5f + wheelRadius * Scale + 2f,
             t => t.IsChildOf(transform) || t.IsChildOf(wheel) || cabins.Exists(c => t.IsChildOf(c)));
         Fx.Shake(0.45f, 1f);
         ClosedCaptions.Show(Captions.WheelCollapse);
         ParkChaos.Add(transform.position, 12f, 9999f);
     }
 
-    // Down to the ground, then along rollDirection, flattening people; then it tips over flat.
+    // Down to the ground, then along its path (PathAt), flattening people; then it tips over flat.
     void Roll()
     {
-        Vector3 dir = new Vector3(rollDirection.x, 0f, rollDirection.z).normalized;
         float radius = wheelRadius * Scale;
         Vector3 p = wheel.position;
         float floor = RaisedFloor.Height(p); // the platform, or the ground once it's rolled off
-        p.y = Mathf.MoveTowards(p.y, floor + radius, 9f * Time.deltaTime);
 
-        if (rolled < rollDistance)
+        if (wobbled < stopWobbleTime)
         {
-            float step = rollSpeed * Time.deltaTime;
-            p += dir * step;
+            p.y = Mathf.MoveTowards(p.y, floor + radius, 9f * Time.deltaTime); // down onto its rim
+            float step;
+            float left = rollDistance - rolled;
+            float crawl = rollSpeed * 0.45f; // what it's down to as it reaches the end, and rocks past it with
+            if (left > 0f && wobbled == 0f) // (once it's rocking, rocking back behind the end doesn't count)
+            {
+                // Flat out, then braking steadily over the last rollStopDistance.
+                float v = left > rollStopDistance ? rollSpeed
+                    : Mathf.Sqrt(crawl * crawl + (rollSpeed * rollSpeed - crawl * crawl) * left / rollStopDistance);
+                step = Mathf.Min(v * Time.deltaTime, left);
+            }
+            else
+            {
+                // Rocks back and forth about where it stopped, each swing smaller, till it's still.
+                wobbled += Time.deltaTime;
+                const float swing = 3.5f; // radians a second: about a swing and back every 1.8 s
+                float rock = crawl / swing * Mathf.Exp(-3f * wobbled / stopWobbleTime) * Mathf.Sin(swing * wobbled);
+                step = rock - (rolled - rollDistance);
+            }
             rolled += step;
+            Vector3 at = pathFrom + PathAt(rolled, out yaw); // facing the way it's going
+            p.x = at.x;
+            p.z = at.z;
+            Vector3 dir = Heading(yaw);
             // Rolling without slipping: clockwise going right, so it carries on the way it was spinning, flat out.
-            angle -= Mathf.Sign(dir.x) * step / radius * Mathf.Rad2Deg;
-            wheel.rotation = Quaternion.Euler(0, 0, angle);
+            angle -= Mathf.Sign(rollDirection.x) * step / radius * Mathf.Rad2Deg;
+            wheel.rotation = Quaternion.Euler(0, yaw, angle);
             Flatten(p, dir, radius);
             SquashAlong(p, dir, radius);
             ParkChaos.Add(p, 10f, 8f);
         }
         else
         {
-            // Topple: tip back until it lies on the ground.
-            var flat = Quaternion.Euler(90f, 0f, angle);
-            wheel.rotation = Quaternion.RotateTowards(wheel.rotation, flat, 120f * Time.deltaTime);
-            p.y = Mathf.MoveTowards(p.y, floor + 0.05f, radius * 1.4f * Time.deltaTime); // lands as it finishes tipping
-            if (Quaternion.Angle(wheel.rotation, flat) < 0.5f && p.y <= floor + 0.06f)
+            // Topple: keels over backwards on the bottom of its rim, which stays put on the ground. Slow at first, then
+            // faster the further over it is, like a felled tree; it slams down, bounces once and lies flat.
+            if (!toppling)
             {
-                Set(State.Wrecked);
-                Fx.Shake(0.4f, 0.8f);
-                ClosedCaptions.Show(Captions.WheelWrecked);
-                Fx.Burst("Fx/puff", p, 30, new Color(0.7f, 0.65f, 0.6f), 6f, 1.2f, 1.2f);
-                SquashUnder(p, radius);
-                ParkChaos.Add(p, 12f, 9999f);
+                toppling = true;
+                hinge = new Vector3(p.x, floor, p.z);
+                tiltSpeed = 4f; // the nudge that starts it going: barely leaning at first
             }
+            tiltSpeed += toppleGravity * Mathf.Sin(Mathf.Max(tilt, 3f) * Mathf.Deg2Rad) * Time.deltaTime;
+            tilt += tiltSpeed * Time.deltaTime;
+            if (tilt >= 90f)
+            {
+                tilt = 90f;
+                if (!landed)
+                {
+                    landed = true;
+                    Vector3 down = hinge + Quaternion.Euler(0f, yaw, 0f) * new Vector3(0f, 0.05f, radius);
+                    Fx.Shake(0.4f, 0.8f);
+                    ClosedCaptions.Show(Captions.WheelWrecked);
+                    Fx.Burst("Fx/puff", down, 30, new Color(0.7f, 0.65f, 0.6f), 6f, 1.2f, 1.2f);
+                    SquashUnder(down, radius);
+                    ParkChaos.Add(down, 12f, 9999f);
+                }
+                tiltSpeed *= -toppleBounce;
+                if (tiltSpeed > -20f) Set(State.Wrecked); // too little left to bounce
+            }
+            float t = tilt * Mathf.Deg2Rad;
+            p = hinge + Quaternion.Euler(0f, yaw, 0f) * new Vector3(0f, radius * Mathf.Cos(t) + 0.05f * Mathf.Sin(t), radius * Mathf.Sin(t));
+            wheel.rotation = Quaternion.Euler(tilt, yaw, angle); // tips over backwards, off its turned face
         }
         wheel.position = p;
     }
@@ -560,8 +610,29 @@ public class FerrisWheel : MonoBehaviour
 
     // ---------------------------------------------------------------- the runaway wheel's victims (MaxSpeedPayoff)
 
-    // Where it'll come to rest, lying flat: rollDistance along from where it tears loose.
-    Vector3 RestPoint(Vector3 from) => from + new Vector3(rollDirection.x, 0f, rollDirection.z).normalized * rollDistance;
+    // Where it'll come to rest, lying flat: rollDistance along its path from where it tears loose.
+    Vector3 RestPoint(Vector3 from) => from + PathAt(rollDistance, out _);
+
+    // `along` units into its roll: how far it's got from where it set off (on the ground), and which way it's facing
+    // (yaw, degrees). Straight across the screen at first, side-on to the camera as it was, then after veerAfter
+    // curving round onto rollDirection. It never turns past side-on, so the picture's never seen from behind.
+    Vector3 PathAt(float along, out float heading)
+    {
+        float s = Mathf.Sign(rollDirection.x);
+        float turnTo = Mathf.Atan2(-rollDirection.z * s, rollDirection.x * s) * Mathf.Rad2Deg;
+        const float ds = 0.25f;
+        Vector3 at = Vector3.zero;
+        for (float d = 0f; d < along; d += ds)
+        {
+            float step = Mathf.Min(ds, along - d);
+            at += Heading(Mathf.MoveTowards(0f, turnTo, Mathf.Max(0f, d + step * 0.5f - veerAfter) * veerRate)) * step;
+        }
+        heading = Mathf.MoveTowards(0f, turnTo, Mathf.Max(0f, along - veerAfter) * veerRate);
+        return at;
+    }
+
+    // The way along the ground it rolls when facing yaw (to the right, or the left if rollDirection goes left).
+    Vector3 Heading(float yaw) => Mathf.Sign(rollDirection.x) * new Vector3(Mathf.Cos(yaw * Mathf.Deg2Rad), 0f, -Mathf.Sin(yaw * Mathf.Deg2Rad));
 
     // As it spins up, a few visitors nearby wander over to watch, right where it'll end up. They stay put. It lands in
     // a corner of the park, so they may come from a way off (GawkerReach), hurrying from past GawkerWalk.
@@ -672,15 +743,15 @@ public class FerrisWheel : MonoBehaviour
     {
         rollStart = new Vector3(wheel.position.x, 0f, wheel.position.z);
         Vector3 rest = RestPoint(rollStart);
-        Vector3 dir = new Vector3(rollDirection.x, 0f, rollDirection.z).normalized, side = new(-dir.z, 0f, dir.x);
         float radius = wheelRadius * Scale;
         foreach (var v in Visitor.All)
         {
             if (!Squashable(v) || !v.Look.Visible || v.Current is Visitor.State.Down or Visitor.State.Riding || doomed.Contains(v)) continue;
             Vector3 d = v.transform.position - rollStart;
             d.y = 0f;
-            float along = Vector3.Dot(d, dir), off = Mathf.Abs(Vector3.Dot(d, side));
-            bool onPath = along > -radius * 0.3f && along < rollDistance + radius && off <= radius * 0.3f + 0.5f;
+            bool onPath = Flat(d) <= radius * 0.3f + 0.5f; // where it sets off, then every unit along its path
+            for (float a = 1f; a <= rollDistance && !onPath; a += 1f)
+                onPath = Flat(d - PathAt(a, out _)) <= radius * 0.3f + 0.5f;
             if (onPath || Flat(v.transform.position - rest) <= radius) doomed.Add(v);
         }
         doomed.RemoveAll(v => v == null || v.Current is Visitor.State.Down or Visitor.State.Riding or Visitor.State.Possessed);

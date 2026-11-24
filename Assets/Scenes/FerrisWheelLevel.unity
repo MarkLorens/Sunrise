@@ -6338,6 +6338,7 @@ MonoBehaviour:
   objects: {fileID: 0}
   bodyRadius: 0.35
   speed: 5
+  devSprint: 4
   readKeyboard: 1
   move: {x: 0, y: 0}
   ignoreObstacles: 0
@@ -9316,7 +9317,13 @@ MonoBehaviour:
   breakDelay: 1.5
   rollSpeed: 6
   rollDistance: 22
-  rollDirection: {x: 1, y: 0, z: 0}
+  rollStopDistance: 6
+  stopWobbleTime: 3
+  rollDirection: {x: 1, y: 0, z: -0.6}
+  veerAfter: 6
+  veerRate: 3
+  toppleGravity: 90
+  toppleBounce: 0.25
   gawkers: 2
   toiletLine: 3
   picnickers: 3
@@ -9901,6 +9908,7 @@ MonoBehaviour:
   objects: {fileID: 0}
   bodyRadius: 0.35
   speed: 2
+  devSprint: 4
   readKeyboard: 0
   move: {x: 0, y: 0}
   ignoreObstacles: 0
@@ -13593,7 +13601,7 @@ MonoBehaviour:
   Params: []
   OverrideAttenuation: 0
   OverrideMinDistance: 1
-  OverrideMaxDistance: 20
+  OverrideMaxDistance: 8
 --- !u!1 &819272198
 GameObject:
   m_ObjectHideFlags: 0
