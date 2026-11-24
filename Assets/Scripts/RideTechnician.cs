@@ -110,9 +110,20 @@ public class RideTechnician : MonoBehaviour
     // The hot dog stand's payoff (PropaneTank): the camera on his booth while he's still snoring, the bang jolts him
     // awake, and he yells from inside. He only comes out if there's a call about the wheel to take; otherwise he grumbles
     // and stays in his booth, out of reach.
+    // Where the camera looks at him in his booth: halfway down from his Zzz to his middle (on the Zzz itself the booth
+    // sat low in the shot; on his middle it rode up out of the top of it).
+    Transform shotPoint;
+    Transform ShotPoint()
+    {
+        if (shotPoint == null) shotPoint = new GameObject("Technician Shot").transform;
+        Vector3 middle = transform.position + Vector3.up * (GetComponent<Visitor>().HeadHeight * 0.5f);
+        shotPoint.position = Vector3.Lerp(middle, zzz.position, 0.5f);
+        return shotPoint;
+    }
+
     public System.Collections.IEnumerator WakeUp()
     {
-        CameraRig.Spotlight(zzz, 999f, 2f);
+        CameraRig.Spotlight(ShotPoint(), 999f, 2f); // a little under his Zzz, so his booth sits up in the shot
         LightUp();
         yield return new WaitForSeconds(1.2f); // the camera getting there: still snoring
         Fx.Burst("Fx/puff", zzz.position + Vector3.up * 0.3f, 8, Color.white, 2f, 0.35f, 0.5f);
@@ -149,7 +160,7 @@ public class RideTechnician : MonoBehaviour
 
     public System.Collections.IEnumerator SleepThroughCall()
     {
-        CameraRig.Spotlight(zzz, 999f, 2f);
+        CameraRig.Spotlight(ShotPoint(), 999f, 2f); // his booth up in the shot
         LightUp();
         yield return new WaitForSeconds(1.2f); // the camera getting there
         GameHud.Shout(zzz, GameText.PhoneRing, 1.4f);
