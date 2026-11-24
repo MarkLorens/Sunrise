@@ -69,6 +69,7 @@ public class TankFan : MonoBehaviour, IInteraction, IOwnSound
     void Face()
     {
         art.sprite = ParkArt.Get(Picture());
+        if (art.TryGetComponent(out Scorch.Burnt burnt)) burnt.Redraw(art.sprite); // burnt stays burnt, whichever side it shows
         // The same size whatever the fan's own scale in the scene (some are 2): ArtScale and ArtRaise are as seen.
         float own = Mathf.Max(0.01f, transform.lossyScale.y);
         art.transform.localScale = Vector3.one * (ArtScale / own);

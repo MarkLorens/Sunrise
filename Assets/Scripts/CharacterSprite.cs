@@ -61,16 +61,16 @@ public class CharacterSprite : MonoBehaviour
     SpriteRenderer body, shadow;
 
     // Fill layers under the lineart. Palettes are placeholders until the art direction settles.
-    static readonly string[] FillLayers = { "skin", "top", "bottom", "shoes" };
-    static readonly Color[][] Palettes =
+    public static readonly string[] FillLayers = { "skin", "top", "bottom", "shoes" };
+    public static readonly Color[][] Palettes =
     {
         Hex("#FFE0C4", "#F1C296", "#E0AC69", "#C68642", "#8D5524"),                       // skin
         Hex("#E74C3C", "#3498DB", "#2ECC71", "#F1C40F", "#9B59B6", "#F4F4F4", "#FF8FAB"), // top
         Hex("#3B5B8C", "#C9B48A", "#3A3A42", "#7A7F87", "#556B2F"),                       // bottom
         Hex("#F4F4F4", "#2B2B2B", "#7B4A2A", "#C0392B"),                                  // shoes
     };
-    static readonly Color[] HairPalette = Hex("#1C1C1C", "#3B2618", "#6B4226", "#A0522D", "#C99B4F", "#8C8C8C");
-    static readonly Color[] HatPalette = Hex("#E74C3C", "#3498DB", "#2ECC71", "#F1C40F", "#F4F4F4", "#2B2B2B");
+    public static readonly Color[] HairPalette = Hex("#1C1C1C", "#3B2618", "#6B4226", "#A0522D", "#C99B4F", "#8C8C8C");
+    public static readonly Color[] HatPalette = Hex("#E74C3C", "#3498DB", "#2ECC71", "#F1C40F", "#F4F4F4", "#2B2B2B");
     static Dictionary<string, Sprite> headArt;
     static readonly List<string> faceIds = new(), hairIds = new();
     static readonly Dictionary<Sprite, Vector3> handAnchors = new();

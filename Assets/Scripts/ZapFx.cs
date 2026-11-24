@@ -14,6 +14,8 @@ public class ZapFx : MonoBehaviour
     const float BoltHeightInTile = 295f / 450f;
     const float TilePixels = 450f; // the tile picture's pixels per unit: how it's recognised on a sprite
 
+    public ElectricBolt Bolt { get; private set; }
+
     IEnumerator Start()
     {
         yield return null; // the box's own picture is made in its own Start
@@ -35,7 +37,8 @@ public class ZapFx : MonoBehaviour
             }
         }
         at.z -= 0.1f; // just in front of the box
-        ElectricBolt.Make("Box Bolt", null, at, height, 0f).Blink = false; // always lit, just shaking
+        Bolt = ElectricBolt.Make("Box Bolt", null, at, height, 0f);
+        Bolt.Blink = false; // always lit, just shaking
     }
 
     // The electrical_box tile standing where this box is, and where its bolt goes.
