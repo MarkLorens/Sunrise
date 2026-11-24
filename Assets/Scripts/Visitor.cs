@@ -833,6 +833,9 @@ public class Visitor : MonoBehaviour
         nextScream = Time.time + ScreamCooldown;
     }
 
+    const float PanicMargin = 3f;    // how far in from the park's edge the panicking keep
+    const float PanicLookAhead = 4f; // how far ahead they look for it (about one turn's run)
+
     void RunAway()
     {
         Vector3 away = transform.position - panicFrom;
@@ -841,6 +844,14 @@ public class Visitor : MonoBehaviour
         // Wobble so a crowd doesn't flee in one straight line; on a dead end, pick any direction.
         dir = Quaternion.Euler(0, 0, Random.Range(-50f, 50f)) * dir;
         if (!walker.IsWalkable(transform.position + new Vector3(dir.x, 0, dir.y))) dir = Random.insideUnitCircle.normalized;
+        // Keeping to the middle of things: heading for the back or the sides of the park, they turn for its middle
+        // instead (the chaos stays where it's seen).
+        Vector3 ahead = transform.position + new Vector3(dir.x, 0f, dir.y) * PanicLookAhead;
+        if (!GroundWalker.WellInside(walker.ground, ahead, PanicMargin))
+        {
+            Vector3 middle = GroundWalker.ParkMiddle(walker.ground) - transform.position;
+            dir = Quaternion.Euler(0, 0, Random.Range(-40f, 40f)) * new Vector2(middle.x, middle.z).normalized;
+        }
         walker.move = dir;
         nextTurn = Time.time + Random.Range(0.5f, 1.2f);
     }

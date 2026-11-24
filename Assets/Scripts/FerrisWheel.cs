@@ -62,6 +62,10 @@ public class FerrisWheel : MonoBehaviour
     public Vector3 rollDirection = new(1f, 0f, -0.6f); // across the ground; it has to go mostly sideways to read as rolling
     public int gawkers = 4;           // visitors who wander over to watch it spin flat out, right where it'll land
     public int toiletLine = 3;        // and lined up at the toilet there (VisitorSpawner's toilet line), as it spins up
+    public int picnickers = 3;        // fresh visitors sat at the picnic table there as it spins up (frozen when it comes)
+    public int onlookers = 3;         // and standing about there, frozen in shock when it comes
+    public SpriteRenderer entranceArch; // the park's entrance arch (empty: the one drawn with Props/New/entrance)
+    public Sprite moodyEntrance;      // the gate from the finale on (empty: Props/New/entrance_moody)
     public int doomedShouts = 3;      // how many of those in its way cry out (GameText.WheelDoomed) as it tears loose
 
     readonly List<Visitor> doomed = new();
@@ -283,6 +287,7 @@ public class FerrisWheel : MonoBehaviour
     // Then the main menu.
     IEnumerator MaxSpeedPayoff()
     {
+        GoMoody(); // out of shot: the camera's on the wheel
         Possession.InputBlocked = true;
         AudioManager.MusicOff = true;
         CameraRig.Spotlight(wheel, 999f, (wheelRadius + cabinDrop) * Scale, payoffPullBack); // down to the lowest cabin
@@ -350,6 +355,24 @@ public class FerrisWheel : MonoBehaviour
         }
         yield return new WaitForSeconds(blackHold);
         EndCredits.Play(); // then the main menu
+    }
+
+    // The gate changes to its moody picture (moodyEntrance) as the wheel spins up, while the camera's on the wheel: by
+    // the time it gets to the gate for the stampede, the gate's already like that.
+    void GoMoody()
+    {
+        var arch = entranceArch;
+        if (arch == null)
+            foreach (var r in FindObjectsByType<SpriteRenderer>())
+                if (r.sprite != null && r.sprite.name == "entrance")
+                {
+                    arch = r;
+                    break;
+                }
+        var art = moodyEntrance != null ? moodyEntrance : ParkArt.Get("Props/New/entrance_moody");
+        if (arch == null || art == null || arch.sprite == art) return;
+        arch.transform.localScale *= arch.sprite.bounds.size.x / art.bounds.size.x; // as wide as before
+        arch.sprite = art;
     }
 
     void Update()
@@ -503,8 +526,8 @@ public class FerrisWheel : MonoBehaviour
             Vector3 d = v.transform.position - center;
             d.y = 0f;
             if (Mathf.Abs(Vector3.Dot(d, dir)) > 0.8f || Mathf.Abs(Vector3.Dot(d, side)) > radius * 0.3f) continue;
-            if (Squashable(v)) v.Squash();
-            else v.KnockDown();
+            if (Crushable(v)) v.Squash();
+            else v.KnockDown(); // the spirit's body: knocked out, not flattened
             ClosedCaptions.Show(Captions.Flattened);
         }
     }
@@ -530,6 +553,10 @@ public class FerrisWheel : MonoBehaviour
     // A visitor going about their day (not staff, not the body the spirit's in).
     static bool Squashable(Visitor v) =>
         v.brain == null && (Possession.Instance == null || Possession.Instance.Host != v) && v.Current != Visitor.State.Possessed;
+
+    // Anyone it rolls over or lands on goes flat, staff too: everyone but the body the spirit's in.
+    static bool Crushable(Visitor v) =>
+        (Possession.Instance == null || Possession.Instance.Host != v) && v.Current != Visitor.State.Possessed;
 
     // ---------------------------------------------------------------- the runaway wheel's victims (MaxSpeedPayoff)
 
@@ -568,6 +595,49 @@ public class FerrisWheel : MonoBehaviour
                 break;
             }
         }
+        CrowdTheCorner(rest, radius);
+    }
+
+    // Where it lands, busy: fresh visitors sat at the picnic table there and standing about, every one of them frozen
+    // to the spot when it comes (doomed: BraceDoomed holds them, staring, panic-faced).
+    void CrowdTheCorner(Vector3 rest, float radius)
+    {
+        foreach (var table in StandQueue.All.ToArray())
+        {
+            if (!table.IsSeating || Flat(table.transform.position - rest) > radius + 4f) continue;
+            for (int i = 0; i < picnickers && table.HasRoom; i++) doomed.Add(Seat(table, Fresh(table.transform.position)));
+        }
+        var ground = FindAnyObjectByType<VisitorSpawner>().ground;
+        for (int i = 0, tries = 0; i < onlookers && tries < 40; tries++)
+        {
+            Vector2 r = Random.insideUnitCircle.normalized * Random.Range(radius * 0.7f, radius + 2.5f);
+            Vector3 spot = rest + new Vector3(r.x, 0f, r.y);
+            Vector3Int cell = ground.WorldToCell(spot);
+            cell.z = 0;
+            if (!GroundWalker.InPark(ground, cell) || GroundWalker.NearObstacle(spot, 0.4f)) continue;
+            var v = Fresh(spot);
+            if (v == null) break;
+            v.Hold(); // standing there, watching it spin
+            doomed.Add(v);
+            i++;
+        }
+        doomed.RemoveAll(v => v == null);
+    }
+
+    // A new visitor (VisitorSpawner's kind) standing at `at`.
+    static Visitor Fresh(Vector3 at)
+    {
+        var spawner = FindAnyObjectByType<VisitorSpawner>();
+        return spawner != null ? spawner.SpawnVisitor(at) : null;
+    }
+
+    // `v` in `line` (a toilet's, or a picnic table's seats), already there.
+    static Visitor Seat(StandQueue line, Visitor v)
+    {
+        if (v == null || !line.Join(v)) return v;
+        v.EnterQueue(line);
+        v.transform.position = line.SlotPosition(v);
+        return v;
     }
 
     static float Flat(Vector3 d) => new Vector2(d.x, d.z).magnitude;
@@ -585,6 +655,8 @@ public class FerrisWheel : MonoBehaviour
                 if (Squashable(v) && v.Look.Visible && v.Group == null && v.Current is Visitor.State.Idle or Visitor.State.Wander)
                     near.Add(v);
             Vector3 at = line.transform.position;
+            // Fresh visitors already stood in it, then the nearest about make up any shortfall.
+            for (int i = line.Waiting; i < toiletLine && line.HasRoom; i++) Seat(line, Fresh(at));
             near.Sort((a, b) => Flat(a.transform.position - at).CompareTo(Flat(b.transform.position - at)));
             for (int i = 0; i < near.Count && line.Waiting < toiletLine; i++)
             {
@@ -642,7 +714,7 @@ public class FerrisWheel : MonoBehaviour
         standing = null;
         foreach (var v in Visitor.All.ToArray())
         {
-            if (!Squashable(v) || !v.Look.Visible || v.Current is Visitor.State.Down or Visitor.State.Riding) continue;
+            if (!Crushable(v) || !v.Look.Visible || v.Current is Visitor.State.Down or Visitor.State.Riding) continue;
             if (Flat(v.transform.position - center) > radius * 0.95f) continue;
             v.Squash();
             ClosedCaptions.Show(Captions.Flattened);

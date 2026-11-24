@@ -91,7 +91,7 @@ public class ToiletPrank : MonoBehaviour
     }
 
     // Where a tile's picture is drawn: the tilemap's own placing of that cell.
-    static Matrix4x4 TileMatrix(Tilemap map, Vector3Int cell) =>
+    internal static Matrix4x4 TileMatrix(Tilemap map, Vector3Int cell) =>
         map.transform.localToWorldMatrix
         * Matrix4x4.Translate(map.CellToLocalInterpolated(cell + map.tileAnchor))
         * map.orientationMatrix * map.GetTransformMatrix(cell);
