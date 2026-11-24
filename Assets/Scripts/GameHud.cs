@@ -12,7 +12,7 @@ using UnityEngine.UI;
 public class GameHud : MonoBehaviour
 {
     public static GameHud Instance { get; private set; }
-    public static bool HideObjectives; // the objectives (top left) and the key prompts stay out of the way (ParkTour, the finale)
+    public static bool HideObjectives; // the objectives (top left) and the key prompts stay out of the way (the finale)
 
 
     static readonly Color PanelDark = new(0.12f, 0.08f, 0.12f, 0.8f);

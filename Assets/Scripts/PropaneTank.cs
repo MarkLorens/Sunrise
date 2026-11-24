@@ -41,6 +41,8 @@ public class PropaneTank : MonoBehaviour, IInteraction
     float level, nextWisp;
     SpriteRenderer[] puffs;
     Vector3[] puffSpots;
+    Vector4[] puffDrift; // each cloud puff's own wandering: speeds across and in depth, phase, how far
+    Vector3[] puffScale;
 
     Vector3 Center => new(target.position.x, 0f, target.position.z);
 
@@ -95,11 +97,16 @@ public class PropaneTank : MonoBehaviour, IInteraction
         ParkArt.Solid(transform, "Props/propane_tank", 1.3f, new Color(0.9f, 0.9f, 0.92f));
         puffs = new SpriteRenderer[cloudPuffs];
         puffSpots = new Vector3[cloudPuffs];
+        puffDrift = new Vector4[cloudPuffs];
+        puffScale = new Vector3[cloudPuffs];
         for (int i = 0; i < cloudPuffs; i++)
         {
             Vector2 r = Random.insideUnitCircle * cloudRadius;
             puffSpots[i] = Center + new Vector3(r.x, Random.Range(0.4f, 2.2f), r.y * 0.6f);
-            puffs[i] = ParkArt.Make("Gas", null, "Fx/puff", Random.Range(1.6f, 2.6f), Color.clear, ParkArt.OverheadOrder - 1);
+            puffs[i] = ParkArt.Make("Gas", null, GasArt, Random.Range(0.6f, 1.1f), Color.clear, ParkArt.OverheadOrder - 1);
+            puffDrift[i] = new Vector4(Random.Range(0.25f, 0.6f) * (Random.value < 0.5f ? -1f : 1f), Random.Range(0.2f, 0.5f), Random.Range(0f, 6.3f), Random.Range(0.5f, 0.85f));
+            puffs[i].flipX = Random.value < 0.5f;
+            puffScale[i] = puffs[i].transform.localScale;
             puffs[i].transform.position = puffSpots[i];
         }
     }
@@ -137,27 +144,45 @@ public class PropaneTank : MonoBehaviour, IInteraction
         // The haze round the target, breathing a little.
         for (int i = 0; i < puffs.Length; i++)
         {
-            puffs[i].color = new Color(Gas.r, Gas.g, Gas.b, level * 0.4f);
-            puffs[i].transform.position = puffSpots[i] + new Vector3(Mathf.Sin(Time.time * 0.7f + i), Mathf.Sin(Time.time * 0.5f + i * 2f) * 0.3f, 0f) * 0.25f;
+            puffs[i].color = new Color(1f, 1f, 1f, level * 0.6f); // the drawing's own colours
+            // Wandering about its spot, this way and that (each at its own pace), bobbing, turning, breathing.
+            Vector4 d = puffDrift[i];
+            float t = Time.time;
+            puffs[i].transform.position = puffSpots[i] + new Vector3(
+                Mathf.Sin(t * d.x + d.z) * d.w,
+                Mathf.Sin(t * 0.6f + d.z * 2f) * 0.15f,
+                Mathf.Cos(t * d.y + d.z * 1.7f) * d.w * 0.7f);
+            puffs[i].transform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(t * 0.35f + d.z) * 30f); // curling slowly
+            puffs[i].transform.localScale = puffScale[i] * (1f + Mathf.Sin(t * 0.8f + d.z * 3f) * 0.08f);
         }
 
         // Gas wisps drifting along every leg of its way: fan to fan, to the target or off to nowhere.
         if (Time.time < nextWisp) return;
-        nextWisp = Time.time + 0.15f;
+        nextWisp = Time.time + 0.18f;
         for (int i = 0; i + 1 < path.Count; i++)
         {
             Vector3 leg = path[i + 1] - path[i];
             leg.y = 0f;
-            var w = ParkArt.Make("Wisp", null, "Fx/puff", 0.9f, new Color(Gas.r, Gas.g, Gas.b, 0.8f), ParkArt.OverheadOrder);
-            w.transform.position = path[i] + Vector3.up * 1.2f;
+            Vector3 dir = leg.normalized, side = new(-dir.z, 0f, dir.x);
+            // A tidy stream along the way, each puff a touch off the line, all getting there (fading as they arrive).
+            float turn = Random.Range(-4f, 4f);
+            var w = ParkArt.Make("Wisp", null, GasArt, Random.Range(0.3f, 0.7f), new Color(1f, 1f, 1f, Random.Range(0.6f, 0.9f)), ParkArt.OverheadOrder);
+            w.flipX = Random.value < 0.5f;
+            w.transform.localRotation = Quaternion.Euler(0f, 0f, Random.Range(0f, 360f));
+            w.transform.position = path[i] + Vector3.up * Random.Range(1.05f, 1.35f) + side * Random.Range(-0.12f, 0.12f);
             var bit = w.gameObject.AddComponent<FxBit>();
             bit.drag = 0f;
-            bit.velocity = leg.normalized * WispSpeed;
-            bit.life = Mathf.Max(0.3f, leg.magnitude / WispSpeed);
+            bit.spinSpeed = 40f; // turning lazily
+            bit.growth = 0.25f;  // spreading a little as it goes
+            bit.fadeFrom = 0.75f; // clear all the way, thinning out over the last quarter as it reaches the fan
+            float speed = WispSpeed * Random.Range(0.95f, 1.05f);
+            bit.velocity = Quaternion.Euler(0f, turn, 0f) * dir * speed + Vector3.up * Random.Range(-0.04f, 0.04f);
+            bit.life = Mathf.Max(0.4f, leg.magnitude / speed);
         }
     }
 
-    const float WispSpeed = 3.5f;
+    const float WispSpeed = 2.2f; // metres a second, fan to fan
+    const string GasArt = "Fx/gas"; // the artist's curly gas puff (teal), for the wisps and the cloud
 
     // ---------------------------------------------------------------- the valve
 

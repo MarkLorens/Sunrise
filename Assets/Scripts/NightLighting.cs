@@ -25,8 +25,8 @@ public class NightLighting : MonoBehaviour
     [Header("Fog")]
     // Fades the park into the night sky with distance, so far things lose contrast and the near ones pop.
     public bool fog = true;
-    public float fogStart = 14f; // metres from the camera (it sits ~12 from the player)
-    public float fogEnd = 45f;
+    public float fogStart = 30f; // metres from the camera (it sits ~12 from the player)
+    public float fogEnd = 60f;
 
     [Header("Grade")]
     public float exposure = -0.1f;
@@ -34,6 +34,7 @@ public class NightLighting : MonoBehaviour
     [Range(-100, 100)] public float saturation = -20f;
     public Color shadowTint = new(1f, 0.92f, 1.12f); // pushes the darkest tones purple
     public float bloom = 0.8f;
+    [Range(0, 1)] public float softness = 0.7f; // how far a bright light bleeds. 0 stays on the bulb, 1 is a wide haze
     [Range(0, 1)] public float vignette = 0.35f;
 
     [Header("Park lights")]
@@ -334,7 +335,35 @@ public class NightLighting : MonoBehaviour
         return ride;
     }
 
-    Color LampColor(int i) => lampColors.Length > 0 ? lampColors[i % lampColors.Length] : Color.white;
+    // Options > Moody Lighting: warm amber lamps, moon off. Only these fields; fog, grade (aside from softness), stalls and the rest stay as above.
+    static readonly Color MoodyMoonColor = new(0.9f, 0.95f, 1f);
+    const float MoodyMoonIntensity = 0f;
+    const float MoodySoftness = 0.273f;
+    static readonly Color[] MoodyLampColors =
+    {
+        new(1f, 0.492f, 0.054f),
+        new(1f, 0.497f, 0f),
+        new(1f, 0.831f, 0f),
+    };
+    const float MoodyLampIntensity = 4.559f;
+    const float MoodyLampRange = 12.891f;
+    const float MoodyLampCoreSize = 0.9f;
+    const float MoodyLampCoreAlpha = 0.55f;
+    const float MoodyLampHaloSize = 4f;
+    const float MoodyLampHaloAlpha = 0.13f;
+    const float MoodyPoolIntensity = 0.8f;
+    const float MoodyPoolRange = 8f;
+    const float MoodyPoolHeight = 1.2f;
+    const float MoodyLampFlicker = 0.08f;
+    const float MoodyLampFlickerSpeed = 2f;
+
+    Color[] ActiveLampColors => Settings.MoodyLighting ? MoodyLampColors : lampColors;
+
+    Color LampColor(int i)
+    {
+        var colors = ActiveLampColors;
+        return colors != null && colors.Length > 0 ? colors[i % colors.Length] : Color.white;
+    }
 
     Color Bulb(int i) => bulbColors.Length > 0 ? bulbColors[i % bulbColors.Length] : Color.white;
 
@@ -354,13 +383,30 @@ public class NightLighting : MonoBehaviour
         volume.sharedProfile = profile;
     }
 
-    // Every frame, so the values above can be tuned while playing.
+    // Every frame, so the values above can be tuned while playing. Moody Lighting (Options) swaps only the moon,
+    // bloom softness and lamp/pool numbers below; everything else keeps the fields above.
     void Apply()
     {
+        bool moody = Settings.MoodyLighting;
+        Color useMoonColor = moody ? MoodyMoonColor : moonColor;
+        float useMoonIntensity = moody ? MoodyMoonIntensity : moonIntensity;
+        float useSoftness = moody ? MoodySoftness : softness;
+        float useLampIntensity = moody ? MoodyLampIntensity : lampIntensity;
+        float useLampRange = moody ? MoodyLampRange : lampRange;
+        float useLampCoreSize = moody ? MoodyLampCoreSize : lampCoreSize;
+        float useLampCoreAlpha = moody ? MoodyLampCoreAlpha : lampCoreAlpha;
+        float useLampHaloSize = moody ? MoodyLampHaloSize : lampHaloSize;
+        float useLampHaloAlpha = moody ? MoodyLampHaloAlpha : lampHaloAlpha;
+        float usePoolIntensity = moody ? MoodyPoolIntensity : poolIntensity;
+        float usePoolRange = moody ? MoodyPoolRange : poolRange;
+        float usePoolHeight = moody ? MoodyPoolHeight : poolHeight;
+        float useLampFlicker = moody ? MoodyLampFlicker : lampFlicker;
+        float useLampFlickerSpeed = moody ? MoodyLampFlickerSpeed : lampFlickerSpeed;
+
         if (sun != null)
         {
-            sun.color = moonColor;
-            sun.intensity = moonIntensity;
+            sun.color = useMoonColor;
+            sun.intensity = useMoonIntensity;
         }
         RenderSettings.ambientMode = AmbientMode.Flat;
         RenderSettings.ambientLight = ambient;
@@ -384,7 +430,7 @@ public class NightLighting : MonoBehaviour
         tones.shadows.Override(new Vector4(shadowTint.r, shadowTint.g, shadowTint.b, 0f));
         glow.threshold.Override(0.9f);
         glow.intensity.Override(bloom);
-        glow.scatter.Override(0.7f);
+        glow.scatter.Override(useSoftness);
         edges.intensity.Override(vignette);
         edges.smoothness.Override(0.45f);
         edges.color.Override(new Color(0.03f, 0.01f, 0.08f));
@@ -392,18 +438,20 @@ public class NightLighting : MonoBehaviour
         for (int i = 0; i < lamps.Count; i++)
         {
             // Each lamp on its own slow noise, so they waver like flames rather than pulse together.
-            float f = 1f - lampFlicker * Mathf.PerlinNoise(Time.time * lampFlickerSpeed, i * 7.31f);
+            float f = 1f - useLampFlicker * Mathf.PerlinNoise(Time.time * useLampFlickerSpeed, i * 7.31f);
             if (i == Sputtering && Mathf.PerlinNoise(Time.time * 9f, 0.5f) < 0.45f) f = 0.08f; // a faulty bulb cutting out
             var l = lamps[i];
+            // The palette is read live (not the colour stored when the lamp was built) so it can be tuned while playing.
+            l.color = LampColor(i);
             float b = l.small ? smallLampBrightness : 1f, s = l.small ? smallLampSize : 1f;
             f *= b;
             // Well in front of the lantern, so it lights the lamp and the people near it without burning the glass white.
             l.light.transform.position = l.lantern + Vector3.back * (1.2f * s);
-            Set(l.light, l.color, lampIntensity * f, lampRange * s);
-            Set(l.pool, l.color, poolIntensity * f, poolRange * s);
-            l.pool.transform.position = l.foot + new Vector3(0f, poolHeight * s, -0.3f * s);
-            Tint(l.core, l.color, Mathf.Clamp01(lampCoreAlpha * f), lampCoreSize * s);
-            Tint(l.halo, l.color, Mathf.Clamp01(lampHaloAlpha * f), lampHaloSize * s);
+            Set(l.light, l.color, useLampIntensity * f, useLampRange * s);
+            Set(l.pool, l.color, usePoolIntensity * f, usePoolRange * s);
+            l.pool.transform.position = l.foot + new Vector3(0f, usePoolHeight * s, -0.3f * s);
+            Tint(l.core, l.color, Mathf.Clamp01(useLampCoreAlpha * f), useLampCoreSize * s);
+            Tint(l.halo, l.color, Mathf.Clamp01(useLampHaloAlpha * f), useLampHaloSize * s);
         }
         foreach (var l in stalls) Set(l, stallColor, stallIntensity, stallRange);
 

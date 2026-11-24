@@ -6,7 +6,7 @@ using UnityEngine;
 // The first time someone else tries it, a short cutscene shows who has the keys: the camera pans to the mechanic
 // fixing a flickering lamp by the staff door, follows him back behind the staff door, then returns to the player.
 [RequireComponent(typeof(Interactable))]
-public class ElectricalBox : MonoBehaviour, IInteraction
+public class ElectricalBox : MonoBehaviour, IInteraction, ITried
 {
     public FerrisWheel wheel;
     public float tinkerTime = 4f; // seconds the mechanic works on the lamp
@@ -28,14 +28,17 @@ public class ElectricalBox : MonoBehaviour, IInteraction
     // The spirit floats up to it for the first time: it works out what this is for.
     void Update()
     {
-        // Getting here (in a body or not) is Ferris Wheel Chaos's step, once the tutorial and the park tour are over.
-        if (!Mischief.IsDone(Mischief.Task.ReachBox) && !Tutorial.Active && !Possession.InputBlocked
-            && Possession.PlayerNear(transform.position, GetComponent<Interactable>().range))
-            Mischief.Complete(Mischief.Task.ReachBox);
         if (thoughtAsSpirit || Unlocked || !wheel.Powered || Possession.Instance == null) return;
         if (Possession.Instance.State != Possession.Mode.Spirit || !Possession.PlayerNear(transform.position, GetComponent<Interactable>().range)) return;
         thoughtAsSpirit = true;
         GameHud.Think(GameHud.ThoughtPriority.Action, GameText.ThinkBoxSpirit);
+    }
+
+    // Opening Night's step: someone you're in has tried to open it (K, let through or refused), once the tutorial's
+    // over. Floating up to it as a spirit doesn't count.
+    public void Tried(Visitor host)
+    {
+        if (!Mischief.IsDone(Mischief.Task.ReachBox) && !Tutorial.Active) Mischief.Complete(Mischief.Task.ReachBox);
     }
 
     public string Prompt(Visitor host) => !wheel.Powered ? "Start the Ferris wheel" : Unlocked ? "Cut the Ferris wheel's power" : "Unlock the electrician's electrical box";
