@@ -26,6 +26,8 @@ public class MenuRuckus : MonoBehaviour
     // A blink: the closed eyes for BlinkTime seconds. Clicks land on him inside the body's oval or the hands' box
     // (drawing px from the top left).
     const float BlinkTime = 0.18f;
+    // Every piece is multiplied by this: muted and a little purple, to sit in the night scene (matched to the mockup).
+    static readonly Color Tint = new(0.76f, 0.77f, 0.83f);
     static readonly Rect BodyBox = Rect.MinMaxRect(92f, 38f, 667f, 577f), HandsBox = Rect.MinMaxRect(28f, 430f, 654f, 577f);
 
     RectTransform root, face, hands, whites, irises;
@@ -102,6 +104,7 @@ public class MenuRuckus : MonoBehaviour
         img.sprite = sprite;
         img.enabled = sprite != null;
         img.raycastTarget = false;
+        img.color = Tint;
         return img;
     }
 
