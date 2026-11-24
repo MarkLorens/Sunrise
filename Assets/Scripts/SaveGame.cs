@@ -96,8 +96,15 @@ public static class SaveGame
         return File.Exists(PathOf(slot));
     }
 
+    // How many save slots there are (0 .. MaxSlots - 1): New Game needs an empty one (MainMenu), and Load Game shows
+    // them all (LoadGameMenu). Saves in higher slots (from before there was a limit) are left alone, not shown.
+    public const int MaxSlots = 5;
+
     // Any slot saved in.
     public static bool Exists => Saved().Count > 0;
+
+    // Every slot has a save in it: New Game takes you to Load Game to delete one first.
+    public static bool Full => FirstEmpty < 0;
 
     // Every slot with a save in it, lowest first.
     public static List<int> Saved()
@@ -108,20 +115,20 @@ public static class SaveGame
         foreach (var file in Directory.GetFiles(Application.persistentDataPath, "save_*.json"))
         {
             string n = System.IO.Path.GetFileNameWithoutExtension(file)["save_".Length..];
-            if (int.TryParse(n, out int slot) && slot >= 0) slots.Add(slot);
+            if (int.TryParse(n, out int slot) && slot >= 0 && slot < MaxSlots) slots.Add(slot);
         }
         slots.Sort();
         return slots;
     }
 
-    // The lowest slot nobody's saved in: there's always one (New Game never runs out).
+    // The lowest slot nobody's saved in, or -1 when all MaxSlots are taken.
     public static int FirstEmpty
     {
         get
         {
-            int slot = 0;
-            while (Has(slot)) slot++;
-            return slot;
+            for (int slot = 0; slot < MaxSlots; slot++)
+                if (!Has(slot)) return slot;
+            return -1;
         }
     }
 

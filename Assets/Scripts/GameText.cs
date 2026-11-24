@@ -129,6 +129,8 @@ public static class GameText
     // Flaming hot dogs
     public const string LidOpen = "The rats are already out";
     public const string NobodyToScare = "Nobody around worth scaring";
+    // Load Game, when New Game found every save slot taken (SaveGame.MaxSlots).
+    public static readonly string SlotsFull = $"All {SaveGame.MaxSlots} save slots are full. Delete a save to start a new game.";
     public const string ValveOpen = "It's hissing away already";
     public const string ValveSpent = "Nothing left in it";
     public const string FanGuarded = "The hot dog man won't let you touch his fan";
