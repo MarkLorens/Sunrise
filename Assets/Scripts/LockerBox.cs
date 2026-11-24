@@ -2,8 +2,10 @@ using UnityEngine;
 
 // The locker room's electrical box, its broken cable inside. It's the mechanic's: his keys open it (anyone holding
 // them). Spark the cable while the locker room's full of propane (PropaneTank) and up it goes.
+// It plays its own sound (IOwnSound): the menu click when the spark sets it off, only the "can't" sound when there's
+// no propane to catch.
 [RequireComponent(typeof(Interactable))]
-public class LockerBox : MonoBehaviour, IInteraction
+public class LockerBox : MonoBehaviour, IInteraction, IOwnSound
 {
     public LockerRoom room;
 
@@ -28,9 +30,10 @@ public class LockerBox : MonoBehaviour, IInteraction
         var tank = PropaneTank.ReadyNear(room.transform.position, 1f);
         if (tank == null)
         {
-            GameHud.Refuse(transform, GameText.CableSparks);
+            GameHud.Refuse(transform, GameText.CableSparks); // G-06, no click
             return;
         }
+        AudioManager.TryPlay(e => e.menuClick); // G-03: it went through
         GameHud.Say(GameText.SparkedCable);
         Mischief.Complete(Mischief.Task.SparkLocker);
         tank.Explode();

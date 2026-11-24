@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="AudioFile" id="{a4060889-04c1-4e4f-8ec4-328becbd0d74}">
+		<property name="assetPath">
+			<value>Balloon/Rubber, Misc, Balloon, Inflate, Noisy Handling SND15841.wav</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>96</value>
+		</property>
+		<property name="channelCount">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>2.63671875</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{8c8416f5-ac4e-4dce-97e1-dfa1a76b2c55}</destination>
+		</relationship>
+	</object>
+</objects>
