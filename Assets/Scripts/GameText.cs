@@ -422,9 +422,6 @@ public static class GameText
     public const string TutorialNext = "Next";        // beside the [Space] keycap, on steps you just read
     public const string TutorialSkip = "Hold [Space] to skip tutorial";
 
-    // After the tutorial: the park tour (ParkTour), and the banner when a part of the objectives is done
-    public const string TourSays = "Alright! Opening day, baby!";
-
     // Visitors in the runaway Ferris wheel's path, the moment it tears loose (FerrisWheel): a few cry out before it
     // flattens them.
     public static readonly string[] WheelDoomed =

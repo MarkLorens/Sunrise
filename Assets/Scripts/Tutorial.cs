@@ -232,7 +232,6 @@ public class Tutorial : MonoBehaviour
         CameraRig.EndSpotlight();
         CameraRig.EndZoom(); // skipped on step 1
         CameraRig.EndTilt(); // skipped mid-geyser
-        // ParkTour.Play(); // off for now; uncomment to show the Ferris wheel after the tutorial (played through or skipped)
     }
 
     // Skipped before the payoff: the hand-holding goes, but the prank stays to do on your own (OnYourOwn). Skipped
