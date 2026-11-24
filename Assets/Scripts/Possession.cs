@@ -132,7 +132,7 @@ public class Possession : MonoBehaviour
             if (d > best) continue;
             best = d;
             Candidate = v.transform;
-            CandidateName = v.name;
+            CandidateName = GameText.Name(v.name); // shown: "Possess …"
             CandidateBlocked = mascot != null ? null // looks possessable; he just won't have it (Mascot.Tease)
                 : IsLocked(v, out float left) ? GameText.StillShaken(v.name, Mathf.CeilToInt(left))
                 : CooldownLeft > 0f ? GameText.TooWeak(Mathf.CeilToInt(CooldownLeft))

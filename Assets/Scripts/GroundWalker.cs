@@ -2,7 +2,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
-// Walks on the X/Z floor, but only onto cells that have a tile on the ground tilemap, not into anything on the
+// Walks on the X/Z floor, but only onto the park's cells (InPark: a ground tile that isn't the grass field round the
+// park; only someone fleeing it at the end walks out over that, Visitor.Fleeing), not into anything on the
 // Objects or See Through tilemaps (SolidMaps: lamps, benches, fences; and the buildings and trees the player shows
 // through; walk-over decor like flowers and bushes lives on its own Decor tilemap) or into a prop with a Box Collider
 // (the stalls), and, for visitors, not into a
@@ -102,7 +103,7 @@ public class GroundWalker : MonoBehaviour
     {
         Vector3Int cell = ground.WorldToCell(worldPos);
         cell.z = 0; // height above the floor doesn't matter
-        return ground.HasTile(cell)
+        return (Body != null && Body.Fleeing ? ground.HasTile(cell) : InPark(ground, cell))
             && Mathf.Abs(RaisedFloor.Height(worldPos) - RaisedFloor.Height(transform.position)) <= MaxStep // stairs, not the sides
             && !RaisedFloor.Railed(transform.position, worldPos) // nor off the side of a flight halfway up
             && (ignoreObstacles || !BumpsIntoObject(transform.position, worldPos))
@@ -136,6 +137,41 @@ public class GroundWalker : MonoBehaviour
     }
 
     void OnDrawGizmosSelected() => route.DrawGizmos(transform.position);
+
+    // The park's ground: a tile on the ground tilemap that isn't part of the grass field round the park. Everyone keeps
+    // to it (walking, routes, where people spawn, queue and gather).
+    public static bool InPark(Tilemap ground, Vector3Int cell) => ground.HasTile(cell) && !Field(ground).Contains(cell);
+
+    // The grass field round the park (FieldTile), flood-filled in from the ground's edge, once per ground: a lawn
+    // inside the park (cut off from the edge) stays walkable.
+    public const string FieldTile = "tiles_grass_full";
+    static Tilemap fieldOf;
+    static readonly HashSet<Vector3Int> field = new();
+
+    static HashSet<Vector3Int> Field(Tilemap ground)
+    {
+        if (fieldOf == ground) return field;
+        fieldOf = ground;
+        field.Clear();
+        BoundsInt b = ground.cellBounds;
+        bool Grass(Vector3Int c) => c.x >= b.xMin && c.y >= b.yMin && c.x < b.xMax && c.y < b.yMax
+                                    && ground.GetTile(c) is TileBase t && t.name.StartsWith(FieldTile);
+        var open = new Queue<Vector3Int>();
+        for (int x = b.xMin; x < b.xMax; x++)
+            for (int y = b.yMin; y < b.yMax; y++)
+            {
+                var c = new Vector3Int(x, y, 0);
+                bool edge = x == b.xMin || y == b.yMin || x == b.xMax - 1 || y == b.yMax - 1;
+                if (edge && Grass(c) && field.Add(c)) open.Enqueue(c);
+            }
+        while (open.Count > 0)
+        {
+            var c = open.Dequeue();
+            foreach (var n in new[] { c + Vector3Int.right, c + Vector3Int.left, c + Vector3Int.up, c + Vector3Int.down })
+                if (Grass(n) && field.Add(n)) open.Enqueue(n);
+        }
+        return field;
+    }
 
     // For a prop made from code after the scene has loaded (the Ferris wheel's electrical box, hinge and gear box):
     // the scene's own props were already collected when the first person woke up.

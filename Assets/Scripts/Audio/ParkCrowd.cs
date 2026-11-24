@@ -2,8 +2,8 @@ using UnityEngine;
 using FMODUnity;
 using FMOD.Studio;
 
-// The park's crowd: Park Crowd (FMODEvents.parkCrowd) plays the whole time you're in the park, on the player, where
-// the game hears from (the listener's attenuation object). Its two crowd loops sound all round you; its scatterers
+// The park's crowd: Park Crowd (FMODEvents.parkCrowd) plays the whole time you're in the park, where the game hears
+// from (Ears: on the player, or over at whatever's spotlit). Its two crowd loops sound all round you; its scatterers
 // (shouts and laughs, screams and gasps) spring up around you. Two of its parameters follow the visitors near you:
 //   Crowd: how many there are (0 = nobody within hearRadius, 1 = about fullCrowd of them right next to you).
 //   Panic: how many of them are running scared (State.Panic), plus how close something frightening is (ParkChaos),
@@ -70,7 +70,9 @@ public class ParkCrowd : MonoBehaviour
         if (audio == null || events == null || events.parkCrowd.IsNull) return;
         instance = audio.CreateInstance(events.parkCrowd);
         if (!instance.isValid()) return; // not in the built banks
-        RuntimeManager.AttachInstanceToGameObject(instance, gameObject, GetComponent<Rigidbody>());
+        // On the ears, so it comes along to a spotlit payoff instead of fading out behind you.
+        if (Ears.Object != null) RuntimeManager.AttachInstanceToGameObject(instance, Ears.Object);
+        else RuntimeManager.AttachInstanceToGameObject(instance, gameObject, GetComponent<Rigidbody>());
         instance.setProperty(EVENT_PROPERTY.MINIMUM_DISTANCE, range.x);
         instance.setProperty(EVENT_PROPERTY.MAXIMUM_DISTANCE, Mathf.Max(range.x, range.y));
         instance.setParameterByName("Crowd", crowd, true); // straight there, not eased (FMOD's own seek speed)
@@ -78,11 +80,11 @@ public class ParkCrowd : MonoBehaviour
         instance.start();
     }
 
-    // Where Crowd and Panic are headed: every visitor in earshot, weighted by how close they are.
+    // Where Crowd and Panic are headed: every visitor in earshot (of Ears), weighted by how close they are.
     void Sample()
     {
         nextSample = Time.time + SampleEvery;
-        Vector3 me = transform.position;
+        Vector3 me = Ears.Position;
         float people = 0f, scared = 0f;
         foreach (var v in Visitor.All)
         {

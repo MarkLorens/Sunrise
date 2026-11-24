@@ -147,7 +147,9 @@ public static class ParkArt
             Vector3 size = r.sprite.bounds.size;
             r.transform.localScale = new Vector3(height * 0.7f / size.x, height / size.y, 1f); // the marker isn't square
         }
-        r.transform.localPosition = new Vector3(0f, height * 0.5f, 0f);
+        // Its feet on the ground, wherever its picture's pivot is (the middle for most, the bottom for Props/New).
+        float pivot = r.sprite.pivot.y / r.sprite.rect.height;
+        r.transform.localPosition = new Vector3(0f, height * pivot, 0f);
         var box = r.gameObject.AddComponent<BoxCollider>();
         Bounds b = r.sprite.bounds;
         box.center = b.center;

@@ -105,6 +105,11 @@ public class Visitor : MonoBehaviour
         if (brain != null && Current != State.Possessed) return;
         if (scripted && Current != State.Possessed)
         {
+            if (fleeOut.HasValue && scriptedSpot.HasValue && Vector3.Dot(transform.position - scriptedSpot.Value, fleeAlong) > -0.4f)
+            {
+                scriptedSpot = fleeOut; // through the gate: off every which way
+                fleeOut = null;
+            }
             if (scriptedSpot.HasValue && !WalkTo(scriptedSpot.Value))
             {
                 scriptedSpot = null; // there
@@ -207,10 +212,15 @@ public class Visitor : MonoBehaviour
         SetState(run ? State.Panic : State.Wander);
     }
 
-    // The finale (FerrisWheel): drop everything, staff included, and run for `exit`, gone once there.
+    // The finale (FerrisWheel): drop everything, staff included, and run for `exit`, gone once there. Given a `gate`:
+    // all squeezed through it together first, then scattering every which way once out (`scatter`: degrees either
+    // side of straight on), each to a spot as far off as the exit.
     bool fleeing;
+    public bool Fleeing => fleeing; // out of the park at the end: the only ones who walk out over its grass (GroundWalker)
+    Vector3? fleeOut;
+    Vector3 fleeAlong;
 
-    public void Flee(Vector3 exit)
+    public void Flee(Vector3 exit, Vector3? gate = null, float scatter = 0f)
     {
         if (Current is State.Down or State.Possessed || !gameObject.activeInHierarchy || !Look.Visible) return; // not the mascot gone home
         if (brain != null) // a worker's job no longer matters
@@ -221,6 +231,22 @@ public class Visitor : MonoBehaviour
         walker.ignoreObstacles = false; // out from behind any counter like everyone else
         StopProtesting();
         fleeing = true;
+        fleeOut = null;
+        if (gate is Vector3 g)
+        {
+            g.y = 0f;
+            Vector3 along = exit - g;
+            along.y = 0f;
+            fleeAlong = along.normalized;
+            Vector3 across = Vector3.Cross(Vector3.up, fleeAlong);
+            Vector3 through = g + across * Random.Range(-1.2f, 1.2f); // shoulder to shoulder in the gateway
+            if (Vector3.Dot(transform.position - through, fleeAlong) < 0f) // not out already
+            {
+                fleeOut = through + Quaternion.Euler(0f, Random.Range(-scatter, scatter), 0f) * fleeAlong * along.magnitude * Random.Range(1.1f, 1.4f);
+                SendTo(through, true);
+                return;
+            }
+        }
         SendTo(exit, true);
     }
 
@@ -766,7 +792,6 @@ public class Visitor : MonoBehaviour
         if (quiet) return;
         Fx.Burst("Fx/puff", transform.position + Vector3.up * 0.2f, 10, new Color(0.75f, 0.7f, 0.65f), 3f, 0.5f, 0.6f);
         Fx.Burst("Fx/sparkle", transform.position + Vector3.up * 0.6f, 6, Fx.Gold, 2f, 0.25f, 0.8f);
-        DizzyStars.Over(transform, transform.position + Vector3.up * (HeadHeight * 0.32f + 0.45f), 1.2f); // seeing stars
         ParkChaos.Add(transform.position, 9f, 30f, ParkChaos.Terrifying);
     }
 

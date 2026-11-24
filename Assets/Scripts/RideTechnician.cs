@@ -110,24 +110,35 @@ public class RideTechnician : MonoBehaviour
     // The hot dog stand's payoff (PropaneTank): the camera on his booth while he's still snoring, the bang jolts him
     // awake, and he yells from inside. He only comes out if there's a call about the wheel to take; otherwise he grumbles
     // and stays in his booth, out of reach.
+    // Where the camera looks at him in his booth: halfway down from his Zzz to his middle (on the Zzz itself the booth
+    // sat low in the shot; on his middle it rode up out of the top of it).
+    Transform shotPoint;
+    Transform ShotPoint()
+    {
+        if (shotPoint == null) shotPoint = new GameObject("Technician Shot").transform;
+        Vector3 middle = transform.position + Vector3.up * (GetComponent<Visitor>().HeadHeight * 0.5f);
+        shotPoint.position = Vector3.Lerp(middle, zzz.position, 0.5f);
+        return shotPoint;
+    }
+
     public System.Collections.IEnumerator WakeUp()
     {
-        CameraRig.Spotlight(zzz, 999f, 2f);
+        CameraRig.Spotlight(ShotPoint(), 999f, 2f); // a little under his Zzz, so his booth sits up in the shot
         LightUp();
         yield return new WaitForSeconds(1.2f); // the camera getting there: still snoring
         Fx.Burst("Fx/puff", zzz.position + Vector3.up * 0.3f, 8, Color.white, 2f, 0.35f, 0.5f);
         StopSnoring();
         ClosedCaptions.Show(Captions.Startled);
-        GameHud.Shout(zzz, "!!", 0.8f);
+        GameHud.Shout(transform, "!!", 0.8f);
         yield return new WaitForSeconds(0.6f);
-        GameHud.Shout(zzz, GameText.TechnicianWake, 1.8f);
+        GameHud.Shout(transform, GameText.TechnicianWake, 1.8f);
         yield return new WaitForSeconds(2f);
         bool call = false;
         foreach (var w in FerrisWheel.All) call |= !w.Powered;
         if (!call)
         {
             Wake(true); // awake, staying put until someone calls
-            GameHud.Shout(zzz, GameText.TechnicianStaysIn, 2.5f);
+            GameHud.Shout(transform, GameText.TechnicianStaysIn, 2.5f);
             yield return new WaitForSeconds(2.7f);
             Nap(true); // and back to sleep, till the phone goes
             CutsceneLight.Off();
@@ -149,12 +160,12 @@ public class RideTechnician : MonoBehaviour
 
     public System.Collections.IEnumerator SleepThroughCall()
     {
-        CameraRig.Spotlight(zzz, 999f, 2f);
+        CameraRig.Spotlight(ShotPoint(), 999f, 2f); // his booth up in the shot
         LightUp();
         yield return new WaitForSeconds(1.2f); // the camera getting there
-        GameHud.Shout(zzz, GameText.PhoneRing, 1.4f);
+        GameHud.Shout(transform, GameText.PhoneRing, 1.4f);
         yield return new WaitForSeconds(1.6f);
-        GameHud.Shout(zzz, GameText.TechnicianSnore, 2f);
+        GameHud.Shout(transform, GameText.TechnicianSnore, 2f);
         yield return new WaitForSeconds(2.2f);
         CutsceneLight.Off();
     }
@@ -180,7 +191,7 @@ public class RideTechnician : MonoBehaviour
         Invoke(nameof(ComeOut), 3.5f);
     }
 
-    void SayOnMyWay() => GameHud.Shout(zzz, GameText.TechnicianCall, 2.5f);
+    void SayOnMyWay() => GameHud.Shout(transform, GameText.TechnicianCall, 2.5f);
 
     void ComeOut()
     {

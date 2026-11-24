@@ -32,7 +32,7 @@
 			<destination>{5bbfb8fe-b12f-4ab2-966b-cf41ab531f10}</destination>
 		</relationship>
 		<relationship name="banks">
-			<destination>{c5704fde-457d-4887-8c6a-1bd9c1241258}</destination>
+			<destination>{33e8e0a6-d8ff-4fb1-af74-ecced7a8007e}</destination>
 		</relationship>
 	</object>
 	<object class="EventMixer" id="{ecc2f200-df48-4408-99bc-abedebc24d61}">
@@ -56,7 +56,20 @@
 			<destination>{0ec14085-3a65-4220-a90e-be00581d9ad5}</destination>
 		</relationship>
 	</object>
-	<object class="EventAutomatableProperties" id="{1aca5b08-a422-4b28-93b9-159b4de12e0e}" />
+	<object class="EventAutomatableProperties" id="{1aca5b08-a422-4b28-93b9-159b4de12e0e}">
+		<property name="dopplerEnabled">
+			<value>true</value>
+		</property>
+		<property name="dopplerScale">
+			<value>200</value>
+		</property>
+		<property name="minimumDistance">
+			<value>2</value>
+		</property>
+		<property name="maximumDistance">
+			<value>7</value>
+		</property>
+	</object>
 	<object class="MarkerTrack" id="{9b9b3ba3-9daa-4782-bcc6-0032501621da}" />
 	<object class="GroupTrack" id="{f9e6b57e-5a7d-418e-a091-0d5eb74a8cdf}">
 		<relationship name="modules">
@@ -102,7 +115,7 @@
 	</object>
 	<object class="EventMixerGroup" id="{3097faf5-8288-4013-91a0-68cfa62c88ba}">
 		<property name="volume">
-			<value>-10</value>
+			<value>-15</value>
 		</property>
 		<property name="name">
 			<value>Audio 1</value>

@@ -137,6 +137,7 @@ public class GameHud : MonoBehaviour
         if (GetComponent<ActionOutline>() == null) gameObject.AddComponent<ActionOutline>();
         if (GetComponent<PauseMenu>() == null) gameObject.AddComponent<PauseMenu>();
         if (GetComponent<Tutorial>() == null) gameObject.AddComponent<Tutorial>();
+        if (FindAnyObjectByType<Ears>() == null) new GameObject("Ears").AddComponent<Ears>(); // where the game hears from
         if (GetComponent<ParkCrowd>() == null) gameObject.AddComponent<ParkCrowd>(); // the crowd all round you
         if (GetComponent<PossessedMusic>() == null) gameObject.AddComponent<PossessedMusic>(); // the theme slows in a body
         Build();
@@ -510,6 +511,15 @@ public class GameHud : MonoBehaviour
         objectiveBanner.localScale = Vector3.one * (1f - 0.06f * Mathf.Sin(bannerPop * Mathf.PI));
     }
 
+    // A save's just been loaded (Mischief.Restore): show the part it's on, as for the first list, without the
+    // "Completed" banner for whatever part was up a moment ago (the tutorial skips itself first, leaving Opening Night).
+    public static void Restored()
+    {
+        if (Instance == null) return;
+        Instance.puzzleAge = -1f;
+        Instance.ShowPart(ActivePart());
+    }
+
     void ShowPart(int part)
     {
         shownPart = part;
@@ -803,10 +813,21 @@ public class GameHud : MonoBehaviour
     const float WordsSize = 116f, WordsWidth = 640f, WordsLineSpacing = 0.62f;
 
     // "<Title>\nCompleted" (GameText.ObjectiveCompleted), as written (Title Case, as the design), the title on as many
-    // lines as it needs.
+    // lines as it needs. A title that's one long hyphenated word (A-Leak-Tricity) can't wrap at a space: it's broken at
+    // the hyphen nearest its middle instead (A-Leak / Tricity), the hyphen at the break dropped.
     void SetPuzzleWords(string title)
     {
-        puzzleWords.text = GameText.ObjectiveCompleted(title);
+        puzzleWords.text = GameText.ObjectiveCompleted(BreakAtHyphen(title));
+    }
+
+    static string BreakAtHyphen(string title)
+    {
+        if (title.Contains(" ") || !title.Contains("-")) return title;
+        int best = -1;
+        for (int i = 1; i < title.Length - 1; i++)
+            if (title[i] == '-' && (best < 0 || Mathf.Abs(i - title.Length / 2f) < Mathf.Abs(best - title.Length / 2f)))
+                best = i;
+        return best < 0 ? title : title[..best] + "\n" + title[(best + 1)..];
     }
 
     // The hand-drawn speech bubble (thoughts, shouts), its tail's tip at `bubble`'s position.

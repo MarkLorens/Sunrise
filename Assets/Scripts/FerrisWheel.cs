@@ -27,13 +27,19 @@ public class FerrisWheel : MonoBehaviour
     public float normalSpeed = 12f;  // degrees per second
     public float windDownTime = 5f;  // seconds to coast to a stop once the power's cut
     public Vector3 electricalBoxOffset = new(-3.3f, 0f, -0.6f);
-    public Transform electricalBoxAt; // set: the box stands here instead, drawn by the Objects tilemap (no picture of its own)
-    public Sprite electricalBoxArt; // drawn at its own size, pivot at its feet (the palette's props); empty = Props/electrical_box
+    public Transform electricalBoxAt; // set: the box stands here instead of at electricalBoxOffset
+    // Drawn at its own size, pivot at its feet (the palette's props). Empty: Props/electrical_box at the offset, or,
+    // with electricalBoxAt set, no picture of its own (the Objects tilemap draws it there).
+    public Sprite electricalBoxArt;
     public RideQueue queue;
     public float payoffTime = 6f;     // the camera stays on the wheel this long once the power's cut
     public float payoffPullBack = 8f;  // how much further back the camera sits to fit the whole wheel
     [Header("Finale (max speed)")]
     public Transform parkEntrance;          // where everyone runs to once the wheel's rolled; the camera goes to look
+    public Transform exitGate;              // they all squeeze through here together on the way (empty: straight for it)
+    public float exodusScatter = 70f;       // then scatter, up to this many degrees either side of straight out
+    public Transform exodusView;            // where the camera looks meanwhile: the gate, with them pouring out through it
+                                            // (empty: parkEntrance itself)
     public float entrancePullBack = 3f;     // how far back the camera sits there, to take in the stampede
     public float glideToEntrance = 7f;      // seconds drifting over from the wreck (past the closed stalls)
     public float watchExodus = 5f;          // seconds watching them run out
@@ -229,9 +235,9 @@ public class FerrisWheel : MonoBehaviour
         var part = go.AddComponent<T>();
         go.AddComponent<Interactable>();
         go.SetActive(true);
-        if (at != null)
+        if (at != null && art == null)
         {
-            pic.enabled = false;
+            pic.enabled = false; // the Objects tilemap draws it (and its footprint is what people bump into)
             return part;
         }
 
@@ -288,7 +294,7 @@ public class FerrisWheel : MonoBehaviour
 
         GameHud.HideObjectives = true; // the rest is the ending: no objectives or prompts over it
         Vector3 exit = parkEntrance != null ? parkEntrance.position : wheel.position;
-        foreach (var v in new List<Visitor>(Visitor.All)) v.Flee(exit);
+        foreach (var v in new List<Visitor>(Visitor.All)) v.Flee(exit, exitGate != null ? exitGate.position + (exit - exitGate.position).normalized * 1f : null, exodusScatter);
 
         var shot = new GameObject("Finale Shot").transform;
         shot.position = wheel.position;
@@ -307,7 +313,8 @@ public class FerrisWheel : MonoBehaviour
             }
         }
         var spirit = Possession.Instance;
-        yield return Glide(() => exit, entrancePullBack, glideToEntrance);
+        Vector3 view = exodusView != null ? exodusView.position : exit;
+        yield return Glide(() => view, entrancePullBack, glideToEntrance);
         yield return new WaitForSeconds(watchExodus);
         yield return Glide(() => spirit.Focus.position, 0f, glideHome);
         CameraRig.EndSpotlight();
@@ -392,7 +399,7 @@ public class FerrisWheel : MonoBehaviour
     void Spin(Vector3 at)
     {
         wheel.localPosition = at;
-        angle += speed * Time.deltaTime;
+        angle -= speed * Time.deltaTime; // clockwise, as seen from the camera: the way it rolls off (rollDirection, to the right)
         wheel.localRotation = Quaternion.Euler(0, 0, angle);
     }
 
@@ -459,7 +466,8 @@ public class FerrisWheel : MonoBehaviour
             float step = rollSpeed * Time.deltaTime;
             p += dir * step;
             rolled += step;
-            angle -= Mathf.Sign(dir.x) * step / radius * Mathf.Rad2Deg; // rolling without slipping
+            // Rolling without slipping: clockwise going right, so it carries on the way it was spinning, flat out.
+            angle -= Mathf.Sign(dir.x) * step / radius * Mathf.Rad2Deg;
             wheel.rotation = Quaternion.Euler(0, 0, angle);
             Flatten(p, dir, radius);
             SquashAlong(p, dir, radius);
@@ -554,7 +562,7 @@ public class FerrisWheel : MonoBehaviour
                 // Ground to stand on, clear of props (the route there goes round whatever's in the way).
                 Vector3Int cell = walker.ground.WorldToCell(spot);
                 cell.z = 0;
-                if (!walker.ground.HasTile(cell) || GroundWalker.NearObstacle(spot, 0.35f)) continue;
+                if (!GroundWalker.InPark(walker.ground, cell) || GroundWalker.NearObstacle(spot, 0.35f)) continue;
                 v.SendTo(spot, run: far > GawkerWalk); // from further off, hurrying, to be there in time
                 doomed.Add(v);
                 break;
