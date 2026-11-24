@@ -11,6 +11,13 @@ public interface IInteraction
     void Interact(Visitor host);
 }
 
+// An IInteraction that wants to know whenever someone in a body presses K on it, let through or not (the
+// electrical box: trying it at all ticks off Opening Night's step).
+public interface ITried
+{
+    void Tried(Visitor host);
+}
+
 // An IInteraction that plays a sound of its own when used (the water valve, the Out of Order sign): K doesn't add
 // the menu click.
 public interface IOwnSound { }
@@ -36,6 +43,12 @@ public class Interactable : MonoBehaviour
     public string Prompt(Visitor host) => rules?.Prompt(host) ?? prompt;
 
     public bool OwnSound => rules is IOwnSound; // no menu click when K uses it (PlayerInteractor)
+
+    // K pressed on it from inside someone, before it says yes or no (ITried).
+    public void Tried(Visitor host)
+    {
+        if (host != null && rules is ITried tried) tried.Tried(host);
+    }
 
     public string Blocked(Visitor host)
     {

@@ -18,6 +18,7 @@ public class PlayerInteractor : MonoBehaviour
         var target = Nearest();
         if (target == null) return;
 
+        target.Tried(Host);
         string blocked = target.Blocked(Host);
         if (blocked != null)
         {
