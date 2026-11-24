@@ -3289,7 +3289,7 @@ MonoBehaviour:
       Data2: 1084030894
       Data3: 1851850398
       Data4: 922779718
-    Path: event:/Music and Ambiance (MA)/BGM (Ruckus) - Timeline
+    Path: event:/BGM and Ambiance (BA)/BGM (Ruckus) - Timeline
   Event: 
   EventPlayTrigger: 1
   EventStopTrigger: 2
@@ -4559,7 +4559,7 @@ MonoBehaviour:
       Data2: 1084030894
       Data3: 1851850398
       Data4: 922779718
-    Path: event:/Music and Ambiance (MA)/BGM (Ruckus) - Timeline
+    Path: event:/BGM and Ambiance (BA)/BGM (Ruckus) - Timeline
   Event: 
   EventPlayTrigger: 1
   EventStopTrigger: 2
@@ -7133,7 +7133,7 @@ MonoBehaviour:
       Data2: 1084030894
       Data3: 1851850398
       Data4: 922779718
-    Path: event:/Music and Ambiance (MA)/BGM (Ruckus) - Timeline
+    Path: event:/BGM and Ambiance (BA)/BGM (Ruckus) - Timeline
   Event: 
   EventPlayTrigger: 1
   EventStopTrigger: 2
@@ -7364,7 +7364,7 @@ MonoBehaviour:
       Data2: 1084030894
       Data3: 1851850398
       Data4: 922779718
-    Path: event:/Music and Ambiance (MA)/BGM (Ruckus) - Timeline
+    Path: event:/BGM and Ambiance (BA)/BGM (Ruckus) - Timeline
   Event: 
   EventPlayTrigger: 1
   EventStopTrigger: 2

@@ -323,6 +323,7 @@ public class VisitorSpawner : MonoBehaviour
                 Vector3 slot = feet + iceCreamSlot;
                 float room = Mathf.Max(0f, Mathf.Min(slot.x - front.xMin, front.xMax - slot.x) - 0.45f); // their middle, off the posts
                 var seller = Staff<Vendor>("Ice Cream Seller", slot, iceCreamCharacter, v => { v.inside = true; v.paceHalfWidth = room; });
+                StandAudio.Add(seller.gameObject, e => e.iceCreamStall, Captions.IceCreamJingle);
                 stalls.Add((seller, new Vector3(feet.x, closedSignLift, front.yMin - 0.05f))); // the sign hangs on the counter's front
                 // Its line, from just in front of the counter back toward the camera.
                 var line = StandQueue.Make("Ice Cream Line", transform, new Vector3(slot.x, 0f, front.yMin - standLineGap),
@@ -334,7 +335,8 @@ public class VisitorSpawner : MonoBehaviour
                 Vector3 at = feet + balloonSpot;
                 var probe = new Vector3(feet.x - balloonSpot.x, 0f, feet.z + balloonSpot.z);
                 if (GroundWalker.NearObstacle(at, 0.35f) && !GroundWalker.NearObstacle(probe, 0.35f)) at = probe;
-                Staff<Vendor>("Balloon Seller", at, balloonCharacter, _ => { });
+                var balloons = Staff<Vendor>("Balloon Seller", at, balloonCharacter, _ => { });
+                StandAudio.Add(balloons.gameObject, e => e.balloonSeller, Captions.Balloons);
                 // Its line, in front of the seller.
                 var line = StandQueue.Make("Balloon Line", transform, at + Vector3.back * (standLineGap + 0.4f), LineDirection(), at, ground);
                 if (line != null) line.gives = VisitorItem.Balloon;

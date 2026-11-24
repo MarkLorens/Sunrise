@@ -43,6 +43,10 @@ public static class Captions
     public const string WheelWrecked = "[Wheel smashes down]";
     public const string Flattened = "[Crunch]";
 
+    // ---------------------------------------------------------------- the stands
+    public const string IceCreamJingle = "[Ice cream jingle plays]";  // now and then, when you're near
+    public const string Balloons = "[Balloons squeak]";               // now and then, when you're near
+
     // ---------------------------------------------------------------- the hot dog stand, the gutter, the fans
     public const string GutterOpen = "[Gutter lid scrapes open]";
     public const string GutterShut = "[Gutter lid clangs shut]";

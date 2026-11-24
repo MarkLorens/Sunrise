@@ -42,6 +42,10 @@ public class FMODEvents : MonoBehaviour
     [field: SerializeField] public EventReference lobbyMusic { get; private set; }
     [field: Tooltip("The park's crowd, all the time in the park (ParkCrowd: 3D on the player, its Crowd and Panic parameters set from the visitors nearby).")]
     [field: SerializeField] public EventReference parkCrowd { get; private set; }
+    [field: Tooltip("Each ice cream stand's jingle, now and then (StandAudio: 3D on the seller; FMOD decides when it plays).")]
+    [field: SerializeField] public EventReference iceCreamStall { get; private set; }
+    [field: Tooltip("The balloon seller's balloons squeaking, now and then (StandAudio: 3D on the seller; FMOD decides when it plays).")]
+    [field: SerializeField] public EventReference balloonSeller { get; private set; }
 
     [field: Header("NPC")]
     [field: Tooltip("NPC-03: curious.")]
@@ -94,6 +98,8 @@ public class FMODEvents : MonoBehaviour
     [field: SerializeField] public EventReference deleteSaveFile { get; private set; }
     [field: Tooltip("G-06: trying something you can't do right now.")]
     [field: SerializeField] public EventReference disabledAction { get; private set; }
+    [field: Tooltip("A menu option that can't change: Language in Options (English is the only one).")]
+    [field: SerializeField] public EventReference disabledMenu { get; private set; }
     [field: Tooltip("TT-02: holding Space to skip the tutorial (a filling-up sound; cut off if let go early).")]
     [field: SerializeField] public EventReference skipTutorialHold { get; private set; }
     [field: Tooltip("G-03: picking a menu item.")]

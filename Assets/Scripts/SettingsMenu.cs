@@ -176,7 +176,7 @@ public class SettingsMenu : MonoBehaviour
     void General()
     {
         ArrowRow(0, 146f, "Language", 650f, 862.5f, 756f, () => Languages[language], d => language = Wrap(language + d, Languages.Length),
-            Languages.Length > 1 ? e => e.toggle : e => e.disabledAction);
+            Languages.Length > 1 ? e => e.toggle : e => e.disabledMenu);
         ArrowRow(1, 146f, "Closed Caption", 650f, 862.5f, 756f, () => Settings.ClosedCaptions ? "ON" : "OFF", _ => Settings.ClosedCaptions = !Settings.ClosedCaptions);
     }
 
