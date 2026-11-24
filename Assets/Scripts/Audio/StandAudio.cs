@@ -35,7 +35,7 @@ public class StandAudio : MonoBehaviour
             started = true;
             Begin();
         }
-        if (playing != null && Volatile.Read(ref playing.count) > 0 && Possession.PlayerNear(transform.position, hearRange))
+        if (playing != null && Volatile.Read(ref playing.count) > 0 && Ears.Near(transform.position, hearRange))
             ClosedCaptions.Hold(caption);
     }
 

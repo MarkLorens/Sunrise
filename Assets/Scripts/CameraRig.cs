@@ -136,6 +136,25 @@ public class CameraRig : MonoBehaviour
         if (Instance != null) Instance.spotUntil = 0f;
     }
 
+    // Where the game hears from (Ears): `player` while nothing's spotlit; while something is, the shot's own blend of
+    // the player and what's spotlit (the same weights, so the sound glides over with the picture), at `player`'s height:
+    // the wheel's spot is its hub, high above where its sounds play.
+    public static Vector3 Hearing(Vector3 player)
+    {
+        var rig = Instance;
+        if (rig == null || rig.shots.Count == 0) return player;
+        float total = Ease(rig.playerK);
+        Vector3 sum = player * total;
+        foreach (var x in rig.shots)
+        {
+            float w = Ease(x.k);
+            Vector3 p = x.point != null ? x.point.position : x.last;
+            sum += new Vector3(p.x, player.y, p.z) * w;
+            total += w;
+        }
+        return total > 0f ? sum / total : player;
+    }
+
     // Smoothly zooms the lens in on whatever's in shot: amount 0.6 = everything looks 1/0.6 times bigger
     // (above 1 zooms out). Stays until EndZoom, which eases back to normal.
     public static void Zoom(float amount)

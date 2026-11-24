@@ -202,6 +202,6 @@ public abstract class StaffWorker : MonoBehaviour
         if (!tapDown) return;
         Vector3 hit = Vector3.Lerp(transform.position, job.at, 0.6f) + Vector3.up * 0.3f;
         Fx.Burst("Fx/puff", hit, 3, new Color(0.85f, 0.85f, 0.8f, 0.8f), 1.2f, 0.15f, 0.35f);
-        if (Possession.PlayerNear(transform.position, 8f)) ClosedCaptions.Show(Captions.StaffTapping);
+        if (Ears.Near(transform.position, 8f)) ClosedCaptions.Show(Captions.StaffTapping);
     }
 }

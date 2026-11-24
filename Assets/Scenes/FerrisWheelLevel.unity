@@ -3298,7 +3298,7 @@ MonoBehaviour:
   Preload: 0
   NonRigidbodyVelocity: 0
   Params: []
-  OverrideAttenuation: 1
+  OverrideAttenuation: 0
   OverrideMinDistance: 6
   OverrideMaxDistance: 40
 --- !u!114 &618812274
@@ -4568,7 +4568,7 @@ MonoBehaviour:
   Preload: 0
   NonRigidbodyVelocity: 0
   Params: []
-  OverrideAttenuation: 1
+  OverrideAttenuation: 0
   OverrideMinDistance: 6
   OverrideMaxDistance: 40
 --- !u!114 &760199557
@@ -7142,7 +7142,7 @@ MonoBehaviour:
   Preload: 0
   NonRigidbodyVelocity: 0
   Params: []
-  OverrideAttenuation: 1
+  OverrideAttenuation: 0
   OverrideMinDistance: 6
   OverrideMaxDistance: 40
 --- !u!114 &1439868140
@@ -7373,7 +7373,7 @@ MonoBehaviour:
   Preload: 0
   NonRigidbodyVelocity: 0
   Params: []
-  OverrideAttenuation: 1
+  OverrideAttenuation: 0
   OverrideMinDistance: 6
   OverrideMaxDistance: 40
 --- !u!114 &1494336520

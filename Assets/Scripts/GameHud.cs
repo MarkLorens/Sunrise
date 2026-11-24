@@ -132,6 +132,7 @@ public class GameHud : MonoBehaviour
         if (GetComponent<ActionOutline>() == null) gameObject.AddComponent<ActionOutline>();
         if (GetComponent<PauseMenu>() == null) gameObject.AddComponent<PauseMenu>();
         if (GetComponent<Tutorial>() == null) gameObject.AddComponent<Tutorial>();
+        if (FindAnyObjectByType<Ears>() == null) new GameObject("Ears").AddComponent<Ears>(); // where the game hears from
         if (GetComponent<ParkCrowd>() == null) gameObject.AddComponent<ParkCrowd>(); // the crowd all round you
         if (GetComponent<PossessedMusic>() == null) gameObject.AddComponent<PossessedMusic>(); // the theme slows in a body
         Build();

@@ -41,7 +41,7 @@ public class FerrisWheelAudio : MonoBehaviour
         wasPowered = ride.Powered;
 
         // Closed captions while you're near enough to hear it (its 3D sounds fade out further off).
-        if (!Possession.PlayerNear(transform.position, HearRange)) return;
+        if (!Ears.Near(transform.position, HearRange)) return;
         if (ride.Powered) ClosedCaptions.Hold(Captions.WheelHum);
         if (!ride.Powered || ride.Wobbly) ClosedCaptions.Hold(Captions.CabinCreak);
         if (ride.Powered && ride.Wobbly) ClosedCaptions.Hold(Captions.WheelWobble);

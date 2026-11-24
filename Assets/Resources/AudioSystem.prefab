@@ -234,11 +234,11 @@ MonoBehaviour:
     Path: event:/Ruckus (RU)/Release
   <hostFootsteps>k__BackingField:
     Guid:
-      Data1: -147910605
-      Data2: 1227532660
-      Data3: -275196227
-      Data4: -1328176591
-    Path: event:/Ruckus (RU)/Walk
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   <mechanicFootsteps>k__BackingField:
     Guid:
       Data1: 0
