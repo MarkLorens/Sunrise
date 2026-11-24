@@ -13,7 +13,15 @@ public class LockerBox : MonoBehaviour, IInteraction, IOwnSound
     void Start()
     {
         if (!OverTile()) ParkArt.Solid(transform, "Props/electrical_box", 1.3f, new Color(0.4f, 0.55f, 0.75f));
-        gameObject.AddComponent<ZapFx>(); // live electrics, always buzzing
+        zap = gameObject.AddComponent<ZapFx>(); // live electrics, buzzing till it blows
+    }
+
+    ZapFx zap;
+
+    // Blown (or loaded burnt): the bolt's gone with it.
+    void Update()
+    {
+        if (room.Burning && zap.Bolt != null) Destroy(zap.Bolt.gameObject);
     }
 
     // Drawn by the map (an electrical_box tile on or beside its spot): no picture of its own, just an unseen copy of

@@ -223,6 +223,7 @@ public class Visitor : MonoBehaviour
     public void Flee(Vector3 exit, Vector3? gate = null, float scatter = 0f)
     {
         if (Current is State.Down or State.Possessed || !gameObject.activeInHierarchy || !Look.Visible) return; // not the mascot gone home
+        if (brain is HotDogMan { Current: HotDogMan.State.Charred }) return; // burnt in his stand: going nowhere
         if (brain != null) // a worker's job no longer matters
         {
             brain.enabled = false;

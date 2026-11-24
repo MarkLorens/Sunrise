@@ -553,6 +553,15 @@ public static class Scorch
             workGlow.Apply();
         }
 
+        // Its picture swapped for another (a fan turned): that one, burnt through at once.
+        public void Redraw(Sprite src)
+        {
+            var a = Make(src);
+            if (a == null) return;
+            art = a;
+            Finish();
+        }
+
         // Burnt through: the finished pictures (shared), the working ones let go.
         void Finish()
         {

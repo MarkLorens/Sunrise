@@ -8683,7 +8683,7 @@ MonoBehaviour:
       Data2: 1084030894
       Data3: 1851850398
       Data4: 922779718
-    Path: event:/BGM and Ambiance (BA)/BGM (Ruckus) - Timeline
+    Path: event:/Music and Ambiance (MA)/BGM (Ruckus) - Timeline
   Event: 
   EventPlayTrigger: 1
   EventStopTrigger: 2
@@ -8692,7 +8692,7 @@ MonoBehaviour:
   Preload: 0
   NonRigidbodyVelocity: 0
   Params: []
-  OverrideAttenuation: 0
+  OverrideAttenuation: 1
   OverrideMinDistance: 6
   OverrideMaxDistance: 40
 --- !u!114 &618812274
@@ -10879,7 +10879,7 @@ MonoBehaviour:
       Data2: 1084030894
       Data3: 1851850398
       Data4: 922779718
-    Path: event:/BGM and Ambiance (BA)/BGM (Ruckus) - Timeline
+    Path: event:/Music and Ambiance (MA)/BGM (Ruckus) - Timeline
   Event: 
   EventPlayTrigger: 1
   EventStopTrigger: 2
@@ -10888,7 +10888,7 @@ MonoBehaviour:
   Preload: 0
   NonRigidbodyVelocity: 0
   Params: []
-  OverrideAttenuation: 0
+  OverrideAttenuation: 1
   OverrideMinDistance: 6
   OverrideMaxDistance: 40
 --- !u!114 &760199557
@@ -21544,7 +21544,7 @@ MonoBehaviour:
       Data2: 1084030894
       Data3: 1851850398
       Data4: 922779718
-    Path: event:/BGM and Ambiance (BA)/BGM (Ruckus) - Timeline
+    Path: event:/Music and Ambiance (MA)/BGM (Ruckus) - Timeline
   Event: 
   EventPlayTrigger: 1
   EventStopTrigger: 2
@@ -21553,7 +21553,7 @@ MonoBehaviour:
   Preload: 0
   NonRigidbodyVelocity: 0
   Params: []
-  OverrideAttenuation: 0
+  OverrideAttenuation: 1
   OverrideMinDistance: 6
   OverrideMaxDistance: 40
 --- !u!114 &1439868140
@@ -22235,7 +22235,7 @@ MonoBehaviour:
       Data2: 1084030894
       Data3: 1851850398
       Data4: 922779718
-    Path: event:/BGM and Ambiance (BA)/BGM (Ruckus) - Timeline
+    Path: event:/Music and Ambiance (MA)/BGM (Ruckus) - Timeline
   Event: 
   EventPlayTrigger: 1
   EventStopTrigger: 2
@@ -22244,7 +22244,7 @@ MonoBehaviour:
   Preload: 0
   NonRigidbodyVelocity: 0
   Params: []
-  OverrideAttenuation: 0
+  OverrideAttenuation: 1
   OverrideMinDistance: 6
   OverrideMaxDistance: 40
 --- !u!114 &1494336520
