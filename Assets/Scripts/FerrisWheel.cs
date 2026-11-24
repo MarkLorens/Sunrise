@@ -27,8 +27,10 @@ public class FerrisWheel : MonoBehaviour
     public float normalSpeed = 12f;  // degrees per second
     public float windDownTime = 5f;  // seconds to coast to a stop once the power's cut
     public Vector3 electricalBoxOffset = new(-3.3f, 0f, -0.6f);
-    public Transform electricalBoxAt; // set: the box stands here instead, drawn by the Objects tilemap (no picture of its own)
-    public Sprite electricalBoxArt; // drawn at its own size, pivot at its feet (the palette's props); empty = Props/electrical_box
+    public Transform electricalBoxAt; // set: the box stands here instead of at electricalBoxOffset
+    // Drawn at its own size, pivot at its feet (the palette's props). Empty: Props/electrical_box at the offset, or,
+    // with electricalBoxAt set, no picture of its own (the Objects tilemap draws it there).
+    public Sprite electricalBoxArt;
     public RideQueue queue;
     public float payoffTime = 6f;     // the camera stays on the wheel this long once the power's cut
     public float payoffPullBack = 8f;  // how much further back the camera sits to fit the whole wheel
@@ -229,9 +231,9 @@ public class FerrisWheel : MonoBehaviour
         var part = go.AddComponent<T>();
         go.AddComponent<Interactable>();
         go.SetActive(true);
-        if (at != null)
+        if (at != null && art == null)
         {
-            pic.enabled = false;
+            pic.enabled = false; // the Objects tilemap draws it (and its footprint is what people bump into)
             return part;
         }
 

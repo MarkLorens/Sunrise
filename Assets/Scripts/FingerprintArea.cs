@@ -1,15 +1,19 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Ground only one member of staff may step onto, once they've scanned their finger at its FingerprintScanner: the
-// raised platform at the Ferris wheel's leg (the ride technician, for its hinge: WheelHinge) and the operator's booth
-// round the control panel (the operator). Going about his job the owner walks in and out as he likes; in his body,
+// Ground only one member of staff may step onto, once they've scanned their finger at its FingerprintScanner: the top
+// of the Ferris wheel platform's left stairs (the ride technician; unlocking it lets him loosen the hinge: WheelHinge)
+// and the operator's booth round the control panel (the operator). Going about his job the owner walks in and out as he likes; in his body,
 // the player has to scan in. Visitors never get in, and with keepSpiritOut the spirit can't float in either, so
 // nobody inside can be reached to be possessed.
 // It's fenced in square with metal barriers (Props/New/metal_barrier_1..3), like a pool fence: the front and back runs
 // face the camera, their sections end to end; the sides run back from the front corners to the back ones (turned to
 // run along them, so they're seen going back); and one section of the front is its gate (the lock:
-// FingerprintScanner, which draws it). The fence is only a picture: who may step in is still Allows' say.
+// FingerprintScanner, which draws it). The fence is only a picture: who may step in is still Allows' say. With `fence`
+// off there's no fence, just the gate, across the whole front (the wheel's, across the top of its stairs).
+// In the editor, out of Play mode, the fence, deck and gate are drawn as they'll be (a preview that's never saved), so
+// the area can be placed and sized by eye; moving or resizing it, or moving its scanner, redraws them.
+[ExecuteAlways]
 public class FingerprintArea : MonoBehaviour
 {
     public static readonly List<FingerprintArea> All = new();
@@ -19,6 +23,7 @@ public class FingerprintArea : MonoBehaviour
     public Staff owner = Staff.Technician;
     public Vector2 size = new(3f, 2.4f); // x by z, centred on this object
     public bool deck = true;             // draw the raised steel deck; off = a painted line round it
+    public bool fence = true;            // off: no fence, the gate alone spans its whole front
     public bool keepSpiritOut;
 
     public bool Open { get; set; }
@@ -27,29 +32,89 @@ public class FingerprintArea : MonoBehaviour
     {
         All.Add(this);
         NavGrid.Invalidate(); // routes go round it
+#if UNITY_EDITOR
+        if (!Application.isPlaying) UnityEditor.EditorApplication.delayCall += () => { if (this != null) Preview(); };
+#endif
     }
 
     void OnDisable()
     {
         All.Remove(this);
         NavGrid.Invalidate();
+#if UNITY_EDITOR
+        ClearPreview();
+#endif
     }
 
     const float BarrierWidth = 1.2f; // about: each run is split into equal sections, end to end
 
     void Start()
     {
-        Fence();
+        if (Application.isPlaying) Build(transform);
+    }
+
+    // The fence and the deck, under `parent`.
+    void Build(Transform parent)
+    {
+        if (fence) Fence(parent);
         if (!deck) return;
-        var floor = ParkArt.Make("Deck", transform, "Props/platform", size.y, Color.white, ParkArt.DecalOrder + 1, true);
-        floor.transform.parent.localPosition = Vector3.up * 0.03f;
+        var floor = ParkArt.Make("Deck", parent, "Props/platform", size.y, Color.white, ParkArt.DecalOrder + 1, true);
+        floor.transform.parent.position = transform.position + Vector3.up * 0.03f;
         ParkArt.Lit(floor);
         Vector3 s = floor.sprite.bounds.size;
         floor.transform.localScale = new Vector3(size.x / s.x, size.y / s.y, 1f); // stretched to the area
     }
 
+#if UNITY_EDITOR
+    Transform preview;
+    Vector3 previewAt, previewGate;
+    Vector2 previewSize;
+    bool previewFence, previewDeck;
+
+    void OnValidate()
+    {
+        if (!Application.isPlaying) UnityEditor.EditorApplication.delayCall += () => { if (this != null) Preview(); };
+    }
+
+    void Update()
+    {
+        if (!Application.isPlaying) Preview();
+    }
+
+    // Redrawn only when something it depends on has changed.
+    void Preview()
+    {
+        if (Application.isPlaying || !isActiveAndEnabled) return;
+        GateSection(out Vector3 gate, out float gateWidth, out _);
+        if (preview != null && previewAt == transform.position && previewSize == size && previewGate == gate
+            && previewFence == fence && previewDeck == deck) return;
+        ClearPreview();
+        previewAt = transform.position;
+        previewSize = size;
+        previewGate = gate;
+        previewFence = fence;
+        previewDeck = deck;
+
+        preview = new GameObject("Fence Preview (editor only)").transform;
+        preview.SetParent(transform, false);
+        Build(preview);
+        // The gate its scanner draws in Play mode, closed.
+        var g = ParkArt.Lit(ParkArt.Make("Gate", preview, "Props/New/metal_gate_closed", 1f, Color.white));
+        ParkArt.Fit(g, gateWidth * g.sprite.bounds.size.y / Mathf.Max(0.01f, g.sprite.bounds.size.x));
+        g.transform.position = gate;
+        foreach (var t in preview.GetComponentsInChildren<Transform>(true))
+            t.gameObject.hideFlags = HideFlags.DontSave | HideFlags.NotEditable;
+    }
+
+    void ClearPreview()
+    {
+        if (preview != null) DestroyImmediate(preview.gameObject);
+        preview = null;
+    }
+#endif
+
     // The four runs: back, then the sides, then the front with the gate's section left for the gate.
-    void Fence()
+    void Fence(Transform parent)
     {
         Vector2 h = size * 0.5f;
         Vector3 c = transform.position;
@@ -64,7 +129,7 @@ public class FingerprintArea : MonoBehaviour
             for (int i = 0; i < count; i++)
             {
                 if (i == skip) continue;
-                var r = ParkArt.Lit(ParkArt.Make("Barrier", transform, "Props/New/metal_barrier_" + (n++ % 3 + 1), 1f, Color.white));
+                var r = ParkArt.Lit(ParkArt.Make("Barrier", parent, "Props/New/metal_barrier_" + (n++ % 3 + 1), 1f, Color.white));
                 ParkArt.Fit(r, width * r.sprite.bounds.size.y / Mathf.Max(0.01f, r.sprite.bounds.size.x)); // just its section wide
                 r.transform.position = Vector3.Lerp(from, to, (i + 0.5f) / count);
                 if (along) r.transform.rotation = Quaternion.Euler(0f, 90f, 0f); // along the side (the sprite's two-sided)
@@ -84,7 +149,7 @@ public class FingerprintArea : MonoBehaviour
         float gateX = transform.position.x;
         foreach (var s in FindObjectsByType<FingerprintScanner>())
             if (s.platform == this) gateX = s.transform.position.x;
-        int count = Sections(size.x);
+        int count = fence ? Sections(size.x) : 1;
         width = size.x / count;
         float left = transform.position.x - size.x * 0.5f;
         index = Mathf.Clamp(Mathf.FloorToInt((gateX - left) / width), 0, count - 1);
