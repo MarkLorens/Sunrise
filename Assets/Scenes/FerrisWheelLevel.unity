@@ -2278,7 +2278,7 @@ Transform:
   m_GameObject: {fileID: 700000100}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -2.48, y: 0.82, z: 18.29}
+  m_LocalPosition: {x: -2.98, y: 0.82, z: 18.29}
   m_LocalScale: {x: 2.7, y: 2.7, z: 2.7}
   m_ConstrainProportionsScale: 1
   m_Children:
@@ -2326,8 +2326,6 @@ MonoBehaviour:
   electricalBoxOffset: {x: -3.4407, y: 0, z: 1}
   electricalBoxAt: {fileID: 0}
   electricalBoxArt: {fileID: 7555936856672184863, guid: 5c8239029d2564353af0517bfc95a66a, type: 3}
-  closedAreaOffset: {x: 0, y: 0, z: 0.3}
-  closedAreaSize: {x: 5.4, y: 3.4}
   queue: {fileID: 700000134}
   payoffTime: 6
   payoffPullBack: 8
@@ -3772,7 +3770,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: f1e614af928a640ea8d5fd16dd9f0124, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -3.5
+      value: -3.64
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: f1e614af928a640ea8d5fd16dd9f0124, type: 3}
       propertyPath: m_LocalPosition.y
@@ -4871,7 +4869,7 @@ Transform:
   m_GameObject: {fileID: 1261549197}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 4.4, y: 0.93, z: 17.87}
+  m_LocalPosition: {x: 5.02, y: 0.93, z: 20.48}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
