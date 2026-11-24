@@ -129,6 +129,8 @@ public static class GameText
     // Flaming hot dogs
     public const string LidOpen = "The rats are already out";
     public const string NobodyToScare = "Nobody around worth scaring";
+    // Load Game, when New Game found every save slot taken (SaveGame.MaxSlots).
+    public static readonly string SlotsFull = $"All {SaveGame.MaxSlots} save slots are full. Delete a save to start a new game.";
     public const string ValveOpen = "It's hissing away already";
     public const string ValveSpent = "Nothing left in it";
     public const string FanGuarded = "The hot dog man won't let you touch his fan";
@@ -421,9 +423,6 @@ public static class GameText
 
     public const string TutorialNext = "Next";        // beside the [Space] keycap, on steps you just read
     public const string TutorialSkip = "Hold [Space] to skip tutorial";
-
-    // After the tutorial: the park tour (ParkTour), and the banner when a part of the objectives is done
-    public const string TourSays = "Alright! Opening day, baby!";
 
     // Visitors in the runaway Ferris wheel's path, the moment it tears loose (FerrisWheel): a few cry out before it
     // flattens them.

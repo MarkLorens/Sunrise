@@ -54,7 +54,6 @@ public class AudioManager : MonoBehaviour
     }
 
     private readonly List<EventInstance> eventInstances = new();
-    private readonly List<StudioEventEmitter> eventEmitters = new();
     private readonly HashSet<FMOD.GUID> missing = new(); // events not in the built banks: warned about once
 
     private EventInstance music;
@@ -76,12 +75,6 @@ public class AudioManager : MonoBehaviour
     {
         if (sound.IsNull) return;
         RuntimeManager.PlayOneShot(sound, worldPos); // an event missing from the banks only logs a warning
-    }
-
-    // A fire-and-forget sound that isn't anywhere in the world: menu clicks, the pause menu, the HUD (2D events).
-    public void PlayOneShot(EventReference sound)
-    {
-        PlayOneShot(sound, Vector3.zero);
     }
 
     // A sound you start and stop yourself (loops). Hand it back with ReleaseInstance when you're done with it.
@@ -246,17 +239,6 @@ public class AudioManager : MonoBehaviour
         AudioBuses.Duck(duckLevel);
     }
 
-    // ---------------------------------------------------------------- emitters
-
-    // Points a Studio Event Emitter already on `emitterObject` at `sound`, and stops it with everything else at the end.
-    public StudioEventEmitter InitializeEventEmitter(EventReference sound, GameObject emitterObject)
-    {
-        StudioEventEmitter emitter = emitterObject.GetComponent<StudioEventEmitter>();
-        emitter.EventReference = sound;
-        eventEmitters.Add(emitter);
-        return emitter;
-    }
-
     private void CleanUp()
     {
         StopMusic(); // fades out
@@ -266,11 +248,6 @@ public class AudioManager : MonoBehaviour
             eventInstance.release();
         }
         eventInstances.Clear();
-        foreach (StudioEventEmitter emitter in eventEmitters)
-        {
-            if (emitter != null) emitter.Stop();
-        }
-        eventEmitters.Clear();
     }
 
     private void OnDestroy()

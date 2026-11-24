@@ -75,6 +75,13 @@ public static class Settings
 
     public static float ShakeStrength => Shake * 0.5f;
 
+    // Warm lamp-post night (NightLighting's moody preset). Off unless turned on — default night keeps its own colours.
+    public static bool MoodyLighting
+    {
+        get => PlayerPrefs.GetInt("moodyLighting", 0) == 1;
+        set => PlayerPrefs.SetInt("moodyLighting", value ? 1 : 0);
+    }
+
     // Closed captions for every sound (ClosedCaptions; the words are in Captions). Off unless turned on.
     public static bool ClosedCaptions
     {
