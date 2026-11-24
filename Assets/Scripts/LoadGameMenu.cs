@@ -36,6 +36,8 @@ public class LoadGameMenu : MonoBehaviour
     const float PictureX = -11f;
     // The arrows near the screen's sides, 120 tall; Delete Slot 437 under the picked card's middle; Back bottom right.
     const float ArrowX = 826f, ArrowH = 120f, DeleteBelow = 437f;
+    const float FullY = 445f; // the "slots full" notice, above the cards
+    Text fullNotice;
     static readonly Color Empty = new(0.85f, 0.85f, 0.85f);
     static Texture2D disc;
 
@@ -70,6 +72,11 @@ public class LoadGameMenu : MonoBehaviour
         Place(backButton.transform, new Vector2(700f, -490f));
         leftArrow = Arrow(-1);
         rightArrow = Arrow(1);
+        // Every slot taken (New Game brings you here): over the cards, what to do about it.
+        var full = MainMenu.Ui("Slots Full", canvas);
+        Place(full, new Vector2(0f, FullY));
+        full.sizeDelta = new Vector2(1400f, 60f);
+        fullNotice = MainMenu.Label(full, GameText.SlotsFull, Figma.Type.ArvoSubtitle, Color.white, ParkArt.Font);
         MakeCards();
         if (cards.Count > 0) MainMenu.Select(cards[current].button);
     }
@@ -112,7 +119,7 @@ public class LoadGameMenu : MonoBehaviour
         cards.Clear();
         var saved = SaveGame.Saved();
         foreach (var slot in saved) cards.Add(MakeCard(slot));
-        for (int free = 0; cards.Count < Visible; free++) // fewer saves than Visible: [NEW GAME] in empty slots
+        for (int free = 0; free < SaveGame.MaxSlots; free++) // every slot: [NEW GAME] in the empty ones
             if (!saved.Contains(free)) cards.Add(MakeCard(free));
         current = Mathf.Clamp(current, 0, cards.Count - 1);
         first = Mathf.Clamp(first, 0, Mathf.Max(0, cards.Count - Visible));
@@ -257,6 +264,7 @@ public class LoadGameMenu : MonoBehaviour
     // they should.
     void Refresh()
     {
+        if (fullNotice != null) fullNotice.gameObject.SetActive(SaveGame.Full);
         for (int i = 0; i < cards.Count; i++)
         {
             var c = cards[i];
