@@ -34,6 +34,10 @@ public class FerrisWheel : MonoBehaviour
     public float payoffPullBack = 8f;  // how much further back the camera sits to fit the whole wheel
     [Header("Finale (max speed)")]
     public Transform parkEntrance;          // where everyone runs to once the wheel's rolled; the camera goes to look
+    public Transform exitGate;              // they all squeeze through here together on the way (empty: straight for it)
+    public float exodusScatter = 70f;       // then scatter, up to this many degrees either side of straight out
+    public Transform exodusView;            // where the camera looks meanwhile: the gate, with them pouring out through it
+                                            // (empty: parkEntrance itself)
     public float entrancePullBack = 3f;     // how far back the camera sits there, to take in the stampede
     public float glideToEntrance = 7f;      // seconds drifting over from the wreck (past the closed stalls)
     public float watchExodus = 5f;          // seconds watching them run out
@@ -288,7 +292,7 @@ public class FerrisWheel : MonoBehaviour
 
         GameHud.HideObjectives = true; // the rest is the ending: no objectives or prompts over it
         Vector3 exit = parkEntrance != null ? parkEntrance.position : wheel.position;
-        foreach (var v in new List<Visitor>(Visitor.All)) v.Flee(exit);
+        foreach (var v in new List<Visitor>(Visitor.All)) v.Flee(exit, exitGate != null ? exitGate.position + (exit - exitGate.position).normalized * 1f : null, exodusScatter);
 
         var shot = new GameObject("Finale Shot").transform;
         shot.position = wheel.position;
@@ -307,7 +311,8 @@ public class FerrisWheel : MonoBehaviour
             }
         }
         var spirit = Possession.Instance;
-        yield return Glide(() => exit, entrancePullBack, glideToEntrance);
+        Vector3 view = exodusView != null ? exodusView.position : exit;
+        yield return Glide(() => view, entrancePullBack, glideToEntrance);
         yield return new WaitForSeconds(watchExodus);
         yield return Glide(() => spirit.Focus.position, 0f, glideHome);
         CameraRig.EndSpotlight();
