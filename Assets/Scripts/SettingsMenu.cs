@@ -113,6 +113,7 @@ public class SettingsMenu : MonoBehaviour
         scroll = null;
         firstControl = cards[0] = cards[1] = null;
         controlsContent = null;
+        rowParent = null;
         pills.Clear();
         pillBinds.Clear();
 
@@ -197,6 +198,8 @@ public class SettingsMenu : MonoBehaviour
 
     void Display()
     {
+        // Same window as Control: under the tabs, ending above Reset / Apply / Back, so the extra rows scroll clear of them.
+        rowParent = ScrollList(Figma.Height);
         PillRow(0, "Window Mode", new[] { "Windowed", "Fullscreen" }, () => Settings.Fullscreen ? 1 : 0, i => Settings.Fullscreen = i == 1);
         PillRow(1, "Graphic", new[] { "Low", "Medium", "High" }, () => (int)Settings.Graphics, i => Settings.Graphics = (Settings.Quality)i);
         PillRow(2, "Screen Shake", new[] { "Full", "Half", "Off" }, () => 2 - Settings.Shake, i => Settings.Shake = 2 - i);
@@ -206,6 +209,8 @@ public class SettingsMenu : MonoBehaviour
         SliderRow(5, "DoF Range", () => Mathf.Round(Settings.DepthOfField * 100f), v => Settings.DepthOfField = v / 100f, 152f, -130f); // how far back the blur starts; its bar starts where the arrows do
         ArrowRow(6, 152f, "Vertical Sync", 574f, 786.4f, 679.5f, () => Settings.VSync ? "ON" : "OFF", _ => Settings.VSync = !Settings.VSync);
         ArrowRow(7, 152f, "Anti-Aliasing", 574f, 786.4f, 679.5f, () => Settings.AntiAliasing ? "ON" : "OFF", _ => Settings.AntiAliasing = !Settings.AntiAliasing);
+        float bottom = RowY + RowStep * (rows.Count - 1) + RowStep * 0.5f;
+        controlsContent.sizeDelta = new Vector2(Figma.Width * Figma.K, (bottom + 30f - ContentTop) * Figma.K);
     }
 
     void Audio()
@@ -219,12 +224,16 @@ public class SettingsMenu : MonoBehaviour
 
     // ---------------------------------------------------------------- rows
 
+    // Display's rows live in the scrolling list; the other pages lay out on the page itself.
+    RectTransform Rows => rowParent != null ? rowParent : page;
+
     Row NewRow(int index, float labelX, string name)
     {
         float y = RowY + RowStep * index;
         var r = new Row();
-        var hit = MainMenu.Ui(name, page);
+        var hit = MainMenu.Ui(name, Rows);
         Figma.Place(hit, 790f, y, 1320f, RowStep); // the whole line is the row
+        Pin(hit, 790f, y);
         var img = hit.gameObject.AddComponent<Image>();
         img.color = Color.clear;
         r.button = hit.gameObject.AddComponent<Button>();
@@ -232,7 +241,9 @@ public class SettingsMenu : MonoBehaviour
         r.button.transition = Selectable.Transition.None;
         hit.gameObject.AddComponent<MainMenu.HoverSelects>(); // the hover sound (G-02) as it's picked
         hit.gameObject.AddComponent<RowKeys>().row = r;
-        r.label = Left(page, name, labelX, y, Figma.Type.ArvoSubtitle);
+        if (rowParent != null) hit.gameObject.AddComponent<KeepInView>().menu = this;
+        r.label = Left(Rows, name, labelX, y, Figma.Type.ArvoSubtitle);
+        PinLeft(r.label.rectTransform, labelX, y);
         rows.Add(r);
         return r;
     }
@@ -244,9 +255,12 @@ public class SettingsMenu : MonoBehaviour
         sound ??= e => e.toggle;
         var r = NewRow(index, labelX, name);
         float y = RowY + RowStep * index;
-        r.left = Figma.Picture(page, "Left", "Buttons/Arrows/LeftArrow_Idle", leftX, y + 1.5f, 47f, 47f);
-        r.right = Figma.Picture(page, "Right", "Buttons/Arrows/RightArrow_Idle", rightX, y, 47f, 47f);
-        r.value = Figma.Words(page, shown(), valueX, y, Figma.Type.ArvoSubtitle, Ink, ParkArt.Font);
+        r.left = Figma.Picture(Rows, "Left", "Buttons/Arrows/LeftArrow_Idle", leftX, y + 1.5f, 47f, 47f);
+        r.right = Figma.Picture(Rows, "Right", "Buttons/Arrows/RightArrow_Idle", rightX, y, 47f, 47f);
+        r.value = Figma.Words(Rows, shown(), valueX, y, Figma.Type.ArvoSubtitle, Ink, ParkArt.Font);
+        Pin(r.left.rectTransform, leftX, y + 1.5f);
+        Pin(r.right.rectTransform, rightX, y);
+        Pin(r.value.rectTransform, valueX, y);
         r.shown = shown;
         r.step = d =>
         {
@@ -294,7 +308,8 @@ public class SettingsMenu : MonoBehaviour
         r.pills = new Image[options.Length];
         for (int i = 0; i < options.Length; i++)
         {
-            r.pills[i] = Figma.Picture(page, options[i], "Buttons/Button2_Idle", PillX[i], y, 286f, 61f);
+            r.pills[i] = Figma.Picture(Rows, options[i], "Buttons/Button2_Idle", PillX[i], y, 286f, 61f);
+            Pin(r.pills[i].rectTransform, PillX[i], y);
             r.pills[i].raycastTarget = true;
             int which = i;
             var b = r.pills[i].gameObject.AddComponent<Button>();
@@ -302,7 +317,7 @@ public class SettingsMenu : MonoBehaviour
             b.navigation = new Navigation { mode = Navigation.Mode.None };
             b.onClick.AddListener(() => { set(which); Refresh(); MainMenu.Select(r.button); });
             r.pills[i].gameObject.AddComponent<PicksRow>().row = r.button;
-            Figma.Words(page, options[i], PillX[i] + 6f, y - 4.5f, Figma.Type.ArvoBody, Ink, ParkArt.Font);
+            Pin(Figma.Words(Rows, options[i], PillX[i] + 6f, y - 4.5f, Figma.Type.ArvoBody, Ink, ParkArt.Font).rectTransform, PillX[i] + 6f, y - 4.5f);
         }
         r.options = options;
         r.current = current;
@@ -321,9 +336,12 @@ public class SettingsMenu : MonoBehaviour
     {
         var r = NewRow(index, labelX, name);
         float y = RowY + RowStep * index;
-        r.bar = Figma.Picture(page, "Bar", "Volume/VolumeBar_Idle", 891.5f + shift, y, 422f, 46.9f);
-        r.knob = Figma.Picture(page, "Knob", "Volume/VolumeSelecter_Idle", 0f, y, 24.7f, 54f);
-        r.value = Figma.Words(page, "", 1174f + shift, y, Figma.Type.ArvoSubtitle, Ink, ParkArt.Font);
+        r.bar = Figma.Picture(Rows, "Bar", "Volume/VolumeBar_Idle", 891.5f + shift, y, 422f, 46.9f);
+        r.knob = Figma.Picture(Rows, "Knob", "Volume/VolumeSelecter_Idle", 0f, y, 24.7f, 54f);
+        r.value = Figma.Words(Rows, "", 1174f + shift, y, Figma.Type.ArvoSubtitle, Ink, ParkArt.Font);
+        Pin(r.bar.rectTransform, 891.5f + shift, y);
+        Pin(r.knob.rectTransform, 0f, y);
+        Pin(r.value.rectTransform, 1174f + shift, y);
         r.amount = amount;
         r.shift = shift;
         r.step = d =>
@@ -655,35 +673,15 @@ public class SettingsMenu : MonoBehaviour
     readonly List<Button> pills = new();
     readonly List<KeyBindings.Bind> pillBinds = new();
     RectTransform controlsContent;
+    RectTransform rowParent; // Display's rows, inside the scrolling list; null on the other pages
     // The pill waiting for its new key (-1: none), and the frames it started and stopped waiting.
     int listening = -1, listenFrame, listenEndFrame = -10;
 
     void Controls()
     {
         // Everything under the tabs scrolls (the design's page is taller than the screen); the scroll bar on the right.
-        var view = MainMenu.Ui("View", page);
-        // From just under the tabs (ContentTop, measured from the screen's middle like everything else) to just above
-        // the buttons at the bottom.
-        view.anchorMin = new Vector2(0f, 0.5f);
-        view.anchorMax = new Vector2(1f, 0.5f);
-        view.offsetMin = new Vector2(0f, (Figma.Height * 0.5f - 856f) * Figma.K); // ends above Reset / Apply / Back
-        view.offsetMax = new Vector2(0f, (Figma.Height * 0.5f - ContentTop) * Figma.K);
-        view.gameObject.AddComponent<RectMask2D>();
-        var viewImg = view.gameObject.AddComponent<Image>();
-        viewImg.color = Color.clear; // catches the scroll wheel
-
-        var content = MainMenu.Ui("Content", view);
-        content.anchorMin = content.anchorMax = content.pivot = new Vector2(0.5f, 1f);
-        // Down to just under the last key row (Interact, its pill's bottom at 1169), so the list stops scrolling there.
-        content.sizeDelta = new Vector2(Figma.Width * Figma.K, (1169f + 30f - ContentTop) * Figma.K);
-        controlsContent = content;
-
-        scroll = page.gameObject.AddComponent<ScrollRect>();
-        scroll.viewport = view;
-        scroll.content = content;
-        scroll.horizontal = false;
-        scroll.movementType = ScrollRect.MovementType.Clamped;
-        scroll.scrollSensitivity = 40f;
+        // Down to just under the last key row (Interact, its pill's bottom at 1169).
+        var content = ScrollList(1169f);
 
         // The two schemes: the one in use on the bright card under the picked title. Keys changed away from both
         // (custom): neither is picked, and both go dark.
@@ -721,8 +719,33 @@ public class SettingsMenu : MonoBehaviour
                 selectOnRight = s == 0 ? cards[1] : null,
             };
         firstControl = pills[0];
+    }
 
-        // The scroll bar (the design's, fixed on the right), driving the list.
+    // The list under the tabs: from ContentTop down to just above Reset / Apply / Back (856), with 30px under the last
+    // thing (`bottom`, design px from the page top). The scroll bar on the right, as Control draws it.
+    RectTransform ScrollList(float bottom)
+    {
+        var view = MainMenu.Ui("View", page);
+        view.anchorMin = new Vector2(0f, 0.5f);
+        view.anchorMax = new Vector2(1f, 0.5f);
+        view.offsetMin = new Vector2(0f, (Figma.Height * 0.5f - 856f) * Figma.K);
+        view.offsetMax = new Vector2(0f, (Figma.Height * 0.5f - ContentTop) * Figma.K);
+        view.gameObject.AddComponent<RectMask2D>();
+        var viewImg = view.gameObject.AddComponent<Image>();
+        viewImg.color = Color.clear; // catches the scroll wheel
+
+        var content = MainMenu.Ui("Content", view);
+        content.anchorMin = content.anchorMax = content.pivot = new Vector2(0.5f, 1f);
+        content.sizeDelta = new Vector2(Figma.Width * Figma.K, (bottom + 30f - ContentTop) * Figma.K);
+        controlsContent = content;
+
+        scroll = page.gameObject.AddComponent<ScrollRect>();
+        scroll.viewport = view;
+        scroll.content = content;
+        scroll.horizontal = false;
+        scroll.movementType = ScrollRect.MovementType.Clamped;
+        scroll.scrollSensitivity = 40f;
+
         var barRt = MainMenu.Ui("Scroll Bar", page);
         Figma.Place(barRt, 1462f, (220.5f + 856f) * 0.5f, 56f, 856f - 220.5f); // ends where the list does
         var barImg = barRt.gameObject.AddComponent<Image>();
@@ -753,6 +776,7 @@ public class SettingsMenu : MonoBehaviour
         bar.navigation = new Navigation { mode = Navigation.Mode.None };
         scroll.verticalScrollbar = bar;
         scroll.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.Permanent;
+        return content;
     }
 
     // One scheme's card: the card and title pictures (bright and "selected" when it's the one in use), its name, its
@@ -897,6 +921,20 @@ public class SettingsMenu : MonoBehaviour
     static void Top(RectTransform rt, float x, float y)
     {
         rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 1f);
+        rt.anchoredPosition = new Vector2((x - Figma.Width * 0.5f) * Figma.K, -(y - ContentTop) * Figma.K);
+    }
+
+    // Display rows are built with Figma.Place (page centre). Once they live in the list, hang them from its top instead.
+    void Pin(RectTransform rt, float x, float y)
+    {
+        if (rowParent != null) Top(rt, x, y);
+    }
+
+    void PinLeft(RectTransform rt, float x, float y)
+    {
+        if (rowParent == null) return;
+        rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 1f);
+        rt.pivot = new Vector2(0f, 0.5f);
         rt.anchoredPosition = new Vector2((x - Figma.Width * 0.5f) * Figma.K, -(y - ContentTop) * Figma.K);
     }
 
