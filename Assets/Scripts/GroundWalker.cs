@@ -18,6 +18,7 @@ public class GroundWalker : MonoBehaviour
     public Tilemap objects; // more things you bump into, besides the Objects and See Through tilemaps next to the ground
     public float bodyRadius = 0.35f; // about half a person's width: how close your middle gets to an object
     public float speed = 5f;
+    public float devSprint = 4f; // Editor and development builds only: times as fast while you hold Player/Sprint (Left Shift)
     public bool readKeyboard = true;
     [HideInInspector] public Vector2 move; // x = world X, y = world Z; used when readKeyboard is off
     // A stall worker behind their counter: inside their stall's solid box (Block), which they'd otherwise be stuck in.
@@ -73,6 +74,9 @@ public class GroundWalker : MonoBehaviour
     {
         Vector2 input = readKeyboard ? KeyboardInput() : move;
         Vector2 v = Vector2.ClampMagnitude(input, 1f) * speed;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (readKeyboard && Controls.SprintHeld) v *= devSprint; // testing: dash about the park
+#endif
 
         // Check each axis separately so you can slide along edges instead of sticking.
         if (!OnTile(new Vector3(v.x, 0, 0))) v.x = 0;

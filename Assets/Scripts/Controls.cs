@@ -8,11 +8,11 @@ using UnityEngine.InputSystem;
 // The key caps drawn on screen (KeyHint) are pictures of the keys, not bindings.
 public static class Controls
 {
-    static InputAction move, possess, use, objectives, pause, skip, back;
+    static InputAction move, possess, use, objectives, pause, skip, back, sprint;
 
     // Play mode starts without reloading scripts here, so look the actions up afresh each time.
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    static void Forget() => move = possess = use = objectives = pause = skip = back = null;
+    static void Forget() => move = possess = use = objectives = pause = skip = back = sprint = null;
 
     public static Vector2 Move => Vector2.ClampMagnitude(Get(ref move, "Player/Move")?.ReadValue<Vector2>() ?? Vector2.zero, 1f);
     public static bool Possess => Pressed(ref possess, "Player/Possess");
@@ -22,6 +22,8 @@ public static class Controls
     public static bool Skip => Pressed(ref skip, "Player/Skip");
     public static bool SkipHeld => Get(ref skip, "Player/Skip")?.IsPressed() ?? false;
     public static bool Back => Pressed(ref back, "UI/Cancel");
+    // Dev only (GroundWalker.devSprint): Player/Sprint, held. Not in Options: it's not part of the game.
+    public static bool SprintHeld => Get(ref sprint, "Player/Sprint")?.IsPressed() ?? false;
 
     static bool Pressed(ref InputAction a, string name) => Get(ref a, name)?.WasPressedThisFrame() ?? false;
 
