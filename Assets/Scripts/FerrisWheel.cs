@@ -399,7 +399,7 @@ public class FerrisWheel : MonoBehaviour
     void Spin(Vector3 at)
     {
         wheel.localPosition = at;
-        angle += speed * Time.deltaTime;
+        angle -= speed * Time.deltaTime; // clockwise, as seen from the camera: the way it rolls off (rollDirection, to the right)
         wheel.localRotation = Quaternion.Euler(0, 0, angle);
     }
 
@@ -466,7 +466,8 @@ public class FerrisWheel : MonoBehaviour
             float step = rollSpeed * Time.deltaTime;
             p += dir * step;
             rolled += step;
-            angle += Mathf.Sign(dir.x) * step / radius * Mathf.Rad2Deg; // the same way round it was spinning, flat out
+            // Rolling without slipping: clockwise going right, so it carries on the way it was spinning, flat out.
+            angle -= Mathf.Sign(dir.x) * step / radius * Mathf.Rad2Deg;
             wheel.rotation = Quaternion.Euler(0, 0, angle);
             Flatten(p, dir, radius);
             SquashAlong(p, dir, radius);

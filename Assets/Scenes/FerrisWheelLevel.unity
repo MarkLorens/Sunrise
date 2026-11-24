@@ -3440,6 +3440,8 @@ MonoBehaviour:
   payoffTime: 6
   payoffPullBack: 8
   parkEntrance: {fileID: 1852579289}
+  exitGate: {fileID: 0}
+  exodusScatter: 70
   exodusView: {fileID: 2076424118}
   entrancePullBack: 7
   glideToEntrance: 3.5
@@ -7758,7 +7760,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 08f0398b11fce4f78951aea556cfab19, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TankFan
-  facing: 2
+  facing: 1
   guardedBy: 1
 --- !u!1 &1581919318
 GameObject:
