@@ -1,15 +1,16 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Ground only one member of staff may step onto, once they've scanned their finger at its FingerprintScanner: the
-// raised platform at the Ferris wheel's leg (the ride technician, for its hinge: WheelHinge) and the operator's booth
-// round the control panel (the operator). Going about his job the owner walks in and out as he likes; in his body,
+// Ground only one member of staff may step onto, once they've scanned their finger at its FingerprintScanner: the top
+// of the Ferris wheel platform's left stairs (the ride technician; unlocking it lets him loosen the hinge: WheelHinge)
+// and the operator's booth round the control panel (the operator). Going about his job the owner walks in and out as he likes; in his body,
 // the player has to scan in. Visitors never get in, and with keepSpiritOut the spirit can't float in either, so
 // nobody inside can be reached to be possessed.
 // It's fenced in square with metal barriers (Props/New/metal_barrier_1..3), like a pool fence: the front and back runs
 // face the camera, their sections end to end; the sides run back from the front corners to the back ones (turned to
 // run along them, so they're seen going back); and one section of the front is its gate (the lock:
-// FingerprintScanner, which draws it). The fence is only a picture: who may step in is still Allows' say.
+// FingerprintScanner, which draws it). The fence is only a picture: who may step in is still Allows' say. With `fence`
+// off there's no fence, just the gate, across the whole front (the wheel's, across the top of its stairs).
 public class FingerprintArea : MonoBehaviour
 {
     public static readonly List<FingerprintArea> All = new();
@@ -19,6 +20,7 @@ public class FingerprintArea : MonoBehaviour
     public Staff owner = Staff.Technician;
     public Vector2 size = new(3f, 2.4f); // x by z, centred on this object
     public bool deck = true;             // draw the raised steel deck; off = a painted line round it
+    public bool fence = true;            // off: no fence, the gate alone spans its whole front
     public bool keepSpiritOut;
 
     public bool Open { get; set; }
@@ -39,7 +41,7 @@ public class FingerprintArea : MonoBehaviour
 
     void Start()
     {
-        Fence();
+        if (fence) Fence();
         if (!deck) return;
         var floor = ParkArt.Make("Deck", transform, "Props/platform", size.y, Color.white, ParkArt.DecalOrder + 1, true);
         floor.transform.parent.localPosition = Vector3.up * 0.03f;
@@ -84,7 +86,7 @@ public class FingerprintArea : MonoBehaviour
         float gateX = transform.position.x;
         foreach (var s in FindObjectsByType<FingerprintScanner>())
             if (s.platform == this) gateX = s.transform.position.x;
-        int count = Sections(size.x);
+        int count = fence ? Sections(size.x) : 1;
         width = size.x / count;
         float left = transform.position.x - size.x * 0.5f;
         index = Mathf.Clamp(Mathf.FloorToInt((gateX - left) / width), 0, count - 1);

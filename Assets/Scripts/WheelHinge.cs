@@ -1,7 +1,8 @@
 using UnityEngine;
 
-// The support hinge on the Ferris wheel's leg, up on its platform (FingerprintArea). The technician can loosen it with
-// his screwdriver; the wheel doesn't notice until it's started again (FerrisWheel.Restart).
+// The support hinge on the Ferris wheel's leg, up on its platform. The technician can loosen it with his screwdriver
+// once he's unlocked the gate at the top of the left stairs (FingerprintArea); the wheel doesn't notice until it's
+// started again (FerrisWheel.Restart).
 [RequireComponent(typeof(Interactable))]
 public class WheelHinge : MonoBehaviour, IInteraction
 {
