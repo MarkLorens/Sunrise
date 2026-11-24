@@ -58,6 +58,16 @@ public class NightLighting : MonoBehaviour
     public float poolHeight = 1.2f;      // how far above the ground it sits: higher spreads it wider and fainter
     [Range(0, 1)] public float lampFlicker = 0.08f; // how far a flame dips, as a fraction of full brightness
     public float lampFlickerSpeed = 2f;
+    [Tooltip("The small ground lanterns: tiles drawn with these sprites, and where in each picture its glowing ball is (as a fraction of its height). Lit like the lamp posts, scaled by the two values below.")]
+    public SmallLamp[] smallLamps =
+    {
+        new() { sprite = "IMG_2874", lanternHeight = 0.579f },
+        new() { sprite = "IMG_2875", lanternHeight = 0.644f },
+    };
+    [Tooltip("The small lanterns' light, pool and glow, times the lamp posts' (Lamp Intensity, Pool Intensity, the glow alphas).")]
+    public float smallLampBrightness = 0.3f;
+    [Tooltip("The small lanterns' light ranges and glow sizes, times the lamp posts'.")]
+    public float smallLampSize = 0.5f;
     public Color stallColor = new(1f, 0.72f, 0.45f);
     public float stallIntensity = 3f;
     public float stallRange = 6f;
@@ -82,12 +92,20 @@ public class NightLighting : MonoBehaviour
     public float playerIntensity = 3.5f;
     public float playerRange = 4.5f; // it sits above and in front: shorter and it misses the spirit
 
+    [System.Serializable]
+    public class SmallLamp
+    {
+        public string sprite;
+        [Range(0, 1)] public float lanternHeight = 0.6f;
+    }
+
     class Lamp
     {
-        public Vector3 foot;
+        public Vector3 foot, lantern;
         public Light light, pool;
         public SpriteRenderer core, halo;
         public Color color;
+        public bool small; // a ground lantern, not a lamp post
     }
 
     class Ride
@@ -138,14 +156,14 @@ public class NightLighting : MonoBehaviour
     // The lamp sputtering on and off (the mechanic's fixing it), or -1.
     public int Sputtering { get; set; } = -1;
 
-    // The lamp post closest to p: its index (for Sputtering) and where its post stands.
+    // The lamp post closest to p: its index (for Sputtering) and where its post stands. Never a small lantern.
     public bool NearestLamp(Vector3 p, out int index, out Vector3 foot)
     {
         index = -1;
         foot = default;
         if (!built) Build();
         for (int i = 0; i < lamps.Count; i++)
-            if (index < 0 || (lamps[i].foot - p).sqrMagnitude < (foot - p).sqrMagnitude)
+            if (!lamps[i].small && (index < 0 || (lamps[i].foot - p).sqrMagnitude < (foot - p).sqrMagnitude))
             {
                 index = i;
                 foot = lamps[i].foot;
@@ -238,24 +256,35 @@ public class NightLighting : MonoBehaviour
 
         BuildGrade();
 
+        int posts = 0, small = 0; // each kind takes the lamp colours in turn on its own, so the posts keep theirs
         foreach (var map in FindObjectsByType<Tilemap>(FindObjectsSortMode.None))
             foreach (var cell in map.cellBounds.allPositionsWithin)
             {
                 var s = map.GetSprite(cell);
-                if (s == null || s.name != lampSprite) continue;
+                if (s == null) continue;
+                bool isSmall = false;
+                float height = lanternHeight;
+                if (s.name != lampSprite)
+                {
+                    int k = System.Array.FindIndex(smallLamps, l => l.sprite == s.name);
+                    if (k < 0) continue;
+                    isSmall = true;
+                    height = smallLamps[k].lanternHeight;
+                }
                 // Props stand upright on their cell with their feet at its centre (measured against the drawn post: the
                 // cell's front edge puts the glow half a tile towards the camera), plus any nudge painted onto the tile
                 // itself (its transform), turned upright the way the tilemap turns the tile.
                 Vector3 nudge = map.orientationMatrix.MultiplyVector(map.GetTransformMatrix(cell).GetPosition());
                 Vector3 foot = map.GetCellCenterWorld(cell) + map.transform.TransformVector(nudge);
-                Vector3 lantern = foot + Vector3.up * (s.bounds.max.y * map.transform.lossyScale.y * lanternHeight);
-                Color lampColor = LampColor(lamps.Count);
-                // Well in front of the lantern, so it lights the lamp and the people near it without burning the glass white.
+                Vector3 lantern = foot + Vector3.up * (s.bounds.max.y * map.transform.lossyScale.y * height);
+                Color lampColor = LampColor(isSmall ? small++ : posts++);
                 lamps.Add(new Lamp
                 {
                     foot = foot,
+                    lantern = lantern,
+                    small = isSmall,
                     color = lampColor,
-                    light = PointLight("Lamp Light", root, lantern + Vector3.back * 1.2f),
+                    light = PointLight("Lamp Light", root, lantern),
                     pool = PointLight("Lamp Pool", root, foot),
                     core = Glow("Lamp Core", root, lantern + Vector3.back * 0.05f, lampCoreSize, lampColor, lampCoreAlpha),
                     halo = Glow("Lamp Halo", root, lantern + Vector3.back * 0.04f, lampHaloSize, lampColor, lampHaloAlpha),
@@ -369,12 +398,15 @@ public class NightLighting : MonoBehaviour
             var l = lamps[i];
             // The palette is read live (not the colour stored when the lamp was built) so it can be tuned while playing.
             l.color = LampColor(i);
-            Color color = l.color;
-            Set(l.light, color, lampIntensity * f, lampRange);
-            Set(l.pool, color, poolIntensity * f, poolRange);
-            l.pool.transform.position = l.foot + new Vector3(0f, poolHeight, -0.3f);
-            Tint(l.core, color, lampCoreAlpha * f, lampCoreSize);
-            Tint(l.halo, color, lampHaloAlpha * f, lampHaloSize);
+            float b = l.small ? smallLampBrightness : 1f, s = l.small ? smallLampSize : 1f;
+            f *= b;
+            // Well in front of the lantern, so it lights the lamp and the people near it without burning the glass white.
+            l.light.transform.position = l.lantern + Vector3.back * (1.2f * s);
+            Set(l.light, l.color, lampIntensity * f, lampRange * s);
+            Set(l.pool, l.color, poolIntensity * f, poolRange * s);
+            l.pool.transform.position = l.foot + new Vector3(0f, poolHeight * s, -0.3f * s);
+            Tint(l.core, l.color, Mathf.Clamp01(lampCoreAlpha * f), lampCoreSize * s);
+            Tint(l.halo, l.color, Mathf.Clamp01(lampHaloAlpha * f), lampHaloSize * s);
         }
         foreach (var l in stalls) Set(l, stallColor, stallIntensity, stallRange);
 

@@ -35,7 +35,29 @@ public class StandQueue : MonoBehaviour, IVisitorLine
     float nextCheck;
     float servedAt = -1f;
 
-    public bool HasRoom => line.Count < capacity;
+    // What the people in it leave with (Visitor.Served): an ice cream, a balloon, a hot dog.
+    public VisitorItem gives;
+    // A stand whose seller comes and goes (the hot dog man: off after the rats, guarding his fan): only served while
+    // `serving` says so; and `shut` (burnt down) closes the line for good, everyone in it going about their day.
+    public System.Func<bool> serving, shut;
+    bool closed;
+
+    // IsSeating mode (PicnicTable): each spot a seat of its own instead of a place in line; whoever sits there stays
+    // stayTime, each on their own clock, then goes on with their day (nobody shuffles up).
+    Vector3[] seats;
+    Visitor[] seated;
+    float[] leaveAt;
+    public Vector2 stayTime = new(12f, 25f);
+    public bool IsSeating => seats != null;
+
+    public bool HasRoom => !closed && (IsSeating ? FreeSeat() >= 0 : line.Count < capacity);
+
+    int FreeSeat()
+    {
+        for (int i = 0; i < capacity; i++)
+            if (seated[i] == null) return i;
+        return -1;
+    }
     public int Waiting => line.Count;
 
     // A line at `front`, as long as its spots are on `ground` and clear of props (up to MaxLine); null if there's no
@@ -62,17 +84,52 @@ public class StandQueue : MonoBehaviour, IVisitorLine
         return null;
     }
 
+    // A table's seats (those on walkable ground clear of props); null if none are.
+    public static StandQueue Seating(string name, Transform parent, Vector3[] spots, Vector3 counter, Tilemap ground)
+    {
+        var ok = new List<Vector3>();
+        foreach (var p in spots)
+        {
+            Vector3Int cell = ground.WorldToCell(p);
+            cell.z = 0;
+            if (ground.HasTile(cell) && !GroundWalker.NearObstacle(p, 0.3f)) ok.Add(new Vector3(p.x, 0f, p.z));
+        }
+        if (ok.Count == 0) return null;
+        var q = new GameObject(name).AddComponent<StandQueue>();
+        q.transform.SetParent(parent, true);
+        q.transform.position = new Vector3(counter.x, 0f, counter.z);
+        q.counter = counter;
+        q.seats = ok.ToArray();
+        q.seated = new Visitor[ok.Count];
+        q.leaveAt = new float[ok.Count];
+        q.capacity = q.groundCapacity = ok.Count;
+        q.KeepAway();
+        return q;
+    }
+
     void OnEnable() => All.Add(this);
     void OnDisable() => All.Remove(this);
 
     public bool Join(Visitor v)
     {
         if (!HasRoom || line.Contains(v) || ParkChaos.Threat(transform.position, false, out _)) return false;
+        if (IsSeating)
+        {
+            int seat = FreeSeat();
+            seated[seat] = v;
+            leaveAt[seat] = 0f;
+        }
         line.Add(v);
         return true;
     }
 
-    public void Leave(Visitor v) => line.Remove(v);
+    public void Leave(Visitor v)
+    {
+        line.Remove(v);
+        if (!IsSeating) return;
+        int seat = System.Array.IndexOf(seated, v);
+        if (seat >= 0) seated[seat] = null;
+    }
 
     public bool Has(Visitor v) => line.Contains(v);
 
@@ -85,6 +142,16 @@ public class StandQueue : MonoBehaviour, IVisitorLine
         foreach (var m in Mascot.All) clear.Add(m.transform.position);
         capacity = 0;
         while (capacity < groundCapacity && !Crowds(Slot(capacity), clear)) capacity++;
+        if (IsSeating)
+        {
+            for (int i = capacity; i < seated.Length; i++)
+                if (seated[i] != null)
+                {
+                    line.Remove(seated[i]);
+                    seated[i] = null;
+                }
+            return;
+        }
         if (line.Count > capacity) line.RemoveRange(capacity, line.Count - capacity);
     }
 
@@ -95,7 +162,7 @@ public class StandQueue : MonoBehaviour, IVisitorLine
         return false;
     }
 
-    public Vector3 SlotPosition(Visitor v) => Slot(Mathf.Max(0, line.IndexOf(v)));
+    public Vector3 SlotPosition(Visitor v) => IsSeating ? Slot(Mathf.Max(0, System.Array.IndexOf(seated, v))) : Slot(Mathf.Max(0, line.IndexOf(v)));
 
     public bool Faces(out Vector3 point)
     {
@@ -103,7 +170,7 @@ public class StandQueue : MonoBehaviour, IVisitorLine
         return true;
     }
 
-    Vector3 Slot(int i) => transform.position + direction.normalized * spacing * i;
+    Vector3 Slot(int i) => IsSeating ? seats[Mathf.Clamp(i, 0, seats.Length - 1)] : transform.position + direction.normalized * spacing * i;
 
     void Update()
     {
@@ -114,9 +181,21 @@ public class StandQueue : MonoBehaviour, IVisitorLine
         }
         // Anyone who's stopped queueing (possessed, panicking, held by the tutorial, gone) is out of the line.
         line.RemoveAll(v => v == null || !v.isActiveAndEnabled || v.Current != Visitor.State.Queueing);
-        if (line.Count == 0)
+        if (IsSeating)
         {
-            servedAt = -1f;
+            Sit();
+            return;
+        }
+        if (!closed && shut != null && shut())
+        {
+            closed = true;
+            var leaving = line.ToArray();
+            line.Clear();
+            foreach (var v in leaving) v.Served(VisitorItem.None, false);
+        }
+        if (line.Count == 0 || (serving != null && !serving()))
+        {
+            servedAt = -1f; // nobody to serve, or nobody serving: the line waits
             return;
         }
 
@@ -136,7 +215,33 @@ public class StandQueue : MonoBehaviour, IVisitorLine
         if (Time.time < servedAt) return;
         line.RemoveAt(0);
         servedAt = -1f;
-        front.Served();
+        front.Served(gives);
+    }
+
+    // At a table: each one sat down gets their own while there, then up and off (nobody else moves).
+    void Sit()
+    {
+        for (int i = 0; i < seated.Length; i++)
+        {
+            var v = seated[i];
+            if (v == null) continue;
+            if (!line.Contains(v))
+            {
+                seated[i] = null; // gone off (possessed, panicking...)
+                continue;
+            }
+            if (leaveAt[i] <= 0f)
+            {
+                Vector3 d = v.transform.position - seats[i];
+                d.y = 0f;
+                if (d.magnitude <= 0.5f) leaveAt[i] = Time.time + Random.Range(stayTime.x, stayTime.y);
+                continue;
+            }
+            if (Time.time < leaveAt[i]) continue;
+            seated[i] = null;
+            line.Remove(v);
+            v.Served(gives);
+        }
     }
 
     void OnDrawGizmos()

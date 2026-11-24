@@ -9,9 +9,8 @@ using UnityEngine;
 // speeding up and slowing down, the cabins rocking all the way round.
 // Turned up to max speed like that (ControlPanel), it spins faster and faster until it tears off its hinge, flings
 // its cabins, and rolls away across the park flattening everyone in its path, then topples over.
-// When the scene starts it marks out its staff-only closed area (StaffArea) and puts the electrical box just outside
-// it. Scale the whole object to resize the ride: radii, part offsets and the closed area are all in unscaled units
-// and grow with it.
+// When the scene starts it puts the electrical box next to it. Scale the whole object to resize the ride: radii and
+// part offsets are all in unscaled units and grow with it.
 public class FerrisWheel : MonoBehaviour
 {
     public static readonly List<FerrisWheel> All = new();
@@ -30,8 +29,6 @@ public class FerrisWheel : MonoBehaviour
     public Vector3 electricalBoxOffset = new(-3.3f, 0f, -0.6f);
     public Transform electricalBoxAt; // set: the box stands here instead, drawn by the Objects tilemap (no picture of its own)
     public Sprite electricalBoxArt; // drawn at its own size, pivot at its feet (the palette's props); empty = Props/electrical_box
-    public Vector3 closedAreaOffset = new(0f, 0f, 0.3f);
-    public Vector2 closedAreaSize = new(5.4f, 3.4f);
     public RideQueue queue;
     public float payoffTime = 6f;     // the camera stays on the wheel this long once the power's cut
     public float payoffPullBack = 8f;  // how much further back the camera sits to fit the whole wheel
@@ -58,6 +55,7 @@ public class FerrisWheel : MonoBehaviour
     public float rollDistance = 22f;
     public Vector3 rollDirection = new(1f, 0f, -0.6f); // across the ground; it has to go mostly sideways to read as rolling
     public int gawkers = 4;           // visitors who wander over to watch it spin flat out, right where it'll land
+    public int toiletLine = 3;        // and lined up at the toilet there (VisitorSpawner's toilet line), as it spins up
     public int doomedShouts = 3;      // how many of those in its way cry out (GameText.WheelDoomed) as it tears loose
 
     readonly List<Visitor> doomed = new();
@@ -67,7 +65,6 @@ public class FerrisWheel : MonoBehaviour
     public bool Powered => Current != State.Unpowered;
     public bool Broken => Current >= State.Breaking;
     public bool Wobbly { get; private set; }
-    public StaffArea Area { get; private set; }
     public IReadOnlyList<Transform> Cabins => cabins;
     float Scale => transform.lossyScale.x;
 
@@ -81,9 +78,6 @@ public class FerrisWheel : MonoBehaviour
 
     void OnEnable() => All.Add(this);
     void OnDisable() => All.Remove(this);
-
-    // Before anyone's Start, so the spawner can keep visitors out of it.
-    void Awake() => Area = ClosedArea();
 
     void Start()
     {
@@ -254,35 +248,10 @@ public class FerrisWheel : MonoBehaviour
     static SpriteRenderer Prop(Transform parent, string sprite, float height, Vector3 localFeet)
     {
         var r = ParkArt.Lit(ParkArt.Make("Sprite", parent, sprite, height, Color.white));
-        r.transform.localPosition = localFeet + new Vector3(0f, height * 0.5f, 0f);
+        // Its feet on the ground, wherever its picture's pivot is (the middle for most, the bottom for the barriers).
+        float pivot = r.sprite != null ? r.sprite.pivot.y / r.sprite.rect.height : 0.5f;
+        r.transform.localPosition = localFeet + new Vector3(0f, height * pivot, 0f);
         return r;
-    }
-
-    // The staff-only ground at the wheel's foot: a painted line round it, barriers at the sides, a sign at the front.
-    StaffArea ClosedArea()
-    {
-        var area = new GameObject("Closed Area").AddComponent<StaffArea>();
-        area.transform.position = transform.position + closedAreaOffset * Scale;
-        area.size = closedAreaSize * Scale;
-        Vector2 h = area.size * 0.5f;
-
-        var line = area.gameObject.AddComponent<LineRenderer>();
-        line.sharedMaterial = ParkArt.Material;
-        line.sortingOrder = ParkArt.DecalOrder;
-        line.loop = true;
-        line.widthMultiplier = 0.08f;
-        line.startColor = line.endColor = new Color(1f, 0.82f, 0.15f);
-        line.positionCount = 4;
-        line.SetPositions(new[]
-        {
-            area.transform.position + new Vector3(-h.x, 0.03f, -h.y), area.transform.position + new Vector3(h.x, 0.03f, -h.y),
-            area.transform.position + new Vector3(h.x, 0.03f, h.y), area.transform.position + new Vector3(-h.x, 0.03f, h.y),
-        });
-
-        Prop(area.transform, "Props/barrier", 0.6f, new Vector3(-h.x, 0f, 0f));
-        Prop(area.transform, "Props/barrier", 0.6f, new Vector3(h.x, 0f, 0f));
-        Prop(area.transform, "Props/staff_sign", 1.1f, new Vector3(h.x + 0.2f, 0f, -h.y - 0.1f));
-        return area;
     }
 
     // ---------------------------------------------------------------- max speed (ControlPanel)
@@ -559,11 +528,14 @@ public class FerrisWheel : MonoBehaviour
     // Where it'll come to rest, lying flat: rollDistance along from where it tears loose.
     Vector3 RestPoint(Vector3 from) => from + new Vector3(rollDirection.x, 0f, rollDirection.z).normalized * rollDistance;
 
-    // As it spins up, a few visitors nearby wander over to watch, right where it'll end up. They stay put.
+    // As it spins up, a few visitors nearby wander over to watch, right where it'll end up. They stay put. It lands in
+    // a corner of the park, so they may come from a way off (GawkerReach), hurrying from past GawkerWalk.
+    const float GawkerReach = 32f, GawkerWalk = 14f;
     void GatherGawkers()
     {
         Vector3 rest = RestPoint(new Vector3(wheel.position.x, 0f, wheel.position.z));
         float radius = wheelRadius * Scale;
+        LineUpAtToilet(rest, radius);
         var near = new List<Visitor>();
         foreach (var v in Visitor.All)
             if (Squashable(v) && v.Look.Visible && v.Current is Visitor.State.Idle or Visitor.State.Wander or Visitor.State.Stare)
@@ -572,7 +544,8 @@ public class FerrisWheel : MonoBehaviour
         for (int i = 0; i < near.Count && doomed.Count < gawkers; i++)
         {
             var v = near[i];
-            if (Flat(v.transform.position - rest) > 18f) break;
+            float far = Flat(v.transform.position - rest);
+            if (far > GawkerReach) break;
             var walker = v.GetComponent<GroundWalker>();
             for (int tries = 0; tries < 8; tries++)
             {
@@ -582,7 +555,7 @@ public class FerrisWheel : MonoBehaviour
                 Vector3Int cell = walker.ground.WorldToCell(spot);
                 cell.z = 0;
                 if (!walker.ground.HasTile(cell) || GroundWalker.NearObstacle(spot, 0.35f)) continue;
-                v.SendTo(spot);
+                v.SendTo(spot, run: far > GawkerWalk); // from further off, hurrying, to be there in time
                 doomed.Add(v);
                 break;
             }
@@ -590,6 +563,28 @@ public class FerrisWheel : MonoBehaviour
     }
 
     static float Flat(Vector3 d) => new Vector2(d.x, d.z).magnitude;
+
+    // The toilet where it'll land has a line (toiletLine long) when it does: nobody comes out any more, and the
+    // nearest people about make it up to toiletLine, walking over to join it.
+    void LineUpAtToilet(Vector3 rest, float radius)
+    {
+        foreach (var line in StandQueue.All.ToArray())
+        {
+            if (!line.name.StartsWith("Toilet") || Flat(line.transform.position - rest) > radius + 2f) continue;
+            line.serving = () => false;
+            var near = new List<Visitor>();
+            foreach (var v in Visitor.All)
+                if (Squashable(v) && v.Look.Visible && v.Group == null && v.Current is Visitor.State.Idle or Visitor.State.Wander)
+                    near.Add(v);
+            Vector3 at = line.transform.position;
+            near.Sort((a, b) => Flat(a.transform.position - at).CompareTo(Flat(b.transform.position - at)));
+            for (int i = 0; i < near.Count && line.Waiting < toiletLine; i++)
+            {
+                if (!line.Join(near[i])) break;
+                near[i].EnterQueue(line);
+            }
+        }
+    }
 
     // It tears loose: everyone in its way (on its path, or where it'll lie) freezes, staring at it, panic-faced, and a
     // few cry out. Then it comes.

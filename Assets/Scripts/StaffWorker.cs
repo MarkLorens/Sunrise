@@ -114,6 +114,19 @@ public abstract class StaffWorker : MonoBehaviour
 
     protected static bool Same(Vector3 a, Vector3 b) => (a - b).sqrMagnitude < 0.01f;
 
+    // What they're at right now: the job they're working on, or the one they stay on (watching it, or stepping back to
+    // their spot for it). False while they're on their way somewhere, or done.
+    protected bool OnSite(out Job on)
+    {
+        if (Current == State.Working)
+        {
+            on = job;
+            return true;
+        }
+        on = post;
+        return hasPost && Current is State.Staying or State.Returning;
+    }
+
     void NextJob()
     {
         if (Backlog.Count > 0) Take(Backlog.Dequeue());

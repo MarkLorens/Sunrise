@@ -638,7 +638,7 @@ public class CharacterSprite : MonoBehaviour
 
     // Slammed down in a blink (SlamTime) to a squat FlatHeight of their height and FlatWidth as wide, still standing
     // (a cartoon squash), wobbling like jelly a moment before they settle.
-    const float SlamTime = 0.15f, WobbleTime = 0.6f, FlatWidth = 1.45f, FlatHeight = 0.32f;
+    const float SlamTime = 0.15f, WobbleTime = 0.9f, FlatWidth = 1.45f, FlatHeight = 0.32f, Boing = 0.4f;
 
     void Pancake(ref float lean, ref float sx, ref float sy)
     {
@@ -653,7 +653,7 @@ public class CharacterSprite : MonoBehaviour
             return;
         }
         float w = Mathf.Clamp01((t - SlamTime) / WobbleTime);
-        float jelly = Mathf.Sin(w * Mathf.PI * 4f) * (1f - w) * 0.25f; // ...and boinging back up to it
+        float jelly = Mathf.Sin(w * Mathf.PI * 4f) * (1f - w) * Boing; // ...and boinging back up to it, cartoon-big
         sx = FlatWidth * (1f - jelly * 0.5f);
         sy = FlatHeight * (1f + jelly);
     }
