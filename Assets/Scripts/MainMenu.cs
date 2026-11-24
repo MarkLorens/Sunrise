@@ -5,8 +5,8 @@ using UnityEngine.InputSystem.UI;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-// The main menu, the first scene in Build Settings, laid out off the artist's design (Figma: Main Menu): the Woohoo Land
-// logo (UI Asset/Logo/Wohooland_logo) on the dark page and a column of words under it, the one picked in bold on the
+// The main menu, the first scene in Build Settings, laid out off the artist's design (Figma: Main Menu): the park's gate
+// at night (Arts/NewMainMenu/MainMenuBG), Ruckus floating bottom right (MenuRuckus) and a column of words, the one picked in bold on the
 // yellow brush stroke (UI Asset/Buttons/Button3_Active). Mouse, keyboard (arrows + Enter) and gamepad all work.
 // New Game starts the park (the next scene in Build Settings) in a new save slot (there's no limit), through the
 // loading screen (LoadingScreen); Load Game picks a slot (LoadGameMenu); Options opens the settings (SettingsMenu);
@@ -34,9 +34,16 @@ public class MainMenu : MonoBehaviour
             cam.backgroundColor = Paper;
         }
         var canvas = Screen("Main Menu", 0);
-        // The logo (its picture's see-through margin and all), and the column of words, both as placed in the design.
-        // 80% of the design's size, its bottom edge where the design has it (just over the words).
-        Figma.Picture(canvas, "Logo", "Logo/Wohooland_logo", 778f, 378.2f, 921.3f, 754.4f);
+        // The park's gate at night (Arts/NewMainMenu/MainMenuBG, its own Woohoo Land sign in it), filling the screen
+        // whatever its shape, cropped rather than squashed.
+        var bg = Ui("Background", canvas);
+        bg.gameObject.AddComponent<Image>().sprite = UiArt.Get("NewMainMenu/MainMenuBG");
+        bg.GetComponent<Image>().raycastTarget = false;
+        var fit = bg.gameObject.AddComponent<AspectRatioFitter>();
+        fit.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
+        fit.aspectRatio = 3024f / 1964f;
+        MenuRuckus.Make(canvas); // bottom right
+        // The column of words, as placed in the design.
 
         var column = Column(canvas);
         column.anchoredPosition = new Vector2(0f, (Figma.Height * 0.5f - 715.2f) * Figma.K);
