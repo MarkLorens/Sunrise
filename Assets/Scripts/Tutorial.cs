@@ -549,8 +549,9 @@ public class Tutorial : MonoBehaviour
         bool holding = Active && !PauseMenu.Paused && Controls.SkipHeld;
         skipHeld = holding ? skipHeld + dt : Mathf.MoveTowards(skipHeld, 0f, dt * 3f);
         HoldSound(holding && skipHeld >= HoldSoundAfter); // TT-02 rises while it's held, and stops if it's let go
-        int frame = 1 + Mathf.Clamp(Mathf.FloorToInt(skipHeld / SkipHold * 14f), 0, 13);
-        if (skipIcon != null) skipIcon.sprite = UiArt.Get("SpaceIcon/SpaceIcon_" + frame);
+        bool click = Mathf.Repeat(Time.unscaledTime, KeyHint.BlinkTime) < KeyHint.ClickTime; // pressing itself on a beat, as the card's Next key does
+        if (skipIcon != null) ShowSpaceKey(skipHeld <= 0.01f ? (click ? "SpaceIcon/KeySpace_fx" : "SpaceIcon/KeySpace")
+            : HoldFrames[Mathf.Clamp(Mathf.FloorToInt(skipHeld / SkipHold * HoldFrames.Length), 0, HoldFrames.Length - 1)]);
         skip.alpha = Mathf.MoveTowards(skip.alpha, Active ? 1f : 0f, dt * 4f);
         if (Active && skipHeld >= SkipHold)
         {
@@ -1087,12 +1088,17 @@ public class Tutorial : MonoBehaviour
         }
         if (guide != null) return;
         guide = new GameObject("Tutorial Guide").transform;
-        ParkArt.Make("Ring", guide, "Markers/ring", 1.3f, Lilac, ParkArt.DecalOrder + 2, true);
         guideArrow = new GameObject("Arrow Holder").transform;
         guideArrow.SetParent(guide, false);
-        var arrow = ParkArt.Make("Arrow", guideArrow, "Markers/arrow", 0.55f, Lilac, ParkArt.DecalOrder + 2, true);
-        arrow.transform.parent.localPosition = new Vector3(0f, 0f, 1.05f); // ahead of the ring, pointing out of it
+        // The artist's ring with its pointer on the rim (UI Asset/Direction_Arrow), turned so the pointer leads the way.
+        var ring = ParkArt.Make("Direction Arrow", guideArrow, null, 1f, Color.white, ParkArt.DecalOrder + 2, true);
+        ring.sprite = UiArt.Get("Direction_Arrow");
+        ParkArt.Fit(ring, GuideSize);
+        ring.transform.parent.localRotation = Quaternion.Euler(0f, PointerTurn, 0f);
     }
+
+    const float GuideSize = 1.75f;  // the picture's height on the ground (its ring about 1.3 across)
+    const float PointerTurn = 41f;  // the pointer's drawn up and to the left of the picture (131 degrees round): this turns it to point ahead
 
     void UpdateGuide()
     {
@@ -1200,22 +1206,37 @@ public class Tutorial : MonoBehaviour
         if (skipKey != Key.Space) KeyCap.Make(skipRoot, KeyBindings.Name(skipKey), new[] { skipKey }, 38f); // changed: a plain keycap
         else
         {
-            // The artist's SPACE tag, its blue edge drawing round it as you hold (UI Asset/SpaceIcon/SpaceIcon_1..14).
-            // The layout holds the drawn tag (161 x 81 of its 270 px picture), 38 tall; the picture spills round it.
+            // The artist's space bar key (UI Asset/SpaceIcon/KeySpace), going red from the left as you hold
+            // (KeySpace_fx, then SpaceHold_2..7: HoldFrames). The layout holds the drawn key (204 x 104 of its 272 px
+            // picture), 38 tall; the picture (its sparks and glow) spills round it.
             var tag = Ui("Hold " + keyName, skipRoot);
             var tagSize = tag.gameObject.AddComponent<LayoutElement>();
-            float k = 38f / 81f;
-            tagSize.preferredWidth = 161f * k;
+            tagSize.preferredWidth = 204f * SpaceKeyScale;
             tagSize.preferredHeight = 38f;
             var pic = Ui("Art", tag);
             pic.anchorMin = pic.anchorMax = new Vector2(0.5f, 0.5f);
-            pic.sizeDelta = new Vector2(270f, 270f) * k;
-            pic.anchoredPosition = new Vector2(8f, -7f) * k; // the drawn tag sits up and left of the picture's middle
+            pic.anchoredPosition = new Vector2(7f, -4f) * SpaceKeyScale; // the drawn key sits up and left of the picture's middle
             skipIcon = pic.gameObject.AddComponent<Image>();
-            skipIcon.sprite = UiArt.Get("SpaceIcon/SpaceIcon_1");
             skipIcon.raycastTarget = false;
+            ShowSpaceKey("SpaceIcon/KeySpace");
         }
         if (after.Length > 0) Words(skipRoot, after, Figma.Type.ArvoBody, Faint);
+    }
+
+    const float SpaceKeyScale = 38f / 104f; // the drawn key 38 tall
+    static readonly string[] HoldFrames =
+    {
+        "SpaceIcon/KeySpace_fx", "SpaceIcon/SpaceHold_2", "SpaceIcon/SpaceHold_3", "SpaceIcon/SpaceHold_4",
+        "SpaceIcon/SpaceHold_5", "SpaceIcon/SpaceHold_6", "SpaceIcon/SpaceHold_7",
+    };
+
+    // One of the space key's pictures, at its own size (they aren't all drawn on the same size of canvas).
+    void ShowSpaceKey(string art)
+    {
+        var s = UiArt.Get(art);
+        if (s == null || skipIcon.sprite == s) return;
+        skipIcon.sprite = s;
+        skipIcon.rectTransform.sizeDelta = s.rect.size * SpaceKeyScale;
     }
 
     static (string before, string key, string after) SplitOne(string line)

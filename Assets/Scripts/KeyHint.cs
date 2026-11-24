@@ -6,7 +6,7 @@ using UnityEngine.InputSystem;
 // BlinkTime seconds, so it catches the eye (the tutorial card's Next key).
 public class KeyHint : MonoBehaviour
 {
-    const float BlinkTime = 0.9f, ClickTime = 0.18f;
+    public const float BlinkTime = 0.9f, ClickTime = 0.18f;
 
     public Key[] keys = new Key[0];
     public bool leftMouse;
