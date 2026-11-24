@@ -155,6 +155,20 @@ MonoBehaviour:
       Data3: -572676732
       Data4: -611668836
     Path: event:/Park (P)/Propane Tank Leak
+  <gutterLid>k__BackingField:
+    Guid:
+      Data1: 668755275
+      Data2: 1183650640
+      Data3: -355758402
+      Data4: -293225478
+    Path: event:/Park (P)/Gutter Lid
+  <ratSqueaks>k__BackingField:
+    Guid:
+      Data1: -1222770271
+      Data2: 1250603950
+      Data3: 1410083970
+      Data4: 2128580471
+    Path: event:/Flaming Hot Dogs (HD)/Rats!
   <ferrisMaxSpeed>k__BackingField:
     Guid:
       Data1: 0

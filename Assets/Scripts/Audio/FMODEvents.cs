@@ -40,6 +40,10 @@ public class FMODEvents : MonoBehaviour
     [field: SerializeField] public EventReference technicianAwake { get; private set; }
     [field: Tooltip("Gas hissing out of a loosened propane valve, until it blows (3D at the tank, loops).")]
     [field: SerializeField] public EventReference propaneLeak { get; private set; }
+    [field: Tooltip("A gutter lid sliding open or dropping shut: the rats' gutter by the hot dog stand, and the smelly one by the mascot (a one-shot, 3D at the gutter).")]
+    [field: SerializeField] public EventReference gutterLid { get; private set; }
+    [field: Tooltip("The rats squeaking from the moment the lid's open until they're all back down (3D, follows the pack, loops).")]
+    [field: SerializeField] public EventReference ratSqueaks { get; private set; }
 
     [field: Header("Max Speed on Control Panel (MS)")]
     [field: Tooltip("The control panel set to max speed.")]

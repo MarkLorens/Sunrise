@@ -51,6 +51,7 @@ public static class Captions
     // ---------------------------------------------------------------- the hot dog stand, the gutter, the fans
     public const string GutterOpen = "[Gutter lid scrapes open]";
     public const string GutterShut = "[Gutter lid clangs shut]";
+    public const string RatSqueaks = "[Rats squeaking]";             // the rats out of the gutter, when you're near
     public const string FanTurned = "[Fan clunks round]";
     public const string HotDogManHop = "[Hot dog man scrambles]";
     public const string GasLeak = "[Gas hissing]";
