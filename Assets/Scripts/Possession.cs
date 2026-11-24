@@ -51,7 +51,7 @@ public class Possession : MonoBehaviour
     Rigidbody rb;
     Collider body;
     SpriteRenderer sprite;
-    LoopingSound hover; // the spirit's wobbly drift: only while it moves (in a body, Footsteps takes over)
+    LoopingSound hover; // the spirit's wobbly drift, quieter while it stands still (in a body, Footsteps takes over)
 
     void Awake()
     {
@@ -98,13 +98,21 @@ public class Possession : MonoBehaviour
         ClosedCaptions.Show(Captions.Possess);
     }
 
+    // The spirit's sound goes on the whole time it's out of a body (not while the intro carries it in by hand).
+    // Its Roaming parameter picks the mix: 1 floating about, 0 standing still (a low fiery hum, fewer laughs).
+    // FMOD's seek modulator on Roaming fades between the two.
     void Hover()
     {
         var events = FMODEvents.instance;
-        bool drifting = State == Mode.Spirit && !rb.isKinematic && Flat(rb.linearVelocity).sqrMagnitude > 0.04f;
-        if (events != null && drifting)
-            hover.Play(events.spiritHover);
-        else hover.Stop();
+        bool free = State == Mode.Spirit && !rb.isKinematic;
+        if (events == null || !free)
+        {
+            hover.Stop();
+            return;
+        }
+        hover.Play(events.spiritHover);
+        bool drifting = Flat(rb.linearVelocity).sqrMagnitude > 0.04f;
+        hover.SetParameter("Roaming", drifting ? 1f : 0f);
     }
 
     // Ride along inside the host.

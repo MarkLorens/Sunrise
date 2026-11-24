@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="ParameterPreset" id="{f6f5800c-3016-4bb5-8c5e-006966629630}">
+		<property name="name">
+			<value>Roaming</value>
+		</property>
+		<relationship name="folder">
+			<destination>{0c297bad-6fb0-4dec-b708-8b830dd7d1ed}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{ab4978e8-6e77-4ced-8da6-8937a3c89d6d}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{ab4978e8-6e77-4ced-8da6-8937a3c89d6d}">
+		<property name="initialValue">
+			<value>1</value>
+		</property>
+		<relationship name="modulators">
+			<destination>{f3c784f8-683a-4f42-a3d0-bf24d6a6840c}</destination>
+		</relationship>
+	</object>
+	<object class="SeekModulator" id="{f3c784f8-683a-4f42-a3d0-bf24d6a6840c}">
+		<property name="nameOfPropertyBeingModulated">
+			<value>cursorPosition</value>
+		</property>
+		<property name="clockSource">
+			<value>1</value>
+		</property>
+		<property name="speedAscending">
+			<value>4</value>
+		</property>
+		<property name="speedDescending">
+			<value>1.5</value>
+		</property>
+		<property name="asymmetric">
+			<value>true</value>
+		</property>
+	</object>
+</objects>

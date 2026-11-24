@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <objects serializationModel="Studio.02.03.00">
-	<object class="AudioFile" id="{3d74b98c-2f73-46e1-ae44-9d09fd267904}">
+	<object class="AudioFile" id="{394007da-a371-4e50-a950-47429a8dd4f2}">
 		<property name="assetPath">
-			<value>Ruckus/Scifi, Retro, Wobbly Synth, Variations, Short, Fast 01 SND99727.wav</value>
+			<value>Park/PA Announcer/Voices, Futzed, Walkie Talkie, Police Radio, Garbled Message 02 SND15610.wav</value>
 		</property>
 		<property name="frequencyInKHz">
 			<value>96</value>
@@ -11,7 +11,7 @@
 			<value>2</value>
 		</property>
 		<property name="length">
-			<value>2.2481249999999999</value>
+			<value>1.5795937499999999</value>
 		</property>
 		<relationship name="masterAssetFolder">
 			<destination>{8c8416f5-ac4e-4dce-97e1-dfa1a76b2c55}</destination>

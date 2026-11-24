@@ -62,7 +62,7 @@ public class FMODEvents : MonoBehaviour
     [field: Header("Ruckus (RU)")]
     [field: Tooltip("RU-01: Ruckus's thought bubble pops up.")]
     [field: SerializeField] public EventReference chatBubble { get; private set; }
-    [field: Tooltip("RU-02: the spirit drifting around. Plays only while the spirit is moving.")]
+    [field: Tooltip("RU-02: the spirit drifting around. Plays the whole time it's out of a body; its Roaming parameter is 1 while it moves, 0 while it stands still.")]
     [field: SerializeField] public EventReference spiritHover { get; private set; }
     [field: Tooltip("RU-03: diving into someone's body.")]
     [field: SerializeField] public EventReference possess { get; private set; }
