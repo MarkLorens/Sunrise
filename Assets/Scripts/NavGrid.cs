@@ -122,7 +122,7 @@ public static class NavGrid
             Vector3 p = Center(i);
             Vector3Int cell = ground.WorldToCell(p);
             cell.z = 0;
-            blocked[i] = !ground.HasTile(cell) || near[i];
+            blocked[i] = !GroundWalker.InPark(ground, cell) || near[i]; // anyone leaving the park walks out from the edge (Route)
             tight[i] = !blocked[i] && nearWide[i];
             floor[i] = RaisedFloor.Height(p);
             foreach (var area in StaffArea.All)

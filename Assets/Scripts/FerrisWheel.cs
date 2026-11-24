@@ -562,7 +562,7 @@ public class FerrisWheel : MonoBehaviour
                 // Ground to stand on, clear of props (the route there goes round whatever's in the way).
                 Vector3Int cell = walker.ground.WorldToCell(spot);
                 cell.z = 0;
-                if (!walker.ground.HasTile(cell) || GroundWalker.NearObstacle(spot, 0.35f)) continue;
+                if (!GroundWalker.InPark(walker.ground, cell) || GroundWalker.NearObstacle(spot, 0.35f)) continue;
                 v.SendTo(spot, run: far > GawkerWalk); // from further off, hurrying, to be there in time
                 doomed.Add(v);
                 break;
