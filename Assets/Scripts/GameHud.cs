@@ -128,11 +128,6 @@ public class GameHud : MonoBehaviour
         if (Camera.main != null && Camera.main.GetComponent<CameraRig>() == null) Camera.main.gameObject.AddComponent<CameraRig>();
         if (Camera.main != null && Camera.main.GetComponent<SeeThrough>() == null) Camera.main.gameObject.AddComponent<SeeThrough>();
         if (FindAnyObjectByType<NightLighting>() == null) new GameObject("Night Lighting").AddComponent<NightLighting>();
-#if UNITY_EDITOR
-        // Editor-only: F1 overlay for tuning the moon and lamp posts without leaving Play mode.
-        if (FindAnyObjectByType<LightingDebugMenu>() == null)
-            new GameObject("Lighting Debug Menu").AddComponent<LightingDebugMenu>();
-#endif
         if (FindAnyObjectByType<ParkAnimations>() == null) new GameObject("Park Animations").AddComponent<ParkAnimations>();
         if (GetComponent<ActionOutline>() == null) gameObject.AddComponent<ActionOutline>();
         if (GetComponent<PauseMenu>() == null) gameObject.AddComponent<PauseMenu>();
