@@ -98,6 +98,7 @@ public class Tutorial : MonoBehaviour
     int litShapesOf = -1;
     CanvasGroup cardGroup;
     string cardShown;
+    bool cardSeen; // the first card's up: the "Hold Space to skip" prompt shows from then on
     float cardAge;
     RectTransform bubble;
     CanvasGroup bubbleGroup;
@@ -552,7 +553,7 @@ public class Tutorial : MonoBehaviour
         bool click = Mathf.Repeat(Time.unscaledTime, KeyHint.BlinkTime) < KeyHint.ClickTime; // pressing itself on a beat, as the card's Next key does
         if (skipIcon != null) ShowSpaceKey(skipHeld <= 0.01f ? (click ? "SpaceIcon/KeySpace_fx" : "SpaceIcon/KeySpace")
             : HoldFrames[Mathf.Clamp(Mathf.FloorToInt(skipHeld / SkipHold * HoldFrames.Length), 0, HoldFrames.Length - 1)]);
-        skip.alpha = Mathf.MoveTowards(skip.alpha, Active ? 1f : 0f, dt * 4f);
+        skip.alpha = Mathf.MoveTowards(skip.alpha, Active && cardSeen ? 1f : 0f, dt * 4f); // not while the camera's still on its way in
         if (Active && skipHeld >= SkipHold)
         {
             HoldSound(false);
@@ -864,6 +865,7 @@ public class Tutorial : MonoBehaviour
         cardAge += dt;
         bool show = Active && cardShown != null;
         CardShowing = show;
+        if (show) cardSeen = true;
         cardGroup.alpha = Mathf.MoveTowards(cardGroup.alpha, show ? 1f : 0f, dt * 5f);
 
         Vector2 half = canvas.rect.size * 0.5f, size = card.rect.size;

@@ -54,7 +54,7 @@ public class CreditsMenu : MonoBehaviour
         Figma.Words(canvas, "CREDITS", 295f, 111f, Figma.Type.AtmaPage, Color.white, ParkArt.TitleFont);
 
         Figma.Picture(canvas, "Card", "ImageCard", 343f, 475f, 484.6f, 476f);
-        Figma.Picture(canvas, "Studio", "Logo/Max2_Studio", 351.5f, 497.8f, 534.8f, 519.5f);
+        Figma.Picture(canvas, "Studio", "Logo/Max2_Studio", 351.5f, 497.8f, 534.8f, 519.5f).preserveAspect = true; // its own shape, not the box's
         Figma.Picture(canvas, "Mentor Strip", "Buttons/Button3_Active", 350.5f, 747.5f, 270f, 56.3f);
         Figma.Words(canvas, "CONSULTANT / MENTOR", 347.5f, 747.5f, Figma.Type.ArvoSubtitle2, RoleInk, ParkArt.Font);
         Figma.Words(canvas, "RUANTH THIJSSEN", 347.5f, 805.5f, Figma.Type.AtmaBody, Name, ParkArt.TitleFont);

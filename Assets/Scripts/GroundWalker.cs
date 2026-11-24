@@ -142,6 +142,40 @@ public class GroundWalker : MonoBehaviour
     // to it (walking, routes, where people spawn, queue and gather).
     public static bool InPark(Tilemap ground, Vector3Int cell) => ground.HasTile(cell) && !Field(ground).Contains(cell);
 
+    // `p` in the park and `margin` in from its edge every way (Visitor.RunAway keeps the panicking to the middle).
+    public static bool WellInside(Tilemap ground, Vector3 p, float margin)
+    {
+        foreach (var o in new[] { Vector3.zero, Vector3.right, Vector3.left, Vector3.forward, Vector3.back })
+        {
+            Vector3Int cell = ground.WorldToCell(p + o * margin);
+            cell.z = 0;
+            if (!InPark(ground, cell)) return false;
+        }
+        return true;
+    }
+
+    // The middle of the park (of all its walkable ground), worked out once per ground.
+    static Tilemap middleOf;
+    static Vector3 middle;
+
+    public static Vector3 ParkMiddle(Tilemap ground)
+    {
+        if (middleOf == ground) return middle;
+        middleOf = ground;
+        Vector3 min = Vector3.positiveInfinity, max = Vector3.negativeInfinity;
+        foreach (var c in ground.cellBounds.allPositionsWithin)
+        {
+            var cell = new Vector3Int(c.x, c.y, 0);
+            if (!InPark(ground, cell)) continue;
+            Vector3 w = ground.GetCellCenterWorld(cell);
+            min = Vector3.Min(min, w);
+            max = Vector3.Max(max, w);
+        }
+        middle = (min + max) * 0.5f;
+        middle.y = 0f;
+        return middle;
+    }
+
     // The grass field round the park (FieldTile), flood-filled in from the ground's edge, once per ground: a lawn
     // inside the park (cut off from the edge) stays walkable.
     public const string FieldTile = "tiles_grass_full";

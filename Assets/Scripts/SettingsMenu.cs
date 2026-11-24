@@ -94,6 +94,9 @@ public class SettingsMenu : MonoBehaviour
         fit.aspectRatio = 2268f / 1479f;
         Figma.Words(canvas, "OPTIONS", 304.5f, 111.5f, Figma.Type.AtmaPage, Color.white, ParkArt.TitleFont);
         ShowTab(0);
+        // Opened on the tabs: General picked (yellow, its words blue); down reaches the first row.
+        MainMenu.Select(tabButtons[^1]);
+        Refresh();
     }
 
     // ---------------------------------------------------------------- tabs

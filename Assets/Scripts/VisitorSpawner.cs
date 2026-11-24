@@ -86,6 +86,36 @@ public class VisitorSpawner : MonoBehaviour
         if (!stallsClosed && Mischief.IsDone(Mischief.Task.LockerFire)) CloseStalls();
         Announce();
         Gossip();
+        KeepToiletsBusy();
+    }
+
+    // The toilets always have a line (toiletLineAtLeast): now and then, while one's short, someone nearby with nothing
+    // better to do walks over and joins it (so there's always somebody passing that way too).
+    public int toiletLineAtLeast = 3;
+    public float toiletCallRange = 25f;
+    float nextToiletCall;
+
+    void KeepToiletsBusy()
+    {
+        if (Time.time < nextToiletCall || Unease.Mayhem) return;
+        nextToiletCall = Time.time + Random.Range(2f, 4f);
+        foreach (var line in StandQueue.All)
+        {
+            if (!line.name.StartsWith("Toilet") || line.Waiting >= toiletLineAtLeast || !line.HasRoom) continue;
+            Visitor best = null;
+            float bestD = toiletCallRange;
+            foreach (var v in Visitor.All)
+            {
+                if (v.brain != null || v.Group != null || !v.Look.Visible || v.Current is not (Visitor.State.Idle or Visitor.State.Wander)) continue;
+                if (Possession.Instance != null && Possession.Instance.Host == v) continue;
+                Vector3 d = v.transform.position - line.transform.position;
+                float far = new Vector2(d.x, d.z).magnitude;
+                if (far >= bestD) continue;
+                best = v;
+                bestD = far;
+            }
+            if (best != null && line.Join(best)) best.EnterQueue(line);
+        }
     }
 
     // The finale: the sellers have fled their stands (the hot dog man is going nowhere: he burned in his) and a CLOSED
@@ -427,6 +457,9 @@ public class VisitorSpawner : MonoBehaviour
         look.character = character;
         return go;
     }
+
+    // One more visitor, standing at `pos` (the Ferris wheel's finale crowds where it'll land).
+    public Visitor SpawnVisitor(Vector3 pos) => Spawn(VisitorName, pos);
 
     Visitor Spawn(string name, Vector3 pos)
     {
