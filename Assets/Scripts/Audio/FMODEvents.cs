@@ -14,6 +14,8 @@ public class FMODEvents : MonoBehaviour
     [field: SerializeField] public EventReference electrocution { get; private set; }
     [field: Tooltip("AL-03: the leaky fountain dripping, until the mechanic fixes it (3D, loops).")]
     [field: SerializeField] public EventReference waterLeak { get; private set; }
+    [field: Tooltip("The leaky fountain's faucet dripping into its puddle, until the mechanic fixes it (3D at the fountain, loops; plays alongside AL-03).")]
+    [field: SerializeField] public EventReference faucetDrip { get; private set; }
     [field: Tooltip("AL-02: pressing the leaky fountain's button.")]
     [field: SerializeField] public EventReference fountainPress { get; private set; }
     [field: Tooltip("AL-05: dipping the live cable in the puddle.")]
@@ -36,6 +38,8 @@ public class FMODEvents : MonoBehaviour
     [field: SerializeField] public EventReference phoneRing { get; private set; }
     [field: Tooltip("The ride technician jolted awake by the hot dog stand blowing up (a one-shot, 3D, following him).")]
     [field: SerializeField] public EventReference technicianAwake { get; private set; }
+    [field: Tooltip("Gas hissing out of a loosened propane valve, until it blows (3D at the tank, loops).")]
+    [field: SerializeField] public EventReference propaneLeak { get; private set; }
 
     [field: Header("Max Speed on Control Panel (MS)")]
     [field: Tooltip("The control panel set to max speed.")]

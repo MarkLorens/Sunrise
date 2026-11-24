@@ -26,6 +26,7 @@ public static class Captions
 
     // ---------------------------------------------------------------- the drinking fountain and the live cable
     public const string FountainPress = "[Water sputters]";
+    public const string FaucetDrip = "[Water dripping]";             // the leaky fountain, while you're within earshot
     public const string Electrocution = "[Loud electric crackle]";
     public const string FountainFixed = "[Wrench clanks]";
 

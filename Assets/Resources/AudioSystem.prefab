@@ -78,6 +78,13 @@ MonoBehaviour:
       Data3: -464565367
       Data4: -493296342
     Path: event:/A-leak-tricity (AL)/Water Leak
+  <faucetDrip>k__BackingField:
+    Guid:
+      Data1: 2083247991
+      Data2: 1322388823
+      Data3: 1988157573
+      Data4: 134858797
+    Path: event:/Park (P)/Water Faucet Droplet
   <fountainPress>k__BackingField:
     Guid:
       Data1: 0
@@ -126,7 +133,7 @@ MonoBehaviour:
       Data2: 0
       Data3: 0
       Data4: 0
-    Path:
+    Path: 
   <phoneRing>k__BackingField:
     Guid:
       Data1: 520174886
@@ -141,6 +148,13 @@ MonoBehaviour:
       Data3: -753560416
       Data4: -150368139
     Path: event:/Flaming Hot Dogs (HD)/Technician Awake
+  <propaneLeak>k__BackingField:
+    Guid:
+      Data1: 1855191534
+      Data2: 1203636163
+      Data3: -572676732
+      Data4: -611668836
+    Path: event:/Park (P)/Propane Valve Leak
   <ferrisMaxSpeed>k__BackingField:
     Guid:
       Data1: 0
@@ -161,7 +175,7 @@ MonoBehaviour:
       Data2: 1076821321
       Data3: 1067315587
       Data4: 1722405110
-    Path: event:/Music and Ambiance (MA)/Lobby Music
+    Path: event:/BGM and Ambiance (BA)/Lobby Music
   <parkCrowd>k__BackingField:
     Guid:
       Data1: 123646366

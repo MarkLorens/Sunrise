@@ -6,7 +6,7 @@ Scenes: `MainMenu` (build index 0) and `FerrisWheelLevel` (1). The scripts are i
 ## Working rules (from the owner)
 
 - Change only what was asked. Don't touch assets, layouts, wording or behaviour nobody mentioned. Ask if unclear.
-- Explain things to the owner in Indonesian (Only if the logged in account is Aulia, remain in English when speaking to account "Max").
+- Explain things to the owner in Indonesian (Only if the logged in account is Aulia, remain in English when speaking to accounts "Max" and "Anthony Martin Hasurungan").
 - Don't commit or push unless asked.
 - Never edit `.cs` files while the Editor is in Play mode. The owner often plays while you work. Check
   `EditorApplication.isPlaying` first. If it's on, prepare the edits elsewhere and wait.
