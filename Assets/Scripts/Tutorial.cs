@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -110,6 +111,21 @@ public class Tutorial : MonoBehaviour
     FMOD.Studio.EventInstance holdSound; // TT-02, while Space is held
     Transform guide, guideArrow;
 
+    // The opening shot: the camera holds still at the Entrance Arch, low and looking up at the sign, while the spirit
+    // floats in from behind it and on into the park. Then it eases over to the usual camera and the tutorial starts.
+    static readonly Vector3 IntroCamAt = new(-3.26f, 0.62f, -33.24f);
+    static readonly Quaternion IntroCamTurn = Quaternion.Euler(-26.21f, 1.03f, 0f);
+    static readonly Vector3 IntroFrom = new(-3.1f, 1.3f, -35f); // just behind the camera, a little above it
+    const float IntroFloat = 5.5f; // seconds floating from behind the camera to where the spirit starts
+    const float IntroHold = 1.5f;  // seconds into the float before the camera starts following
+    const float IntroBlend = 3f;   // seconds easing from the arch shot into the gameplay camera
+    CinemachineCamera introCam;
+    CinemachineBrain brain;
+    Rigidbody spiritBody;
+    RigidbodyInterpolation spiritInterpolation;
+    Vector3 spawn;
+    bool floating;
+
     // ---------------------------------------------------------------- starting and stopping
 
     void Start()
@@ -129,7 +145,59 @@ public class Tutorial : MonoBehaviour
         // Gone from the start, not faded out: step 1 is just the spirit.
         GameHud.HideObjectives = hidingObjectives = true;
         GameHud.Instance.ObjectivesPanel.GetComponent<CanvasGroup>().alpha = 0f;
+        BeginIntro();
         flow = StartCoroutine(Run());
+    }
+
+    // The arch shot takes over at once (a cut, not a blend from wherever the camera was), and the spirit waits
+    // behind it, out of the walker's hands.
+    void BeginIntro()
+    {
+        brain = Camera.main.GetComponent<CinemachineBrain>();
+        brain.DefaultBlend = new CinemachineBlendDefinition(CinemachineBlendDefinition.Styles.Cut, 0f);
+        introCam = new GameObject("Intro Camera").AddComponent<CinemachineCamera>(); // newest of equal priority: live
+        introCam.transform.SetPositionAndRotation(IntroCamAt, IntroCamTurn);
+        introCam.Lens = LensSettings.FromCamera(Camera.main);
+
+        spiritBody = spirit.GetComponent<Rigidbody>();
+        spiritInterpolation = spiritBody.interpolation;
+        spiritBody.interpolation = RigidbodyInterpolation.None;
+        spiritBody.isKinematic = true;
+        spirit.GetComponent<GroundWalker>().enabled = false;
+        spawn = spirit.transform.position;
+        spirit.transform.position = IntroFrom;
+        floating = true;
+    }
+
+    IEnumerator Intro()
+    {
+        for (float t = 0f; t < IntroFloat; t += Time.deltaTime)
+        {
+            spirit.transform.position = Vector3.Lerp(IntroFrom, spawn, Mathf.SmoothStep(0f, 1f, t / IntroFloat));
+            if (t >= IntroHold) FollowFromIntro();
+            yield return null;
+        }
+        Land();
+        while (brain.IsBlending) yield return null;
+    }
+
+    // The arch shot lets go, and the brain eases over to the gameplay camera, already following the spirit.
+    void FollowFromIntro()
+    {
+        if (introCam == null || !introCam.enabled) return;
+        brain.DefaultBlend = new CinemachineBlendDefinition(CinemachineBlendDefinition.Styles.EaseInOut, IntroBlend);
+        introCam.enabled = false;
+    }
+
+    // The spirit at its starting spot, back in the walker's hands (also when the intro's skipped halfway).
+    void Land()
+    {
+        if (!floating) return;
+        floating = false;
+        spirit.transform.position = spiritBody.position = spawn;
+        spiritBody.isKinematic = false;
+        spiritBody.interpolation = spiritInterpolation;
+        spirit.GetComponent<GroundWalker>().enabled = true;
     }
 
     void OnDestroy()
@@ -147,6 +215,8 @@ public class Tutorial : MonoBehaviour
         CardShowing = false;
         ending = true;
         Possession.InputBlocked = false;
+        FollowFromIntro(); // skipped during the opening shot
+        Land();
         if (hidingObjectives) GameHud.HideObjectives = hidingObjectives = false; // skipped on step 1
         AudioManager.MusicOff = false; // skipped mid-geyser
         if (held != null)
@@ -202,6 +272,7 @@ public class Tutorial : MonoBehaviour
     IEnumerator Run()
     {
         Possession.InputBlocked = true;
+        yield return Intro();
         yield return new WaitForSeconds(1f); // the park settles and the camera finds the spirit
 
         // 1. The spirit: the camera eases in close on it.

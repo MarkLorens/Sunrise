@@ -376,7 +376,7 @@ public static class GameText
 
     // 1. The spirit
     public const string TutorialMeSays = "I woke up and chose violence… recreationally.";
-    public const string TutorialMe = "This is you, Ruckus, a young evil spirit";
+    public const string TutorialMe = "This is you, Ruckus, a young evil spirit.";
     // 2. The objective (top left)
     public const string TutorialGoalSays = "Objectives! Like a recipe… for someone else's bad day.";
     public const string TutorialGoal = "Your mischief to-do list lives up here.";
