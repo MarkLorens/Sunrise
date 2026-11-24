@@ -44,14 +44,21 @@ public class EndCredits : MonoBehaviour
         Figma.Picture(logo.rect, "Logo", "Logo/Wohooland_logo", 756f, 491f, 720f, 590f);
         yield return Show(logo.group, LogoHold);
 
+        // "The Team" stays up the whole way through the team: in with the first of them, out with the last. Kept over
+        // the pages, so their black covers don't fade it with them.
         var team = GameText.EndCreditsTeam;
+        var title = Figma.Words(canvas, GameText.EndCreditsTeamTitle, 756f, 150f, Figma.Type.AtmaH1, Color.clear, ParkArt.TitleFont);
         for (int i = 0; i < team.Length; i++)
         {
             var page = Page(team[i].name);
             Visitor(page.rect, i);
             Lines(page.rect, team[i].role, team[i].name);
+            title.transform.SetAsLastSibling();
+            if (i == 0) StartCoroutine(Fade(title, 0f, 1f, FadeIn));
+            if (i == team.Length - 1) StartCoroutine(Fade(title, 1f, 0f, FadeOut, FadeIn + Hold));
             yield return Show(page.group, Hold);
         }
+        Destroy(title.gameObject);
 
         var thanks = Page("Special Thanks");
         Figma.Words(thanks.rect, GameText.EndCreditsThanks, 756f, 150f, Figma.Type.AtmaH1, Color.white, ParkArt.TitleFont);
@@ -97,6 +104,18 @@ public class EndCredits : MonoBehaviour
         yield return new WaitForSecondsRealtime(hold);
         for (float t = 0f; t < FadeOut; t += Time.unscaledDeltaTime) { black.color = new Color(0f, 0f, 0f, t / FadeOut); yield return null; }
         Destroy(page.gameObject);
+    }
+
+    // Fades one white piece of text (a single layer, so it can go see-through itself) after `delay` seconds.
+    static IEnumerator Fade(Graphic text, float from, float to, float time, float delay = 0f)
+    {
+        yield return new WaitForSecondsRealtime(delay);
+        for (float t = 0f; t < time; t += Time.unscaledDeltaTime)
+        {
+            text.color = new Color(1f, 1f, 1f, Mathf.Lerp(from, to, t / time));
+            yield return null;
+        }
+        text.color = new Color(1f, 1f, 1f, to);
     }
 
     static void Lines(RectTransform page, string role, string name)

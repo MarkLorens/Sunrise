@@ -453,6 +453,7 @@ public static class GameText
     {
         ("Kennard Mahib", "Game/Level Designer"), ("Amanda Dorotea", "Game/UI Designer"), ("Danu Raditya", "Artist, Illustrator"), ("Anthony Martin", "Sound Designer"), ("Aulia Agustina", "Programmer"), ("Mark Pardede", "Programmer"),
     };
+    public const string EndCreditsTeamTitle = "The Team"; // over each of the team
     public const string EndCreditsThanks = "Special thanks to";
     public static readonly (string name, string role) EndCreditsThanked = ("Ruanth Thijssen", "Our Mentor and Supporter");
     public const string EndCreditsAndYou = "And You.";
