@@ -5,7 +5,8 @@ using UnityEngine.UI;
 // Ruckus in the main menu's bottom right corner (placed as in the artist's mockup), as the spirit looks in the park (SpiritSprite): its idle loop (the
 // flame flickering), the body and face bobbing and the hands bobbing further, in step. The eyes are the main menu's
 // own (Arts/NewMainMenu): the whites (MCEye) and the irises (MCIris) apart, so the irises follow the mouse cursor
-// a little inside the whites (clipped to them), under the eyes' outline (Outline: MCEye's dark
+// a little inside the whites (clipped to them), and clicking him makes him blink (the eyes swap to the
+// artist's closed ones, RuckusClosedEyes, for a moment), under the eyes' outline (Outline: MCEye's dark
 // strokes alone, drawn again over the irises). Every piece is drawn on the same 711 x 628 canvas,
 // already in place, so they're stacked on one spot.
 public class MenuRuckus : MonoBehaviour
@@ -22,8 +23,14 @@ public class MenuRuckus : MonoBehaviour
     // y up). LookEase: how quickly they catch up (per second).
     const float LookMax = 14f, LookReach = 500f, LookEase = 8f;
     static readonly Vector2 EyesMiddle = new(-91f, -93f);
+    // A blink: the closed eyes for BlinkTime seconds. Clicks land on him inside the body's oval or the hands' box
+    // (drawing px from the top left).
+    const float BlinkTime = 0.18f;
+    static readonly Rect BodyBox = Rect.MinMaxRect(92f, 38f, 667f, 577f), HandsBox = Rect.MinMaxRect(28f, 430f, 654f, 577f);
 
-    RectTransform face, hands, whites, irises;
+    RectTransform root, face, hands, whites, irises;
+    Image closed;
+    float blinkFrom = -1f;
     Image body;
     Sprite[] idle;
     float px; // canvas units per drawing px
@@ -41,6 +48,7 @@ public class MenuRuckus : MonoBehaviour
 
     void Build(RectTransform rt)
     {
+        root = rt;
         px = W * Figma.K / 711f;
         idle = new Sprite[4];
         for (int i = 0; i < 4; i++) idle[i] = Resources.Load<Sprite>($"MC/MC_idle_{i + 1}");
@@ -49,8 +57,11 @@ public class MenuRuckus : MonoBehaviour
         var eyes = Layer(face, "Eyes", UiArt.Get("NewMainMenu/MCEye"));
         eyes.gameObject.AddComponent<Mask>().showMaskGraphic = true; // the irises only show inside the eyes
         whites = eyes.rectTransform;
+        whites.pivot = new Vector2(0.5f + EyesMiddle.x / 711f, 0.5f + EyesMiddle.y / 628f); // looks from the eyes' middle
         irises = Layer(whites, "Irises", UiArt.Get("NewMainMenu/MCIris")).rectTransform;
         Layer(whites, "Eye Outline", Outline(eyes.sprite)); // the irises tuck under it
+        closed = Layer(face, "Closed Eyes", UiArt.Get("NewMainMenu/RuckusClosedEyes"));
+        closed.enabled = false;
         Layer(face, "Mouth", Resources.Load<Sprite>("MC/MC_face_mouth grin"));
         hands = Layer(rt, "Hands", Resources.Load<Sprite>("MC/hands")).rectTransform;
     }
@@ -108,7 +119,21 @@ public class MenuRuckus : MonoBehaviour
         Vector2 to = Vector2.zero;
         var mouse = Mouse.current;
         if (mouse != null && RectTransformUtility.ScreenPointToLocalPointInRectangle(whites, mouse.position.ReadValue(), null, out var at))
-            to = Vector2.ClampMagnitude((at - EyesMiddle * px) / (LookReach * px), 1f) * LookMax * px;
+            to = Vector2.ClampMagnitude(at / (LookReach * px), 1f) * LookMax * px;
+
+        if (mouse != null && mouse.leftButton.wasPressedThisFrame && t - blinkFrom > BlinkTime && OnHim(mouse.position.ReadValue()))
+            blinkFrom = t;
+        bool shut = t - blinkFrom < BlinkTime && closed.sprite != null;
+        closed.enabled = shut;
+        whites.gameObject.SetActive(!shut);
         irises.anchoredPosition = Vector2.Lerp(irises.anchoredPosition, to, 1f - Mathf.Exp(-LookEase * Time.unscaledDeltaTime));
+    }
+
+    bool OnHim(Vector2 screen)
+    {
+        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(root, screen, null, out var at)) return false;
+        var d = new Vector2(at.x / px + 711f / 2f, 628f / 2f - at.y / px); // drawing px from the top left
+        var o = (d - BodyBox.center) / (BodyBox.size / 2f);
+        return o.sqrMagnitude <= 1f || HandsBox.Contains(d);
     }
 }

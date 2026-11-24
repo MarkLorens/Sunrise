@@ -105,6 +105,7 @@ MonoBehaviour:
   - NewMainMenu/MainMenuBG
   - NewMainMenu/MCEye
   - NewMainMenu/MCIris
+  - NewMainMenu/RuckusClosedEyes
   sprites:
   - {fileID: 21300000, guid: cb5878306df644f65a3ab8e61458769a, type: 3}
   - {fileID: 21300000, guid: db812af0bf1cc473a8a5a6d3c4eb06ff, type: 3}
@@ -198,3 +199,4 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 7b0b7acf2a2744e638c0ca5ba5af7911, type: 3}
   - {fileID: 21300000, guid: 4007f7896383343aba7d3d82c80761f3, type: 3}
   - {fileID: 21300000, guid: 11d69592340da4cf3a8ce73635fcb550, type: 3}
+  - {fileID: 21300000, guid: 08ddef3741d92404ca8a6149903b79cc, type: 3}
