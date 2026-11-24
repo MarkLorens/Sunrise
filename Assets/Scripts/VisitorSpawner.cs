@@ -393,7 +393,8 @@ public class VisitorSpawner : MonoBehaviour
             Vector3Int cell = ground.WorldToCell(pos);
             cell.z = 0;
             Vector3 spot = pos;
-            if (ground.HasTile(cell) && !StaffArea.All.Exists(a => a.Contains(spot))) return true;
+            if (ground.HasTile(cell) && RaisedFloor.Height(spot) <= RaisedFloor.Ground // never up on the platform: visitors don't climb it
+                && !StaffArea.All.Exists(a => a.Contains(spot))) return true;
         }
         pos = default;
         return false;
