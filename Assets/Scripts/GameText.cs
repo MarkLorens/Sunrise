@@ -39,12 +39,18 @@ public static class GameText
     public const string SparkedCable = "You sparked the broken cable";
     public const string MaxedSpeed = "You turned the Ferris wheel up to max speed";
 
-    // "a visitor", "the electrician", "the technician" (staff go by their job; numbers like "Reset Agent 2" are dropped).
+    // "a visitor", "the electrician", "the technician" (staff go by their job; numbers like "Construction Worker 2" are
+    // dropped).
     static string Someone(string who)
     {
-        who = who.TrimEnd(' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9').ToLowerInvariant();
+        who = Name(who).TrimEnd(' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9').ToLowerInvariant();
         return who == "visitor" ? "a visitor" : "the " + who;
     }
+
+    // What players call someone, from their object's name ("Reset Agent 2" is only the crew's name in the code; saves
+    // find bodies by the object's name, so that stays).
+    public static string Name(string who) =>
+        who != null && who.StartsWith("Reset Agent") ? "Construction Worker" + who.Substring("Reset Agent".Length) : who;
 
     static string Capital(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s.Substring(1);
 
@@ -94,7 +100,7 @@ public static class GameText
     // ---------------------------------------------------------------- refusals: why K didn't work
 
     // Possessing someone
-    public static string StillShaken(string who, int s) => $"{who} is still shaken ({s}s)";
+    public static string StillShaken(string who, int s) => $"{Name(who)} is still shaken ({s}s)";
     public static string TooWeak(int s) => $"Too weak to possess anyone ({s}s)";
 
     // Touching things
@@ -260,7 +266,7 @@ public static class GameText
         "H-Huh..?", "How did I get here?", "What just happened?", "Ugh, dizzy…", "Must’ve been the wind",
     };
 
-    // Reset Agents standing guard at a scene, in turns (Aftermath, ResetAgent)
+    // Construction workers (ResetAgent) standing guard at a scene, in turns (Aftermath)
     public static readonly string[] MoveAlong =
     {
         "Move along!", "Nothing to see here, folks!", "Keep it moving!", "Please step back!",
