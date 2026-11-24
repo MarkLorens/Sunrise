@@ -466,7 +466,7 @@ public class FerrisWheel : MonoBehaviour
             float step = rollSpeed * Time.deltaTime;
             p += dir * step;
             rolled += step;
-            angle -= Mathf.Sign(dir.x) * step / radius * Mathf.Rad2Deg; // rolling without slipping
+            angle += Mathf.Sign(dir.x) * step / radius * Mathf.Rad2Deg; // the same way round it was spinning, flat out
             wheel.rotation = Quaternion.Euler(0, 0, angle);
             Flatten(p, dir, radius);
             SquashAlong(p, dir, radius);
