@@ -8,7 +8,8 @@ using UnityEngine.UI;
 // a little inside the whites (clipped to them), and clicking him makes him blink (the eyes swap to the
 // artist's closed ones, RuckusClosedEyes, for a moment), under the eyes' outline (Outline: MCEye's dark
 // strokes alone, drawn again over the irises). Every piece is drawn on the same 711 x 628 canvas,
-// already in place, so they're stacked on one spot.
+// already in place, so they're stacked on one spot. Each click also angers him: he reddens a little more (cooling
+// off again if left alone), and at AngryClicks he zooms off the left of the screen for good.
 public class MenuRuckus : MonoBehaviour
 {
     // As in the artist's mockup: big, leaning in from the bottom right corner and running off both edges. Its size in
@@ -28,11 +29,19 @@ public class MenuRuckus : MonoBehaviour
     const float BlinkTime = 0.18f;
     // Every piece is multiplied by this: muted and a little purple, to sit in the night scene (matched to the mockup).
     static readonly Color Tint = new(0.76f, 0.77f, 0.83f);
+    // Anger: each click adds 1, and the tint goes from Tint to Angry by AngryClicks, when he leaves. Left alone for
+    // CalmAfter seconds, it drops by CalmRate per second. Leaving: off the screen's left edge in LeaveTime seconds,
+    // speeding up as he goes.
+    static readonly Color Angry = new(1f, 0.35f, 0.35f);
+    const float AngryClicks = 10f, CalmAfter = 1.5f, CalmRate = 2f, LeaveTime = 0.6f;
     static readonly Rect BodyBox = Rect.MinMaxRect(92f, 38f, 667f, 577f), HandsBox = Rect.MinMaxRect(28f, 430f, 654f, 577f);
 
     RectTransform root, face, hands, whites, irises;
     Image closed;
     float blinkFrom = -1f;
+    Image[] pieces;
+    float anger, lastClick, leaveFrom = -1f;
+    Vector2 home;
     Image body;
     Sprite[] idle;
     float px; // canvas units per drawing px
@@ -66,6 +75,8 @@ public class MenuRuckus : MonoBehaviour
         closed.enabled = false;
         Layer(face, "Mouth", Resources.Load<Sprite>("MC/MC_face_mouth grin"));
         hands = Layer(rt, "Hands", Resources.Load<Sprite>("MC/hands")).rectTransform;
+        pieces = rt.GetComponentsInChildren<Image>(true);
+        home = rt.anchoredPosition;
     }
 
     // `eye`'s dark strokes only (its whites see-through), read off the GPU: the UI art isn't kept readable.
@@ -124,8 +135,26 @@ public class MenuRuckus : MonoBehaviour
         if (mouse != null && RectTransformUtility.ScreenPointToLocalPointInRectangle(whites, mouse.position.ReadValue(), null, out var at))
             to = Vector2.ClampMagnitude(at / (LookReach * px), 1f) * LookMax * px;
 
-        if (mouse != null && mouse.leftButton.wasPressedThisFrame && t - blinkFrom > BlinkTime && OnHim(mouse.position.ReadValue()))
-            blinkFrom = t;
+        if (leaveFrom < 0f && mouse != null && mouse.leftButton.wasPressedThisFrame && OnHim(mouse.position.ReadValue()))
+        {
+            if (t - blinkFrom > BlinkTime) blinkFrom = t;
+            lastClick = t;
+            anger = Mathf.Min(anger + 1f, AngryClicks);
+            if (anger >= AngryClicks) leaveFrom = t;
+        }
+        else if (leaveFrom < 0f && t - lastClick > CalmAfter)
+            anger = Mathf.Max(0f, anger - CalmRate * Time.unscaledDeltaTime);
+        var tint = Color.Lerp(Tint, Angry, anger / AngryClicks);
+        foreach (var piece in pieces) piece.color = tint;
+
+        if (leaveFrom >= 0f)
+        {
+            // From home to past the left edge (the screen's width plus his own), speeding up all the way.
+            float f = (t - leaveFrom) / LeaveTime;
+            float across = ((RectTransform)root.parent).rect.width + root.rect.width;
+            root.anchoredPosition = home - new Vector2(across * f * f, 0f);
+            if (f >= 1f) gameObject.SetActive(false);
+        }
         bool shut = t - blinkFrom < BlinkTime && closed.sprite != null;
         closed.enabled = shut;
         whites.gameObject.SetActive(!shut);
