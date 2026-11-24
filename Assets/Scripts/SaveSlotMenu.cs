@@ -66,7 +66,7 @@ public class SaveSlotMenu : MonoBehaviour
         list = Place(MainMenu.Ui("Rows", panel), Vector2.zero, new Vector2(PanelW, PanelH));
 
         foreach (var slot in SaveGame.Saved()) rows.Add(MakeRow(slot, true));
-        rows.Add(MakeRow(SaveGame.FirstEmpty, false));
+        if (!SaveGame.Full) rows.Add(MakeRow(SaveGame.FirstEmpty, false)); // [NEW SLOT] only while there's one left
         cancel = MainMenu.Pill(panel, "Cancel", Cancel, 205f, 56f, e => e.backButton); // S-06: it backs out
         Place((RectTransform)cancel.transform, new Vector2(0f, CancelY), new Vector2(205f, 56f));
 

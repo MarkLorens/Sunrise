@@ -64,7 +64,12 @@ public class MainMenu : MonoBehaviour
         if (AudioManager.instance != null) AudioManager.instance.StopMusic();
     }
 
-    void NewGame() => StartIn(SaveGame.FirstEmpty); // a slot of its own, however many saves there are
+    // A slot of its own; with all of them taken, Load Game, which says to delete one first.
+    void NewGame()
+    {
+        if (SaveGame.Full) OpenLoad();
+        else StartIn(SaveGame.FirstEmpty);
+    }
 
     // New Game or a Load Game slot picked: the lobby music stops dead as "Loading...." comes up, leaving the
     // New / Load Game sound on its own.
