@@ -28,7 +28,14 @@ public class RideTechnician : MonoBehaviour
     bool napping;   // asleep on his feet (the sleep face, dozing, the Zzz): Nap
 
     void OnEnable() => All.Add(this);
-    void OnDisable() => All.Remove(this);
+
+    void OnDisable()
+    {
+        All.Remove(this);
+        snoreSound?.Release();
+    }
+
+    void OnDestroy() => snoreSound?.Release();
 
     void Awake()
     {
@@ -57,6 +64,7 @@ public class RideTechnician : MonoBehaviour
 
     void Update()
     {
+        SnoreSound(napping);
         if (!outside)
         {
             look.Face(transform.position + Vector3.back); // facing out over the counter
@@ -82,6 +90,29 @@ public class RideTechnician : MonoBehaviour
     }
 
     void StopSnoring() => Nap(false);
+
+    LoopingSound snoreSound; // his snoring (FMODEvents.technicianSnore), from his booth
+    float snoreRange;        // how far off it's heard (the event's max distance): the caption shows within it
+
+    // Snoring the whole time he naps (FMOD spaces the snores out itself), stopped the moment he wakes.
+    void SnoreSound(bool on)
+    {
+        var events = FMODEvents.instance;
+        if (!on || events == null || events.technicianSnore.IsNull)
+        {
+            snoreSound?.Release(); // cut off mid-snore (Stop would let a long snore play out after he's up)
+            return;
+        }
+        if (snoreSound == null)
+        {
+            snoreSound = new LoopingSound(booth.gameObject);
+            snoreRange = 20f; // FMOD's default, if the event can't be looked up
+            if (FMODUnity.RuntimeManager.StudioSystem.getEventByID(events.technicianSnore.Guid, out var sound) == FMOD.RESULT.OK)
+                sound.getMinMaxDistance(out _, out snoreRange);
+        }
+        snoreSound.Play(events.technicianSnore);
+        if (Ears.Near(booth.position, snoreRange)) ClosedCaptions.Hold(Captions.Snoring);
+    }
 
     // Asleep on his feet (the sleep face, breathing and nodding off: CharacterSprite.Doze, the Zzz drifting up) or
     // awake and talking (his own face, standing still).
@@ -128,6 +159,7 @@ public class RideTechnician : MonoBehaviour
         yield return new WaitForSeconds(1.2f); // the camera getting there: still snoring
         Fx.Burst("Fx/puff", zzz.position + Vector3.up * 0.3f, 8, Color.white, 2f, 0.35f, 0.5f);
         StopSnoring();
+        AudioManager.TryPlayOn(e => e.technicianAwake, gameObject); // jolted awake
         ClosedCaptions.Show(Captions.Startled);
         GameHud.Shout(transform, "!!", 0.8f);
         yield return new WaitForSeconds(0.6f);
@@ -164,6 +196,7 @@ public class RideTechnician : MonoBehaviour
         LightUp();
         yield return new WaitForSeconds(1.2f); // the camera getting there
         GameHud.Shout(transform, GameText.PhoneRing, 1.4f);
+        StartCoroutine(RingPhone(3.8f)); // rings on through his snore, till the camera leaves
         yield return new WaitForSeconds(1.6f);
         GameHud.Shout(transform, GameText.TechnicianSnore, 2f);
         yield return new WaitForSeconds(2.2f);
@@ -187,8 +220,28 @@ public class RideTechnician : MonoBehaviour
             ComeOut();
             return;
         }
+        StartCoroutine(RingPhone(1.7f)); // till he picks up
         Invoke(nameof(SayOnMyWay), 1.7f);
         Invoke(nameof(ComeOut), 3.5f);
+    }
+
+    // The phone in his booth ringing (FMODEvents.phoneRing, 3D at his booth; the event loops, so it's cut off after
+    // `seconds`: he picks up, or the call's over). Captioned while it rings.
+    System.Collections.IEnumerator RingPhone(float seconds)
+    {
+        var events = FMODEvents.instance;
+        var audio = AudioManager.instance;
+        if (audio == null || events == null || events.phoneRing.IsNull) yield break;
+        var ring = audio.CreateInstance(events.phoneRing);
+        if (!ring.isValid()) yield break; // not in the built banks
+        ring.set3DAttributes(FMODUnity.RuntimeUtils.To3DAttributes(booth.position));
+        ring.start();
+        for (float end = Time.time + seconds; Time.time < end;)
+        {
+            ClosedCaptions.Hold(Captions.PhoneRing);
+            yield return null;
+        }
+        audio.ReleaseInstance(ring);
     }
 
     void SayOnMyWay() => GameHud.Shout(transform, GameText.TechnicianCall, 2.5f);

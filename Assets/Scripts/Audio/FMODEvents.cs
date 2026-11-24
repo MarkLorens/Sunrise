@@ -31,6 +31,12 @@ public class FMODEvents : MonoBehaviour
     [field: Tooltip("The stuck cabins creaking once the wheel has stopped, or all the way round with a loosened hinge.")]
     [field: SerializeField] public EventReference ferrisCabinCreak { get; private set; }
 
+    [field: Header("Flaming Hot Dogs (HD)")]
+    [field: Tooltip("The phone in the ride technician's booth ringing (3D at his booth, loops until he picks up or the call ends).")]
+    [field: SerializeField] public EventReference phoneRing { get; private set; }
+    [field: Tooltip("The ride technician jolted awake by the hot dog stand blowing up (a one-shot, 3D, following him).")]
+    [field: SerializeField] public EventReference technicianAwake { get; private set; }
+
     [field: Header("Max Speed on Control Panel (MS)")]
     [field: Tooltip("The control panel set to max speed.")]
     [field: SerializeField] public EventReference ferrisMaxSpeed { get; private set; }
@@ -58,6 +64,10 @@ public class FMODEvents : MonoBehaviour
     [field: SerializeField] public EventReference npcSurprised { get; private set; }
     [field: Tooltip("Visitors and staff walking on their own (3D, optional Pace parameter: 0 walk, 1 run).")]
     [field: SerializeField] public EventReference npcFootsteps { get; private set; }
+    [field: Tooltip("The announcer's garbled PA voice, once per announcement bubble (a one-shot, 3D, following the announcer).")]
+    [field: SerializeField] public EventReference paAnnouncer { get; private set; }
+    [field: Tooltip("The ride technician snoring at his booth while he naps (3D at his booth; FMOD spaces the snores out, it runs until he wakes).")]
+    [field: SerializeField] public EventReference technicianSnore { get; private set; }
 
     [field: Header("Ruckus (RU)")]
     [field: Tooltip("RU-01: Ruckus's thought bubble pops up.")]

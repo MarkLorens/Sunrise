@@ -126,7 +126,21 @@ MonoBehaviour:
       Data2: 0
       Data3: 0
       Data4: 0
-    Path: 
+    Path:
+  <phoneRing>k__BackingField:
+    Guid:
+      Data1: 520174886
+      Data2: 1091605105
+      Data3: 965808774
+      Data4: 81073833
+    Path: event:/Flaming Hot Dogs (HD)/Telephone Ring
+  <technicianAwake>k__BackingField:
+    Guid:
+      Data1: -932374196
+      Data2: 1156482375
+      Data3: -753560416
+      Data4: -150368139
+    Path: event:/Flaming Hot Dogs (HD)/Technician Awake
   <ferrisMaxSpeed>k__BackingField:
     Guid:
       Data1: 0
@@ -204,6 +218,20 @@ MonoBehaviour:
       Data3: 0
       Data4: 0
     Path: 
+  <paAnnouncer>k__BackingField:
+    Guid:
+      Data1: 1663904197
+      Data2: 1262329997
+      Data3: 765132716
+      Data4: -208128071
+    Path: event:/Park (P)/PA Announcer
+  <technicianSnore>k__BackingField:
+    Guid:
+      Data1: 857475498
+      Data2: 1342159231
+      Data3: -1792030046
+      Data4: -74618462
+    Path: event:/Park (P)/Technician Sleeping
   <chatBubble>k__BackingField:
     Guid:
       Data1: 1116057524

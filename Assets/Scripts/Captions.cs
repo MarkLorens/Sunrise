@@ -58,7 +58,10 @@ public static class Captions
     // ---------------------------------------------------------------- the locker room and staff
     public const string CableSpark = "[Cable sparks]";
     public const string PaScreech = "[PA system screeches]";
+    public const string PaAnnouncement = "[Garbled PA announcement]";
     public const string Scanner = "[Gate lock clicks open]";
     public const string StaffTapping = "[Tapping and clanking]";
     public const string Startled = "[Startled grunt]";
+    public const string PhoneRing = "[Phone ringing]";               // the technician's booth, while it rings
+    public const string Snoring = "[Snoring]";                       // the technician napping, when you're near
 }

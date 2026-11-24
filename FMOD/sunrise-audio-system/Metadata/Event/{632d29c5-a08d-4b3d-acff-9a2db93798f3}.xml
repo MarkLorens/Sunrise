@@ -53,7 +53,7 @@
 			<destination>{65c43afa-5874-4c9a-9988-e05639a6d18b}</destination>
 		</relationship>
 		<relationship name="output">
-			<destination>{035be584-e15d-4de2-8632-9243e87f4af2}</destination>
+			<destination>{0ec14085-3a65-4220-a90e-be00581d9ad5}</destination>
 		</relationship>
 	</object>
 	<object class="EventAutomatableProperties" id="{aabff412-6076-47cd-8989-e02cdbd85e24}" />
@@ -92,23 +92,50 @@
 		<property name="length">
 			<value>5.0000000000000009</value>
 		</property>
+		<property name="pitch">
+			<value>7.5</value>
+		</property>
 		<property name="polyphony">
 			<value>1</value>
 		</property>
+		<property name="soundStealing">
+			<value>3</value>
+		</property>
+		<property name="totalSounds">
+			<value>1</value>
+		</property>
+		<property name="minimumTimeBetweenSounds">
+			<value>10</value>
+		</property>
+		<property name="maximumTimeBetweenSounds">
+			<value>10</value>
+		</property>
 		<property name="minimumScatterDistance">
-			<value>2</value>
+			<value>0</value>
 		</property>
 		<property name="maximumScatterDistance">
-			<value>4</value>
+			<value>0</value>
+		</property>
+		<property name="volumeRandomization">
+			<value>-1.5</value>
+		</property>
+		<property name="pitchRandomization">
+			<value>1.5</value>
 		</property>
 		<relationship name="sound">
 			<destination>{30d52ece-c01d-4cef-8d61-6fb0d02e3efc}</destination>
 		</relationship>
 	</object>
 	<object class="EventMixerGroup" id="{692c4dc8-7b63-403b-995c-f6912a93992a}">
+		<property name="volume">
+			<value>-10</value>
+		</property>
 		<property name="name">
 			<value>Audio 1</value>
 		</property>
+		<relationship name="modulators">
+			<destination>{6036e21a-d40e-486e-ae7b-ef5967c42112}</destination>
+		</relationship>
 		<relationship name="effectChain">
 			<destination>{4667ed5f-40c5-4d3f-8fc8-1c978b1e7ed4}</destination>
 		</relationship>
@@ -134,8 +161,28 @@
 			<destination>{77e0ccb4-c656-49a0-bf63-13d177cbf8d4}</destination>
 		</relationship>
 	</object>
+	<object class="ADSRModulator" id="{6036e21a-d40e-486e-ae7b-ef5967c42112}">
+		<property name="nameOfPropertyBeingModulated">
+			<value>volume</value>
+		</property>
+		<property name="initialValue">
+			<value>-80</value>
+		</property>
+		<property name="attackTime">
+			<value>0</value>
+		</property>
+		<property name="releaseTime">
+			<value>300</value>
+		</property>
+		<property name="finalValue">
+			<value>-80</value>
+		</property>
+	</object>
 	<object class="MixerBusEffectChain" id="{4667ed5f-40c5-4d3f-8fc8-1c978b1e7ed4}">
 		<relationship name="effects">
+			<destination>{d218c3a1-3476-4739-b3b6-cf844e33a3cd}</destination>
+			<destination>{7664c8c2-185c-40d2-8c3a-84544225f877}</destination>
+			<destination>{ecf752d2-4bc6-434d-996a-446ada17c6bb}</destination>
 			<destination>{5ccc30ae-bd17-418d-9a62-07c721968018}</destination>
 		</relationship>
 	</object>
@@ -156,6 +203,33 @@
 		<relationship name="audioFile">
 			<destination>{ae7fb0c1-1a3c-49b4-8f5f-0e6189b7231a}</destination>
 		</relationship>
+	</object>
+	<object class="DistortionEffect" id="{d218c3a1-3476-4739-b3b6-cf844e33a3cd}">
+		<property name="level">
+			<value>0.349999994</value>
+		</property>
+	</object>
+	<object class="ChorusEffect" id="{7664c8c2-185c-40d2-8c3a-84544225f877}">
+		<property name="rate">
+			<value>1</value>
+		</property>
+		<property name="depth">
+			<value>1.5</value>
+		</property>
+		<property name="mix">
+			<value>25</value>
+		</property>
+	</object>
+	<object class="DelayEffect" id="{ecf752d2-4bc6-434d-996a-446ada17c6bb}">
+		<property name="delay">
+			<value>120</value>
+		</property>
+		<property name="feedback">
+			<value>20</value>
+		</property>
+		<property name="level">
+			<value>-12</value>
+		</property>
 	</object>
 	<object class="MixerBusFader" id="{5ccc30ae-bd17-418d-9a62-07c721968018}" />
 </objects>
