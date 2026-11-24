@@ -63,6 +63,8 @@ public class NightLighting : MonoBehaviour
     public float stallRange = 6f;
 
     [Header("Ferris wheel")]
+    [Tooltip("How strong the light on the wheel's middle medallion is (0 = none). Low enough that its engraved W still shows.")]
+    [Range(0, 1)] public float hubGlowAlpha = 0.2f;
     public float jointBulbSize = 0.55f; // the bulb where each cabin hangs
     public float cabinGlowDrop = 1.0f;  // how far below its knob a cabin's lights hang: on the coloured bowl
     public int cabinLights = 3;         // mini lights strung across each bowl
@@ -277,7 +279,7 @@ public class NightLighting : MonoBehaviour
     Ride LightUp(FerrisWheel w)
     {
         var ride = new Ride { wheel = w };
-        ride.glows.Add(Glow("Hub Glow", w.wheel, new Vector3(0f, 0f, -0.03f), 1.4f, bulbColors[0], 0.7f));
+        if (hubGlowAlpha > 0f) ride.glows.Add(Glow("Hub Glow", w.wheel, new Vector3(0f, 0f, -0.03f), 1.4f, bulbColors[0], hubGlowAlpha));
         for (int i = 0; i < w.Cabins.Count; i++)
         {
             ride.bulbs.Add(Glow("Joint Bulb", w.Cabins[i], new Vector3(0f, 0f, -0.04f), jointBulbSize, Bulb(i), 1f));

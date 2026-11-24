@@ -224,7 +224,7 @@ public class Possession : MonoBehaviour
         Fx.Burst("Fx/sparkle", Host.HeadPoint, 18, Fx.Spirit, 3.5f, 0.45f, 0.6f);
         Fx.Shake(0.2f, 0.3f); // a small knock that sways and settles, like a landed hit
         GameHud.Say(GameText.Possessed(Host.name));
-        if (Host.brain == null) Mischief.Complete(Tutorial.Active ? Mischief.Task.TutorialPossess : Mischief.Task.Possess);
+        if (Host.brain == null) Mischief.Complete(Tutorial.Active || !Mischief.IsDone(Mischief.Task.TutorialPossess) ? Mischief.Task.TutorialPossess : Mischief.Task.Possess); // the toilet's first step, skipped tutorial too
         else if (Host.brain is Mechanic) Mischief.Complete(Mischief.Task.PossessMechanic);
         else if (Host.brain is RideTechnician) Mischief.Complete(Mischief.Task.PossessTechnician);
         else if (Host.brain is RideOperator) Mischief.Complete(Mischief.Task.PossessOperator);

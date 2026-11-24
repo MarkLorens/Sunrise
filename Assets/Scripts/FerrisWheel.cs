@@ -42,9 +42,9 @@ public class FerrisWheel : MonoBehaviour
     public float watchExodus = 5f;          // seconds watching them run out
     public float glideHome = 3f;            // seconds back to the player
     public float finaleZoom = 0.5f;         // how far in the camera zooms on the player at the end (CameraRig.Zoom)
-    public float irisCloseTime = 1.5f;      // seconds for the black to close in
+    public float irisCloseTime = 0.5f;      // seconds for the black to close in
     [Range(0.01f, 1f)] public float irisSoftness = 0.35f; // how soft the edge of the black is
-    public float finaleHold = 5f;           // seconds on the player, gloating (their last word's up meanwhile)
+    public float finaleHold = 3f;           // seconds on the player, gloating (their last word's up meanwhile)
     public float irisShrinkTime = 0.5f;     // then seconds for the circle to shrink away to black
     public float blackHold = 0.5f;          // and seconds of black before the main menu
     public int screamingCabins = 4;   // cabins shouting in turns (GameText.CabinScreams, or CabinScreamsWobbly) in a payoff
@@ -133,12 +133,14 @@ public class FerrisWheel : MonoBehaviour
     IEnumerator WobblyPayoff()
     {
         Possession.InputBlocked = true;
+        AudioManager.MusicOff = true;
         CameraRig.Spotlight(wheel, 999f, (wheelRadius + cabinDrop) * Scale, payoffPullBack); // down to the lowest cabin
         ScreamIn(GameText.CabinScreamsWobbly);
         yield return new WaitForSeconds(1.5f);
         Fx.Shake(0.15f, payoffTime - 1.5f);
         yield return new WaitForSeconds(payoffTime - 1.5f);
         CameraRig.EndSpotlight();
+        AudioManager.MusicOff = false;
         yield return new WaitForSeconds(1f); // the camera easing back
         Possession.InputBlocked = false;
         GameHud.Think(GameHud.ThoughtPriority.Action, GameText.ThinkWobble);
@@ -157,6 +159,7 @@ public class FerrisWheel : MonoBehaviour
     IEnumerator Payoff()
     {
         Possession.InputBlocked = true;
+        AudioManager.MusicOff = true;
         CameraRig.Spotlight(wheel, 999f, (wheelRadius + cabinDrop) * Scale, payoffPullBack); // down to the lowest cabin
         shakeUntil = Time.time + payoffTime;
 
@@ -171,6 +174,7 @@ public class FerrisWheel : MonoBehaviour
                 break;
             }
         CameraRig.EndSpotlight();
+        AudioManager.MusicOff = false;
         yield return new WaitForSeconds(1f); // the camera easing back
         Possession.InputBlocked = false;
     }
@@ -305,6 +309,7 @@ public class FerrisWheel : MonoBehaviour
     IEnumerator MaxSpeedPayoff()
     {
         Possession.InputBlocked = true;
+        AudioManager.MusicOff = true;
         CameraRig.Spotlight(wheel, 999f, (wheelRadius + cabinDrop) * Scale, payoffPullBack); // down to the lowest cabin
         ScreamIn(GameText.CabinScreamsWobbly);
         while (Current != State.Wrecked) yield return null;
@@ -368,7 +373,7 @@ public class FerrisWheel : MonoBehaviour
             yield return null;
         }
         yield return new WaitForSeconds(blackHold);
-        LoadingScreen.Load(0); // the main menu, first in Build Settings (as from the pause menu)
+        LoadingScreen.FadeTo(0); // the main menu, first in Build Settings (as from the pause menu)
     }
 
     void Update()
@@ -461,6 +466,11 @@ public class FerrisWheel : MonoBehaviour
             cabinVelocity.Add(new Vector3(Random.Range(-4f, 4f), Random.Range(3f, 7f), Random.Range(-1.5f, 0.5f)));
         }
         if (queue != null) queue.ThrowOutRiders(transform.position + Vector3.back * 1.5f, 3f);
+        // Everything standing anywhere it'll roll over or come to lie on (not its own parts).
+        Vector3 dir = new Vector3(rollDirection.x, 0f, rollDirection.z).normalized;
+        Vector3 from = new(wheel.position.x, 0f, wheel.position.z);
+        standing = StandingProps.Near(from + dir * rollDistance * 0.5f, rollDistance * 0.5f + wheelRadius * Scale + 2f,
+            t => t.IsChildOf(transform) || t.IsChildOf(wheel) || cabins.Exists(c => t.IsChildOf(c)));
         Fx.Shake(0.45f, 1f);
         ClosedCaptions.Show(Captions.WheelCollapse);
         ParkChaos.Add(transform.position, 12f, 9999f);
@@ -483,6 +493,7 @@ public class FerrisWheel : MonoBehaviour
             angle -= Mathf.Sign(dir.x) * step / radius * Mathf.Rad2Deg; // rolling without slipping
             wheel.rotation = Quaternion.Euler(0, 0, angle);
             Flatten(p, dir, radius);
+            SquashAlong(p, dir, radius);
             ParkChaos.Add(p, 10f, 8f);
         }
         else
@@ -518,6 +529,24 @@ public class FerrisWheel : MonoBehaviour
             if (Squashable(v)) v.Squash();
             else v.KnockDown();
             ClosedCaptions.Show(Captions.Flattened);
+        }
+    }
+
+    // Buildings, trees, lamps... (StandingProps) it rolls over go flat too, like the people (StandingProps.Squash), as
+    // it passes: within the same thin band under its rim, a building's width counting.
+    List<StandingProps.Prop> standing; // what's left standing anywhere it'll go
+    void SquashAlong(Vector3 center, Vector3 dir, float radius)
+    {
+        if (standing == null) return;
+        Vector3 side = new(-dir.z, 0f, dir.x);
+        for (int i = standing.Count - 1; i >= 0; i--)
+        {
+            var s = standing[i];
+            Vector3 d = s.at - center;
+            d.y = 0f;
+            if (Mathf.Abs(Vector3.Dot(d, dir)) > 0.8f + s.half * 0.5f || Mathf.Abs(Vector3.Dot(d, side)) > radius * 0.3f + s.half) continue;
+            StandingProps.Squash(s);
+            standing.RemoveAt(i);
         }
     }
 
@@ -604,6 +633,10 @@ public class FerrisWheel : MonoBehaviour
     // Lying flat at last: anyone under it is squashed; whoever it missed comes to and runs.
     void SquashUnder(Vector3 center, float radius)
     {
+        if (standing != null)
+            foreach (var s in standing)
+                if (Flat(s.at - center) <= radius * 0.95f + s.half * 0.3f) StandingProps.Squash(s); // and everything it lands on
+        standing = null;
         foreach (var v in Visitor.All.ToArray())
         {
             if (!Squashable(v) || !v.Look.Visible || v.Current is Visitor.State.Down or Visitor.State.Riding) continue;

@@ -2,8 +2,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // The hot dog man, behind his stand, guarding the propane tank's fan from anyone who'd touch it. Rats out of the gutter
-// (Gutter) send him running; he comes back once they're gone and fires up his stove, which is the spark the propane
-// cloud is waiting for (PropaneTank). After that he stands there charred and dazed.
+// (Gutter) send him running, and he turns his grill off as he goes; he comes back once they're gone and lights it
+// again (relightDelay after he's back over the counter), which is the spark the propane cloud is waiting for
+// (PropaneTank): it goes up catchTime after the flames do. After that he stands there charred and dazed.
 // He works inside his stand, between the counter and the back wall, out of reach: he can only be possessed while he's
 // out of it (chased off, or charred). The gap's too tight to walk in and out of, so he hops the end of the counter
 // (Hop) to and from a spot just outside it (exitOffset). His stand is one solid box, counter to back wall (Awake), so
@@ -22,6 +23,10 @@ public class HotDogMan : MonoBehaviour
     public float hopTime = 0.45f;
     public float hopHeight = 0.8f;
     public float paceHalfWidth = 1.4f; // how far either side of his post he wanders behind the counter
+    [Tooltip("Seconds from landing back behind the counter to lighting the grill (his \"fire up the grill\" line shows meanwhile if the gas is there).")]
+    public float relightDelay = 2f;
+    [Tooltip("Seconds from the grill's flames coming back to the gas going up.")]
+    public float catchTime = 0.3f;
 
     public State Current { get; private set; }
     // Back behind his stand, watching his fan.
@@ -33,6 +38,9 @@ public class HotDogMan : MonoBehaviour
     Rigidbody rb;
     Vector3 post, away;
     float backAt, stoveAt;
+    float lightAt, boomAt = float.MaxValue; // the grill going back on, and the gas catching from it
+    bool grillOut, announced;
+    SpriteRenderer grill;
     float hopStart;
     Vector3 hopFrom, hopTo;
     State afterHop;
@@ -82,10 +90,39 @@ public class HotDogMan : MonoBehaviour
         if (front < back) GroundWalker.Block("Hot Dog Stand Block", Rect.MinMaxRect(left, front, right, back));
     }
 
+    // Someone behind his counter with the grill on: the gas filling up there goes off by itself (PropaneTank's line).
+    public static bool GrillBurning => All.Exists(h => h.Current == State.AtStall && !h.grillOut);
+
+    // His stand's grill flames (ParkAnimations), the nearest to his post.
+    SpriteRenderer Grill
+    {
+        get
+        {
+            if (grill != null) return grill;
+            float best = 5f;
+            foreach (var g in ParkAnimations.Grills)
+            {
+                if (g == null) continue;
+                float d = Vector3.Distance(g.bounds.center, post);
+                if (d < best) { best = d; grill = g; }
+            }
+            return grill;
+        }
+    }
+
+    void SetGrill(bool on)
+    {
+        grillOut = !on;
+        if (Grill != null) Grill.enabled = on;
+    }
+
     // Rats! Off he runs, away from `from`, and stays away for a while.
     public void Scare(Vector3 from)
     {
         if (Current is State.Fleeing or State.Charred) return;
+        SetGrill(false); // turned off on his way out
+        stoveAt = boomAt = float.MaxValue;
+        announced = false;
         Vector3 dir = transform.position - from;
         dir.y = 0f;
         if (dir.sqrMagnitude < 0.01f) dir = Vector3.right;
@@ -137,13 +174,34 @@ public class HotDogMan : MonoBehaviour
         {
             case State.AtStall:
                 Pace(); // up and down behind the counter
-                // The cloud's waiting for a spark: he lights his stove a moment after he's back at it.
                 var tank = PropaneTank.ReadyNear(post, 2f);
+                // Back from the rats: a moment, then he lights the grill again. With the gas round the stand, that's
+                // the spark: the flames come up, and catchTime later it all goes up.
+                if (grillOut)
+                {
+                    if (tank != null && !announced)
+                    {
+                        announced = true;
+                        GameHud.Shout(transform, GameText.HotDogStove, 1.8f);
+                    }
+                    if (Time.time < lightAt) break;
+                    SetGrill(true);
+                    if (tank != null) boomAt = Time.time + catchTime;
+                    break;
+                }
+                if (boomAt != float.MaxValue)
+                {
+                    if (Time.time < boomAt) break;
+                    boomAt = float.MaxValue;
+                    if (tank != null) tank.Explode();
+                    break;
+                }
+                // The grill's been on all along and the cloud fills up round it: he lights his stove a moment after.
                 if (tank == null) { stoveAt = float.MaxValue; break; }
                 if (stoveAt == float.MaxValue)
                 {
                     stoveAt = Time.time + 2f;
-                    GameHud.Shout(transform, GameText.HotDogStove, 1.8f);
+                    GameHud.Shout(transform, GameText.HotDogSmell, 1.8f);
                 }
                 if (Time.time >= stoveAt) tank.Explode();
                 break;
@@ -154,6 +212,7 @@ public class HotDogMan : MonoBehaviour
                 if (k < 1f) break;
                 Current = afterHop;
                 walker.ignoreObstacles = afterHop == State.AtStall;
+                if (afterHop == State.AtStall) lightAt = Time.time + relightDelay;
                 break;
 
             case State.Fleeing:

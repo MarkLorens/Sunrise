@@ -115,7 +115,7 @@ public static class GameText
     public const string BoxLocked = "Locked. The electrician has the keys";
 
     // The drinking fountain
-    public const string FountainBusy = "Still gurgling";
+    public const string FountainBusy = "Still leaking";
 
     // Flaming hot dogs
     public const string LidOpen = "The rats are already out";
@@ -222,6 +222,7 @@ public static class GameText
     public static string PickFanAimed() => ThinkFanAimed[UnityEngine.Random.Range(0, ThinkFanAimed.Length)];
     public const string ThinkGasBlownAway = "I gotta get that fan off, or no boom.";                // gas reaching the stand with its fan on
     public const string ThinkCloud = "Let's spark that fire now Sausage Boy!"; // the cloud is full
+    public const string ThinkCloudGrillOn = "Hook, line, and sinker";                                // the cloud is full round his lit grill
     public const string ThinkBoom = "KABOOM. Good morning!";                                         // after the explosion
     public const string ThinkPlatform = "Only his fingers open this. Good thing I have them";        // scanning as the technician
     public const string ThinkHinge = "Lefty loosey...";                                               // loosening the hinge
@@ -240,7 +241,7 @@ public static class GameText
     public const string ThinkFire = "Shoddy Construction, really. Now's my chance with the operator"; // after the fire payoff
     public const string ThinkBooth = "Nice fingers. Don't mind if I do.";                             // scanning as the operator
     public const string ThinkMaxSpeed = "Faster... FASTER!";                                          // maxing the wheel
-    public const string ThinkRolled = "Fare-thee-wheel. Hehehe…";                                     // the last word, after the wheel's rolled (FerrisWheel)
+    public const string ThinkRolled = "Wheely sorry folks! Come again!";                                     // the last word, after the wheel's rolled (FerrisWheel)
 
     // Out loud
     public const string MascotGuard = "*angry mascot noises* (Don't touch the fan!)";
@@ -350,6 +351,7 @@ public static class GameText
     public const string HotDogRats = "RATS! RAAATS!";
     public const string HotDogBack = "Okay... they're gone. Back to work. Who wants a dog?";
     public const string HotDogStove = "Let's fire up the grill!";
+    public const string HotDogSmell = "Hm? What's that smell?";   // the gas fills up round his grill while it's lit
     public const string PhoneRing = "*Ring ring*";     // the technician's phone, over his booth
     public const string TechnicianSnore = "zzz...";    // sleeping through it
     public const string TechnicianWake = "WHA- WHAT WAS THAT?!";
@@ -365,7 +367,7 @@ public static class GameText
 
     // 1. The spirit
     public const string TutorialMeSays = "I woke up and chose violence… recreationally.";
-    public const string TutorialMe = "This little evil spirit is you.";
+    public const string TutorialMe = "This is you, Ruckus, a young evil spirit";
     // 2. The objective (top left)
     public const string TutorialGoalSays = "Objectives! Like a recipe… for someone else's bad day.";
     public const string TutorialGoal = "Your mischief to-do list lives up here.";
@@ -435,4 +437,7 @@ public static class GameText
     public const string SignPrompt = "Take down the Out of Order sign";
     public static string ValvePrompt(int turns, int of) => $"Crank up the valve ({turns}/{of})";
     public const string ValveMaxed = "It won't turn any further";
+
+    // The loading screen's progress, in the middle of its Ferris wheel (LoadingScreen)
+    public static string LoadingPercent(int percent) => $"{percent}%";
 }

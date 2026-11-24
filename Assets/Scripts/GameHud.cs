@@ -686,13 +686,13 @@ public class GameHud : MonoBehaviour
         var host = spirit.Host;
 
         if (HideObjectives) { } // a cutscene's showing: no prompts over it
-        else if (refusedBy != null && Time.unscaledTime - refusedAt < RefusalTime)
+        else if (refusedBy != null && Time.unscaledTime - refusedAt < RefusalTime && Tutorial.ShowPossessPrompts)
         {
             // E was just refused: say why, over whatever said no.
             anchor = refusedPerson ? PersonTop(refusedBy) : ThingTop(refusedBy);
             text = $"<color=#bbbbbb>{refusal}</color>";
         }
-        else if (spirit.State == Possession.Mode.Spirit && spirit.Candidate != null)
+        else if (spirit.State == Possession.Mode.Spirit && spirit.Candidate != null && Tutorial.ShowPossessPrompts) // the tutorial gets to it
         {
             anchor = PersonTop(spirit.Candidate);
             if (spirit.CandidateBlocked == null)
@@ -702,7 +702,7 @@ public class GameHud : MonoBehaviour
             }
             else text = spirit.CandidateBlocked;
         }
-        else if (host != null)
+        else if (host != null && Tutorial.ShowUsePrompts)
         {
             var target = interactor.Nearest();
             if (target != null)
@@ -710,7 +710,7 @@ public class GameHud : MonoBehaviour
                 anchor = ThingTop(target.transform);
                 string blocked = target.Blocked(host);
                 key = blocked == null ? KeyBindings.Name(KeyBindings.Bind.Interact) : "";
-                text = blocked == null ? target.Prompt(host) : $"<color=#bbbbbb>{target.Prompt(host)}: {blocked}</color>";
+                text = blocked == null ? target.Prompt(host) : $"<color=#bbbbbb>{blocked}</color>"; // only the reason, no action line
             }
         }
 
@@ -769,23 +769,25 @@ public class GameHud : MonoBehaviour
     void BuildPuzzleBanner()
     {
         // The cloud of the artist's "OBJECTIVE COMPLETED" without its words (UI Asset/Logo/Mission_cloud, the same
-        // picture), where the design (Figma: Objective completed) has it, 85% of the design's size, same middle.
-        puzzleBanner = Figma.Picture(canvas, "Objective Completed", "Logo/Mission_cloud", 780.3f, 532.8f, 736.4f, 621.6f).rectTransform;
+        // picture), where and as big as the design has it (Figma: "Flaming Hot Dogs Completed"): its drawn part
+        // x 400..1110, y 261..680 of the frame. The words are as big as there too, reaching past the cloud's middle.
+        puzzleBanner = Figma.Picture(canvas, "Objective Completed", "Logo/Mission_cloud", CloudX, CloudY, 858f, 724f).rectTransform;
         puzzleGroup = puzzleBanner.gameObject.AddComponent<CanvasGroup>();
         puzzleGroup.alpha = 0f;
-        // The words over the cloud's body (x 120..1130, y 230..830 of its 1301 x 1098 picture: its middle, a touch
-        // below the picture's, where the cloud is fullest), as the art writes them:
-        // yellow capitals in Atma, a thick dark line round them and a drop shadow.
+        // The words where the design has them (their middle at 746, 500), as it writes them: yellow Atma, a thick dark
+        // line round them and a drop shadow. As big as the design's (bigger than the type scale's biggest), a title
+        // too long for a line going on to the next, then "Completed" on its own.
         var words = Ui("Words", puzzleBanner);
-        words.anchorMin = new Vector2(120f / 1301f, (1098f - 830f) / 1098f);
-        words.anchorMax = new Vector2(1130f / 1301f, (1098f - 230f) / 1098f);
-        words.offsetMin = words.offsetMax = Vector2.zero;
+        words.anchorMin = words.anchorMax = new Vector2(0.5f, 0.5f);
+        words.sizeDelta = new Vector2(WordsWidth * Figma.K, 10f);
+        words.anchoredPosition = new Vector2((746f - CloudX) * Figma.K, (CloudY - 500f) * Figma.K);
         puzzleWords = words.gameObject.AddComponent<Text>();
         puzzleWords.font = ParkArt.TitleFont;
+        puzzleWords.fontSize = Mathf.RoundToInt(WordsSize * Figma.K);
         puzzleWords.alignment = TextAnchor.MiddleCenter;
         puzzleWords.color = new Color32(254, 208, 62, 255);
-        puzzleWords.lineSpacing = 0.85f;
-        puzzleWords.horizontalOverflow = HorizontalWrapMode.Overflow;
+        puzzleWords.lineSpacing = WordsLineSpacing;
+        puzzleWords.horizontalOverflow = HorizontalWrapMode.Wrap;
         puzzleWords.verticalOverflow = VerticalWrapMode.Overflow;
         puzzleWords.raycastTarget = false;
         var line = words.gameObject.AddComponent<Outline>();
@@ -796,16 +798,15 @@ public class GameHud : MonoBehaviour
         shadow.effectDistance = new Vector2(3f, -7f);
     }
 
-    // "<TITLE>\nCOMPLETED" (GameText.ObjectiveCompleted), at the biggest of the title sizes that fits across the cloud.
+    // The design's Completed banner (design px): the cloud's middle, and the words' size, line width and spacing.
+    const float CloudX = 777.6f, CloudY = 522f;
+    const float WordsSize = 116f, WordsWidth = 640f, WordsLineSpacing = 0.62f;
+
+    // "<Title>\nCompleted" (GameText.ObjectiveCompleted), as written (Title Case, as the design), the title on as many
+    // lines as it needs.
     void SetPuzzleWords(string title)
     {
-        puzzleWords.text = GameText.ObjectiveCompleted(title).ToUpperInvariant();
-        float room = puzzleWords.rectTransform.rect.width;
-        foreach (int size in new[] { Figma.Type.AtmaPage, Figma.Type.AtmaH1, Figma.Type.AtmaSpecial, Figma.Type.AtmaH2, Figma.Type.AtmaBody })
-        {
-            puzzleWords.fontSize = size;
-            if (puzzleWords.preferredWidth <= room) break;
-        }
+        puzzleWords.text = GameText.ObjectiveCompleted(title);
     }
 
     // The hand-drawn speech bubble (thoughts, shouts), its tail's tip at `bubble`'s position.

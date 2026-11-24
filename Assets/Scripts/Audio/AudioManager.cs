@@ -136,6 +136,9 @@ public class AudioManager : MonoBehaviour
     public void StopGameplaySounds()
     {
         StopMusic(now: true);
+        MusicOff = false; // the finale never turns it back on itself; the next scene's music starts at full
+        musicLevel = 1f;
+        AudioBuses.MusicLevel(1f);
         if (overOthers.isValid()) overOthers.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
         AudioBuses.StopAll(AudioBuses.Music);
         AudioBuses.StopAll(AudioBuses.Sfx);
@@ -194,6 +197,11 @@ public class AudioManager : MonoBehaviour
     private EventInstance overOthers;          // the sound everything else makes way for
     private float duckLevel = 1f;              // what the Music and SFX groups are multiplied by right now
 
+    // A puzzle's payoff (the camera's shot of it): the music fades out, and back in once the camera heads home.
+    public static bool MusicOff;
+    private const float MusicFade = 0.5f;      // seconds to fade out, and back in
+    private float musicLevel = 1f;             // what the Music group is multiplied by right now
+
     // A 2D one-shot that everything else makes way for. FMOD frees it once it has finished.
     public bool PlayOverOthers(EventReference sound)
     {
@@ -225,6 +233,13 @@ public class AudioManager : MonoBehaviour
     // (AudioMix, EmitterVolume) undoes it, and sounds that start meanwhile are down too. It's on the UI group itself.
     private void Update()
     {
+        float music = MusicOff ? 0f : 1f;
+        if (!Mathf.Approximately(musicLevel, music))
+        {
+            musicLevel = Mathf.MoveTowards(musicLevel, music, Time.unscaledDeltaTime / MusicFade);
+            AudioBuses.MusicLevel(musicLevel);
+        }
+
         float target = OverOthersPlaying() ? OthersVolume : 1f;
         if (Mathf.Approximately(duckLevel, target)) return;
         duckLevel = Mathf.MoveTowards(duckLevel, target, Time.unscaledDeltaTime * (1f - OthersVolume) / DuckFade);

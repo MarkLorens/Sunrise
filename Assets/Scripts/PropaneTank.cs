@@ -33,6 +33,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
     public bool Ready => level >= 1f && !spent;
     bool HotDogStand => burns == null;
     const float StandScorchRadius = 4f;                           // the hot dog stand's pictures, round where it blows
+    const float SurroundScorchRadius = 5f;                        // the ground and whatever stands round it, scorched too
     static readonly string[] StandPictures = { "hot_dog_stand" };
 
     bool leaking, spent, thoughtBlown;
@@ -128,7 +129,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
             if (level >= 1f)
             {
                 Mischief.Complete(cloudTask);
-                GameHud.Think(GameHud.ThoughtPriority.Action, HotDogStand ? GameText.ThinkCloud : GameText.ThinkLockerCloud);
+                GameHud.Think(GameHud.ThoughtPriority.Action, HotDogStand ? (HotDogMan.GrillBurning ? GameText.ThinkCloudGrillOn : GameText.ThinkCloud) : GameText.ThinkLockerCloud);
             }
         }
 
@@ -183,6 +184,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
         {
             foreach (var h in HotDogMan.All) h.Char();
             Scorch.BurnNear(Center, StandScorchRadius, false, StandPictures); // the stand, burning
+            Scorch.BurnAround(Center, SurroundScorchRadius, false); // and the ground and everything round it
         }
         StartCoroutine(Payoff());
     }
@@ -190,6 +192,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
     IEnumerator Payoff()
     {
         Possession.InputBlocked = true;
+        AudioManager.MusicOff = true;
         ClosedCaptions.Show(Captions.Explosion);
         Fx.Burst("Fx/puff", Center + Vector3.up, 40, new Color(1f, 0.55f, 0.15f), 8f, 1.2f, 0.9f);
         Fx.Burst("Fx/puff", Center + Vector3.up, 25, new Color(1f, 0.85f, 0.3f), 5f, 0.9f, 0.6f);
@@ -213,6 +216,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
         {
             yield return burns.Burn(); // the fire, the PA, the operator running over
             CameraRig.EndSpotlight();
+            AudioManager.MusicOff = false;
             yield return new WaitForSeconds(1f);
             Possession.InputBlocked = false;
             GameHud.Think(GameHud.ThoughtPriority.Critical, GameText.ThinkFire);
@@ -222,6 +226,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
         // Across the park, someone's nap is over.
         if (RideTechnician.All.Count > 0) yield return RideTechnician.All[0].WakeUp();
         CameraRig.EndSpotlight();
+        AudioManager.MusicOff = false;
         yield return new WaitForSeconds(1f); // the camera easing back
         Possession.InputBlocked = false;
         GameHud.Think(GameHud.ThoughtPriority.Critical, GameText.ThinkBoom);
@@ -237,6 +242,7 @@ public class PropaneTank : MonoBehaviour, IInteraction
         {
             foreach (var h in HotDogMan.All) h.Char();
             Scorch.BurnNear(Center, StandScorchRadius, true, StandPictures); // already burnt
+            Scorch.BurnAround(Center, SurroundScorchRadius, true);
         }
     }
 }
