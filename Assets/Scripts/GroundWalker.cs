@@ -142,11 +142,50 @@ public class GroundWalker : MonoBehaviour
     // to it (walking, routes, where people spawn, queue and gather).
     public static bool InPark(Tilemap ground, Vector3Int cell) => ground.HasTile(cell) && !Field(ground).Contains(cell);
 
-    // The grass field round the park (FieldTile), flood-filled in from the ground's edge, once per ground: a lawn
-    // inside the park (cut off from the edge) stays walkable.
+    // The grass field round the park, flood-filled in from the ground's edge, once per ground: a lawn inside the park
+    // (cut off from the edge) stays walkable. Outer lawn tiles are img_2890–2897_* (was tiles_grass_full*). Those
+    // same sheets are also painted inside the park, so a cell only counts as the field when it sits outside Park Fence.
     public const string FieldTile = "tiles_grass_full";
     static Tilemap fieldOf;
     static readonly HashSet<Vector3Int> field = new();
+    static bool fenceReady, hasFence;
+    static float fenceMinX, fenceMaxX, fenceMinZ, fenceMaxZ;
+
+    static bool IsFieldTile(TileBase t)
+    {
+        if (t == null) return false;
+        string n = t.name;
+        if (n.StartsWith(FieldTile)) return true;
+        // img_2890_tl … img_2897_br
+        return n.Length >= 8 && n.StartsWith("img_289") && n[7] >= '0' && n[7] <= '7';
+    }
+
+    // Axis-aligned ring of Park Fence. Inside it, img_2890–2897 is ordinary ground.
+    static bool OutsideFence(Vector3 w)
+    {
+        if (!fenceReady)
+        {
+            fenceReady = true;
+            var fence = GameObject.Find("Park Fence");
+            if (fence != null)
+            {
+                fenceMinX = fenceMinZ = float.PositiveInfinity;
+                fenceMaxX = fenceMaxZ = float.NegativeInfinity;
+                foreach (var t in fence.GetComponentsInChildren<Transform>(true))
+                {
+                    if (t.name != "Barrier" && t.name != "Fence Block") continue;
+                    Vector3 p = t.position;
+                    if (p.x < fenceMinX) fenceMinX = p.x;
+                    if (p.x > fenceMaxX) fenceMaxX = p.x;
+                    if (p.z < fenceMinZ) fenceMinZ = p.z;
+                    if (p.z > fenceMaxZ) fenceMaxZ = p.z;
+                    hasFence = true;
+                }
+            }
+        }
+        if (!hasFence) return true;
+        return w.x <= fenceMinX || w.x >= fenceMaxX || w.z <= fenceMinZ || w.z >= fenceMaxZ;
+    }
 
     static HashSet<Vector3Int> Field(Tilemap ground)
     {
@@ -155,7 +194,8 @@ public class GroundWalker : MonoBehaviour
         field.Clear();
         BoundsInt b = ground.cellBounds;
         bool Grass(Vector3Int c) => c.x >= b.xMin && c.y >= b.yMin && c.x < b.xMax && c.y < b.yMax
-                                    && ground.GetTile(c) is TileBase t && t.name.StartsWith(FieldTile);
+                                    && IsFieldTile(ground.GetTile(c))
+                                    && OutsideFence(ground.GetCellCenterWorld(c));
         var open = new Queue<Vector3Int>();
         for (int x = b.xMin; x < b.xMax; x++)
             for (int y = b.yMin; y < b.yMax; y++)
