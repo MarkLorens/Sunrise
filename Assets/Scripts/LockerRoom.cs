@@ -65,6 +65,11 @@ public class LockerRoom : MonoBehaviour
             yield return new WaitForSeconds(1.2f); // the camera getting there
             ClosedCaptions.Show(Captions.PaScreech);
             GameHud.Shout(paBooth, GameText.PAFire, ShotHold);
+            // The announcer's PA voice with it, as with every announcement bubble (VisitorSpawner.Announce): from the
+            // booth's picture, where the camera (and so the game's ears, Ears) has just got to, not the marker well
+            // away from it (an attached one-shot beyond its max distance from the ears never starts).
+            var voiceAt = art != null ? art.gameObject : paBooth.gameObject;
+            if (AudioManager.TryPlayOn(e => e.paAnnouncer, voiceAt)) ClosedCaptions.Show(Captions.PaAnnouncement);
             yield return new WaitForSeconds(ShotHold + 0.2f);
         }
 

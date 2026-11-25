@@ -67,6 +67,9 @@
 		<property name="minimumDistance">
 			<value>2</value>
 		</property>
+		<property name="maximumDistance">
+			<value>25</value>
+		</property>
 	</object>
 	<object class="MarkerTrack" id="{3a92002d-f867-4000-91f3-20a88370544a}" />
 	<object class="GroupTrack" id="{b651bd13-0b4b-44d1-9143-0e97f2e1bb83}">
@@ -331,6 +334,9 @@
 		<property name="name">
 			<value>Audio 4</value>
 		</property>
+		<relationship name="modulators">
+			<destination>{a57b8756-f220-4015-a379-bd82edfea12e}</destination>
+		</relationship>
 		<relationship name="effectChain">
 			<destination>{0625c525-8d3f-4e52-9d3e-c84ee67b8dfa}</destination>
 		</relationship>
@@ -464,6 +470,20 @@
 		</relationship>
 	</object>
 	<object class="MixerBusPanner" id="{9129a220-9ec1-4bd8-8b3d-cc5fc6e6f072}" />
+	<object class="ADSRModulator" id="{a57b8756-f220-4015-a379-bd82edfea12e}">
+		<property name="nameOfPropertyBeingModulated">
+			<value>volume</value>
+		</property>
+		<property name="initialValue">
+			<value>-80</value>
+		</property>
+		<property name="attackTime">
+			<value>0</value>
+		</property>
+		<property name="finalValue">
+			<value>-80</value>
+		</property>
+	</object>
 	<object class="MixerBusEffectChain" id="{0625c525-8d3f-4e52-9d3e-c84ee67b8dfa}">
 		<relationship name="effects">
 			<destination>{4918b186-5c88-4425-b552-fc33e94838b7}</destination>

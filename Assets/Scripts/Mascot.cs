@@ -249,6 +249,8 @@ public class Mascot : MonoBehaviour
             return;
         }
         GameHud.Shout(transform, GameText.MascotStink, 2f);
+        ClosedCaptions.Show(Captions.MascotGagging);
+        AudioManager.TryPlayOn(e => e.mascotGagging, gameObject); // following him as he runs off
         GameHud.Think(GameHud.ThoughtPriority.Action, GameText.ThinkStinkGone);
         away = post;
         for (int i = 0; i < 12; i++)
@@ -285,6 +287,8 @@ public class Mascot : MonoBehaviour
         }
         warned = true;
         GameHud.Shout(transform, GameText.MascotWarnings[Random.Range(0, GameText.MascotWarnings.Length)], warnTime);
+        ClosedCaptions.Show(Captions.MascotWarning);
+        AudioManager.TryPlayOn(e => e.mascotEasterEgg, gameObject); // the easter egg: he's had enough of the spirit
         StartCoroutine(CloseUp());
     }
 
