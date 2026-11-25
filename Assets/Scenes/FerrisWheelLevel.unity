@@ -6338,7 +6338,6 @@ MonoBehaviour:
   objects: {fileID: 0}
   bodyRadius: 0.35
   speed: 5
-  devSprint: 4
   readKeyboard: 1
   move: {x: 0, y: 0}
   ignoreObstacles: 0
@@ -9910,7 +9909,6 @@ MonoBehaviour:
   objects: {fileID: 0}
   bodyRadius: 0.35
   speed: 2
-  devSprint: 4
   readKeyboard: 0
   move: {x: 0, y: 0}
   ignoreObstacles: 0
@@ -10607,7 +10605,7 @@ Transform:
   m_GameObject: {fileID: 756386108}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.07999998, z: 1.17}
+  m_LocalPosition: {x: 0, y: 0.07999998, z: 1.07}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -29414,7 +29412,6 @@ MonoBehaviour:
   mopTime: 8
   bodyTime: 10
   cleanupDelay: 3
-  payoffVictims: 5
   payoffPan: 1
   payoffTwitch: 2
   pressCooldown: 3

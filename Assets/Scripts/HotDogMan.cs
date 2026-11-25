@@ -168,7 +168,7 @@ public class HotDogMan : MonoBehaviour
 
     void Update()
     {
-        body.possessable = Current == State.Charred; // never from the rats until he's back working
+        body.possessable = false; // never: not at work, not fleeing the rats, not charred (he stays put, dazed)
         if (inputBackAt > 0f && Time.time >= inputBackAt)
         {
             inputBackAt = 0f;

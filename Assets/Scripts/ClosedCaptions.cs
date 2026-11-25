@@ -129,7 +129,7 @@ public class ClosedCaptions : MonoBehaviour
             instance.lines.Clear();
         }
         foreach (var e in FindObjectsByType<FMODUnity.StudioEventEmitter>(FindObjectsSortMode.None))
-            if (!e.EventReference.IsNull && e.EventReference.Path != null && e.EventReference.Path.Contains("Music"))
+            if (!e.EventReference.IsNull && FMODUnity.RuntimeManager.GetEventDescription(e.EventReference).getPath(out string path) == FMOD.RESULT.OK && path.Contains("Music"))
             {
                 musicPending = Settings.ClosedCaptions;
                 if (musicPending) Get(); // its Update shows the line

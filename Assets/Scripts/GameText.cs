@@ -140,6 +140,7 @@ public static class GameText
     public const string PlatformOpen = "It's open";
     public const string PlatformLocked = "The platform's gate is locked";
     public const string HingeNeedsTechnician = "Only the technician knows this hinge";
+    public const string HingeFromPlatform = "Can't reach it from down here. Get up on the platform";
     public const string NeedScrewdriver = "You need a screwdriver";
     public const string HingeLoose = "Loose enough. Any looser and it falls off";
     public const string HingeFirst = "Not yet: that hinge first";

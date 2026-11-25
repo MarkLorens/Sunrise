@@ -22,7 +22,6 @@ public class DrinkingFountain : MonoBehaviour, IInteraction, IOwnSound // its pr
     public float mopTime = 8f;
     public float bodyTime = 10f;     // a Reset Agent's time carrying off each body
     public float cleanupDelay = 3f;  // after the zap's played out (and the mechanic's shown up), before the clean-up crew comes
-    public int payoffVictims = 5;    // more zapped than this and the camera cuts to it (Payoff)
     public float payoffPan = 1f;     // seconds for the camera to get there
     public float payoffTwitch = 2f;  // seconds the victims twitch
     public float pressCooldown = 3f; // before the button can be pressed again
@@ -189,7 +188,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction, IOwnSound // its pr
         int victims = zapped.Count;
 
         // Big enough a scene and the mechanic comes out, but only once the zap's over (MechanicComes).
-        bool big = victims >= victimsToCallMechanic, payoff = victims > payoffVictims;
+        bool big = victims >= victimsToCallMechanic, payoff = victims > 0;
         foreach (var v in zapped)
             if (payoff) v.Die(payoffPan, payoffTwitch, true);
             else v.Die(0f, 0f, true);
