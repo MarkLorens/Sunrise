@@ -45,6 +45,7 @@ public class TankFan : MonoBehaviour, IInteraction, IOwnSound
     float spin, frameClock;
     bool secondFrame;
     float nextGust;
+    [System.NonSerialized] public bool stinky; // the smelly gutter's fan (Gutter): its gusts are the gutter's stink
     bool thoughtGuarded;
 
     void OnEnable() => All.Add(this);
@@ -108,7 +109,7 @@ public class TankFan : MonoBehaviour, IInteraction, IOwnSound
         Hum();
         if (Time.time < nextGust) return;
         nextGust = Time.time + 0.2f;
-        Gust(transform.position, Wind);
+        if (stinky) StinkGust(); else Gust(transform.position, Wind);
     }
 
     // ---------------------------------------------------------------- its hum
@@ -212,6 +213,16 @@ public class TankFan : MonoBehaviour, IInteraction, IOwnSound
         g.transform.position = fan + Vector3.up * Random.Range(0.8f, 1.4f) + wind * 0.5f;
         var bit = g.gameObject.AddComponent<FxBit>();
         bit.velocity = wind * 6f;
+        bit.life = 0.6f;
+    }
+
+    // A puff of the gutter's stink off the smelly gutter's fan: the gutter's own gas art, brown.
+    void StinkGust()
+    {
+        var g = ParkArt.Make("Gust", null, Gutter.StinkArt, 0.28f, Gutter.Stink, ParkArt.OverheadOrder);
+        g.transform.position = transform.position + Vector3.up * Random.Range(0.8f, 1.4f) + Wind * 0.5f;
+        var bit = g.gameObject.AddComponent<FxBit>();
+        bit.velocity = Wind * 6f;
         bit.life = 0.6f;
     }
 

@@ -19,8 +19,8 @@ public class Gutter : MonoBehaviour, IInteraction, IOwnSound // its lid sound, n
     // Open and reeking (smellOnly).
     public bool Stinking => smellOnly && open;
 
-    static readonly Color Stink = new(1f, 0.42f, 0.22f, 0.6f); // over the teal gas art: a muddy brown
-    const string StinkArt = "Fx/gas"; // the artist's curly gas puff, as the propane's (PropaneTank)
+    public static readonly Color Stink = new(1f, 0.42f, 0.22f, 0.6f); // over the teal gas art: a muddy brown
+    public const string StinkArt = "Fx/gas"; // the artist's curly gas puff, as the propane's (PropaneTank)
 
     SpriteRenderer lid, hole;
     bool open, nearGutter;
@@ -32,6 +32,7 @@ public class Gutter : MonoBehaviour, IInteraction, IOwnSound // its lid sound, n
         lid = ParkArt.Make("Lid", transform, "Props/gutter_lid", size, Color.white, ParkArt.DecalOrder + 2, true);
         hole.transform.parent.localPosition = lid.transform.parent.localPosition = Vector3.up * 0.02f;
         hole.enabled = false;
+        if (smellOnly && fan != null) fan.stinky = true; // its gusts are the stink too
     }
 
     void Update()
