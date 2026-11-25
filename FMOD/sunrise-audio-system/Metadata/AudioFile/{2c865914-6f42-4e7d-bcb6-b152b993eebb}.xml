@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <objects serializationModel="Studio.02.03.00">
-	<object class="AudioFile" id="{0549997c-9a22-4473-945e-84ff3c5d9ec4}">
+	<object class="AudioFile" id="{2c865914-6f42-4e7d-bcb6-b152b993eebb}">
 		<property name="assetPath">
-			<value>metal-box-hinge-open-2026-11-24-08-12-24-utc/Metal Box Hinge Open 01.wav</value>
+			<value>A Wheely Bad Day/METLCrsh_Drop Fall Metal Rattle Scrap Debris_06_MWSFX_TM.wav</value>
 		</property>
 		<property name="frequencyInKHz">
-			<value>44.0999985</value>
+			<value>96</value>
 		</property>
 		<property name="channelCount">
 			<value>2</value>
 		</property>
 		<property name="length">
-			<value>1.8366439909297052</value>
+			<value>0.74704166666666671</value>
 		</property>
 		<relationship name="masterAssetFolder">
 			<destination>{8c8416f5-ac4e-4dce-97e1-dfa1a76b2c55}</destination>

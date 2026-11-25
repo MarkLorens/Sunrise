@@ -15,6 +15,9 @@ public class FerrisWheel : MonoBehaviour
 {
     public static readonly List<FerrisWheel> All = new();
 
+    // The finale's under way: a wheel has started tearing loose (Breaking on), for the rest of the game.
+    public static bool Runaway => All.Exists(w => w.Broken);
+
     public enum State { Running, Unpowered, Overdrive, Breaking, Rolling, Wrecked }
 
     public Transform wheel;
@@ -82,6 +85,12 @@ public class FerrisWheel : MonoBehaviour
     public bool Powered => Current != State.Unpowered;
     public bool Broken => Current >= State.Breaking;
     public bool Wobbly { get; private set; }
+    // For its sounds (FerrisWheelAudio): how far it's got spinning up at max speed, 0 at its normal speed to 1 flat out
+    // (0 the rest of the time); torn off its hinge; rolling (not yet keeling over), and how fast, 1 flat out to 0 still.
+    public float Overdrive => Current is State.Overdrive or State.Breaking ? Mathf.InverseLerp(normalSpeed, overdriveSpeed, speed) : 0f;
+    public bool TornOff => Current >= State.Rolling;
+    public bool Rolling => Current == State.Rolling && !toppling;
+    public float RollSpeed => Rolling ? Mathf.Clamp01(rollVelocity / rollSpeed) : 0f;
     public IReadOnlyList<Transform> Cabins => cabins;
     float Scale => transform.lossyScale.x;
 
@@ -96,7 +105,9 @@ public class FerrisWheel : MonoBehaviour
     float yaw;               // which way it's facing as it rolls (PathAt), degrees: 0 side-on to the camera
     Vector3 pathFrom;        // where it tore loose (on the ground)
     Vector3 hinge;           // the bottom of its rim, where it keels over from
+    float rollVelocity;      // how fast it's going along its path, units a second
     readonly List<Vector3> cabinVelocity = new();
+    readonly List<bool> cabinDown = new(); // each flung cabin, once it's hit the ground
 
     void OnEnable() => All.Add(this);
     void OnDisable() => All.Remove(this);
@@ -412,6 +423,7 @@ public class FerrisWheel : MonoBehaviour
                     Set(State.Breaking);
                     Fx.Shake(0.25f, breakDelay);
                     ClosedCaptions.Show(Captions.WheelBreaking);
+                    AudioManager.TryPlay(e => e.wheelBreaking, wheel.position);
                     StartCoroutine(BraceDoomed());
                 }
                 break;
@@ -473,6 +485,12 @@ public class FerrisWheel : MonoBehaviour
             p.y = Mathf.Max(p.y, landed);
             cabins[i].position = p;
             cabins[i].rotation = Quaternion.Euler(0, 0, cabinVelocity[i].x * -4f);
+            if (p.y <= landed && cabinVelocity[i].y < 0f && !cabinDown[i])
+            {
+                cabinDown[i] = true; // crashing down, once (not a low cabin that's only just being flung up)
+                AudioManager.TryPlay(e => e.cabinCrash, p);
+                ClosedCaptions.Show(Captions.CabinsCrash);
+            }
         }
     }
 
@@ -485,6 +503,7 @@ public class FerrisWheel : MonoBehaviour
         {
             c.SetParent(null, true);
             cabinVelocity.Add(new Vector3(Random.Range(-4f, 4f), Random.Range(3f, 7f), Random.Range(-1.5f, 0.5f)));
+            cabinDown.Add(false);
         }
         if (queue != null) queue.ThrowOutRiders(transform.position + Vector3.back * 1.5f, 3f);
         // Everything standing anywhere it'll roll over or come to lie on (not its own parts).
@@ -493,6 +512,7 @@ public class FerrisWheel : MonoBehaviour
             t => t.IsChildOf(transform) || t.IsChildOf(wheel) || cabins.Exists(c => t.IsChildOf(c)));
         Fx.Shake(0.45f, 1f);
         ClosedCaptions.Show(Captions.WheelCollapse);
+        AudioManager.TryPlay(e => e.wheelCrash, wheel.position);
         ParkChaos.Add(transform.position, 12f, 9999f);
     }
 
@@ -519,12 +539,18 @@ public class FerrisWheel : MonoBehaviour
             else
             {
                 // Rocks back and forth about where it stopped, each swing smaller, till it's still.
+                if (wobbled == 0f)
+                {
+                    AudioManager.TryPlay(e => e.wheelRocking, p);
+                    ClosedCaptions.Show(Captions.WheelRocking);
+                }
                 wobbled += Time.deltaTime;
                 const float swing = 3.5f; // radians a second: about a swing and back every 1.8 s
                 float rock = crawl / swing * Mathf.Exp(-3f * wobbled / stopWobbleTime) * Mathf.Sin(swing * wobbled);
                 step = rock - (rolled - rollDistance);
             }
             rolled += step;
+            rollVelocity = Time.deltaTime > 0f ? Mathf.Abs(step) / Time.deltaTime : 0f;
             Vector3 at = pathFrom + PathAt(rolled, out yaw); // facing the way it's going
             p.x = at.x;
             p.z = at.z;
@@ -543,8 +569,11 @@ public class FerrisWheel : MonoBehaviour
             if (!toppling)
             {
                 toppling = true;
+                rollVelocity = 0f;
                 hinge = new Vector3(p.x, floor, p.z);
                 tiltSpeed = 4f; // the nudge that starts it going: barely leaning at first
+                AudioManager.TryPlay(e => e.wheelTopple, p);
+                ClosedCaptions.Show(Captions.WheelToppling);
             }
             tiltSpeed += toppleGravity * Mathf.Sin(Mathf.Max(tilt, 3f) * Mathf.Deg2Rad) * Time.deltaTime;
             tilt += tiltSpeed * Time.deltaTime;
@@ -557,6 +586,7 @@ public class FerrisWheel : MonoBehaviour
                     Vector3 down = hinge + Quaternion.Euler(0f, yaw, 0f) * new Vector3(0f, 0.05f, radius);
                     Fx.Shake(0.4f, 0.8f);
                     ClosedCaptions.Show(Captions.WheelWrecked);
+                    AudioManager.TryPlay(e => e.wheelSmash, down); // its bounce is in the sound, about 0.6 s on
                     Fx.Burst("Fx/puff", down, 30, new Color(0.7f, 0.65f, 0.6f), 6f, 1.2f, 1.2f);
                     SquashUnder(down, radius);
                     ParkChaos.Add(down, 12f, 9999f);
@@ -777,6 +807,7 @@ public class FerrisWheel : MonoBehaviour
             if (v.Current == Visitor.State.Down) continue;
             int pick = Random.Range(0, lines.Count);
             GameHud.Shout(v.transform, lines[pick], 2.4f);
+            if (AudioManager.TryPlayScared(e => e.npcScream, v.gameObject)) ClosedCaptions.Show(Captions.DoomedScreams);
             lines.RemoveAt(pick);
             yield return new WaitForSeconds(0.45f);
         }

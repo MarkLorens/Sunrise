@@ -86,7 +86,16 @@ public static class StandingProps
         r.gameObject.AddComponent<Squashed>();
         Fx.Burst("Fx/puff", prop.at + Vector3.up * 0.3f, 16, new Color(0.7f, 0.65f, 0.6f), 4f, 0.8f, 0.9f);
         DizzyStars.Over(null, prop.at + Vector3.up * (tall * 0.32f + 0.4f), Mathf.Min(wide, 3f) * 0.7f); // seeing stars
+        // The crunch: once a frame, however many go flat together (the wheel landing on a row of them).
+        if (crunchedFrame != Time.frameCount)
+        {
+            crunchedFrame = Time.frameCount;
+            AudioManager.TryPlay(e => e.propCrunch, prop.at);
+            ClosedCaptions.Show(Captions.Flattened);
+        }
     }
+
+    static int crunchedFrame = -1;
 
     class Squashed : MonoBehaviour
     {

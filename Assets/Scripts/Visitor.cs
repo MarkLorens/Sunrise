@@ -802,7 +802,16 @@ public class Visitor : MonoBehaviour
         Fx.Burst("Fx/puff", transform.position + Vector3.up * 0.2f, 10, new Color(0.75f, 0.7f, 0.65f), 3f, 0.5f, 0.6f);
         Fx.Burst("Fx/sparkle", transform.position + Vector3.up * 0.6f, 6, Fx.Gold, 2f, 0.25f, 0.8f);
         ParkChaos.Add(transform.position, 9f, 30f, ParkChaos.Terrifying);
+        // The splat: once a frame, however many go flat together (the wheel landing on a crowd). The wheel shows its
+        // caption ("[Crunch]").
+        if (squashedFrame != Time.frameCount)
+        {
+            squashedFrame = Time.frameCount;
+            AudioManager.TryPlay(e => e.npcSquished, transform.position);
+        }
     }
+
+    static int squashedFrame = -1;
 
     public bool Flat => Look.Flat;
 

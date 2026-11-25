@@ -60,6 +60,11 @@ public class AudioManager : MonoBehaviour
     // distance from FMOD Studio.
     public static readonly Vector2 SpotlightRange = new(10f, 40f);
 
+    // How far each running visitor's steps carry in the finale's spotlight (the runaway Ferris wheel, and the whole
+    // park stampeding out after it): shorter than SpotlightRange, as that's everyone running at once, but further
+    // than Run's own range in FMOD Studio (2 to 8), so the stampede is still heard from the shot (Footsteps).
+    public static readonly Vector2 FinaleRunRange = new(2.5f, 12f);
+
     // A scared visitor's sound (a scream) following `on` while it plays, like TryPlayOn. While something's spotlit it
     // carries SpotlightRange far, so the crowd in the shot is heard; otherwise it's exactly TryPlayOn.
     public static bool TryPlayScared(System.Func<FMODEvents, EventReference> pick, GameObject on)
