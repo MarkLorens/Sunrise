@@ -19,7 +19,7 @@ public class Gutter : MonoBehaviour, IInteraction, IOwnSound // its lid sound, n
     // Open and reeking (smellOnly).
     public bool Stinking => smellOnly && open;
 
-    public static readonly Color Stink = new(1f, 0.42f, 0.22f, 0.6f); // over the teal gas art: a muddy brown
+    public static readonly Color Stink = new(1f, 0.42f, 0.22f, 0.95f); // over the teal gas art: a muddy brown
     public const string StinkArt = "Fx/gas"; // the artist's curly gas puff, as the propane's (PropaneTank)
 
     SpriteRenderer lid, hole;
@@ -49,11 +49,12 @@ public class Gutter : MonoBehaviour, IInteraction, IOwnSound // its lid sound, n
             return;
         }
         // Open: a stream of stink along the fan's wind.
-        var w = ParkArt.Make("Stink", null, StinkArt, 0.48f, Stink, ParkArt.OverheadOrder);
+        var w = ParkArt.Make("Stink", null, StinkArt, Random.Range(0.3f, 0.7f), Stink, ParkArt.OverheadOrder);
         w.transform.position = transform.position + Vector3.up * 0.5f;
         var bit = w.gameObject.AddComponent<FxBit>();
         bit.velocity = fan.Wind * 3f + Vector3.up * 0.3f;
         bit.life = 2f;
+        bit.growth = 0.25f; // spreading a little as it goes, as the propane's wisps
     }
 
     static HotDogMan Target()
