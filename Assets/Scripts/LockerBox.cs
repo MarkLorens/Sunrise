@@ -14,15 +14,41 @@ public class LockerBox : MonoBehaviour, IInteraction, IOwnSound
     {
         if (!OverTile()) ParkArt.Solid(transform, "Props/electrical_box", 1.3f, new Color(0.4f, 0.55f, 0.75f));
         zap = gameObject.AddComponent<ZapFx>(); // live electrics, buzzing till it blows
+        buzz = new LoopingSound(gameObject);
     }
 
     ZapFx zap;
+    LoopingSound buzz; // its shorted-out electrics, till it blows
+    float buzzRange;   // how far off it's heard (the event's max distance): the caption shows within it
 
-    // Blown (or loaded burnt): the bolt's gone with it.
+    // Blown (or loaded burnt): the bolt's gone with it, and its buzzing.
     void Update()
     {
         if (room.Burning && zap.Bolt != null) Destroy(zap.Bolt.gameObject);
+        Buzz(!room.Burning);
     }
+
+    void Buzz(bool on)
+    {
+        var events = FMODEvents.instance;
+        if (!on || events == null)
+        {
+            buzz.Stop();
+            return;
+        }
+        var sound = events.shortedElectricalBox;
+        if (buzzRange <= 0f)
+        {
+            buzzRange = 20f; // FMOD's default, if the event can't be looked up
+            if (!sound.IsNull && FMODUnity.RuntimeManager.StudioSystem.getEventByID(sound.Guid, out var description) == FMOD.RESULT.OK)
+                description.getMinMaxDistance(out _, out buzzRange);
+        }
+        buzz.Play(sound);
+        if (!sound.IsNull && Ears.Near(transform.position, buzzRange)) ClosedCaptions.Hold(Captions.ShortedBox);
+    }
+
+    void OnDisable() => buzz?.Stop();
+    void OnDestroy() => buzz?.Release();
 
     // Drawn by the map (an electrical_box tile on or beside its spot): no picture of its own, just an unseen copy of
     // that tile's, in the tile's place, for the outline to trace (ActionOutline), so it rings the box you see.

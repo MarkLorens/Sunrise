@@ -836,7 +836,7 @@ public class Visitor : MonoBehaviour
         if (Time.time < nextScream || !Look.Visible) return;
         while (recentScreams.Count > 0 && Time.time - recentScreams.Peek() > 1f) recentScreams.Dequeue();
         if (recentScreams.Count >= ScreamsPerSecond) return;
-        if (!AudioManager.TryPlayOn(e => e.npcScream, gameObject)) return;
+        if (!AudioManager.TryPlayScared(e => e.npcScream, gameObject)) return; // carries further during a spotlight
         recentScreams.Enqueue(Time.time);
         nextScream = Time.time + ScreamCooldown;
     }

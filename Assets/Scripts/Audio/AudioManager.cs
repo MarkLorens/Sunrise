@@ -55,6 +55,38 @@ public class AudioManager : MonoBehaviour
         return true;
     }
 
+    // How far the scared visitors' sounds carry while something's spotlit (CameraRig.Spotlit): full volume within the
+    // first number of metres, fading out to silent at the second. Outside spotlights it's each event's own min/max
+    // distance from FMOD Studio.
+    public static readonly Vector2 SpotlightRange = new(10f, 40f);
+
+    // A scared visitor's sound (a scream) following `on` while it plays, like TryPlayOn. While something's spotlit it
+    // carries SpotlightRange far, so the crowd in the shot is heard; otherwise it's exactly TryPlayOn.
+    public static bool TryPlayScared(System.Func<FMODEvents, EventReference> pick, GameObject on)
+    {
+        if (!CameraRig.Spotlit) return TryPlayOn(pick, on);
+        var events = FMODEvents.instance;
+        if (instance == null || events == null || on == null) return false;
+        EventReference sound = pick(events);
+        if (sound.IsNull) return false;
+        EventInstance once;
+        try
+        {
+            once = RuntimeManager.CreateInstance(sound);
+        }
+        catch (EventNotFoundException)
+        {
+            if (instance.missing.Add(sound.Guid)) Debug.LogWarning($"[FMOD] Event not in the banks (rebuild them in FMOD Studio?): {sound}");
+            return false;
+        }
+        RuntimeManager.AttachInstanceToGameObject(once, on, on.GetComponent<Rigidbody>());
+        once.setProperty(EVENT_PROPERTY.MINIMUM_DISTANCE, SpotlightRange.x);
+        once.setProperty(EVENT_PROPERTY.MAXIMUM_DISTANCE, SpotlightRange.y);
+        once.start();
+        once.release(); // FMOD frees it once it's done playing
+        return true;
+    }
+
     // Like TryPlay, but the sound follows `on` while it plays (a visitor screaming as they run off).
     public static bool TryPlayOn(System.Func<FMODEvents, EventReference> pick, GameObject on)
     {
