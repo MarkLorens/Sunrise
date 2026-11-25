@@ -38,6 +38,8 @@ public class LockerRoom : MonoBehaviour
     void Ignite(bool quiet = false)
     {
         Burning = true;
+        foreach (var box in FindObjectsByType<LockerBox>()) // opened to spark it: burnt open (a save loading it burnt too)
+            if (box.room == this) box.Open();
         Scorch.BurnNear(transform.position, 2f, quiet, "lockers"); // the building's picture, burning (Scorch)
         Scorch.BurnAround(transform.position, SurroundScorch, quiet); // and the ground and whatever stands round it
         ParkChaos.Add(transform.position, 6f, 9999f, ParkChaos.Terrifying);

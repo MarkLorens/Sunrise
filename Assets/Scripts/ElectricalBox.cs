@@ -12,6 +12,7 @@ public class ElectricalBox : MonoBehaviour, IInteraction, ITried, IOwnSound
 {
     public FerrisWheel wheel;
     public float tinkerTime = 4f; // seconds the mechanic works on the lamp
+    [HideInInspector] public Sprite openArt; // its picture once unlocked (FerrisWheel.electricalBoxOpenArt)
 
     public bool Unlocked { get; private set; }
 
@@ -24,6 +25,7 @@ public class ElectricalBox : MonoBehaviour, IInteraction, ITried, IOwnSound
     {
         shownMechanic = shown;
         Unlocked = Mischief.IsDone(Mischief.Task.UnlockBox);
+        if (Unlocked) ShowOpen();
         thoughtAsSpirit = shown || Unlocked || Mischief.IsDone(Mischief.Task.PossessMechanic);
     }
 
@@ -78,6 +80,7 @@ public class ElectricalBox : MonoBehaviour, IInteraction, ITried, IOwnSound
         {
             OpenBox(); // the electrician opens it up, ready to cut the power
             Unlocked = true;
+            ShowOpen();
             ClosedCaptions.Show(Captions.BoxUnlocked);
             if (host.brain is Mechanic) GameHud.Think(GameHud.ThoughtPriority.Action, GameText.ThinkBoxMechanic);
             GameHud.Say(GameText.UnlockedBox);
@@ -97,6 +100,14 @@ public class ElectricalBox : MonoBehaviour, IInteraction, ITried, IOwnSound
     {
         ClosedCaptions.Show(Captions.BoxOpened);
         AudioManager.TryPlay(e => e.openElectricalBox, transform.position);
+    }
+
+    // Unlocked: drawn open from now on (its picture, not the map's: FerrisWheel gives it one of its own).
+    void ShowOpen()
+    {
+        if (openArt == null) return;
+        foreach (var r in GetComponentsInChildren<SpriteRenderer>(true))
+            if (r.sprite != null && r.sprite.name.StartsWith("electrical_box")) r.sprite = openArt;
     }
 
     // The mechanic, if the cutscene hasn't played yet and he's behind the staff door (out and about, you can see him).

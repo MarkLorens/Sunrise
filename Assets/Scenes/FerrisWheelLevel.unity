@@ -7996,6 +7996,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LockerBox
   room: {fileID: 1870405757}
+  openArt: {fileID: 1685213968410379745, guid: 69768267b709b4778b1ca7ddb288b1f4, type: 3}
 --- !u!114 &592029281
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9291,6 +9292,7 @@ MonoBehaviour:
   electricalBoxOffset: {x: -3.4407, y: 0, z: 1}
   electricalBoxAt: {fileID: 585028157}
   electricalBoxArt: {fileID: 7555936856672184863, guid: 5c8239029d2564353af0517bfc95a66a, type: 3}
+  electricalBoxOpenArt: {fileID: 1685213968410379745, guid: 69768267b709b4778b1ca7ddb288b1f4, type: 3}
   queue: {fileID: 700000134}
   payoffTime: 6
   payoffPullBack: 8

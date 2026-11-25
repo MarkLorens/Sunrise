@@ -31,6 +31,7 @@ public class FerrisWheel : MonoBehaviour
     // Drawn at its own size, pivot at its feet (the palette's props). Empty: Props/electrical_box at the offset, or,
     // with electricalBoxAt set, no picture of its own (the Objects tilemap draws it there).
     public Sprite electricalBoxArt;
+    public Sprite electricalBoxOpenArt; // the box once the electrician's unlocked it (ElectricalBox), drawn like electricalBoxArt
     public RideQueue queue;
     public float payoffTime = 6f;     // the camera stays on the wheel this long once the power's cut
     public float payoffPullBack = 8f;  // how much further back the camera sits to fit the whole wheel
@@ -108,6 +109,7 @@ public class FerrisWheel : MonoBehaviour
         var box = Part<ElectricalBox>("Electrical Box", electricalBoxOffset, "Props/electrical_box", 1.3f, electricalBoxArt, electricalBoxAt);
         box.gameObject.AddComponent<ZapFx>(); // live electrics, always buzzing
         box.wheel = this;
+        box.openArt = electricalBoxOpenArt;
         var mat = wheel.GetComponent<SpriteRenderer>().sharedMaterial;
         for (int i = 0; i < cabinMounts.Length; i++)
         {
