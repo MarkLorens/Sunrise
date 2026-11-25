@@ -8,7 +8,7 @@ using UnityEngine;
 // and it blows the crowd speakers too: the music stops and the mechanic comes out to fix the speaker. Once every job's
 // done the tape comes down, the music's back on, and it can all happen again.
 [RequireComponent(typeof(Interactable))]
-public class DrinkingFountain : MonoBehaviour, IInteraction
+public class DrinkingFountain : MonoBehaviour, IInteraction, IOwnSound // its press sound, no menu click
 {
     public static readonly List<DrinkingFountain> All = new();
 
@@ -29,8 +29,6 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     public float spreadSpeed = 0.45f; // how fast the water creeps out after a press (radius per second)
     public Sprite puddleArt;         // empty = a tinted round blob
     [Range(0f, 1f)] public float puddleOpacity = 0.6f;
-    [Tooltip("Metres from the player: the leak is at full volume within the first number and fades out to silent at the second.")]
-    public Vector2 leakRange = new(1f, 6f);
 
     // Under the fountain while small, sliding out to puddleOffset as it grows.
     public Vector3 PuddleCenter => new Vector3(transform.position.x, 0f, transform.position.z)
@@ -47,8 +45,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     int presses, jobsLeft;
     Vector3 scene; // the taped-off puddle being cleaned up
 
-    LoopingSound leak; // AL-03, until the mechanic fixes it
-    LoopingSound drip; // the faucet dripping (FMODEvents.faucetDrip), alongside the leak until it's fixed
+    LoopingSound drip; // the faucet dripping (FMODEvents.faucetDrip), the whole time
     float dripRange;   // how far off the drip is heard (the event's max distance): the caption shows within it
 
     void OnEnable() => All.Add(this);
@@ -56,20 +53,13 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     void OnDisable()
     {
         All.Remove(this);
-        leak?.Stop();
         drip?.Stop();
     }
 
-    void OnDestroy()
-    {
-        leak?.Release();
-        drip?.Release();
-    }
+    void OnDestroy() => drip?.Release();
 
     void Start()
     {
-        leak = new LoopingSound(gameObject);
-        leak.SetRange(leakRange.x, leakRange.y);
         drip = new LoopingSound(gameObject);
         puddle = ParkArt.Make("Puddle", null, "Markers/shadow", 1f, new Color(Water.r, Water.g, Water.b, 0.55f), ParkArt.DecalOrder, true);
         if (puddleArt != null)
@@ -84,9 +74,7 @@ public class DrinkingFountain : MonoBehaviour, IInteraction
     void Update()
     {
         var events = FMODEvents.instance;
-        if (Fixed || events == null) leak.Stop();
-        else leak.Play(events.waterLeak);
-        Drip(!Fixed && events != null && !events.faucetDrip.IsNull);
+        Drip(events != null && !events.faucetDrip.IsNull); // it never stops leaking (Fixed is the speaker)
 
         if (Radius < target)
         {

@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="Event" id="{4285afb4-afe6-4a8a-afa1-219515032fa9}">
 		<property name="name">
-			<value>Chat Bubble</value>
+			<value>Thoughts Bubble</value>
 		</property>
 		<property name="outputFormat">
 			<value>2</value>

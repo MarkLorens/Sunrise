@@ -11,7 +11,7 @@ using UnityEngine;
 //     runs, and the bang wakes the ride technician (RideTechnician.Wake);
 //   - at the locker room, its broken cable (LockerBox): the building catches fire (LockerRoom.Burn).
 [RequireComponent(typeof(Interactable))]
-public class PropaneTank : MonoBehaviour, IInteraction
+public class PropaneTank : MonoBehaviour, IInteraction, IOwnSound // its valve sound, no menu click
 {
     public TankFan fan;
     [UnityEngine.Serialization.FormerlySerializedAs("stall")]

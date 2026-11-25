@@ -346,10 +346,11 @@ public class SettingsMenu : MonoBehaviour
         r.shift = shift;
         r.step = d =>
         {
-            // A tenth up or down, its sound at the new volume: the toggle sound (S-04). Already at 0 or 100: quiet.
+            // A tenth up or down, its sound at the new volume: the slider sound (the toggle sound, S-04, until that's
+            // set up). Already at 0 or 100: quiet.
             float was = amount();
             set(Mathf.Clamp(Mathf.Round(was / 10f + d) * 10f, 0f, 100f));
-            if (!Mathf.Approximately(amount(), was)) AudioManager.TryPlay(e => e.toggle);
+            if (!Mathf.Approximately(amount(), was) && !AudioManager.TryPlay(e => e.volumeSlider)) AudioManager.TryPlay(e => e.toggle);
         };
         foreach (var img in new[] { r.bar, r.knob })
         {
@@ -361,13 +362,17 @@ public class SettingsMenu : MonoBehaviour
         }
     }
 
-    // Pressing on a volume bar (or its knob) puts the knob there, to the nearest whole number; dragging slides it.
-    // Letting go plays the toggle sound (S-04), at the volume just picked.
+    // Pressing on a volume bar (or its knob) puts the knob there, to the nearest whole number; dragging slides it,
+    // with the slider sound as it goes (each time the number changes, at most every SlideTick seconds). Letting go
+    // plays the toggle sound (S-04), at the volume just picked.
     class SliderDrag : MonoBehaviour, IPointerDownHandler, IDragHandler, IPointerUpHandler, IInitializePotentialDragHandler
     {
         public SettingsMenu menu;
         public Row row;
         public Action<float> set;
+
+        const float SlideTick = 0.07f;
+        static float nextSlide;
 
         public void OnPointerDown(PointerEventData e) => Move(e);
         public void OnDrag(PointerEventData e) => Move(e);
@@ -382,7 +387,13 @@ public class SettingsMenu : MonoBehaviour
             var page = menu.page;
             if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(page, e.position, e.pressEventCamera, out var local)) return;
             float x = (local.x - page.rect.center.x) / Figma.K + Figma.Width * 0.5f; // in design px, as the knob's placed
+            float was = row.amount();
             set(Mathf.Clamp(Mathf.Round((x - 700f - row.shift) / 3.86f), 0f, 100f));
+            if (!Mathf.Approximately(row.amount(), was) && Time.unscaledTime >= nextSlide)
+            {
+                nextSlide = Time.unscaledTime + SlideTick;
+                AudioManager.TryPlay(ev => ev.volumeSlider);
+            }
             MainMenu.Select(row.button);
             menu.Refresh();
         }

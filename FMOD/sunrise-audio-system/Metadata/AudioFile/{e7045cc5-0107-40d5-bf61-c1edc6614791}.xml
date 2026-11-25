@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <objects serializationModel="Studio.02.03.00">
-	<object class="AudioFile" id="{e9a6db6b-944e-4659-b391-d269c58b2309}">
+	<object class="AudioFile" id="{e7045cc5-0107-40d5-bf61-c1edc6614791}">
 		<property name="assetPath">
-			<value>Ruckus/Toys, Misc, Farrow The Hedgehog Toy, Squeak SND66398.wav</value>
+			<value>UI/User Interface, Click, UI Buttons, Bubbly, Option SND115491.wav</value>
 		</property>
 		<property name="frequencyInKHz">
 			<value>96</value>
@@ -11,7 +11,7 @@
 			<value>1</value>
 		</property>
 		<property name="length">
-			<value>0.68887500000000002</value>
+			<value>0.26339583333333333</value>
 		</property>
 		<relationship name="masterAssetFolder">
 			<destination>{8c8416f5-ac4e-4dce-97e1-dfa1a76b2c55}</destination>

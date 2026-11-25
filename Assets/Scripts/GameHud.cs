@@ -495,6 +495,8 @@ public class GameHud : MonoBehaviour
                        && RectTransformUtility.RectangleContainsScreenPoint(objectiveBanner, mouse.position.ReadValue(), null);
         if (objectives.alpha > 0.5f && !PauseMenu.Paused && (clicked || Controls.Objectives)) // Tab
         {
+            // How the list is as it's clicked: Shown plays the lower collapse sound, Hidden the expand one.
+            AudioManager.TryPlayLabeled(e => e.objectiveList, "Objective List", stepsOpen ? "Shown" : "Hidden");
             stepsOpen = !stepsOpen;
             bannerPop = 0f;
         }

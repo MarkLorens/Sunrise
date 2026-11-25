@@ -7,7 +7,7 @@ using UnityEngine;
 // A smellOnly one (by the locker room) has no rats: opened, it stays open and stinks, and its fan (TankFan) carries the
 // stink wherever it blows: at the mascot, once it's turned (Mascot).
 [RequireComponent(typeof(Interactable))]
-public class Gutter : MonoBehaviour, IInteraction
+public class Gutter : MonoBehaviour, IInteraction, IOwnSound // its lid sound, no menu click
 {
     public int rats = 5;
     public float ratSpeed = 5f;
