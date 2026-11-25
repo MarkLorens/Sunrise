@@ -233,7 +233,7 @@ public static class GameText
     public static string PickFanAimed() => ThinkFanAimed[UnityEngine.Random.Range(0, ThinkFanAimed.Length)];
     public const string ThinkGasBlownAway = "I gotta get that fan off, or no boom.";                // gas reaching the stand with its fan on
     public const string ThinkCloud = "Let's spark that fire now Sausage Boy!"; // the cloud is full
-    public const string ThinkCloudGrillOn = "Hook, line, and sinker";                                // the cloud is full round his lit grill
+    public const string ThinkCloudGrillOn = "Hook, line, and stinker";                                // the cloud is full round his lit grill
     public const string ThinkBoom = "KABOOM. Good morning!";                                         // after the explosion
     public const string ThinkPlatform = "Only he gets through this gate. Good thing I'm him";        // unlocking it as the technician
     public const string ThinkHinge = "Lefty loosey...";                                               // loosening the hinge
