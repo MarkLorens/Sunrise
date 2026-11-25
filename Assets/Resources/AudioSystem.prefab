@@ -248,11 +248,74 @@ MonoBehaviour:
     Path: event:/Flaming Hot Dogs/Rats!
   <ferrisMaxSpeed>k__BackingField:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 465947854
+      Data2: 1340321575
+      Data3: -751118428
+      Data4: 473148209
+    Path: event:/A Wheely Bad Day/Turn Speed Max
+  <wheelBreaking>k__BackingField:
+    Guid:
+      Data1: -1037848856
+      Data2: 1169879076
+      Data3: 1768325053
+      Data4: -1302106165
+    Path: event:/A Wheely Bad Day/Wheel Breaking
+  <wheelCrash>k__BackingField:
+    Guid:
+      Data1: 94862876
+      Data2: 1190745443
+      Data3: 1228319929
+      Data4: -1899782976
+    Path: event:/A Wheely Bad Day/Crazy FW Crash
+  <cabinCrash>k__BackingField:
+    Guid:
+      Data1: 2143071156
+      Data2: 1309322372
+      Data3: 1848458392
+      Data4: 1590981507
+    Path: event:/A Wheely Bad Day/Cabin Crash
+  <wheelRolling>k__BackingField:
+    Guid:
+      Data1: -1806922393
+      Data2: 1182501396
+      Data3: 1784171677
+      Data4: -1478038790
+    Path: event:/A Wheely Bad Day/Wheel Rolling
+  <wheelRocking>k__BackingField:
+    Guid:
+      Data1: 786649987
+      Data2: 1332857130
+      Data3: 928903820
+      Data4: -960688162
+    Path: event:/A Wheely Bad Day/Wheel Rocking
+  <wheelTopple>k__BackingField:
+    Guid:
+      Data1: -230353253
+      Data2: 1228463753
+      Data3: 1688875938
+      Data4: -490078429
+    Path: event:/A Wheely Bad Day/Wheel Topple
+  <wheelSmash>k__BackingField:
+    Guid:
+      Data1: 1399915954
+      Data2: 1081008965
+      Data3: 378571415
+      Data4: -197839866
+    Path: event:/A Wheely Bad Day/Wheel Smash
+  <propCrunch>k__BackingField:
+    Guid:
+      Data1: -13710637
+      Data2: 1086558015
+      Data3: 604585883
+      Data4: 131286526
+    Path: event:/A Wheely Bad Day/Prop Crunch
+  <npcSquished>k__BackingField:
+    Guid:
+      Data1: 2043119249
+      Data2: 1285625587
+      Data3: 238999195
+      Data4: -1307262713
+    Path: event:/A Wheely Bad Day/NPC Squished
   <ruckusMusic>k__BackingField:
     Guid:
       Data1: -254445501

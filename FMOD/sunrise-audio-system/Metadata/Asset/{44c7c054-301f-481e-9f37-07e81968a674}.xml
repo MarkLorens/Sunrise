@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <objects serializationModel="Studio.02.03.00">
-	<object class="EncodableAsset" id="{3a7d3761-2ce7-42b7-a72f-f24bef163a39}">
+	<object class="EncodableAsset" id="{44c7c054-301f-481e-9f37-07e81968a674}">
 		<property name="assetPath">
-			<value>metal-box-hinge-open-2026-11-24-08-12-24-utc/</value>
+			<value>A Wheely Bad Day/</value>
 		</property>
 		<relationship name="masterAssetFolder">
 			<destination>{8c8416f5-ac4e-4dce-97e1-dfa1a76b2c55}</destination>

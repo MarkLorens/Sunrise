@@ -3,8 +3,9 @@ using UnityEngine;
 // The Ferris wheel's control panel, in the operator's booth (FingerprintArea). Only the operator works it, from inside
 // the booth. Once the technician has started the wheel again on its loosened hinge (ElectricalBox), turn it up to max
 // speed and it shakes itself off the hinge (FerrisWheel.MaxSpeed).
+// It plays its own sound (IOwnSound): the lever and the motor revving up, no menu click.
 [RequireComponent(typeof(Interactable))]
-public class ControlPanel : MonoBehaviour, IInteraction
+public class ControlPanel : MonoBehaviour, IInteraction, IOwnSound
 {
     public FerrisWheel wheel;
     public RideOperator rideOperator;
@@ -29,6 +30,8 @@ public class ControlPanel : MonoBehaviour, IInteraction
     {
         sparks.enabled = true;
         ClosedCaptions.Show(Captions.ControlPanel);
+        AudioManager.TryPlay(e => e.ferrisMaxSpeed, transform.position);
+        ClosedCaptions.Show(Captions.MaxSpeed);
         GameHud.Say(GameText.MaxedSpeed);
         GameHud.Think(GameHud.ThoughtPriority.Action, GameText.ThinkMaxSpeed);
         Mischief.Complete(Mischief.Task.MaxSpeed);

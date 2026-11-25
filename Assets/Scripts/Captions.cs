@@ -51,6 +51,13 @@ public static class Captions
     public const string WheelCollapse = "[Huge crash]";
     public const string WheelWrecked = "[Wheel smashes down]";
     public const string Flattened = "[Crunch]";
+    public const string MaxSpeed = "[Motor revs up]";
+    public const string WheelOverdrive = "[Motor whines faster and faster]";  // spinning up to max speed, when you're near
+    public const string DoomedScreams = "[People scream]";
+    public const string CabinsCrash = "[Cabins crash to the ground]";
+    public const string WheelRolling = "[Wheel rumbles as it rolls]";         // while it rolls, when you're near
+    public const string WheelRocking = "[Wheel creaks, rocking back and forth]";
+    public const string WheelToppling = "[Wheel groans as it tips over]";
 
     // ---------------------------------------------------------------- the stands
     public const string IceCreamJingle = "[Ice cream jingle plays]";  // now and then, when you're near

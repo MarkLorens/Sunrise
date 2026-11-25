@@ -83,9 +83,10 @@ public class LoopingSound
         return now;
     }
 
-    public void Stop()
+    // now: cut it dead, skipping its fade-out in FMOD.
+    public void Stop(bool now = false)
     {
-        if (instance.isValid()) instance.stop(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
+        if (instance.isValid()) instance.stop(now ? FMOD.Studio.STOP_MODE.IMMEDIATE : FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
     }
 
     // Done with it for good (the object is going away).

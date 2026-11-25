@@ -156,6 +156,13 @@ public class RideTechnician : MonoBehaviour
     {
         CameraRig.Spotlight(ShotPoint(), 999f, 2f); // a little under his Zzz, so his booth sits up in the shot
         LightUp();
+        // If the wheel's down, the call about it is still ringing in his booth: all through his snoring and the bang,
+        // until he picks up.
+        bool call = false;
+        foreach (var w in FerrisWheel.All) call |= !w.Powered;
+        bool pickedUp = false;
+        float giveUp = Time.time + 10f; // in case this scene's cut short: it never rings on and on
+        if (call) StartCoroutine(RingPhone(() => !pickedUp && Time.time < giveUp));
         yield return new WaitForSeconds(1.2f); // the camera getting there: still snoring
         Fx.Burst("Fx/puff", zzz.position + Vector3.up * 0.3f, 8, Color.white, 2f, 0.35f, 0.5f);
         StopSnoring();
@@ -165,8 +172,6 @@ public class RideTechnician : MonoBehaviour
         yield return new WaitForSeconds(0.6f);
         GameHud.Shout(transform, GameText.TechnicianWake, 1.8f);
         yield return new WaitForSeconds(2f);
-        bool call = false;
-        foreach (var w in FerrisWheel.All) call |= !w.Powered;
         if (!call)
         {
             Wake(true); // awake, staying put until someone calls
@@ -176,6 +181,7 @@ public class RideTechnician : MonoBehaviour
             CutsceneLight.Off();
             yield break;
         }
+        pickedUp = true; // the ringing stops
         SayOnMyWay(); // the call he slept through
         yield return new WaitForSeconds(2.7f);
         Wake(true); // takes it: out he comes
@@ -229,6 +235,13 @@ public class RideTechnician : MonoBehaviour
     // `seconds`: he picks up, or the call's over). Captioned while it rings.
     System.Collections.IEnumerator RingPhone(float seconds)
     {
+        float end = Time.time + seconds;
+        return RingPhone(() => Time.time < end);
+    }
+
+    // The same, for as long as `ringing` says.
+    System.Collections.IEnumerator RingPhone(System.Func<bool> ringing)
+    {
         var events = FMODEvents.instance;
         var audio = AudioManager.instance;
         if (audio == null || events == null || events.phoneRing.IsNull) yield break;
@@ -236,7 +249,7 @@ public class RideTechnician : MonoBehaviour
         if (!ring.isValid()) yield break; // not in the built banks
         ring.set3DAttributes(FMODUnity.RuntimeUtils.To3DAttributes(booth.position));
         ring.start();
-        for (float end = Time.time + seconds; Time.time < end;)
+        while (ringing())
         {
             ClosedCaptions.Hold(Captions.PhoneRing);
             yield return null;
