@@ -27,15 +27,26 @@ public class EndCredits : MonoBehaviour
 
     RectTransform canvas;
 
+    // The credits get a scene of their own and the park is unloaded under them, so nothing of it carries on: no pause
+    // menu, no keys doing anything, no park sounds (stopped first, one-shots too).
     public static void Play()
     {
-        var canvas = MainMenu.Screen("End Credits", 30); // over the HUD and the pause menu
+        var park = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+        if (AudioManager.instance != null) AudioManager.instance.StopGameplaySounds();
+        UnityEngine.SceneManagement.SceneManager.SetActiveScene(UnityEngine.SceneManagement.SceneManager.CreateScene("End Credits"));
+        Time.timeScale = 1f;
+        var cam = new GameObject("Credits Camera").AddComponent<Camera>(); // something to render, behind the black
+        cam.clearFlags = CameraClearFlags.SolidColor;
+        cam.backgroundColor = Color.black;
+        cam.cullingMask = 0;
+        var canvas = MainMenu.Screen("End Credits", 30);
         var black = MainMenu.Ui("Black", canvas);
         MainMenu.Stretch(black);
         MainMenu.Img(black, null, Color.black).raycastTarget = true;
         var credits = canvas.gameObject.AddComponent<EndCredits>();
         credits.canvas = canvas;
         credits.StartCoroutine(credits.Run());
+        UnityEngine.SceneManagement.SceneManager.UnloadSceneAsync(park);
     }
 
     IEnumerator Run()

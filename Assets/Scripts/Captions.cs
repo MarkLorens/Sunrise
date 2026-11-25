@@ -37,6 +37,7 @@ public static class Captions
     public const string BoxOpened = "[Electrical box creaks open]";
     public const string PowerBackOn = "[Power switch clunks on]";
     public const string PowerSwitchOff = "[Power switch clunks off]";
+    public const string CabinScreams = "[Riders screaming]";
     public const string PowerOff = "[Power cuts out]";
     public const string WheelHum = "[Ferris wheel machinery hums]";  // while it runs, when you're near
     public const string CabinCreak = "[Cabins creaking]";             // stuck, or wobbly, when you're near
@@ -65,6 +66,7 @@ public static class Captions
 
     // ---------------------------------------------------------------- the locker room and staff
     public const string CableSpark = "[Cable sparks]";
+    public const string ShortedBox = "[Electrical box buzzing]";     // the locker room's box, while you're within earshot
     public const string ConstructionSign = "[Barriers clatter into place]";
     public const string PaScreech = "[PA system screeches]";
     public const string PaAnnouncement = "[Garbled PA announcement]";

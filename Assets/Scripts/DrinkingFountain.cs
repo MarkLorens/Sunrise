@@ -183,7 +183,8 @@ public class DrinkingFountain : MonoBehaviour, IInteraction, IOwnSound // its pr
     {
         var zapped = new List<Visitor>();
         foreach (var v in Visitor.All)
-            if (v.Look.Visible && v.Current is not (Visitor.State.Down or Visitor.State.Riding) && InPuddle(v.transform.position))
+            if (v.Look.Visible && v.Current is not (Visitor.State.Down or Visitor.State.Riding) && InPuddle(v.transform.position)
+                && v.brain is not Mechanic) // the electrician's rubber boots: he's the only one with the keys, so he can't go down
                 zapped.Add(v);
         int victims = zapped.Count;
 

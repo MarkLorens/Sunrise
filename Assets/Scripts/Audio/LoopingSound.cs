@@ -23,8 +23,20 @@ public class LoopingSound
     // Overrides the event's 3D min/max distance from FMOD Studio (its default is 1 to 20).
     public void SetRange(float fullVolumeWithin, float silentPast)
     {
-        range = new Vector2(fullVolumeWithin, Mathf.Max(fullVolumeWithin, silentPast));
+        var r = new Vector2(fullVolumeWithin, Mathf.Max(fullVolumeWithin, silentPast));
+        if (range == r) return; // already (it can be called every frame)
+        range = r;
         ApplyRange();
+    }
+
+    // Back to the event's own min/max distance from FMOD Studio (-1 resets an event property to its default).
+    public void ClearRange()
+    {
+        if (range == null) return;
+        range = null;
+        if (!instance.isValid()) return;
+        instance.setProperty(EVENT_PROPERTY.MINIMUM_DISTANCE, -1f);
+        instance.setProperty(EVENT_PROPERTY.MAXIMUM_DISTANCE, -1f);
     }
 
     void ApplyRange()

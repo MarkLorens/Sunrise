@@ -4,8 +4,9 @@ using UnityEngine;
 // technician, the operator) can unlock it.
 // Drawn as the area's metal gate (Props/New/metal_gate_closed, padlocked) in the gap in its front fence; unlocked, it
 // stands open (metal_gate_opened). The spot to use it is where the scanner was.
+// It plays its own sound (IOwnSound): the gate unlocking, no menu click.
 [RequireComponent(typeof(Interactable))]
-public class FingerprintScanner : MonoBehaviour, IInteraction
+public class FingerprintScanner : MonoBehaviour, IInteraction, IOwnSound
 {
     public FingerprintArea platform;
     public Mischief.Task task = Mischief.Task.OpenPlatform; // the step it ticks off
@@ -48,6 +49,7 @@ public class FingerprintScanner : MonoBehaviour, IInteraction
         ShowOpen();
         if (quiet) return;
         ClosedCaptions.Show(Captions.Scanner);
+        AudioManager.TryPlay(e => e.unlockGate, gate != null ? gate.transform.position : transform.position);
         Fx.Burst("Fx/sparkle", transform.position + Vector3.up * 1.1f, 8, new Color(0.4f, 1f, 0.6f), 2f, 0.2f, 0.4f);
         GameHud.Say(GameText.ScannedFinger);
         GameHud.Think(GameHud.ThoughtPriority.Action, platform.owner == FingerprintArea.Staff.Technician ? GameText.ThinkPlatform : GameText.ThinkBooth);

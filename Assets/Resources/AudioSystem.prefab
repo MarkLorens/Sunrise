@@ -112,7 +112,7 @@ MonoBehaviour:
       Data2: 1200462869
       Data3: 1368212618
       Data4: 395551436
-    Path: event:/A-Leak-Tricity/Open Electrical Box
+    Path: event:/Park/Open Electrical Box
   <cutPower>k__BackingField:
     Guid:
       Data1: 431336187
@@ -141,6 +141,13 @@ MonoBehaviour:
       Data3: 0
       Data4: 0
     Path: 
+  <unlockGate>k__BackingField:
+    Guid:
+      Data1: 1606985088
+      Data2: 1299405710
+      Data3: -1953166708
+      Data4: -1521043940
+    Path: event:/Park/Unlock Gate
   <phoneRing>k__BackingField:
     Guid:
       Data1: 520174886
@@ -169,6 +176,20 @@ MonoBehaviour:
       Data3: -1381200470
       Data4: 511203369
     Path: event:/Park/Propane Tank Valve
+  <hotDogExplosion>k__BackingField:
+    Guid:
+      Data1: 1018160308
+      Data2: 1292037298
+      Data3: -1909119572
+      Data4: 385764231
+    Path: event:/Flaming Hot Dogs/Hot Dog Explosion
+  <shortedElectricalBox>k__BackingField:
+    Guid:
+      Data1: 566010361
+      Data2: 1201879246
+      Data3: 1315866300
+      Data4: 286570154
+    Path: event:/Park/Short Circuit Electrical Box
   <fan>k__BackingField:
     Guid:
       Data1: -457364991
@@ -260,6 +281,13 @@ MonoBehaviour:
       Data3: -1179790940
       Data4: -1786373790
     Path: event:/NPC/Scream
+  <cabinScream>k__BackingField:
+    Guid:
+      Data1: 803929168
+      Data2: 1184159892
+      Data3: -2054542683
+      Data4: 2056223732
+    Path: event:/NPC/NPC Ferris Wheel
   <npcSurprised>k__BackingField:
     Guid:
       Data1: 0

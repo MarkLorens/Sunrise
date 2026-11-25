@@ -173,6 +173,10 @@ public class CameraRig : MonoBehaviour
 
     public static void EndTilt() => Tilt(0f);
 
+    // Something's spotlit, or the shot's still easing over to it or back: the scared visitors (their screams, their
+    // running) carry much further meanwhile (AudioManager.SpotlightRange), so the payoff's crowd is heard.
+    public static bool Spotlit => Instance != null && Instance.shots.Count > 0;
+
     // Something else has the shot (a spotlight, a zoom) or the camera's still easing back to the player after one.
     public static bool Busy
     {

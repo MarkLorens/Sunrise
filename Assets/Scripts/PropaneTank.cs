@@ -253,6 +253,7 @@ public class PropaneTank : MonoBehaviour, IInteraction, IOwnSound // its valve s
         Possession.InputBlocked = true;
         AudioManager.MusicOff = true;
         ClosedCaptions.Show(Captions.Explosion);
+        if (HotDogStand) AudioManager.TryPlay(e => e.hotDogExplosion, Center); // the grill lit the gas
         Fx.Burst("Fx/puff", Center + Vector3.up, 40, new Color(1f, 0.55f, 0.15f), 8f, 1.2f, 0.9f);
         Fx.Burst("Fx/puff", Center + Vector3.up, 25, new Color(1f, 0.85f, 0.3f), 5f, 0.9f, 0.6f);
         Fx.Burst("Fx/sparkle", Center + Vector3.up, 30, new Color(1f, 0.9f, 0.4f), 9f, 0.4f, 0.8f);
