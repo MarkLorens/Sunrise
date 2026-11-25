@@ -136,7 +136,7 @@ public static class ParkArt
 
     // A prop standing on `parent`'s position, `height` tall, that people walk around. Until there's art at
     // Resources/Park/<sprite> it's a block of `standIn` colour.
-    public static SpriteRenderer Solid(Transform parent, string sprite, float height, Color standIn)
+    public static SpriteRenderer Solid(Transform parent, string sprite, float height, Color standIn, bool blocks = true)
     {
         var r = Lit(Make("Sprite", parent, sprite, height, Color.white));
         if (r.sprite == null)
@@ -150,6 +150,7 @@ public static class ParkArt
         // Its feet on the ground, wherever its picture's pivot is (the middle for most, the bottom for Props/New).
         float pivot = r.sprite.pivot.y / r.sprite.rect.height;
         r.transform.localPosition = new Vector3(0f, height * pivot, 0f);
+        if (!blocks) return r;
         var box = r.gameObject.AddComponent<BoxCollider>();
         Bounds b = r.sprite.bounds;
         box.center = b.center;
