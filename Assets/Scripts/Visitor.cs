@@ -40,7 +40,7 @@ public class Visitor : MonoBehaviour
     // Places people like to hang around (benches, views). Empty = just roam.
     public Transform[] pointsOfInterest = new Transform[0];
     [Range(0, 1)] public float pointOfInterestChance = 0.3f;
-    [Range(0, 1)] public float listenChance = 0.2f;  // per stop, chance to go listen to a speaker whose crowd isn't full
+    [Range(0, 1)] public float listenChance = 0.6f;  // per stop, chance to go listen to a speaker whose crowd isn't full
     public Vector2 listenTime = new(8f, 20f);         // how long they stand listening
 
     [Range(0, 1)] public float gawkChance = 0.5f;    // per stop, chance to go gawk at a scene nearby (Aftermath)
