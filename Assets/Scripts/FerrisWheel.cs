@@ -228,6 +228,10 @@ public class FerrisWheel : MonoBehaviour
             var at = new GameObject("Scream").transform;
             at.position = new Vector3(b.center.x, b.max.y - 2f, b.center.z);
             GameHud.Shout(at, line, show);
+            // Heard too: the cabin's riders' scream (NPC-01 until the cabin's own is in the banks), carrying from
+            // the spotlit wheel (AudioManager.TryPlayScared).
+            if (!AudioManager.TryPlayScared(e => e.cabinScream, cabin.gameObject)) AudioManager.TryPlayScared(e => e.npcScream, cabin.gameObject);
+            ClosedCaptions.Show(Captions.CabinScreams);
             yield return new WaitForSeconds(show);
             Destroy(at.gameObject);
             shouting.Remove(line);

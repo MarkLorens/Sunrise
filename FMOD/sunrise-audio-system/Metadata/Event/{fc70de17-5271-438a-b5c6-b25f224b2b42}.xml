@@ -311,7 +311,7 @@
 			<value>80</value>
 		</property>
 		<property name="mix">
-			<value>49.5</value>
+			<value>74.5</value>
 		</property>
 	</object>
 	<object class="MixerBusFader" id="{2007cb13-0fb6-4964-8f5c-d914e666d460}" />

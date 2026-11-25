@@ -4,7 +4,8 @@ using FMODUnity;
 // Footsteps that follow a character around: heard while they walk (waddle), silent when they stand still.
 // Visitors and staff use FMODEvents.npcFootsteps, and FMODEvents.npcRun while they run; the body the player is
 // possessing uses FMODEvents.hostFootsteps. How far each is heard is the event's own min/max distance in FMOD Studio
-// (Run's is short, so a crowd bolting far off isn't heard).
+// (Run's is short, so a crowd bolting far off isn't heard), except running while something's spotlit, which carries
+// AudioManager.SpotlightRange far.
 // Added automatically by CharacterSprite.
 [RequireComponent(typeof(CharacterSprite))]
 public class Footsteps : MonoBehaviour
@@ -40,6 +41,9 @@ public class Footsteps : MonoBehaviour
         bool run = !possessed && running && !events.npcRun.IsNull;
         steps.Play(possessed ? HostSteps(events) : run ? events.npcRun : events.npcFootsteps);
         steps.SetParameter("Pace", running ? 1f : 0f);
+        // Running off scared while something's spotlit: heard from much further, back to Run's own range after.
+        if (run && CameraRig.Spotlit) steps.SetRange(AudioManager.SpotlightRange.x, AudioManager.SpotlightRange.y);
+        else steps.ClearRange();
     }
 
     // The player walking in this body: the special characters have their own steps (RU-06 to RU-09), everyone else
