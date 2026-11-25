@@ -26,7 +26,8 @@ public class WheelHinge : MonoBehaviour, IInteraction, IOwnSound
     public string Blocked(Visitor host)
     {
         if (Loose) return GameText.HingeLoose;
-        if (host.brain is not RideTechnician || !platform.Open) return GameText.HingeNeedsTechnician;
+        if (host.brain is not RideTechnician) return GameText.HingeNeedsTechnician;
+        if (!platform.Open || RaisedFloor.Height(host.transform.position) <= RaisedFloor.Ground) return GameText.HingeFromPlatform; // the technician, but down on the ground below it
         if (host.HeldKind != VisitorItem.Screwdriver) return GameText.NeedScrewdriver;
         return null;
     }
