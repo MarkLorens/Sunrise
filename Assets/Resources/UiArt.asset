@@ -55,6 +55,7 @@ MonoBehaviour:
   - Loading/Cabin9
   - Loading/Hub
   - Loading/Wheel
+  - Logo/EndCreditWooholand_logo
   - Logo/Max2_Studio
   - Logo/Mission_cloud
   - Logo/Wohooland_logo
@@ -135,6 +136,7 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 439bc86090c164320979d996f3461c08, type: 3}
   - {fileID: 21300000, guid: e43eb2e95c153445ebe50f33b81b4a6c, type: 3}
   - {fileID: 21300000, guid: ac9f6ae7257c247dd945b7da253fcf58, type: 3}
+  - {fileID: 21300000, guid: 519cd4c88523a4e77962fe35c4721530, type: 3}
   - {fileID: 21300000, guid: 38801a1dee97d448a84b6ef94caccb97, type: 3}
   - {fileID: 21300000, guid: 7a421c8f254fa4c22be2b7d82acd7cb0, type: 3}
   - {fileID: 21300000, guid: 481bf50693ff44f888bb4d708cd9c1e1, type: 3}
