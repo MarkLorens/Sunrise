@@ -68,8 +68,28 @@ public class FMODEvents : MonoBehaviour
     [field: SerializeField] public EventReference ratSqueaks { get; private set; }
 
     [field: Header("Max Speed on Control Panel (MS)")]
-    [field: Tooltip("The control panel set to max speed.")]
+    [field: Tooltip("The control panel set to max speed: the lever and the motor revving up (ControlPanel; a one-shot, 3D at the panel). From then on the wheel's own event (Park/Ferris Wheel, the Mechanical emitter) runs wild with its Wheel Speed parameter, 0 at its normal speed up to 1 flat out (FerrisWheelAudio).")]
     [field: SerializeField] public EventReference ferrisMaxSpeed { get; private set; }
+
+    [field: Header("A Wheely Bad Day (the finale)")]
+    [field: Tooltip("The wheel shuddering on its hinge at max speed, just before it tears off (FerrisWheel; a one-shot, 3D at the wheel, about 1.5 s).")]
+    [field: SerializeField] public EventReference wheelBreaking { get; private set; }
+    [field: Tooltip("The wheel tearing off its hinge (FerrisWheel.Detach; a one-shot, 3D at the wheel). The wheel's own hum stops dead under it.")]
+    [field: SerializeField] public EventReference wheelCrash { get; private set; }
+    [field: Tooltip("One flung cabin hitting the ground (FerrisWheel; a one-shot, 3D where it lands, once per cabin).")]
+    [field: SerializeField] public EventReference cabinCrash { get; private set; }
+    [field: Tooltip("The runaway wheel rolling (FerrisWheelAudio: 3D, follows the wheel, from tearing off until it starts to topple). Its Roll Speed parameter is 1 flat out, down to 0 as it rocks to a stop.")]
+    [field: SerializeField] public EventReference wheelRolling { get; private set; }
+    [field: Tooltip("The wheel rocking back and forth where it stopped, before it keels over (FerrisWheel; a one-shot, 3D at the wheel, about 3 s).")]
+    [field: SerializeField] public EventReference wheelRocking { get; private set; }
+    [field: Tooltip("The wheel keeling over (FerrisWheel; a one-shot, 3D at the wheel, about 3 s until it slams down).")]
+    [field: SerializeField] public EventReference wheelTopple { get; private set; }
+    [field: Tooltip("The wheel slamming down flat, its bounce about 0.6 s later, and the debris (FerrisWheel; a one-shot, 3D where it lands).")]
+    [field: SerializeField] public EventReference wheelSmash { get; private set; }
+    [field: Tooltip("A building or prop squashed flat (StandingProps.Squash; a one-shot, 3D at it, once a frame however many go at once).")]
+    [field: SerializeField] public EventReference propCrunch { get; private set; }
+    [field: Tooltip("A visitor squashed flat (Visitor.Squash; a one-shot, 3D at them, once a frame however many go at once).")]
+    [field: SerializeField] public EventReference npcSquished { get; private set; }
 
     [field: Header("Music and Ambiance (MA)")]
     [field: Tooltip("G-04: the park's theme, from the theme song speakers. Slows and drops in pitch while possessing someone (its global Possessed parameter, PossessedMusic).")]

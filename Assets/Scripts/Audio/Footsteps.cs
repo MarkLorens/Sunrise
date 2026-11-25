@@ -5,7 +5,7 @@ using FMODUnity;
 // Visitors and staff use FMODEvents.npcFootsteps, and FMODEvents.npcRun while they run; the body the player is
 // possessing uses FMODEvents.hostFootsteps. How far each is heard is the event's own min/max distance in FMOD Studio
 // (Run's is short, so a crowd bolting far off isn't heard), except running while something's spotlit, which carries
-// AudioManager.SpotlightRange far.
+// AudioManager.SpotlightRange far (AudioManager.FinaleRunRange in the runaway Ferris wheel's finale).
 // Added automatically by CharacterSprite.
 [RequireComponent(typeof(CharacterSprite))]
 public class Footsteps : MonoBehaviour
@@ -41,8 +41,13 @@ public class Footsteps : MonoBehaviour
         bool run = !possessed && running && !events.npcRun.IsNull;
         steps.Play(possessed ? HostSteps(events) : run ? events.npcRun : events.npcFootsteps);
         steps.SetParameter("Pace", running ? 1f : 0f);
-        // Running off scared while something's spotlit: heard from much further, back to Run's own range after.
-        if (run && CameraRig.Spotlit) steps.SetRange(AudioManager.SpotlightRange.x, AudioManager.SpotlightRange.y);
+        // Running off scared while something's spotlit: heard from much further, back to Run's own range after. In the
+        // finale the whole park runs at once, so each of them carries less far.
+        if (run && CameraRig.Spotlit)
+        {
+            Vector2 range = FerrisWheel.Runaway ? AudioManager.FinaleRunRange : AudioManager.SpotlightRange;
+            steps.SetRange(range.x, range.y);
+        }
         else steps.ClearRange();
     }
 

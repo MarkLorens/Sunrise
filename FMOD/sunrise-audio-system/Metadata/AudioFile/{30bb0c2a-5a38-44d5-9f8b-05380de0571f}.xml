@@ -1,20 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <objects serializationModel="Studio.02.03.00">
-	<object class="AudioFile" id="{4e40df6f-b202-4426-8bf8-80add7ae74e3}">
+	<object class="AudioFile" id="{30bb0c2a-5a38-44d5-9f8b-05380de0571f}">
 		<property name="assetPath">
-			<value>Fire/3_fire-crackling-2.wav</value>
-		</property>
-		<property name="isStreaming">
-			<value>true</value>
+			<value>A Wheely Bad Day/Accept Boing Crunch.wav</value>
 		</property>
 		<property name="frequencyInKHz">
-			<value>48</value>
+			<value>96</value>
 		</property>
 		<property name="channelCount">
 			<value>2</value>
 		</property>
 		<property name="length">
-			<value>44.039999999999999</value>
+			<value>0.96989583333333329</value>
 		</property>
 		<relationship name="masterAssetFolder">
 			<destination>{8c8416f5-ac4e-4dce-97e1-dfa1a76b2c55}</destination>
