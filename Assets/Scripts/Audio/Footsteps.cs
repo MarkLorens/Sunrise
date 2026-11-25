@@ -13,6 +13,10 @@ public class Footsteps : MonoBehaviour
     Visitor visitor;
     LoopingSound steps;
 
+    // Plays the running sound (npcRun) even though they aren't drawn running: the mechanic hurrying over to the blown
+    // speaker while the camera follows him (DrinkingFountain).
+    public bool hurrying;
+
     void Awake()
     {
         look = GetComponent<CharacterSprite>();
@@ -32,9 +36,10 @@ public class Footsteps : MonoBehaviour
         var possession = Possession.Instance;
         bool possessed = visitor != null && possession != null && possession.Host == visitor;
         // Running on their own (panicking, or the tutorial's "Gotta go!" dash): the running sound, if it's set up.
-        bool run = !possessed && look.running && !events.npcRun.IsNull;
+        bool running = look.running || hurrying && !possessed;
+        bool run = !possessed && running && !events.npcRun.IsNull;
         steps.Play(possessed ? HostSteps(events) : run ? events.npcRun : events.npcFootsteps);
-        steps.SetParameter("Pace", look.running ? 1f : 0f);
+        steps.SetParameter("Pace", running ? 1f : 0f);
     }
 
     // The player walking in this body: the special characters have their own steps (RU-06 to RU-09), everyone else

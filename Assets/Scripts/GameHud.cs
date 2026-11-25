@@ -447,6 +447,8 @@ public class GameHud : MonoBehaviour
                 r.group.alpha = r.appear;
                 r.body.anchoredPosition = new Vector2((r.appear - 1f) * 40f, 0f);
                 if (!Mischief.IsDone(r.task)) continue;
+                // Crossed out in front of the player (not a step already done when the list came in).
+                if (r.appear >= 1f && AudioManager.TryPlay(e => e.taskDone)) ClosedCaptions.Show(Captions.StepDone);
                 r.age = 0f;
                 r.group.alpha = 1f;
                 r.body.anchoredPosition = Vector2.zero;
@@ -493,6 +495,8 @@ public class GameHud : MonoBehaviour
                        && RectTransformUtility.RectangleContainsScreenPoint(objectiveBanner, mouse.position.ReadValue(), null);
         if (objectives.alpha > 0.5f && !PauseMenu.Paused && (clicked || Controls.Objectives)) // Tab
         {
+            // How the list is as it's clicked: Shown plays the lower collapse sound, Hidden the expand one.
+            AudioManager.TryPlayLabeled(e => e.objectiveList, "Objective List", stepsOpen ? "Shown" : "Hidden");
             stepsOpen = !stepsOpen;
             bannerPop = 0f;
         }

@@ -115,7 +115,7 @@
 			<value>3</value>
 		</property>
 		<property name="maximumScatterDistance">
-			<value>15</value>
+			<value>3</value>
 		</property>
 		<property name="volumeRandomization">
 			<value>-4</value>

@@ -31,6 +31,30 @@ public class AudioManager : MonoBehaviour
         return true;
     }
 
+    // Like TryPlay (2D), with one of the event's labeled parameters set first, to pick which way it sounds:
+    //   AudioManager.TryPlayLabeled(e => e.objectiveList, "Objective List", "Shown");
+    public static bool TryPlayLabeled(System.Func<FMODEvents, EventReference> pick, string parameter, string label)
+    {
+        var events = FMODEvents.instance;
+        if (instance == null || events == null) return false;
+        EventReference sound = pick(events);
+        if (sound.IsNull) return false;
+        EventInstance once;
+        try
+        {
+            once = RuntimeManager.CreateInstance(sound);
+        }
+        catch (EventNotFoundException)
+        {
+            if (instance.missing.Add(sound.Guid)) Debug.LogWarning($"[FMOD] Event not in the banks (rebuild them in FMOD Studio?): {sound}");
+            return false;
+        }
+        once.setParameterByNameWithLabel(parameter, label);
+        once.start();
+        once.release(); // FMOD frees it once it's done playing
+        return true;
+    }
+
     // Like TryPlay, but the sound follows `on` while it plays (a visitor screaming as they run off).
     public static bool TryPlayOn(System.Func<FMODEvents, EventReference> pick, GameObject on)
     {

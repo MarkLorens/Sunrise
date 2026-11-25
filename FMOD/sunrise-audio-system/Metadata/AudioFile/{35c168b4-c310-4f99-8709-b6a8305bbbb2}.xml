@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <objects serializationModel="Studio.02.03.00">
-	<object class="AudioFile" id="{e9a6db6b-944e-4659-b391-d269c58b2309}">
+	<object class="AudioFile" id="{35c168b4-c310-4f99-8709-b6a8305bbbb2}">
 		<property name="assetPath">
-			<value>Ruckus/Toys, Misc, Farrow The Hedgehog Toy, Squeak SND66398.wav</value>
+			<value>ComedyWhistle 6103_63_1.wav</value>
 		</property>
 		<property name="frequencyInKHz">
-			<value>96</value>
+			<value>44.0999985</value>
 		</property>
 		<property name="channelCount">
-			<value>1</value>
+			<value>2</value>
 		</property>
 		<property name="length">
-			<value>0.68887500000000002</value>
+			<value>0.37151927437641724</value>
 		</property>
 		<relationship name="masterAssetFolder">
 			<destination>{8c8416f5-ac4e-4dce-97e1-dfa1a76b2c55}</destination>

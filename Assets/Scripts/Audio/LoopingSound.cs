@@ -58,9 +58,17 @@ public class LoopingSound
         }
     }
 
-    public void SetParameter(string name, float value)
+    // instant: jump straight there, skipping the parameter's seek modulator in FMOD (if it has one).
+    public void SetParameter(string name, float value, bool instant = false)
     {
-        if (instance.isValid()) instance.setParameterByName(name, value);
+        if (instance.isValid()) instance.setParameterByName(name, value, instant);
+    }
+
+    // Where a parameter actually is right now (partway there while its seek modulator moves it); -1 if not playing.
+    public float GetParameter(string name)
+    {
+        if (!instance.isValid() || instance.getParameterByName(name, out _, out float now) != FMOD.RESULT.OK) return -1f;
+        return now;
     }
 
     public void Stop()

@@ -64,7 +64,7 @@ public class RideTechnician : MonoBehaviour
 
     void Update()
     {
-        SnoreSound(napping);
+        SnoreSound(napping && !IsAwake); // dozing off again after the bang (no call yet) is silent: he's been woken
         if (!outside)
         {
             look.Face(transform.position + Vector3.back); // facing out over the counter
@@ -94,7 +94,7 @@ public class RideTechnician : MonoBehaviour
     LoopingSound snoreSound; // his snoring (FMODEvents.technicianSnore), from his booth
     float snoreRange;        // how far off it's heard (the event's max distance): the caption shows within it
 
-    // Snoring the whole time he naps (FMOD spaces the snores out itself), stopped the moment he wakes.
+    // Snoring while he naps until he's first woken (FMOD spaces the snores out itself), stopped the moment he wakes.
     void SnoreSound(bool on)
     {
         var events = FMODEvents.instance;

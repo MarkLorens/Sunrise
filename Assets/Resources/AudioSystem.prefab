@@ -71,27 +71,20 @@ MonoBehaviour:
       Data3: -1008109921
       Data4: -690956622
     Path: event:/A-leak-tricity (AL)/Electric Shock Cartoon
-  <waterLeak>k__BackingField:
-    Guid:
-      Data1: -955011312
-      Data2: 1106976455
-      Data3: -464565367
-      Data4: -493296342
-    Path: event:/A-leak-tricity (AL)/Water Leak
   <faucetDrip>k__BackingField:
     Guid:
       Data1: 2083247991
       Data2: 1322388823
       Data3: 1988157573
       Data4: 134858797
-    Path: event:/Park (P)/Water Faucet Droplet
+    Path: event:/Park/Water Faucet Droplet
   <fountainPress>k__BackingField:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -1221026650
+      Data2: 1320232882
+      Data3: 971543430
+      Data4: 1382208681
+    Path: event:/A-Leak-Tricity/Press the Faucet
   <cableDip>k__BackingField:
     Guid:
       Data1: 0
@@ -119,14 +112,14 @@ MonoBehaviour:
       Data2: 1100042892
       Data3: -316655486
       Data4: 62232473
-    Path: event:/Ferris Wheel/Ferris Wheel
+    Path: event:/Park/Ferris Wheel
   <ferrisPowerOff>k__BackingField:
     Guid:
       Data1: 1531511369
       Data2: 1265351733
       Data3: 484722618
       Data4: 937276117
-    Path: event:/Ferris Wheel/Power Off
+    Path: event:/A-Leak-Tricity/Power Off
   <ferrisCabinCreak>k__BackingField:
     Guid:
       Data1: 0
@@ -140,35 +133,56 @@ MonoBehaviour:
       Data2: 1091605105
       Data3: 965808774
       Data4: 81073833
-    Path: event:/Flaming Hot Dogs (HD)/Telephone Ring
+    Path: event:/A-Leak-Tricity/Telephone Ring
   <technicianAwake>k__BackingField:
     Guid:
       Data1: -932374196
       Data2: 1156482375
       Data3: -753560416
       Data4: -150368139
-    Path: event:/Flaming Hot Dogs (HD)/Technician Awake
+    Path: event:/Flaming Hot Dogs/Technician Awake
   <propaneLeak>k__BackingField:
     Guid:
       Data1: 1855191534
       Data2: 1203636163
       Data3: -572676732
       Data4: -611668836
-    Path: event:/Park (P)/Propane Tank Leak
+    Path: event:/Park/Propane Tank Leak
+  <propaneValve>k__BackingField:
+    Guid:
+      Data1: 377711076
+      Data2: 1187065288
+      Data3: -1381200470
+      Data4: 511203369
+    Path: event:/Park/Propane Tank Valve
+  <fan>k__BackingField:
+    Guid:
+      Data1: -457364991
+      Data2: 1096939400
+      Data3: -1790243923
+      Data4: 1988928455
+    Path: event:/Park/Fan
+  <fanTurn>k__BackingField:
+    Guid:
+      Data1: -1007902110
+      Data2: 1236385369
+      Data3: 204678046
+      Data4: -1195798798
+    Path: event:/Park/Turning the Fan
   <gutterLid>k__BackingField:
     Guid:
       Data1: 668755275
       Data2: 1183650640
       Data3: -355758402
       Data4: -293225478
-    Path: event:/Park (P)/Gutter Lid
+    Path: event:/Park/Gutter Lid
   <ratSqueaks>k__BackingField:
     Guid:
       Data1: -1222770271
       Data2: 1250603950
       Data3: 1410083970
       Data4: 2128580471
-    Path: event:/Flaming Hot Dogs (HD)/Rats!
+    Path: event:/Flaming Hot Dogs/Rats!
   <ferrisMaxSpeed>k__BackingField:
     Guid:
       Data1: 0
@@ -182,7 +196,7 @@ MonoBehaviour:
       Data2: 1084030894
       Data3: 1851850398
       Data4: 922779718
-    Path: event:/Music and Ambiance (MA)/BGM (Ruckus) - Timeline
+    Path: event:/BGM and Ambiance (BA)/BGM (Ruckus)
   <lobbyMusic>k__BackingField:
     Guid:
       Data1: 719395609
@@ -203,21 +217,21 @@ MonoBehaviour:
       Data2: 1121069622
       Data3: -205196150
       Data4: -287404780
-    Path: event:/Park (P)/Ice Cream Stall
+    Path: event:/Park/Ice Cream Stall
   <balloonSeller>k__BackingField:
     Guid:
       Data1: 983133101
       Data2: 1096577752
       Data3: -839565431
       Data4: -1262348889
-    Path: event:/Park (P)/Balloon Seller
+    Path: event:/Park/Balloon Seller
   <npcCurious>k__BackingField:
     Guid:
-      Data1: -342564235
-      Data2: 1332852829
-      Data3: -1028834631
-      Data4: -1089941640
-    Path: event:/NPC/Curious
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   <npcRun>k__BackingField:
     Guid:
       Data1: -500691280
@@ -234,11 +248,11 @@ MonoBehaviour:
     Path: event:/NPC/Scream
   <npcSurprised>k__BackingField:
     Guid:
-      Data1: -307967330
-      Data2: 1300597844
-      Data3: -1896065126
-      Data4: -1701636872
-    Path: event:/NPC/Surprised or Bothered
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   <npcFootsteps>k__BackingField:
     Guid:
       Data1: 0
@@ -252,42 +266,42 @@ MonoBehaviour:
       Data2: 1262329997
       Data3: 765132716
       Data4: -208128071
-    Path: event:/Park (P)/PA Announcer
+    Path: event:/Park/PA Announcer
   <technicianSnore>k__BackingField:
     Guid:
       Data1: 857475498
       Data2: 1342159231
       Data3: -1792030046
       Data4: -74618462
-    Path: event:/Park (P)/Technician Sleeping
+    Path: event:/Park/Technician Sleeping
   <chatBubble>k__BackingField:
     Guid:
-      Data1: 1116057524
-      Data2: 1250602982
-      Data3: -1792958033
-      Data4: -1456536811
-    Path: event:/Ruckus (RU)/Chat Bubble
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   <spiritHover>k__BackingField:
     Guid:
       Data1: -2013275587
       Data2: 1158096619
       Data3: -1953814888
       Data4: 1557164204
-    Path: event:/Ruckus (RU)/Float New
+    Path: event:/Ruckus/Float New
   <possess>k__BackingField:
     Guid:
       Data1: 1552490166
       Data2: 1174752788
       Data3: -684537696
       Data4: -1571207126
-    Path: event:/Ruckus (RU)/Possess
+    Path: event:/Ruckus/Possess
   <release>k__BackingField:
     Guid:
       Data1: -2068667508
       Data2: 1101811978
       Data3: 215152575
       Data4: -2091419114
-    Path: event:/Ruckus (RU)/Release
+    Path: event:/Ruckus/Release
   <hostFootsteps>k__BackingField:
     Guid:
       Data1: 0
@@ -329,14 +343,14 @@ MonoBehaviour:
       Data2: 1133138545
       Data3: 1605551797
       Data4: 1110133538
-    Path: event:/Toilet Trouble (TT)/Toilet Explosion
+    Path: event:/Explosive Diarrhea/Toilet Explosion
   <valveCrank>k__BackingField:
     Guid:
       Data1: 1240571481
       Data2: 1244214994
       Data3: -2147294043
       Data4: 770717908
-    Path: event:/Toilet Trouble (TT)/Water Valve
+    Path: event:/Explosive Diarrhea/Water Valve
   <tutorialZoomIn>k__BackingField:
     Guid:
       Data1: 0
@@ -350,95 +364,116 @@ MonoBehaviour:
       Data2: 1315624315
       Data3: -1313321538
       Data4: -2062312891
-    Path: event:/Toilet Trouble (TT)/Take Out the Sign
+    Path: event:/Explosive Diarrhea/Take Out the Sign
   <closetEnter>k__BackingField:
     Guid:
       Data1: 386457103
       Data2: 1233456769
       Data3: -1796968814
       Data4: -652010220
-    Path: event:/Toilet Trouble (TT)/Closet Enter
+    Path: event:/Explosive Diarrhea/Closet Enter
   <backButton>k__BackingField:
     Guid:
       Data1: -613726266
       Data2: 1092471409
       Data3: -924904820
       Data4: 510283221
-    Path: event:/User Interface (UI)/Back Button
+    Path: event:/UI/Back Button
   <deleteSaveFile>k__BackingField:
     Guid:
       Data1: -2136338501
       Data2: 1129749873
       Data3: -346717017
       Data4: -1152228380
-    Path: event:/User Interface (UI)/Delete Save File
+    Path: event:/UI/Delete Save File
   <disabledAction>k__BackingField:
     Guid:
       Data1: -1502933957
       Data2: 1190995022
       Data3: 1389114300
       Data4: -1623635216
-    Path: event:/User Interface (UI)/Disabled Action
+    Path: event:/UI/Disabled Action
   <disabledMenu>k__BackingField:
     Guid:
       Data1: -1947851260
       Data2: 1146127311
       Data3: -1150636366
       Data4: -1013931256
-    Path: event:/User Interface (UI)/Disabled Menu
+    Path: event:/UI/Disabled Menu
   <skipTutorialHold>k__BackingField:
     Guid:
       Data1: 491028991
       Data2: 1130405126
       Data3: 1552065178
       Data4: -103497625
-    Path: event:/User Interface (UI)/Hold Space to Skip Tutorial
+    Path: event:/UI/Hold Space to Skip Tutorial
   <menuClick>k__BackingField:
     Guid:
       Data1: -879573874
       Data2: 1153929844
       Data3: 2119655812
       Data4: 1847174146
-    Path: event:/User Interface (UI)/Menu Click
+    Path: event:/UI/Menu Click
   <menuHover>k__BackingField:
     Guid:
       Data1: -1230168919
       Data2: 1166232906
       Data3: 1813076142
       Data4: -383059540
-    Path: event:/User Interface (UI)/Menu Hover
+    Path: event:/UI/Menu Hover
   <toggle>k__BackingField:
     Guid:
       Data1: 1854474061
       Data2: 1149372728
       Data3: 1933243547
       Data4: -358867956
-    Path: event:/User Interface (UI)/Menu Toggle
+    Path: event:/UI/Menu Toggle
+  <volumeSlider>k__BackingField:
+    Guid:
+      Data1: 467591291
+      Data2: 1143125550
+      Data3: -555153246
+      Data4: 1171538977
+    Path: event:/UI/Volume Slider
   <newOrLoadGame>k__BackingField:
     Guid:
       Data1: -803347775
       Data2: 1170127130
       Data3: 1802847894
       Data4: -1129339412
-    Path: event:/User Interface (UI)/New or Load Game
+    Path: event:/UI/New or Load Game
   <objectiveCompleted>k__BackingField:
     Guid:
       Data1: -1083740176
       Data2: 1271197987
       Data3: 728029825
       Data4: -1871246493
-    Path: event:/User Interface (UI)/Objective Completed
+    Path: event:/UI/Objective Completed
+  <taskDone>k__BackingField:
+    Guid:
+      Data1: -976496809
+      Data2: 1275184538
+      Data3: -2104117613
+      Data4: -1121591174
+    Path: event:/UI/Task Done
+  <objectiveList>k__BackingField:
+    Guid:
+      Data1: -1219540260
+      Data2: 1172922972
+      Data3: 1396859826
+      Data4: -1478428928
+    Path: event:/UI/Collapse or Expand Objective
   <saveButton>k__BackingField:
     Guid:
       Data1: 1046746670
       Data2: 1214418639
       Data3: 861094
       Data4: -210589002
-    Path: event:/User Interface (UI)/Save Button
+    Path: event:/UI/Save Button
   <pauseMenu>k__BackingField:
     Guid:
       Data1: -848820276
       Data2: 1107235656
       Data3: 2096818606
       Data4: -455797410
-    Path: event:/User Interface (UI)/Trigger Pause Menu (Esc)
+    Path: event:/UI/Trigger Pause Menu (Esc)

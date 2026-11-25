@@ -99,6 +99,12 @@
 	</object>
 	<object class="MixerBusPanner" id="{c0388a57-7324-41ee-9215-3c327c5c4a7d}" />
 	<object class="SingleSound" id="{c37c8cc2-fa2d-484a-bd1f-36bcc747a101}">
+		<property name="triggerProbabilityEnabled">
+			<value>true</value>
+		</property>
+		<property name="triggerProbability">
+			<value>79.5</value>
+		</property>
 		<property name="length">
 			<value>0.65154195011337901</value>
 		</property>
@@ -131,7 +137,7 @@
 			<value>0</value>
 		</property>
 		<property name="length">
-			<value>1.5649350649350653</value>
+			<value>1.3030839002267574</value>
 		</property>
 		<relationship name="timeline">
 			<destination>{5c2a9c86-2560-4def-abda-df5f9acac22f}</destination>
