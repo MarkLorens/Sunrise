@@ -183,6 +183,20 @@ MonoBehaviour:
       Data3: -1909119572
       Data4: 385764231
     Path: event:/Flaming Hot Dogs/Hot Dog Explosion
+  <grillStartUp>k__BackingField:
+    Guid:
+      Data1: 1952160018
+      Data2: 1323007465
+      Data3: 1970240143
+      Data4: 2006675620
+    Path: event:/Flaming Hot Dogs/Start Up the Grill
+  <loosenHinge>k__BackingField:
+    Guid:
+      Data1: 636866705
+      Data2: 1135175792
+      Data3: -1927333744
+      Data4: -1728642017
+    Path: event:/Flaming Hot Dogs/Loosen the Hinge
   <shortedElectricalBox>k__BackingField:
     Guid:
       Data1: 566010361
@@ -190,6 +204,20 @@ MonoBehaviour:
       Data3: 1315866300
       Data4: 286570154
     Path: event:/Park/Short Circuit Electrical Box
+  <sparkCable>k__BackingField:
+    Guid:
+      Data1: -588578348
+      Data2: 1284827477
+      Data3: 1568882339
+      Data4: -805532114
+    Path: event:/Staffy Situation/Spark the Broken Cable
+  <lockersExplosion>k__BackingField:
+    Guid:
+      Data1: -1132821093
+      Data2: 1093283067
+      Data3: -1876362822
+      Data4: 312293539
+    Path: event:/Staffy Situation/Lockers Explosion
   <fan>k__BackingField:
     Guid:
       Data1: -457364991
@@ -283,11 +311,25 @@ MonoBehaviour:
     Path: event:/NPC/Scream
   <cabinScream>k__BackingField:
     Guid:
-      Data1: 803929168
-      Data2: 1184159892
-      Data3: -2054542683
-      Data4: 2056223732
-    Path: event:/NPC/NPC Ferris Wheel
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path:
+  <mascotEasterEgg>k__BackingField:
+    Guid:
+      Data1: 128939915
+      Data2: 1114838158
+      Data3: -795405145
+      Data4: -225844725
+    Path: event:/NPC/Key/Mascot Easter Egg
+  <mascotGagging>k__BackingField:
+    Guid:
+      Data1: -1993166087
+      Data2: 1128732810
+      Data3: -2116912454
+      Data4: -920896552
+    Path: event:/Staffy Situation/Mascot Gagging
   <npcSurprised>k__BackingField:
     Guid:
       Data1: 0

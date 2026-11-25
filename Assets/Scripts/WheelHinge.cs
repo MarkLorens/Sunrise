@@ -3,8 +3,9 @@ using UnityEngine;
 // The support hinge on the Ferris wheel's leg, up on its platform. The technician can loosen it with his screwdriver
 // once he's unlocked the gate at the top of the left stairs (FingerprintArea); the wheel doesn't notice until it's
 // started again (FerrisWheel.Restart).
+// It plays its own sound (IOwnSound): the hinge loosening, no menu click.
 [RequireComponent(typeof(Interactable))]
-public class WheelHinge : MonoBehaviour, IInteraction
+public class WheelHinge : MonoBehaviour, IInteraction, IOwnSound
 {
     public FingerprintArea platform;
 
@@ -34,6 +35,7 @@ public class WheelHinge : MonoBehaviour, IInteraction
     {
         Loosen();
         ClosedCaptions.Show(Captions.HingeLoose);
+        AudioManager.TryPlay(e => e.loosenHinge, transform.position);
         Fx.Burst("Fx/sparkle", transform.position + Vector3.up * 0.6f, 6, new Color(0.85f, 0.85f, 0.9f), 2f, 0.15f, 0.3f);
         GameHud.Say(GameText.LoosenedHinge);
         GameHud.Think(GameHud.ThoughtPriority.Action, GameText.ThinkHinge);

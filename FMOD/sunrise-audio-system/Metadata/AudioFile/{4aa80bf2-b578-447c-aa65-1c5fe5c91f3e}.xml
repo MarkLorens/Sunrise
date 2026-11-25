@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="AudioFile" id="{4aa80bf2-b578-447c-aa65-1c5fe5c91f3e}">
+		<property name="assetPath">
+			<value>steel-button-heavy-2026-11-24-03-33-54-utc/Steel Button Heavy 03.wav</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>44.0999985</value>
+		</property>
+		<property name="channelCount">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>0.3781859410430839</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{8c8416f5-ac4e-4dce-97e1-dfa1a76b2c55}</destination>
+		</relationship>
+	</object>
+</objects>

@@ -190,6 +190,8 @@ public class HotDogMan : MonoBehaviour
                     }
                     if (Time.time < lightAt) break;
                     SetGrill(true);
+                    ClosedCaptions.Show(Captions.GrillLit);
+                    AudioManager.TryPlay(e => e.grillStartUp, Grill != null ? Grill.transform.position : transform.position);
                     if (tank != null) boomAt = Time.time + catchTime;
                     break;
                 }

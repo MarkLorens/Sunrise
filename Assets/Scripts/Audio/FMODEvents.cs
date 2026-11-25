@@ -48,8 +48,16 @@ public class FMODEvents : MonoBehaviour
     [field: SerializeField] public EventReference propaneValve { get; private set; }
     [field: Tooltip("The hot dog stand blowing up once the hot dog man fires up his grill in the gas (PropaneTank; a one-shot, 3D at the stand). Not the locker room's.")]
     [field: SerializeField] public EventReference hotDogExplosion { get; private set; }
+    [field: Tooltip("The hot dog man lighting his grill again, back at his stall after the rats (HotDogMan; a one-shot, 3D at the grill). With the gas round the stand, it's the spark.")]
+    [field: SerializeField] public EventReference grillStartUp { get; private set; }
+    [field: Tooltip("The ride technician loosening the Ferris wheel's leg hinge with his screwdriver (WheelHinge; a one-shot, 3D at the hinge).")]
+    [field: SerializeField] public EventReference loosenHinge { get; private set; }
     [field: Tooltip("The shorted-out electrical box by the lockers buzzing and zapping, until the locker room goes up (LockerBox; 3D at the box, loops).")]
     [field: SerializeField] public EventReference shortedElectricalBox { get; private set; }
+    [field: Tooltip("Sparking the broken cable in the locker room's electrical box, whether or not there's propane to catch (LockerBox; a one-shot, 3D at the box).")]
+    [field: SerializeField] public EventReference sparkCable { get; private set; }
+    [field: Tooltip("The locker room blowing up once the electrician's spark from the broken cable lights its gas (PropaneTank; a one-shot, 3D at the lockers).")]
+    [field: SerializeField] public EventReference lockersExplosion { get; private set; }
     [field: Tooltip("Each cooling fan whirring (TankFan: 3D at the fan, loops). Its Fan Direction parameter (South 0, West 1, North 2, East 3, optionally South again at 4) is set to the way the fan faces; a seek modulator on it sweeps the pan when the fan's turned.")]
     [field: SerializeField] public EventReference fan { get; private set; }
     [field: Tooltip("Turning a cooling fan's head a quarter turn (TankFan; a one-shot, 3D at the fan). Empty = the menu click.")]
@@ -84,6 +92,10 @@ public class FMODEvents : MonoBehaviour
     [field: SerializeField] public EventReference npcScream { get; private set; }
     [field: Tooltip("The riders stuck in the Ferris wheel's cabins screaming during its payoffs (power cut, wobbly), once per shout bubble (a one-shot, 3D, following the cabin). Empty or not in the banks = NPC-01.")]
     [field: SerializeField] public EventReference cabinScream { get; private set; }
+    [field: Tooltip("The mascot finally warning the spirit off after its tries to possess him (Mascot.Tease's close-up; a one-shot, 3D, following him).")]
+    [field: SerializeField] public EventReference mascotEasterEgg { get; private set; }
+    [field: Tooltip("The mascot gagging on the smelly gutter's stink as he runs off, leaving the fan unguarded (Mascot; a one-shot, 3D, following him).")]
+    [field: SerializeField] public EventReference mascotGagging { get; private set; }
     [field: Tooltip("NPC-02: surprised or bothered.")]
     [field: SerializeField] public EventReference npcSurprised { get; private set; }
     [field: Tooltip("Visitors and staff walking on their own (3D, optional Pace parameter: 0 walk, 1 run).")]
