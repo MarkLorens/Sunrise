@@ -52,7 +52,7 @@ public class EndCredits : MonoBehaviour
     IEnumerator Run()
     {
         var logo = Page("Logo");
-        Figma.Picture(logo.rect, "Logo", "Logo/Wohooland_logo", 756f, 491f, 720f, 590f);
+        Figma.Picture(logo.rect, "Logo", "Logo/EndCreditWooholand_logo", 756f, 491f, 720f, 590f).preserveAspect = true; // its own shape, not the box's
         yield return Show(logo.group, LogoHold);
 
         // "The Team" stays up the whole way through the team: in with the first of them, out with the last. Kept over
