@@ -12,6 +12,8 @@ public class FMODEvents : MonoBehaviour
     [field: SerializeField] public EventReference speakerMusic { get; private set; }
     [field: Tooltip("AL-06: everyone standing in the puddle gets electrocuted (plays where the cable hit the water).")]
     [field: SerializeField] public EventReference electrocution { get; private set; }
+    [field: Tooltip("An electrocuted visitor toppling over once the zap's done with them (Visitor.Collapse; a one-shot, 3D where they fall; once for everyone dropping at the same moment).")]
+    [field: SerializeField] public EventReference npcFall { get; private set; }
     [field: Tooltip("The leaky fountain's faucet dripping into its puddle, the whole game (3D at the fountain, loops).")]
     [field: SerializeField] public EventReference faucetDrip { get; private set; }
     [field: Tooltip("AL-02: pressing the leaky fountain's button.")]
@@ -20,7 +22,9 @@ public class FMODEvents : MonoBehaviour
     [field: SerializeField] public EventReference cableDip { get; private set; }
     [field: Tooltip("LO-01: unlocking the mechanic's electrical box.")]
     [field: SerializeField] public EventReference unlockElectricalBox { get; private set; }
-    [field: Tooltip("LO-02: cutting the Ferris wheel's power (button noises).")]
+    [field: Tooltip("Opening the Ferris wheel's electrical box to cut its power or start it again (a one-shot, 3D at the box).")]
+    [field: SerializeField] public EventReference openElectricalBox { get; private set; }
+    [field: Tooltip("LO-02: cutting the Ferris wheel's power, or bringing it back (button noises; FerrisWheelAudio, 3D at the wheel, with the power going off or on).")]
     [field: SerializeField] public EventReference cutPower { get; private set; }
 
     [field: Header("Ferris Wheel")]
@@ -80,6 +84,8 @@ public class FMODEvents : MonoBehaviour
     [field: SerializeField] public EventReference paAnnouncer { get; private set; }
     [field: Tooltip("The ride technician snoring at his booth while he naps (3D at his booth; FMOD spaces the snores out, it runs until he wakes).")]
     [field: SerializeField] public EventReference technicianSnore { get; private set; }
+    [field: Tooltip("The construction workers' barriers going up round a scene after an incident, or round a job (ConstructionTape; a one-shot, 3D in the middle of the ring).")]
+    [field: SerializeField] public EventReference constructionSign { get; private set; }
 
     [field: Header("Ruckus (RU)")]
     [field: Tooltip("RU-01: Ruckus's thought bubble pops up.")]

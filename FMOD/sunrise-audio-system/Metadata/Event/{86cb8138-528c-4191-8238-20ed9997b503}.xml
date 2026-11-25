@@ -163,7 +163,7 @@
 			<value>0.6977457302069765</value>
 		</property>
 		<property name="length">
-			<value>9.6719141337385963</value>
+			<value>9.648127347481541</value>
 		</property>
 		<property name="timelockedOffset">
 			<value>0.6977457302069765</value>
@@ -201,6 +201,9 @@
 		<property name="name">
 			<value>Mechanical</value>
 		</property>
+		<relationship name="modulators">
+			<destination>{0cd2bfbf-c7e8-484b-a8e7-f321f2daa311}</destination>
+		</relationship>
 		<relationship name="effectChain">
 			<destination>{dfc91672-0f74-43ec-853b-fb4865f63147}</destination>
 		</relationship>
@@ -389,6 +392,20 @@
 		<relationship name="relatedModule">
 			<destination>{99eaa291-eb45-4523-9587-ce21bd621ba5}</destination>
 		</relationship>
+	</object>
+	<object class="ADSRModulator" id="{0cd2bfbf-c7e8-484b-a8e7-f321f2daa311}">
+		<property name="nameOfPropertyBeingModulated">
+			<value>volume</value>
+		</property>
+		<property name="initialValue">
+			<value>-80</value>
+		</property>
+		<property name="attackTime">
+			<value>0</value>
+		</property>
+		<property name="finalValue">
+			<value>-80</value>
+		</property>
 	</object>
 	<object class="MixerBusEffectChain" id="{dfc91672-0f74-43ec-853b-fb4865f63147}">
 		<relationship name="effects">

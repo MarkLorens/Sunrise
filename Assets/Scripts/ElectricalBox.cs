@@ -6,7 +6,9 @@ using UnityEngine;
 // The first time someone else tries it, a short cutscene shows who has the keys: the camera pans to the mechanic
 // fixing a flickering lamp by the staff door, follows him back behind the staff door, then returns to the player.
 [RequireComponent(typeof(Interactable))]
-public class ElectricalBox : MonoBehaviour, IInteraction, ITried
+// It plays its own sound (IOwnSound): the box opening when it's unlocked or the power's brought back, the menu click
+// for the locked-box cutscene.
+public class ElectricalBox : MonoBehaviour, IInteraction, ITried, IOwnSound
 {
     public FerrisWheel wheel;
     public float tinkerTime = 4f; // seconds the mechanic works on the lamp
@@ -59,6 +61,7 @@ public class ElectricalBox : MonoBehaviour, IInteraction, ITried
     {
         if (!wheel.Powered)
         {
+            OpenBox();
             wheel.Restart();
             ClosedCaptions.Show(Captions.PowerBackOn);
             GameHud.Say(GameText.RestartedWheel);
@@ -67,11 +70,13 @@ public class ElectricalBox : MonoBehaviour, IInteraction, ITried
         }
         if (!Unlocked && host.HeldKind != VisitorItem.Keys)
         {
+            AudioManager.TryPlay(e => e.menuClick); // G-03
             StartCoroutine(ShowMechanic(IdleMechanic()));
             return;
         }
         if (!Unlocked)
         {
+            OpenBox(); // the electrician opens it up, ready to cut the power
             Unlocked = true;
             ClosedCaptions.Show(Captions.BoxUnlocked);
             if (host.brain is Mechanic) GameHud.Think(GameHud.ThoughtPriority.Action, GameText.ThinkBoxMechanic);
@@ -84,6 +89,14 @@ public class ElectricalBox : MonoBehaviour, IInteraction, ITried
         GameHud.Say(GameText.CutPower);
         Mischief.Complete(Mischief.Task.CutPower);
         Aftermath.Add(wheel.transform.position + Vector3.back * 3f, 3f, 90f); // the crowd stares up at the stuck cabins
+    }
+
+    // Its door swinging open: the electrician opening it up (right before he cuts the power), or the technician
+    // opening it to start the wheel again.
+    void OpenBox()
+    {
+        ClosedCaptions.Show(Captions.BoxOpened);
+        AudioManager.TryPlay(e => e.openElectricalBox, transform.position);
     }
 
     // The mechanic, if the cutscene hasn't played yet and he's behind the staff door (out and about, you can see him).
