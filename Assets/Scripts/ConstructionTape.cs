@@ -102,6 +102,11 @@ public static class ConstructionTape
                 r.transform.localScale = Vector3.zero;
             }
             tape.started = Time.time;
+            if (tape.parts.Count > 0)
+            {
+                ClosedCaptions.Show(Captions.ConstructionSign);
+                AudioManager.TryPlay(e => e.constructionSign, site); // the barriers going up
+            }
             return tape;
         }
 

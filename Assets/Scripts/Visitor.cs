@@ -733,6 +733,8 @@ public class Visitor : MonoBehaviour
 
     // Down, greyed out, and anyone nearby runs (ParkChaos sets them panicking). Electrocuted, they're singed darker and
     // topple over, smoking, the odd spark still crackling off them.
+    static float lastFallSound = -1f;
+
     void Collapse()
     {
         Look.SetTint(Zapped ? new Color(0.5f, 0.47f, 0.47f) : new Color(0.6f, 0.6f, 0.65f));
@@ -741,6 +743,12 @@ public class Visitor : MonoBehaviour
         {
             Look.FallOver();
             StartCoroutine(Smoulder());
+            if (Time.time - lastFallSound > 0.1f) // the whole puddle drops together: one fall sound, not a stack
+            {
+                lastFallSound = Time.time;
+                ClosedCaptions.Show(Captions.NpcFall);
+                AudioManager.TryPlay(e => e.npcFall, transform.position);
+            }
         }
         ParkChaos.Add(transform.position, 9f, 30f, ParkChaos.Terrifying);
     }

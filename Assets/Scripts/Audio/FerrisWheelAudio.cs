@@ -26,7 +26,7 @@ public class FerrisWheelAudio : MonoBehaviour
         if (events == null) return;
         if (ride.Powered)
         {
-            if (!wasPowered) PowerOn();
+            if (!wasPowered) PowerOn(events);
             hydraulic.Play(events.ferrisHydraulic);
             SetHinge(ride.Wobbly);
             if (ride.Wobbly) creak.Play(events.ferrisCabinCreak); // a loosened hinge: it creaks all the way round
@@ -65,8 +65,15 @@ public class FerrisWheelAudio : MonoBehaviour
     // region the next time it reaches the end and play the wind-down tail, after which the event ends by itself.
     const string PowerParameter = "Power";
 
-    void PowerOn()
+    // LO-02: the box's power buttons, cutting the power or bringing it back (as the camera takes in the wheel).
+    void PowerSwitch(FMODEvents events)
     {
+        if (AudioManager.instance != null && !events.cutPower.IsNull) AudioManager.instance.PlayOneShot(events.cutPower, transform.position);
+    }
+
+    void PowerOn(FMODEvents events)
+    {
+        PowerSwitch(events); // its caption: ElectricalBox's "power switch clunks on"
         foreach (var motor in GetComponents<StudioEventEmitter>())
         {
             motor.SetParameter(PowerParameter, 1f); // the emitter reuses its instance, which still has Power Off
@@ -77,6 +84,8 @@ public class FerrisWheelAudio : MonoBehaviour
     void PowerOff(FMODEvents events)
     {
         foreach (var motor in GetComponents<StudioEventEmitter>()) motor.SetParameter(PowerParameter, 0f);
+        PowerSwitch(events);
+        ClosedCaptions.Show(Captions.PowerSwitchOff);
         if (AudioManager.instance != null) AudioManager.instance.PlayOneShot(events.ferrisPowerOff, transform.position);
         ClosedCaptions.Show(Captions.PowerOff);
     }

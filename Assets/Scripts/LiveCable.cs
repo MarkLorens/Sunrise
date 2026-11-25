@@ -4,7 +4,7 @@ using UnityEngine;
 // (ElectricBolt). In anyone's body, pull it out and dip it in the drinking fountain's puddle if it reaches (a cord is
 // drawn while it's in): the bolt jumps to the wet end and crackles harder.
 [RequireComponent(typeof(Interactable))]
-public class LiveCable : MonoBehaviour, IInteraction
+public class LiveCable : MonoBehaviour, IInteraction, IOwnSound // its dip sound, no menu click
 {
     public Speaker speaker;
     public DrinkingFountain fountain;
@@ -98,6 +98,8 @@ public class LiveCable : MonoBehaviour, IInteraction
         dipUntil = Time.time + 1.5f;
         readyAt = Time.time + recharge;
         GameHud.Say(GameText.DippedCable);
+        ClosedCaptions.Show(Captions.CableDip);
+        AudioManager.TryPlay(e => e.cableDip, dippedAt); // AL-05, just before the zap
         fountain.Electrify(dippedAt);
     }
 }

@@ -27,12 +27,16 @@ public static class Captions
     // ---------------------------------------------------------------- the drinking fountain and the live cable
     public const string FountainPress = "[Water sputters]";
     public const string FaucetDrip = "[Water dripping]";             // the leaky fountain, while you're within earshot
+    public const string CableDip = "[Cable plops into the water]";
     public const string Electrocution = "[Loud electric crackle]";
+    public const string NpcFall = "[Bodies topple over]";
     public const string FountainFixed = "[Wrench clanks]";
 
     // ---------------------------------------------------------------- the Ferris wheel and its box
     public const string BoxUnlocked = "[Lock clicks open]";
+    public const string BoxOpened = "[Electrical box creaks open]";
     public const string PowerBackOn = "[Power switch clunks on]";
+    public const string PowerSwitchOff = "[Power switch clunks off]";
     public const string PowerOff = "[Power cuts out]";
     public const string WheelHum = "[Ferris wheel machinery hums]";  // while it runs, when you're near
     public const string CabinCreak = "[Cabins creaking]";             // stuck, or wobbly, when you're near
@@ -61,6 +65,7 @@ public static class Captions
 
     // ---------------------------------------------------------------- the locker room and staff
     public const string CableSpark = "[Cable sparks]";
+    public const string ConstructionSign = "[Barriers clatter into place]";
     public const string PaScreech = "[PA system screeches]";
     public const string PaAnnouncement = "[Garbled PA announcement]";
     public const string Scanner = "[Gate lock clicks open]";

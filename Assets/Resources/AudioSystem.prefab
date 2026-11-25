@@ -70,7 +70,14 @@ MonoBehaviour:
       Data2: 1233676029
       Data3: -1008109921
       Data4: -690956622
-    Path: event:/A-leak-tricity (AL)/Electric Shock Cartoon
+    Path: event:/A-Leak-Tricity/Electric Shock Cartoon
+  <npcFall>k__BackingField:
+    Guid:
+      Data1: 593102204
+      Data2: 1340335308
+      Data3: 705493120
+      Data4: 1132060702
+    Path: event:/A-Leak-Tricity/NPC Fall
   <faucetDrip>k__BackingField:
     Guid:
       Data1: 2083247991
@@ -87,11 +94,11 @@ MonoBehaviour:
     Path: event:/A-Leak-Tricity/Press the Faucet
   <cableDip>k__BackingField:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 1115371901
+      Data2: 1335265276
+      Data3: -51294589
+      Data4: -958898917
+    Path: event:/A-Leak-Tricity/Dip Water in Cable
   <unlockElectricalBox>k__BackingField:
     Guid:
       Data1: 0
@@ -99,13 +106,20 @@ MonoBehaviour:
       Data3: 0
       Data4: 0
     Path: 
+  <openElectricalBox>k__BackingField:
+    Guid:
+      Data1: 1183586910
+      Data2: 1200462869
+      Data3: 1368212618
+      Data4: 395551436
+    Path: event:/A-Leak-Tricity/Open Electrical Box
   <cutPower>k__BackingField:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 431336187
+      Data2: 1268828542
+      Data3: -593710192
+      Data4: 1857834784
+    Path: event:/Park/Electrical Power
   <ferrisHydraulic>k__BackingField:
     Guid:
       Data1: -2033483464
@@ -119,7 +133,7 @@ MonoBehaviour:
       Data2: 1265351733
       Data3: 484722618
       Data4: 937276117
-    Path: event:/A-Leak-Tricity/Power Off
+    Path: event:/Park/Power Off
   <ferrisCabinCreak>k__BackingField:
     Guid:
       Data1: 0
@@ -274,6 +288,13 @@ MonoBehaviour:
       Data3: -1792030046
       Data4: -74618462
     Path: event:/Park/Technician Sleeping
+  <constructionSign>k__BackingField:
+    Guid:
+      Data1: -1655866807
+      Data2: 1076578242
+      Data3: 997119409
+      Data4: -1202353331
+    Path: event:/Park/Construction Sign
   <chatBubble>k__BackingField:
     Guid:
       Data1: 0
