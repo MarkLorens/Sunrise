@@ -219,11 +219,12 @@ public class TankFan : MonoBehaviour, IInteraction, IOwnSound
     // A puff of the gutter's stink off the smelly gutter's fan: the gutter's own gas art, brown.
     void StinkGust()
     {
-        var g = ParkArt.Make("Gust", null, Gutter.StinkArt, 0.28f, Gutter.Stink, ParkArt.OverheadOrder);
+        var g = ParkArt.Make("Gust", null, Gutter.StinkArt, Random.Range(0.3f, 0.7f), Gutter.Stink, ParkArt.OverheadOrder);
         g.transform.position = transform.position + Vector3.up * Random.Range(0.8f, 1.4f) + Wind * 0.5f;
         var bit = g.gameObject.AddComponent<FxBit>();
         bit.velocity = Wind * 6f;
         bit.life = 0.6f;
+        bit.growth = 0.25f; // spreading a little as it goes, as the propane's wisps
     }
 
     public string Prompt(Visitor host) => "Turn the fan";

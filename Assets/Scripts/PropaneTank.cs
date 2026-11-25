@@ -74,7 +74,12 @@ public class PropaneTank : MonoBehaviour, IInteraction, IOwnSound // its valve s
             chain.Add(f);
             // The nearest thing in its stream: another fan, or the target.
             TankFan next = null;
-            float best = f.Blows(Center, cloudRadius, fanReach) ? f.Ahead(Center) : float.MaxValue;
+            // The target only if it's blowing at it: the cloud's middle no more than 45° off the way it faces. A fan
+            // standing inside the cloud (the hot dog stand's) would otherwise reach it facing sideways too.
+            Vector3 toCenter = Center - f.transform.position;
+            toCenter.y = 0f;
+            bool atTarget = f.Blows(Center, cloudRadius, fanReach) && Vector3.Angle(f.Wind, toCenter) <= 45f;
+            float best = atTarget ? f.Ahead(Center) : float.MaxValue;
             foreach (var other in TankFan.All)
                 if (!chain.Contains(other) && f.Blows(other.transform.position, fanLane, fanReach) && f.Ahead(other.transform.position) < best)
                 {

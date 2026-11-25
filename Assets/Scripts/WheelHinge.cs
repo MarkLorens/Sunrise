@@ -13,7 +13,7 @@ public class WheelHinge : MonoBehaviour, IInteraction
     SpriteRenderer art;
 
     // Marked by the ride technician's sign (his wrench on it).
-    void Start() => art = ParkArt.Solid(transform, "Props/New/ride_technician_sign", 1f, new Color(0.5f, 0.52f, 0.56f));
+    void Start() => art = ParkArt.Solid(transform, "Props/New/ride_technician_sign", 1f, new Color(0.5f, 0.52f, 0.56f), blocks: false);
 
     void Update()
     {
